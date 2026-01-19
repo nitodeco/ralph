@@ -29,6 +29,7 @@ ralph run [iterations]
 Runs the Cursor CLI agent in a loop, working through tasks in your PRD. Default is 10 iterations.
 
 The agent will:
+
 1. Read `progress.txt` and `prd.json` to understand the current state
 2. Find the next incomplete task
 3. Implement that task
