@@ -1,6 +1,12 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { confirm, editor, input } from "@inquirer/prompts";
-import { findPrdFile, savePrd } from "../lib/prd.ts";
+import {
+	ensureRalphDirExists,
+	findPrdFile,
+	PROGRESS_FILE_PATH,
+	RALPH_DIR,
+	savePrd,
+} from "../lib/prd.ts";
 import type { Prd, PrdTask } from "../types.ts";
 
 export async function initCommand(): Promise<void> {
@@ -17,9 +23,9 @@ export async function initCommand(): Promise<void> {
 		}
 	}
 
-	if (existsSync("progress.txt")) {
+	if (existsSync(PROGRESS_FILE_PATH)) {
 		const overwriteProgress = await confirm({
-			message: "progress.txt already exists. Overwrite it?",
+			message: `${PROGRESS_FILE_PATH} already exists. Overwrite it?`,
 			default: false,
 		});
 
@@ -88,10 +94,11 @@ export async function initCommand(): Promise<void> {
 		tasks,
 	};
 
+	ensureRalphDirExists();
 	savePrd(prd, format ? "yaml" : "json");
-	writeFileSync("progress.txt", "");
+	writeFileSync(PROGRESS_FILE_PATH, "");
 
 	const prdFileName = format ? "prd.yaml" : "prd.json";
-	console.log(`\nCreated ${prdFileName} and progress.txt`);
+	console.log(`\nCreated ${RALPH_DIR}/${prdFileName} and ${PROGRESS_FILE_PATH}`);
 	console.log(`\nRun 'ralph run' to start working on your tasks.`);
 }

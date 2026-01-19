@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { runAgent } from "../lib/agent.ts";
-import { findPrdFile } from "../lib/prd.ts";
+import { findPrdFile, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
 
 const DEFAULT_ITERATIONS = 10;
 const ITERATION_DELAY_MS = 2000;
@@ -19,13 +19,13 @@ export async function runCommand(iterationsArg?: string): Promise<void> {
 
 	const prdFile = findPrdFile();
 	if (!prdFile) {
-		console.error("Error: No prd.json or prd.yaml found in current directory");
+		console.error(`Error: No prd.json or prd.yaml found in ${RALPH_DIR}/`);
 		console.error("Run 'ralph init' to create one");
 		process.exit(1);
 	}
 
-	if (!existsSync("progress.txt")) {
-		console.error("Error: No progress.txt found in current directory");
+	if (!existsSync(PROGRESS_FILE_PATH)) {
+		console.error(`Error: No ${PROGRESS_FILE_PATH} found`);
 		console.error("Run 'ralph init' to create one");
 		process.exit(1);
 	}

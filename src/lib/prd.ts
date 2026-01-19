@@ -1,9 +1,17 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { Prd } from "../types.ts";
 
-const PRD_JSON_PATH = "prd.json";
-const PRD_YAML_PATH = "prd.yaml";
+export const RALPH_DIR = ".ralph";
+export const PROGRESS_FILE_PATH = `${RALPH_DIR}/progress.txt`;
+const PRD_JSON_PATH = `${RALPH_DIR}/prd.json`;
+const PRD_YAML_PATH = `${RALPH_DIR}/prd.yaml`;
+
+export function ensureRalphDirExists(): void {
+	if (!existsSync(RALPH_DIR)) {
+		mkdirSync(RALPH_DIR, { recursive: true });
+	}
+}
 
 export function findPrdFile(): string | null {
 	if (existsSync(PRD_JSON_PATH)) {
