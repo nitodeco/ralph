@@ -1,3 +1,9 @@
+export type AgentType = "cursor" | "claude";
+
+export interface RalphConfig {
+	agent: AgentType;
+}
+
 export interface PrdTask {
 	title: string;
 	description: string;

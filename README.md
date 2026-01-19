@@ -1,8 +1,8 @@
 # Ralph
 
-A CLI tool for long-running PRD-driven development with Cursor AI.
+A CLI tool for long-running PRD-driven development with AI coding agents.
 
-Ralph automates the process of working through a Product Requirements Document (PRD) by orchestrating the Cursor CLI agent to complete tasks one at a time.
+Ralph automates the process of working through a Product Requirements Document (PRD) by orchestrating AI coding agents (Cursor or Claude Code) to complete tasks one at a time.
 
 ## Installation
 
@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/nitodeco/ralph/main/scripts/install
 ralph init
 ```
 
-This will interactively create a `prd.json` (or `prd.yaml`) and `progress.txt` in your current directory.
+This will interactively create a `prd.json` (or `prd.yaml`), `progress.txt`, and `config.json` in the `.ralph` directory. You'll be prompted to select your preferred AI agent (Cursor or Claude Code).
 
 ### Run the agent
 
@@ -26,7 +26,7 @@ This will interactively create a `prd.json` (or `prd.yaml`) and `progress.txt` i
 ralph run [iterations]
 ```
 
-Runs the Cursor CLI agent in a loop, working through tasks in your PRD. Default is 10 iterations.
+Runs the configured AI agent in a loop, working through tasks in your PRD. Default is 10 iterations.
 
 The agent will:
 
@@ -75,7 +75,10 @@ tasks:
 
 ## Requirements
 
-- [Cursor CLI](https://docs.cursor.com/cli) must be installed and available as `agent` in your PATH
+One of the following AI coding agents must be installed:
+
+- [Cursor CLI](https://docs.cursor.com/cli) - available as `cursor` in your PATH
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) - available as `claude` in your PATH
 
 ## Development
 

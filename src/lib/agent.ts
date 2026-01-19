@@ -1,10 +1,13 @@
 import type { AgentResult } from "../types.ts";
+import { getAgentCommand, loadConfig } from "./config.ts";
 import { buildPrompt, COMPLETION_MARKER } from "./prompt.ts";
 
 export async function runAgent(): Promise<AgentResult> {
 	const prompt = buildPrompt();
+	const config = loadConfig();
+	const baseCommand = getAgentCommand(config.agent);
 
-	const process = Bun.spawn(["agent", "-p", "--force", prompt], {
+	const process = Bun.spawn([...baseCommand, prompt], {
 		stdout: "pipe",
 		stderr: "pipe",
 	});
