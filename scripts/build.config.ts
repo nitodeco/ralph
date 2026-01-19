@@ -1,5 +1,5 @@
 export const config = {
-	entryPoint: "src/index.ts",
+	entryPoint: "src/index.tsx",
 	outDir: "dist",
 	targets: [
 		{
