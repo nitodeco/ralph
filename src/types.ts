@@ -2,6 +2,8 @@ export type AgentType = "cursor" | "claude";
 
 export interface RalphConfig {
 	agent: AgentType;
+	lastUpdateCheck?: number;
+	skipVersion?: string;
 }
 
 export interface PrdTask {

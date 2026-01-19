@@ -4,6 +4,7 @@ import { program } from "commander";
 import { initCommand } from "./commands/init.ts";
 import { runCommand } from "./commands/run.ts";
 import { updateCommand } from "./commands/update.ts";
+import { checkForUpdatesAndPrompt } from "./lib/update.ts";
 
 export const VERSION = "1.0.0";
 
@@ -26,5 +27,11 @@ program
 	.command("update")
 	.description("Check for updates and install the latest version of Ralph")
 	.action(updateCommand);
+
+program.hook("preAction", async (thisCommand) => {
+	if (thisCommand.args[0] !== "update") {
+		await checkForUpdatesAndPrompt();
+	}
+});
 
 program.parse();
