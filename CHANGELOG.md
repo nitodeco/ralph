@@ -1,5 +1,11 @@
 # ralph
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix version not being correctly displayed
+
 ## 0.2.0
 
 ### Minor Changes

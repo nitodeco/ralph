@@ -7,8 +7,11 @@ import { RunApp } from "./components/RunApp.tsx";
 import { SetupWizard } from "./components/SetupWizard.tsx";
 import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
 import { globalConfigExists } from "./lib/config.ts";
+import packageJson from "../package.json";
 
-export const VERSION = "1.0.0";
+declare const RALPH_VERSION: string | undefined;
+
+export const VERSION = typeof RALPH_VERSION !== "undefined" ? RALPH_VERSION : packageJson.version;
 
 type Command = "run" | "init" | "setup" | "update" | "help" | "version" | "-v" | "--version" | "-h" | "--help";
 

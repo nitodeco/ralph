@@ -1,3 +1,5 @@
 {
-	"agent": "cursor"
+  "agent": "cursor",
+  "prdFormat": "json",
+  "lastUpdateCheck": 1768870960032
 }

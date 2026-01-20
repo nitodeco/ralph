@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, rm, unlink } from "node:fs/promises";
 import { type BuildTarget, config } from "./build.config";
+import packageJson from "../package.json";
 
 async function cleanupTempFiles(): Promise<void> {
 	const tempFiles = readdirSync(".").filter((file) => file.endsWith(".bun-build"));
@@ -20,6 +21,7 @@ async function compileTarget(buildTarget: BuildTarget): Promise<boolean> {
 			"--compile",
 			`--target=${buildTarget.target}`,
 			`--outfile=${outputPath}`,
+			`--define=RALPH_VERSION="${packageJson.version}"`,
 		],
 		{
 			stdout: "inherit",
