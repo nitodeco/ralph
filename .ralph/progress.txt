@@ -67,3 +67,26 @@ Implementation:
   - Send 'complete' notification when all tasks are finished
   - Send 'max_iterations' notification when iteration limit is reached
   - Send 'fatal_error' notification when an unrecoverable error occurs
+
+Task 6: Implement background/daemon mode - COMPLETED
+
+Implementation:
+- Created src/lib/daemon.ts with daemon management functions:
+  - writePidFile: Writes process ID to .ralph/ralph.pid
+  - readPidFile: Reads PID from file
+  - deletePidFile: Removes PID file
+  - isProcessRunning: Checks if process with given PID is running
+  - isBackgroundProcessRunning: Checks if Ralph daemon is currently running
+  - spawnDaemonProcess: Spawns detached child process with output redirected to log file
+  - isDaemonProcess: Checks if current process is a daemon child
+  - cleanupDaemon: Cleans up PID file on exit
+- Updated src/index.tsx:
+  - Added --background and -b flags to CLI argument parser
+  - Added handleBackgroundMode function to spawn daemon and display status
+  - Added signal handlers (SIGTERM, SIGINT) for graceful daemon shutdown
+  - Daemon child writes own PID and cleans up on exit
+  - Added autoStart prop to RunWithSetup for daemon auto-start
+- Updated src/components/RunApp.tsx:
+  - Added autoStart prop to automatically begin iterations in daemon mode
+  - Added useEffect to trigger auto-start when running as daemon
+- Updated help text with background mode documentation and examples

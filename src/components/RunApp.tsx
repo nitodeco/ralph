@@ -34,6 +34,7 @@ interface RunAppProps {
 	version: string;
 	iterations: number;
 	autoResume?: boolean;
+	autoStart?: boolean;
 }
 
 type AppState =
@@ -80,6 +81,7 @@ export function RunApp({
 	version,
 	iterations,
 	autoResume = false,
+	autoStart = false,
 }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 	const [appState, setAppState] = useState<AppState>("idle");
@@ -368,6 +370,12 @@ export function RunApp({
 			resumeSession();
 		}
 	}, [autoResume, pendingSession, appState, resumeSession]);
+
+	useEffect(() => {
+		if (autoStart && !autoResume && appState === "idle" && !pendingSession) {
+			startIterations();
+		}
+	}, [autoStart, autoResume, appState, pendingSession, startIterations]);
 
 	useEffect(() => {
 		if (

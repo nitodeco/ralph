@@ -71,7 +71,7 @@
 				"Redirect output to log file in background mode",
 				"Add 'ralph status' command to check background process"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add 'ralph status' command",
