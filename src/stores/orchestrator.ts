@@ -31,6 +31,16 @@ import { useAgentStore } from "./agentStore.ts";
 import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 
+export interface StartSessionResult {
+	session: Session;
+	taskIndex: number;
+}
+
+export interface ResumeSessionResult {
+	session: Session;
+	remainingIterations: number;
+}
+
 interface OrchestratorConfig {
 	config: RalphConfig;
 	iterations: number;
@@ -247,7 +257,7 @@ class SessionOrchestrator {
 		});
 	}
 
-	startSession(prd: Prd | null, totalIterations: number): Session {
+	startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
@@ -261,13 +271,12 @@ class SessionOrchestrator {
 		const sessionId = generateSessionId();
 		initializeLogsIndex(sessionId, prd?.project ?? "Unknown Project");
 
-		return newSession;
+		eventBus.emit("session:start", { totalIterations, taskIndex });
+
+		return { session: newSession, taskIndex };
 	}
 
-	resumeSession(
-		pendingSession: Session,
-		_prd: Prd | null,
-	): { session: Session; remainingIterations: number } {
+	resumeSession(pendingSession: Session, _prd: Prd | null): ResumeSessionResult {
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
@@ -281,13 +290,19 @@ class SessionOrchestrator {
 			pendingSession.elapsedTimeSeconds,
 		);
 
+		eventBus.emit("session:resume", {
+			currentIteration: pendingSession.currentIteration,
+			totalIterations: pendingSession.totalIterations,
+			elapsedTimeSeconds: pendingSession.elapsedTimeSeconds,
+		});
+
 		return {
 			session: resumedSession,
 			remainingIterations: remainingIterations > 0 ? remainingIterations : 1,
 		};
 	}
 
-	handleFatalError(error: string, prd: Prd | null, currentSession: Session | null): void {
+	handleFatalError(error: string, prd: Prd | null, currentSession: Session | null): Session | null {
 		const iterationState = useIterationStore.getState();
 		const agentStore = useAgentStore.getState();
 		const loadedConfig = loadConfig();
@@ -306,11 +321,14 @@ class SessionOrchestrator {
 			taskWasCompleted: false,
 		});
 
+		eventBus.emit("session:stop", { reason: "fatal_error" });
+
 		if (currentSession) {
 			const stoppedSession = updateSessionStatus(currentSession, "stopped");
 			saveSession(stoppedSession);
-			return;
+			return stoppedSession;
 		}
+		return null;
 	}
 
 	cleanup(): void {

@@ -4,22 +4,17 @@ import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
-import { getLogger } from "@/lib/logger.ts";
-import { sendNotifications } from "@/lib/notifications.ts";
 import { RALPH_DIR } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
 	findPrdFile,
-	getCurrentTaskIndex,
 	getNextTask,
 	getTaskByIndex,
 	getTaskByTitle,
 	invalidatePrdCache,
 	loadPrd,
 } from "@/lib/prd.ts";
-import { initializeProgressFile } from "@/lib/progress.ts";
 import {
-	createSession,
 	deleteSession,
 	isSessionResumable,
 	loadSession,
@@ -179,7 +174,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		set({
 			config: loadedConfig,
@@ -200,15 +194,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		iterationStore.setTotal(totalIters);
 		iterationStore.setStartTime(Date.now());
 
-		const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
-		const newSession = createSession(totalIters, taskIndex);
-		saveSession(newSession);
+		const { session: newSession } = orchestrator.startSession(loadedPrd, totalIters);
 		set({ currentSession: newSession });
-
-		logger.logSessionStart(totalIters, taskIndex);
-		initializeProgressFile();
-
-		eventBus.emit("session:start", { totalIterations: totalIters, taskIndex });
 
 		set({
 			appState: "running",
@@ -220,7 +207,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	startSingleTask: (taskIdentifier: string): SetManualTaskResult => {
-		const _state = get();
 		const warning = validateProject();
 		if (warning) {
 			set({
@@ -234,7 +220,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (!loadedPrd) {
 			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
@@ -284,17 +269,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		iterationStore.setTotal(1);
 		iterationStore.setStartTime(Date.now());
 
-		const currentTaskIndex = loadedPrd.tasks.findIndex(
-			(prdTask) => prdTask.title.toLowerCase() === task?.title.toLowerCase(),
-		);
-		const newSession = createSession(1, currentTaskIndex);
-		saveSession(newSession);
+		const { session: newSession } = orchestrator.startSession(loadedPrd, 1);
 		set({ currentSession: newSession });
-
-		logger.logSessionStart(1, currentTaskIndex);
-		initializeProgressFile();
-
-		eventBus.emit("session:start", { totalIterations: 1, taskIndex: currentTaskIndex });
 
 		set({
 			appState: "running",
@@ -326,7 +302,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		set({
 			config: loadedConfig,
@@ -334,32 +309,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			validationWarning: null,
 		});
 
-		const remainingIterations =
-			state.pendingSession.totalIterations - state.pendingSession.currentIteration;
+		const { session: resumedSession, remainingIterations } = orchestrator.resumeSession(
+			state.pendingSession,
+			loadedPrd,
+		);
 
 		const iterationStore = useIterationStore.getState();
-		iterationStore.setTotal(remainingIterations > 0 ? remainingIterations : 1);
+		iterationStore.setTotal(remainingIterations);
 
 		const elapsedMs = state.pendingSession.elapsedTimeSeconds * 1000;
 		iterationStore.setStartTime(Date.now() - elapsedMs);
 
-		const resumedSession = updateSessionStatus(state.pendingSession, "running");
-		saveSession(resumedSession);
 		set({
 			currentSession: resumedSession,
 			pendingSession: null,
-		});
-
-		logger.logSessionResume(
-			state.pendingSession.currentIteration,
-			state.pendingSession.totalIterations,
-			state.pendingSession.elapsedTimeSeconds,
-		);
-
-		eventBus.emit("session:resume", {
-			currentIteration: state.pendingSession.currentIteration,
-			totalIterations: state.pendingSession.totalIterations,
-			elapsedTimeSeconds: state.pendingSession.elapsedTimeSeconds,
 		});
 
 		set({
@@ -424,18 +387,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	handleFatalError: (error: string) => {
 		const state = get();
-		const loadedConfig = loadConfig();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		logger.error("Fatal error occurred", { error });
-		sendNotifications(loadedConfig.notifications, "fatal_error", state.prd?.project, {
-			error,
-		});
-		if (state.currentSession) {
-			const stoppedSession = updateSessionStatus(state.currentSession, "stopped");
-			saveSession(stoppedSession);
+		const stoppedSession = orchestrator.handleFatalError(error, state.prd, state.currentSession);
+		if (stoppedSession) {
 			set({ currentSession: stoppedSession });
 		}
-		eventBus.emit("session:stop", { reason: "fatal_error" });
 		set({ appState: "error" });
 	},
 

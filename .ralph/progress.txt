@@ -104,3 +104,21 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Consolidate session lifecycle management in orchestrator
+Date: 2026-01-20
+
+Changes made:
+- Moved session creation logic from appStore.startIterations() to orchestrator.startSession()
+- Moved session resume logic from appStore.resumeSession() to orchestrator.resumeSession()
+- Moved fatal error handling from appStore.handleFatalError() to orchestrator.handleFatalError()
+- Simplified appStore methods to only manage UI state and delegate session lifecycle to orchestrator
+- Added StartSessionResult and ResumeSessionResult types to orchestrator for better type safety
+- Orchestrator now emits session events (session:start, session:resume, session:stop) centrally
+- Removed unused getCurrentTaskIndex import from appStore
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

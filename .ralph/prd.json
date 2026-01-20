@@ -95,7 +95,7 @@
 				"Remove duplicated logging calls from appStore that are now handled by orchestrator",
 				"Update appStore to only manage: appState, activeView, validationWarning, elapsedTime, pendingSession reference (not lifecycle)"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Split config.ts into focused modules",
