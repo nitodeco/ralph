@@ -8,6 +8,7 @@ export type Command =
 	| "stop"
 	| "list"
 	| "config"
+	| "archive"
 	| "help"
 	| "version"
 	| "-v"

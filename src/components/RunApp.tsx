@@ -20,7 +20,13 @@ import { SetupWizard } from "./SetupWizard.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
 import { UpdatePrompt } from "./UpdatePrompt.tsx";
-import { DryRunView, NotInitializedView, ResumePromptView, StatusView } from "./views/index.ts";
+import {
+	ArchiveView,
+	DryRunView,
+	NotInitializedView,
+	ResumePromptView,
+	StatusView,
+} from "./views/index.ts";
 
 interface RunAppProps {
 	version: string;
@@ -118,6 +124,7 @@ export function RunApp({
 				case "help":
 				case "add":
 				case "status":
+				case "archive":
 					agentStop();
 					iterationPause();
 					setActiveView(command === "add" ? "add" : command);
@@ -241,6 +248,8 @@ export function RunApp({
 	if (activeView === "add")
 		return <AddTaskWizard version={version} onComplete={handleViewComplete} />;
 	if (activeView === "status") return <StatusView version={version} onClose={handleHelpClose} />;
+	if (activeView === "archive")
+		return <ArchiveView version={version} onClose={handleViewComplete} />;
 
 	if (dryRun) {
 		return (

@@ -1,5 +1,6 @@
 export {
 	handleStopCommand,
+	printArchive,
 	printConfig,
 	printHelp,
 	printList,

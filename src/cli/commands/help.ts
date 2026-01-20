@@ -15,6 +15,7 @@ Commands:
   stop              Stop a running Ralph process gracefully
   list              Display all PRD tasks and their completion status
   config            View current configuration with validation
+  archive           Archive completed tasks and progress file
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
@@ -34,23 +35,9 @@ Slash Commands (in-app):
   /add              Add a new task to the PRD (AI-generated from description)
   /setup            Configure global preferences
   /update           Check for updates
+  /archive          Archive completed tasks and progress file
   /help             Show help message
   /quit             Exit the application
-
-Examples:
-  ralph             Open the Ralph UI
-  ralph init        Create a new PRD project from a description
-  ralph resume      Resume a previously interrupted session
-  ralph status      Check on a running or interrupted session
-  ralph stop        Stop a background Ralph process gracefully
-  ralph list        View all tasks and their completion status
-  ralph list --json Output task list as JSON for scripting
-  ralph config      View current configuration and validation status
-  ralph config --json  Output configuration as JSON for scripting
-  ralph update      Check for and install updates
-  ralph -b          Start Ralph in background mode (logs to .ralph/ralph.log)
-  ralph resume -b   Resume session in background mode
-  ralph --dry-run   Test configuration and PRD without running agents
 `);
 }
 

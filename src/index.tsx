@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
 	handleStopCommand,
 	parseArgs,
+	printArchive,
 	printConfig,
 	printHelp,
 	printList,
@@ -187,6 +188,10 @@ function main(): void {
 
 		case "config":
 			printConfig(VERSION, json);
+			break;
+
+		case "archive":
+			printArchive(VERSION);
 			break;
 
 		case "stop":
