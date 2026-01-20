@@ -1,0 +1,6 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"project": ["tsconfig.json", "src/**/*.ts", "src/**/*.tsx"],
+	"ignore": ["dist/**", "node_modules/**", "scripts/**", "src/__tests__/**"],
+	"ignoreDependencies": ["@eslint/js"]
+}

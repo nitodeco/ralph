@@ -17,7 +17,8 @@
 		"version": "changeset version",
 		"release": "bun run build",
 		"test": "bun test",
-		"test:coverage": "bun test --coverage"
+		"test:coverage": "bun test --coverage",
+		"knip": "knip"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.11",
@@ -29,6 +30,7 @@
 		"@types/react": "19.2.9",
 		"eslint": "9.39.2",
 		"husky": "9.1.7",
+		"knip": "5.82.1",
 		"react-devtools-core": "7.0.1",
 		"typescript": "5.9.3",
 		"typescript-eslint": "8.53.1"
@@ -37,7 +39,6 @@
 		"ink": "6.6.0",
 		"ink-select-input": "6.2.0",
 		"ink-spinner": "5.0.0",
-		"ink-text-input": "6.0.0",
 		"react": "19.2.3",
 		"yaml": "2.8.2",
 		"zustand": "5.0.10"
