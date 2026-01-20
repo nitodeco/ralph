@@ -128,7 +128,8 @@ export function getNextTask(prd: Prd): string | null {
 		(taskA, taskB) => getPriorityWeight(taskA.priority) - getPriorityWeight(taskB.priority),
 	);
 
-	return sortedTasks[0].title;
+	const nextTask = sortedTasks[0];
+	return nextTask ? nextTask.title : null;
 }
 
 export function getTaskByTitle(prd: Prd, title: string): PrdTask | null {
@@ -140,7 +141,7 @@ export function getTaskByIndex(prd: Prd, index: number): PrdTask | null {
 	if (index < 0 || index >= prd.tasks.length) {
 		return null;
 	}
-	return prd.tasks[index];
+	return prd.tasks[index] ?? null;
 }
 
 export function canWorkOnTask(prd: Prd, task: PrdTask): { canWork: boolean; reason?: string } {
@@ -220,9 +221,10 @@ export function validateDependencies(prd: Prd): DependencyValidationResult {
 		path.length = 0;
 
 		if (detectCycle(task.title)) {
-			const cycleStartIndex = path.findIndex(
-				(pathTitle) => pathTitle.toLowerCase() === path[path.length - 1].toLowerCase(),
-			);
+			const lastPath = path[path.length - 1];
+			const cycleStartIndex = lastPath
+				? path.findIndex((pathTitle) => pathTitle.toLowerCase() === lastPath.toLowerCase())
+				: 0;
 			const cyclePath = path.slice(cycleStartIndex);
 
 			return {
