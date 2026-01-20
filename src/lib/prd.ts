@@ -1,11 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import type {
-	DependencyValidationResult,
-	LoadPrdResult,
-	Prd,
-	PrdTask,
-} from "@/types.ts";
+import type { DependencyValidationResult, LoadPrdResult, Prd, PrdTask } from "@/types.ts";
 import { RALPH_DIR } from "./paths.ts";
 
 export type { DependencyValidationResult, LoadPrdResult } from "@/types.ts";
