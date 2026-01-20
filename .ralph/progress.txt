@@ -340,3 +340,25 @@ Implementation:
 - Exported DEFAULT_ENABLE_GC_HINTS from config.ts
 - Updated SetupWizard.tsx to import memory defaults from config.ts instead of memory.ts
 
+Bug Fix:
+- Fixed critical argument parsing bug in parseArgs function (src/index.tsx)
+- The filter condition `argIndex !== taskIndex + 1` was filtering out the first argument when taskIndex was -1
+- When taskIndex is -1 (no --task flag), taskIndex + 1 equals 0, causing the first argument to always be filtered out
+- Changed to `(taskIndex === -1 || argIndex !== taskIndex + 1)` to only filter the task value when --task flag is present
+- This bug was preventing all CLI commands (status, list, config, help, etc.) from working correctly
+
+Task 15: Add Linux support to update system - COMPLETED
+
+Implementation:
+- Updated getOperatingSystem() in src/lib/update.ts to support Linux platform
+  - Added "linux" case alongside "darwin" in the platform switch statement
+  - Updated error message to indicate support for both macOS and Linux
+- Added Linux build targets to scripts/build.config.ts:
+  - Linux ARM64: bun-linux-arm64 -> ralph-linux-arm64
+  - Linux x64: bun-linux-x64 -> ralph-linux-x64
+- Updated .github/workflows/changesets.yml to include Linux binaries in releases:
+  - Added dist/ralph-linux-arm64 to release files
+  - Added dist/ralph-linux-x64 to release files
+- Install script (scripts/install.sh) already had Linux support with "Linux" case in get_os()
+- Bun supports cross-compilation, so Linux binaries can be built from macOS runners
+
