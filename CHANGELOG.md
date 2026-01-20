@@ -1,5 +1,40 @@
 # ralph
 
+## 0.4.0
+
+### Minor Changes
+
+- 5daa339: Add agent timeout and watchdog functionality
+
+  - Add configurable agent timeout (default 30 minutes) to kill long-running agent processes
+  - Add stuck detection based on stdout/stderr activity with configurable threshold (default 5 minutes)
+  - Agent is killed and retried if timeout or stuck threshold is exceeded
+  - Both features can be disabled by setting threshold to 0
+  - Add SetupWizard steps for configuring timeout and stuck detection settings
+
+- 30291b0: Add background/daemon mode for unattended overnight runs
+
+  - Add --background or -b flag to run Ralph detached from the terminal
+  - Write PID to .ralph/ralph.pid for process tracking
+  - Redirect stdout/stderr to log file in background mode
+  - Automatically start iterations when running as a daemon
+  - Clean up PID file on process exit or termination signals
+
+- 3a5c0af: Add notification system for completion and failures
+
+  - Add NotificationConfig type with options for system notifications, webhook URL, and marker file
+  - Implement macOS system notifications using osascript
+  - Add HTTP POST webhook notifications support
+  - Add completion marker file option for script integration
+  - Send notifications on: all tasks complete, max iterations reached, fatal error
+  - Add notification configuration steps to SetupWizard
+
+- 120c426: Add notification system
+
+### Patch Changes
+
+- 8b61197: Fix session.json not updating correctly and other agent loop issues
+
 ## 0.3.2
 
 ### Patch Changes
