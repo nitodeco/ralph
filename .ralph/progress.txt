@@ -368,3 +368,23 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Add /refresh slash command to reload PRD and update UI state
+Date: 2026-01-20
+
+Changes made:
+- Added 'refresh' to SlashCommand type and VALID_COMMANDS array in src/components/CommandInput.tsx
+- Created RefreshStateResult interface and refreshState() action in src/stores/appStore.ts that invalidates PRD cache, reloads PRD from disk, and returns task count and current task index
+- Added RefreshStateResult interface and refreshState dependency to src/hooks/useSlashCommands.ts
+- Added 'refresh' case to slash command handler that displays confirmation message (e.g., "Refreshed: Task 3/10")
+- Added refreshMessage state and return value to useSlashCommands hook
+- Updated src/components/MainRunView.tsx to accept and display refreshMessage
+- Updated src/components/RunApp.tsx to pass refreshState to useSlashCommands and refreshMessage to MainRunView
+- Added /refresh command documentation to src/components/HelpView.tsx
+- Created changeset for the feature
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

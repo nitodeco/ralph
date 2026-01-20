@@ -9,6 +9,13 @@ interface SlashCommandMessage {
 	text: string;
 }
 
+interface RefreshStateResult {
+	success: boolean;
+	taskCount: number;
+	currentTaskIndex: number;
+	error?: string;
+}
+
 interface UseSlashCommandsDependencies {
 	startIterations: (iterations?: number, full?: boolean) => void;
 	resumeSession: () => void;
@@ -20,6 +27,7 @@ interface UseSlashCommandsDependencies {
 	exit: () => void;
 	getCurrentTaskTitle?: () => string | null;
 	dismissUpdateBanner?: () => void;
+	refreshState?: () => RefreshStateResult;
 }
 
 interface UseSlashCommandsResult {
@@ -27,6 +35,7 @@ interface UseSlashCommandsResult {
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
+	refreshMessage: SlashCommandMessage | null;
 }
 
 export function useSlashCommands({
@@ -40,10 +49,12 @@ export function useSlashCommands({
 	exit,
 	getCurrentTaskTitle,
 	dismissUpdateBanner,
+	refreshState,
 }: UseSlashCommandsDependencies): UseSlashCommandsResult {
 	const [nextTaskMessage, setNextTaskMessage] = useState<SlashCommandMessage | null>(null);
 	const [guardrailMessage, setGuardrailMessage] = useState<SlashCommandMessage | null>(null);
 	const [memoryMessage, setMemoryMessage] = useState<SlashCommandMessage | null>(null);
+	const [refreshMessage, setRefreshMessage] = useState<SlashCommandMessage | null>(null);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -179,6 +190,27 @@ export function useSlashCommands({
 				case "dismiss-update":
 					dismissUpdateBanner?.();
 					break;
+				case "refresh":
+					if (refreshState) {
+						const result = refreshState();
+						if (result.success) {
+							const taskDisplay =
+								result.currentTaskIndex >= 0
+									? `Task ${result.currentTaskIndex + 1}/${result.taskCount}`
+									: `${result.taskCount} tasks (all done)`;
+							setRefreshMessage({
+								type: "success",
+								text: `Refreshed: ${taskDisplay}`,
+							});
+						} else {
+							setRefreshMessage({
+								type: "error",
+								text: result.error ?? "Failed to refresh state",
+							});
+						}
+						setTimeout(() => setRefreshMessage(null), 5000);
+					}
+					break;
 				case "quit":
 				case "exit":
 					exit();
@@ -196,8 +228,9 @@ export function useSlashCommands({
 			setManualNextTask,
 			getCurrentTaskTitle,
 			dismissUpdateBanner,
+			refreshState,
 		],
 	);
 
-	return { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage };
+	return { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage, refreshMessage };
 }

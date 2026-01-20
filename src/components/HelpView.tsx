@@ -181,6 +181,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Dismiss the update notification banner</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/refresh</Text>
+							{"          "}
+							<Text>Reload PRD from disk and update UI state</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/help</Text>
 							{"             "}
 							<Text>Show this help message</Text>

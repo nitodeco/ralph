@@ -277,7 +277,7 @@
 				"Handle errors gracefully if PRD file is missing or invalid after refresh",
 				"Add /refresh to the help text in HelpView.tsx"
 			],
-			"done": false
+			"done": true
 		}
 	]
 }

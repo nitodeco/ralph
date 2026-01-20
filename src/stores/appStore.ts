@@ -58,6 +58,13 @@ interface AppStoreState {
 	updateBannerDismissed: boolean;
 }
 
+interface RefreshStateResult {
+	success: boolean;
+	taskCount: number;
+	currentTaskIndex: number;
+	error?: string;
+}
+
 interface AppStoreActions {
 	setAppState: (state: AppState) => void;
 	setActiveView: (view: ActiveView) => void;
@@ -80,6 +87,7 @@ interface AppStoreActions {
 	getRemainingRuntimeMs: () => number | null;
 	setUpdateStatus: (updateAvailable: boolean, latestVersion: string | null) => void;
 	dismissUpdateBanner: () => void;
+	refreshState: () => RefreshStateResult;
 }
 
 type AppStore = AppStoreState & AppStoreActions;
@@ -486,6 +494,41 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	dismissUpdateBanner: () => {
 		set({ updateBannerDismissed: true });
+	},
+
+	refreshState: (): RefreshStateResult => {
+		invalidatePrdCache();
+
+		try {
+			const loadedPrd = loadPrd();
+
+			if (!loadedPrd) {
+				return {
+					success: false,
+					taskCount: 0,
+					currentTaskIndex: -1,
+					error: "Failed to load PRD file",
+				};
+			}
+
+			set({ prd: loadedPrd });
+
+			const currentTaskIndex = loadedPrd.tasks.findIndex((task) => !task.done);
+			const taskCount = loadedPrd.tasks.length;
+
+			return {
+				success: true,
+				taskCount,
+				currentTaskIndex,
+			};
+		} catch (error) {
+			return {
+				success: false,
+				taskCount: 0,
+				currentTaskIndex: -1,
+				error: error instanceof Error ? error.message : "Unknown error",
+			};
+		}
 	},
 }));
 

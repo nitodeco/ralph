@@ -48,6 +48,7 @@ export function RunApp({
 	const latestVersion = useAppStore((state) => state.latestVersion);
 	const updateBannerDismissed = useAppStore((state) => state.updateBannerDismissed);
 	const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
+	const refreshState = useAppStore((state) => state.refreshState);
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
@@ -72,8 +73,8 @@ export function RunApp({
 		return currentTask?.title ?? null;
 	}, [prd]);
 
-	const { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage } = useSlashCommands(
-		{
+	const { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage, refreshMessage } =
+		useSlashCommands({
 			startIterations,
 			resumeSession,
 			stopAgent,
@@ -84,8 +85,8 @@ export function RunApp({
 			exit,
 			getCurrentTaskTitle,
 			dismissUpdateBanner,
-		},
-	);
+			refreshState,
+		});
 
 	useSessionLifecycle(
 		{
@@ -171,6 +172,7 @@ export function RunApp({
 				nextTaskMessage={displayedMessage}
 				guardrailMessage={guardrailMessage}
 				memoryMessage={memoryMessage}
+				refreshMessage={refreshMessage}
 				onCommand={handleSlashCommand}
 				updateAvailable={updateAvailable}
 				latestVersion={latestVersion}
