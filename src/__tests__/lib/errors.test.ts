@@ -135,35 +135,35 @@ describe("ErrorCode enum", () => {
 	});
 
 	test("config errors start with E00x", () => {
-		expect(ErrorCode.CONFIG_NOT_FOUND).toBe("E001");
-		expect(ErrorCode.CONFIG_INVALID_JSON).toBe("E002");
-		expect(ErrorCode.CONFIG_VALIDATION_FAILED).toBe("E003");
-		expect(ErrorCode.CONFIG_MISSING_AGENT).toBe("E004");
+		expect(String(ErrorCode.CONFIG_NOT_FOUND)).toBe("E001");
+		expect(String(ErrorCode.CONFIG_INVALID_JSON)).toBe("E002");
+		expect(String(ErrorCode.CONFIG_VALIDATION_FAILED)).toBe("E003");
+		expect(String(ErrorCode.CONFIG_MISSING_AGENT)).toBe("E004");
 	});
 
 	test("PRD errors start with E01x", () => {
-		expect(ErrorCode.PRD_NOT_FOUND).toBe("E010");
-		expect(ErrorCode.PRD_INVALID_FORMAT).toBe("E011");
-		expect(ErrorCode.PRD_NO_TASKS).toBe("E012");
-		expect(ErrorCode.PRD_TASK_NOT_FOUND).toBe("E013");
+		expect(String(ErrorCode.PRD_NOT_FOUND)).toBe("E010");
+		expect(String(ErrorCode.PRD_INVALID_FORMAT)).toBe("E011");
+		expect(String(ErrorCode.PRD_NO_TASKS)).toBe("E012");
+		expect(String(ErrorCode.PRD_TASK_NOT_FOUND)).toBe("E013");
 	});
 
 	test("agent errors start with E02x", () => {
-		expect(ErrorCode.AGENT_NOT_FOUND).toBe("E020");
-		expect(ErrorCode.AGENT_NOT_EXECUTABLE).toBe("E021");
-		expect(ErrorCode.AGENT_TIMEOUT).toBe("E022");
-		expect(ErrorCode.AGENT_STUCK).toBe("E023");
+		expect(String(ErrorCode.AGENT_NOT_FOUND)).toBe("E020");
+		expect(String(ErrorCode.AGENT_NOT_EXECUTABLE)).toBe("E021");
+		expect(String(ErrorCode.AGENT_TIMEOUT)).toBe("E022");
+		expect(String(ErrorCode.AGENT_STUCK)).toBe("E023");
 	});
 
 	test("session errors start with E03x", () => {
-		expect(ErrorCode.SESSION_NOT_FOUND).toBe("E030");
-		expect(ErrorCode.SESSION_CORRUPTED).toBe("E031");
-		expect(ErrorCode.SESSION_ALREADY_RUNNING).toBe("E032");
+		expect(String(ErrorCode.SESSION_NOT_FOUND)).toBe("E030");
+		expect(String(ErrorCode.SESSION_CORRUPTED)).toBe("E031");
+		expect(String(ErrorCode.SESSION_ALREADY_RUNNING)).toBe("E032");
 	});
 
 	test("daemon errors start with E04x", () => {
-		expect(ErrorCode.DAEMON_START_FAILED).toBe("E040");
-		expect(ErrorCode.DAEMON_STOP_FAILED).toBe("E041");
-		expect(ErrorCode.DAEMON_NOT_RUNNING).toBe("E042");
+		expect(String(ErrorCode.DAEMON_START_FAILED)).toBe("E040");
+		expect(String(ErrorCode.DAEMON_STOP_FAILED)).toBe("E041");
+		expect(String(ErrorCode.DAEMON_NOT_RUNNING)).toBe("E042");
 	});
 });
