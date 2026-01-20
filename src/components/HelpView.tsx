@@ -136,6 +136,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Check for updates</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/status</Text>
+							{"            "}
+							<Text>Show session and project status</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/help</Text>
 							{"             "}
 							<Text>Show this help message</Text>

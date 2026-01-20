@@ -13,7 +13,8 @@ export type SlashCommand =
 	| "start"
 	| "resume"
 	| "stop"
-	| "next";
+	| "next"
+	| "status";
 
 export interface CommandArgs {
 	iterations?: number;
@@ -33,8 +34,9 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"resume",
 	"stop",
 	"next",
+	"status",
 ];
-const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help"];
+const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
 
 interface CommandInputProps {
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;

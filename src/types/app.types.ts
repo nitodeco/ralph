@@ -7,7 +7,7 @@ export type AppState =
 	| "not_initialized"
 	| "resume_prompt";
 
-export type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add";
+export type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add" | "status";
 
 export interface ValidationWarning {
 	message: string;
