@@ -98,7 +98,7 @@ function validateProject(): ValidationWarning | null {
 
 	if (!prdFile) {
 		return {
-			message: `No prd.json or prd.yaml found in ${RALPH_DIR}/`,
+			message: `No prd.json found in ${RALPH_DIR}/`,
 			hint: "Run 'ralph init' or type /init to create one",
 		};
 	}

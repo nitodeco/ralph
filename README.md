@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/nitodeco/ralph/main/scripts/install
 ralph init
 ```
 
-This will interactively create a `prd.json` (or `prd.yaml`), `progress.txt`, and `config.json` in the `.ralph` directory. You'll be prompted to select your preferred AI agent (Cursor or Claude Code).
+This will interactively create a `prd.json`, `progress.txt`, and `config.json` in the `.ralph` directory. You'll be prompted to select your preferred AI agent (Cursor or Claude Code).
 
 ### 2. Run the agent
 
@@ -50,7 +50,7 @@ Runs the configured AI agent in a loop, working through tasks in your PRD. Defau
 
 ## PRD Format
 
-Ralph supports both JSON and YAML formats for your Product Requirements Document.
+Ralph uses JSON format for your Product Requirements Document.
 
 ### JSON Format (`prd.json`)
 
@@ -71,19 +71,6 @@ Ralph supports both JSON and YAML formats for your Product Requirements Document
 }
 ```
 
-### YAML Format (`prd.yaml`)
-
-```yaml
-project: My Project
-tasks:
-  - title: Setup project
-    description: Initialize the project structure
-    steps:
-      - Create package.json
-      - Configure TypeScript
-    done: false
-```
-
 ## Configuration
 
 ### Custom Instructions
@@ -97,7 +84,6 @@ Ralph uses a layered configuration system with global (`~/.ralph/config.json`) a
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `agent` | `"cursor"` \| `"claude"` | `"cursor"` | AI coding agent to use |
-| `prdFormat` | `"json"` \| `"yaml"` | `"json"` | Format for PRD files |
 | `maxRetries` | number | `3` | Maximum retry attempts per iteration |
 | `retryDelayMs` | number | `5000` | Delay between retries (ms) |
 | `agentTimeoutMs` | number | `1800000` | Agent timeout per iteration (30 min) |
@@ -146,7 +132,6 @@ Ralph uses a layered configuration system with global (`~/.ralph/config.json`) a
 ```json
 {
   "agent": "claude",
-  "prdFormat": "yaml",
   "maxRetries": 5,
   "retryDelayMs": 10000,
   "agentTimeoutMs": 3600000,
@@ -206,35 +191,45 @@ Ralph uses a layered configuration system with global (`~/.ralph/config.json`) a
 
 ### CLI Tool
 
-```yaml
-project: Database Migration Tool
-tasks:
-  - title: Setup CLI framework
-    description: Initialize CLI with commander.js
-    steps:
-      - Create package.json with bin entry
-      - Setup commander.js for argument parsing
-      - Add help and version commands
-      - Configure TypeScript compilation
-    done: false
-
-  - title: Implement database connection
-    description: Add support for PostgreSQL and MySQL
-    steps:
-      - Create database adapter interface
-      - Implement PostgreSQL adapter
-      - Implement MySQL adapter
-      - Add connection pooling
-    done: false
-
-  - title: Build migration engine
-    description: Core migration functionality
-    steps:
-      - Create migration file parser
-      - Implement up/down migration execution
-      - Add migration history tracking
-      - Handle rollback scenarios
-    done: false
+```json
+{
+  "project": "Database Migration Tool",
+  "tasks": [
+    {
+      "title": "Setup CLI framework",
+      "description": "Initialize CLI with commander.js",
+      "steps": [
+        "Create package.json with bin entry",
+        "Setup commander.js for argument parsing",
+        "Add help and version commands",
+        "Configure TypeScript compilation"
+      ],
+      "done": false
+    },
+    {
+      "title": "Implement database connection",
+      "description": "Add support for PostgreSQL and MySQL",
+      "steps": [
+        "Create database adapter interface",
+        "Implement PostgreSQL adapter",
+        "Implement MySQL adapter",
+        "Add connection pooling"
+      ],
+      "done": false
+    },
+    {
+      "title": "Build migration engine",
+      "description": "Core migration functionality",
+      "steps": [
+        "Create migration file parser",
+        "Implement up/down migration execution",
+        "Add migration history tracking",
+        "Handle rollback scenarios"
+      ],
+      "done": false
+    }
+  ]
+}
 ```
 
 ### API Backend
@@ -386,7 +381,7 @@ Error [E026]: Maximum retries exceeded
 Error [E010]: PRD file not found
 ```
 
-**Cause:** No `.ralph/prd.json` or `.ralph/prd.yaml` exists.
+**Cause:** No `.ralph/prd.json` exists.
 
 **Solution:**
 ```bash
@@ -403,8 +398,7 @@ Error [E011]: Invalid PRD format
 
 **Solution:**
 1. Validate JSON: `cat .ralph/prd.json | jq .`
-2. Validate YAML: `cat .ralph/prd.yaml | yq .`
-3. Ensure all required fields are present (`project`, `tasks`)
+2. Ensure all required fields are present (`project`, `tasks`)
 
 ### FAQ
 
@@ -427,10 +421,6 @@ A: By default, logs are stored in `.ralph/ralph.log`. You can change this with t
 **Q: How do I run Ralph in the background?**
 
 A: Use `ralph run --daemon` to run in background mode. Check status with `ralph status` and stop with `ralph stop`.
-
-**Q: Can I use both JSON and YAML for PRDs?**
-
-A: Yes, but only one format per project. Set your preference with `prdFormat` in the config. Ralph will look for `.ralph/prd.json` or `.ralph/prd.yaml` based on this setting.
 
 **Q: How do I add a new task during a session?**
 

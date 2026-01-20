@@ -20,7 +20,6 @@ export const PROGRESS_FILE_PATH = join(RALPH_DIR, "progress.txt");
 export const SESSION_FILE_PATH = join(RALPH_DIR, "session.json");
 export const INSTRUCTIONS_FILE_PATH = join(RALPH_DIR, "instructions.md");
 export const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");
-export const PRD_YAML_PATH = join(RALPH_DIR, "prd.yaml");
 export const GLOBAL_CONFIG_PATH = join(GLOBAL_RALPH_DIR, "config.json");
 export const PROJECT_CONFIG_PATH = join(RALPH_DIR, "config.json");
 export const GUARDRAILS_FILE_PATH = join(RALPH_DIR, "guardrails.json");
@@ -37,7 +36,6 @@ export const PATHS = {
 	sessionFile: SESSION_FILE_PATH,
 	instructionsFile: INSTRUCTIONS_FILE_PATH,
 	prdJson: PRD_JSON_PATH,
-	prdYaml: PRD_YAML_PATH,
 	globalConfig: GLOBAL_CONFIG_PATH,
 	projectConfig: PROJECT_CONFIG_PATH,
 	guardrails: GUARDRAILS_FILE_PATH,

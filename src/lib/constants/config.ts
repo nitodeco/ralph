@@ -1,9 +1,8 @@
-import type { AgentType, PrdFormat, RalphConfig } from "@/types.ts";
+import type { AgentType, RalphConfig } from "@/types.ts";
 import { DEFAULT_VERIFICATION, DEFAULTS } from "./defaults.ts";
 
 export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
 	agent: DEFAULTS.agent,
-	prdFormat: DEFAULTS.prdFormat,
 	maxRetries: DEFAULTS.maxRetries,
 	retryDelayMs: DEFAULTS.retryDelayMs,
 	logFilePath: DEFAULTS.logFilePath,
@@ -29,13 +28,11 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 
 export const DEFAULT_CONFIG: RalphConfig = {
 	agent: DEFAULTS.agent,
-	prdFormat: DEFAULTS.prdFormat,
 	maxRetries: DEFAULTS.maxRetries,
 	retryDelayMs: DEFAULTS.retryDelayMs,
 };
 
 export const VALID_AGENTS: AgentType[] = ["cursor", "claude", "codex"];
-export const VALID_PRD_FORMATS: PrdFormat[] = ["json", "yaml"];
 
 export const DEFAULT_AGENT_TIMEOUT_MS = DEFAULTS.agentTimeoutMs;
 export const DEFAULT_STUCK_THRESHOLD_MS = DEFAULTS.stuckThresholdMs;

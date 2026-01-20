@@ -5,7 +5,7 @@ import type {
 	NotificationConfig,
 	RalphConfig,
 } from "@/types.ts";
-import { VALID_AGENTS, VALID_PRD_FORMATS } from "../constants/config.ts";
+import { VALID_AGENTS } from "../constants/config.ts";
 
 function validatePositiveInteger(
 	value: unknown,
@@ -211,7 +211,6 @@ export function validateConfig(config: unknown): ConfigValidationResult {
 		validateString(ralphConfig.agent, "agent", errors, VALID_AGENTS);
 	}
 
-	validateString(ralphConfig.prdFormat, "prdFormat", errors, VALID_PRD_FORMATS);
 	validatePositiveInteger(ralphConfig.maxRetries, "maxRetries", errors, true);
 	validatePositiveInteger(ralphConfig.retryDelayMs, "retryDelayMs", errors);
 	validateString(ralphConfig.logFilePath, "logFilePath", errors);

@@ -47,8 +47,7 @@ const ERROR_SUGGESTIONS: Record<ErrorCode, string> = {
 
 	[ErrorCode.PRD_NOT_FOUND]:
 		"Run 'ralph init' to create a PRD file, or create .ralph/prd.json manually.",
-	[ErrorCode.PRD_INVALID_FORMAT]:
-		"Check your PRD file for syntax errors. Ensure it's valid JSON or YAML.",
+	[ErrorCode.PRD_INVALID_FORMAT]: "Check your PRD file for syntax errors. Ensure it's valid JSON.",
 	[ErrorCode.PRD_NO_TASKS]:
 		"Add tasks to your PRD file. Each task needs a 'title' and optionally 'description' and 'steps'.",
 	[ErrorCode.PRD_TASK_NOT_FOUND]:

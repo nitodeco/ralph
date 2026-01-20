@@ -48,21 +48,6 @@ describe("prd functions", () => {
 
 			expect(result).toBe(".ralph/prd.json");
 		});
-
-		test("finds YAML PRD file", () => {
-			writeFileSync(`${RALPH_DIR}/prd.yaml`, "project: test\ntasks: []");
-			const result = findPrdFile();
-
-			expect(result).toBe(".ralph/prd.yaml");
-		});
-
-		test("prefers JSON over YAML when both exist", () => {
-			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify({ project: "test", tasks: [] }));
-			writeFileSync(`${RALPH_DIR}/prd.yaml`, "project: test\ntasks: []");
-			const result = findPrdFile();
-
-			expect(result).toBe(".ralph/prd.json");
-		});
 	});
 
 	describe("loadPrdWithValidation", () => {
@@ -86,23 +71,6 @@ describe("prd functions", () => {
 			expect(result.prd).not.toBeNull();
 			expect(result.prd?.project).toBe("Test Project");
 			expect(result.prd?.tasks).toHaveLength(1);
-		});
-
-		test("loads valid YAML PRD", () => {
-			const yamlContent = `project: Test Project
-tasks:
-  - title: Task 1
-    description: Description
-    steps:
-      - Step 1
-    done: false`;
-
-			writeFileSync(`${RALPH_DIR}/prd.yaml`, yamlContent);
-
-			const result = loadPrdWithValidation();
-
-			expect(result.prd).not.toBeNull();
-			expect(result.prd?.project).toBe("Test Project");
 		});
 
 		test("returns validation error when project field is missing", () => {

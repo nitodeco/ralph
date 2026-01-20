@@ -8,13 +8,7 @@ import {
 	loadGlobalConfig,
 	saveGlobalConfig,
 } from "@/lib/config.ts";
-import type {
-	AgentType,
-	MemoryConfig,
-	NotificationConfig,
-	PrdFormat,
-	RalphConfig,
-} from "@/types.ts";
+import type { AgentType, MemoryConfig, NotificationConfig, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { TextInput } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
@@ -26,7 +20,6 @@ interface SetupWizardProps {
 
 type SetupStep =
 	| "agent_type"
-	| "prd_format"
 	| "max_retries"
 	| "retry_delay"
 	| "agent_timeout"
@@ -42,7 +35,6 @@ type SetupStep =
 interface SetupState {
 	step: SetupStep;
 	agentType: AgentType;
-	prdFormat: PrdFormat;
 	maxRetries: number;
 	retryDelayMs: number;
 	agentTimeoutMs: number;
@@ -57,11 +49,6 @@ const AGENT_CHOICES = [
 	{ label: "Cursor", value: "cursor" as const },
 	{ label: "Claude Code", value: "claude" as const },
 	{ label: "Codex", value: "codex" as const },
-];
-
-const FORMAT_CHOICES = [
-	{ label: "JSON", value: "json" as const },
-	{ label: "YAML", value: "yaml" as const },
 ];
 
 const MAX_RETRIES_CHOICES = [
@@ -132,7 +119,6 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	const [state, setState] = useState<SetupState>({
 		step: "agent_type",
 		agentType: existingConfig.agent,
-		prdFormat: existingConfig.prdFormat ?? "json",
 		maxRetries: existingConfig.maxRetries ?? 3,
 		retryDelayMs: existingConfig.retryDelayMs ?? 5000,
 		agentTimeoutMs: existingConfig.agentTimeoutMs ?? 30 * 60 * 1000,
@@ -148,11 +134,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	});
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
-		setState((prev) => ({ ...prev, agentType: item.value, step: "prd_format" }));
-	};
-
-	const handleFormatSelect = (item: { value: PrdFormat }) => {
-		setState((prev) => ({ ...prev, prdFormat: item.value, step: "max_retries" }));
+		setState((prev) => ({ ...prev, agentType: item.value, step: "max_retries" }));
 	};
 
 	const handleMaxRetriesSelect = (item: { value: number }) => {
@@ -224,7 +206,6 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 		};
 		const newConfig: RalphConfig = {
 			agent: state.agentType,
-			prdFormat: state.prdFormat,
 			maxRetries: state.maxRetries,
 			retryDelayMs: state.retryDelayMs,
 			agentTimeoutMs: state.agentTimeoutMs,
@@ -259,18 +240,6 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 							items={AGENT_CHOICES}
 							initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
 							onSelect={handleAgentSelect}
-						/>
-					</Box>
-				);
-
-			case "prd_format":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Which format do you prefer for PRD files?</Text>
-						<SelectInput
-							items={FORMAT_CHOICES}
-							initialIndex={FORMAT_CHOICES.findIndex((choice) => choice.value === state.prdFormat)}
-							onSelect={handleFormatSelect}
 						/>
 					</Box>
 				);
@@ -439,7 +408,6 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					codex: "Codex",
 				};
 				const agentName = agentNameMap[state.agentType];
-				const formatName = state.prdFormat.toUpperCase();
 				const retryDelayLabel =
 					RETRY_DELAY_CHOICES.find((choice) => choice.value === state.retryDelayMs)?.label ??
 					`${state.retryDelayMs}ms`;
@@ -481,9 +449,6 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 						<Box flexDirection="column" marginTop={1}>
 							<Text>
 								<Text dimColor>Agent:</Text> <Text color="yellow">{agentName}</Text>
-							</Text>
-							<Text>
-								<Text dimColor>PRD Format:</Text> <Text color="yellow">{formatName}</Text>
 							</Text>
 							<Text>
 								<Text dimColor>Max Retries:</Text> <Text color="yellow">{state.maxRetries}</Text>

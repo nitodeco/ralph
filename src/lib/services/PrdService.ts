@@ -1,17 +1,12 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { LoadPrdResult, Prd } from "@/types.ts";
 import { createError, ErrorCode, formatError } from "../errors.ts";
-import { PRD_JSON_PATH, PRD_YAML_PATH } from "../paths.ts";
+import { PRD_JSON_PATH } from "../paths.ts";
 import { isPrd } from "../type-guards.ts";
 
 function findPrdFile(): string | null {
 	if (existsSync(PRD_JSON_PATH)) {
 		return PRD_JSON_PATH;
-	}
-
-	if (existsSync(PRD_YAML_PATH)) {
-		return PRD_YAML_PATH;
 	}
 
 	return null;
@@ -26,11 +21,7 @@ function loadPrdFromDisk(): LoadPrdResult {
 
 	try {
 		const content = readFileSync(prdPath, "utf-8");
-
-		const parsed: unknown =
-			prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")
-				? parseYaml(content)
-				: JSON.parse(content);
+		const parsed: unknown = JSON.parse(content);
 
 		if (!isPrd(parsed)) {
 			return {
@@ -101,15 +92,11 @@ class PrdServiceImpl {
 		return this.loadWithValidation();
 	}
 
-	save(prd: Prd, format: "json" | "yaml" = "json"): void {
+	save(prd: Prd): void {
 		const prdPath = findPrdFile();
-		const targetPath = prdPath ?? (format === "yaml" ? PRD_YAML_PATH : PRD_JSON_PATH);
+		const targetPath = prdPath ?? PRD_JSON_PATH;
 
-		if (targetPath.endsWith(".yaml") || targetPath.endsWith(".yml")) {
-			writeFileSync(targetPath, stringifyYaml(prd));
-		} else {
-			writeFileSync(targetPath, JSON.stringify(prd, null, 2));
-		}
+		writeFileSync(targetPath, JSON.stringify(prd, null, 2));
 
 		this.invalidate();
 	}

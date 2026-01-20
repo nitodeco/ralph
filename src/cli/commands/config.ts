@@ -49,7 +49,6 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 
 	console.log("  Agent Settings:");
 	console.log(`    agent:            ${effective.agent}`);
-	console.log(`    prdFormat:        ${effective.prdFormat}`);
 
 	console.log("\n  Retry Settings:");
 	console.log(`    maxRetries:       ${effective.maxRetries}`);

@@ -2,7 +2,6 @@ import type { PromptGuardrail, VerificationConfig } from "@/types.ts";
 
 export const DEFAULTS = {
 	agent: "cursor" as const,
-	prdFormat: "json" as const,
 	maxRetries: 3,
 	retryDelayMs: 5000,
 	agentTimeoutMs: 30 * 60 * 1000,

@@ -1,6 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { parse as parseYaml } from "yaml";
 import type { Session } from "@/types.ts";
 import { validateConfig } from "./config.ts";
 import { getErrorMessage } from "./errors.ts";
@@ -9,7 +8,6 @@ import { isPrd, isSession } from "./type-guards.ts";
 
 const CONFIG_PATH = join(RALPH_DIR, "config.json");
 const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");
-const PRD_YAML_PATH = join(RALPH_DIR, "prd.yaml");
 const SESSION_PATH = join(RALPH_DIR, "session.json");
 const GITIGNORE_PATH = join(RALPH_DIR, ".gitignore");
 
@@ -72,28 +70,17 @@ function validateConfigFile(issues: IntegrityIssue[]): void {
 }
 
 function validatePrdFile(issues: IntegrityIssue[]): void {
-	const prdPath = existsSync(PRD_JSON_PATH)
-		? PRD_JSON_PATH
-		: existsSync(PRD_YAML_PATH)
-			? PRD_YAML_PATH
-			: null;
-
-	if (!prdPath) {
+	if (!existsSync(PRD_JSON_PATH)) {
 		return;
 	}
 
-	const fileName = prdPath === PRD_JSON_PATH ? "prd.json" : "prd.yaml";
-
 	try {
-		const content = readFileSync(prdPath, "utf-8");
-		const parsed: unknown =
-			prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")
-				? parseYaml(content)
-				: JSON.parse(content);
+		const content = readFileSync(PRD_JSON_PATH, "utf-8");
+		const parsed: unknown = JSON.parse(content);
 
 		if (!isPrd(parsed)) {
 			issues.push({
-				file: fileName,
+				file: "prd.json",
 				message: "Missing or invalid PRD structure",
 				severity: "error",
 			});
@@ -102,7 +89,7 @@ function validatePrdFile(issues: IntegrityIssue[]): void {
 		const errorMessage = getErrorMessage(error);
 
 		issues.push({
-			file: fileName,
+			file: "prd.json",
 			message: `Failed to parse: ${errorMessage}`,
 			severity: "error",
 		});

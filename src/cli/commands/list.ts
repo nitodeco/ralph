@@ -17,10 +17,7 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 				}),
 			);
 		} else {
-			const error = createError(
-				ErrorCode.PRD_NOT_FOUND,
-				"No PRD found in .ralph/prd.json or .ralph/prd.yaml",
-			);
+			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found in .ralph/prd.json");
 
 			console.error(formatError(error, verbose));
 		}

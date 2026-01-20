@@ -35,7 +35,6 @@ export type {
 	NotificationEvent,
 	ParsedArgs,
 	Prd,
-	PrdFormat,
 	PrdTask,
 	PromptGuardrail,
 	RalphConfig,

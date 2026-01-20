@@ -17,8 +17,8 @@ export function loadPrdWithValidation(): LoadPrdResult {
 	return PrdService.loadWithValidation();
 }
 
-export function savePrd(prd: Prd, format: "json" | "yaml" = "json"): void {
-	PrdService.save(prd, format);
+export function savePrd(prd: Prd): void {
+	PrdService.save(prd);
 }
 
 export function reloadPrd(verbose = false): Prd | null {

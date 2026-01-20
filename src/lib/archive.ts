@@ -93,9 +93,8 @@ export function performSessionArchive(): ArchiveResult {
 
 	if (completedTaskCount > 0) {
 		const updatedPrd = archiveCompletedTasks(prd);
-		const format = prdFile.endsWith(".yaml") || prdFile.endsWith(".yml") ? "yaml" : "json";
 
-		savePrd(updatedPrd, format);
+		savePrd(updatedPrd);
 		result.tasksArchived = completedTaskCount;
 	}
 

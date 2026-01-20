@@ -66,7 +66,7 @@ describe("buildPrompt", () => {
 
 describe("buildPrdGenerationPrompt", () => {
 	test("generates JSON format prompt", () => {
-		const prompt = buildPrdGenerationPrompt("Build a todo app", "json");
+		const prompt = buildPrdGenerationPrompt("Build a todo app");
 
 		expect(prompt).toContain("Build a todo app");
 		expect(prompt).toContain("JSON format");
@@ -76,16 +76,8 @@ describe("buildPrdGenerationPrompt", () => {
 		expect(prompt).toContain('"tasks"');
 	});
 
-	test("generates YAML format prompt", () => {
-		const prompt = buildPrdGenerationPrompt("Build a todo app", "yaml");
-
-		expect(prompt).toContain("YAML format");
-		expect(prompt).toContain("project:");
-		expect(prompt).toContain("tasks:");
-	});
-
 	test("includes planning instructions", () => {
-		const prompt = buildPrdGenerationPrompt("Test project", "json");
+		const prompt = buildPrdGenerationPrompt("Test project");
 
 		expect(prompt).toContain("break it down into logical");
 		expect(prompt).toContain("small enough to complete in one coding session");
@@ -108,7 +100,7 @@ describe("buildAddTaskPrompt", () => {
 	};
 
 	test("generates JSON format task prompt", () => {
-		const prompt = buildAddTaskPrompt("Add user profile page", existingPrd, "json");
+		const prompt = buildAddTaskPrompt("Add user profile page", existingPrd);
 
 		expect(prompt).toContain("Add user profile page");
 		expect(prompt).toContain("Test Project");
@@ -117,15 +109,8 @@ describe("buildAddTaskPrompt", () => {
 		expect(prompt).toContain('"title"');
 	});
 
-	test("generates YAML format task prompt", () => {
-		const prompt = buildAddTaskPrompt("Add user profile page", existingPrd, "yaml");
-
-		expect(prompt).toContain("YAML");
-		expect(prompt).toContain("title:");
-	});
-
 	test("includes existing tasks list", () => {
-		const prompt = buildAddTaskPrompt("New task", existingPrd, "json");
+		const prompt = buildAddTaskPrompt("New task", existingPrd);
 
 		expect(prompt).toContain("1. Setup project (done)");
 		expect(prompt).toContain("2. Add authentication");
@@ -133,13 +118,13 @@ describe("buildAddTaskPrompt", () => {
 
 	test("handles empty existing tasks", () => {
 		const emptyPrd: Prd = { project: "Empty Project", tasks: [] };
-		const prompt = buildAddTaskPrompt("First task", emptyPrd, "json");
+		const prompt = buildAddTaskPrompt("First task", emptyPrd);
 
 		expect(prompt).toContain("No existing tasks");
 	});
 
 	test("includes instructions to avoid duplicates", () => {
-		const prompt = buildAddTaskPrompt("New task", existingPrd, "json");
+		const prompt = buildAddTaskPrompt("New task", existingPrd);
 
 		expect(prompt).toContain("doesn't duplicate existing tasks");
 	});

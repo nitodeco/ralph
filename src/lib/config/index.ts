@@ -8,7 +8,6 @@ export {
 	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
 	DEFAULT_STUCK_THRESHOLD_MS,
 	VALID_AGENTS,
-	VALID_PRD_FORMATS,
 } from "../constants/config.ts";
 export {
 	getEffectiveConfig,

@@ -7,7 +7,6 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 
 	return {
 		agent: config.agent ?? defaults.agent,
-		prdFormat: config.prdFormat ?? defaults.prdFormat,
 		maxRetries: config.maxRetries ?? defaults.maxRetries,
 		retryDelayMs: config.retryDelayMs ?? defaults.retryDelayMs,
 		logFilePath: config.logFilePath ?? defaults.logFilePath,

@@ -69,10 +69,7 @@ export function printStatus(version: string, verbose = false): void {
 			}
 		}
 	} else {
-		const prdError = createError(
-			ErrorCode.PRD_NOT_FOUND,
-			"No PRD found in .ralph/prd.json or .ralph/prd.yaml",
-		);
+		const prdError = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found in .ralph/prd.json");
 
 		console.log(formatError(prdError, verbose));
 	}

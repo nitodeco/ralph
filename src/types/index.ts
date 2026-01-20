@@ -24,7 +24,6 @@ export type {
 	MemoryConfig,
 	NotificationConfig,
 	NotificationEvent,
-	PrdFormat,
 	PromptGuardrail,
 	RalphConfig,
 	VerificationConfig,

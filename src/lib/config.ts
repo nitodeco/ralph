@@ -26,6 +26,5 @@ export {
 	saveConfig,
 	saveGlobalConfig,
 	VALID_AGENTS,
-	VALID_PRD_FORMATS,
 	validateConfig,
 } from "./config/index.ts";

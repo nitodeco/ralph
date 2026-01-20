@@ -45,7 +45,6 @@ describe("DecompositionHandler", () => {
 
 		const config: RalphConfig = {
 			agent: "cursor",
-			prdFormat: "json",
 			maxDecompositionsPerTask: 1,
 		};
 

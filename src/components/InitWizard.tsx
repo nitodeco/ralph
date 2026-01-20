@@ -2,7 +2,6 @@ import { existsSync, writeFileSync } from "node:fs";
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { useState } from "react";
-import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
@@ -11,7 +10,7 @@ import { findPrdFile, savePrd } from "@/lib/prd.ts";
 import { PROGRESS_FILE_PATH } from "@/lib/progress.ts";
 import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
 import { isPrd } from "@/lib/type-guards.ts";
-import type { AgentType, Prd, PrdFormat, RalphConfig } from "@/types.ts";
+import type { AgentType, Prd, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
 import { TextInput } from "./common/TextInput.tsx";
@@ -26,7 +25,6 @@ type WizardStep =
 	| "check_existing_prd"
 	| "check_existing_progress"
 	| "agent_type"
-	| "format"
 	| "description"
 	| "generating"
 	| "complete"
@@ -36,7 +34,6 @@ type WizardStep =
 interface WizardState {
 	step: WizardStep;
 	agentType: AgentType;
-	prdFormat: PrdFormat;
 	description: string;
 	generatedPrd: Prd | null;
 	existingPrdPath: string | null;
@@ -55,12 +52,7 @@ const YES_NO_CHOICES = [
 	{ label: "No", value: false },
 ];
 
-const FORMAT_CHOICES = [
-	{ label: "JSON", value: "json" as const },
-	{ label: "YAML", value: "yaml" as const },
-];
-
-function parsePrdFromOutput(output: string, format: PrdFormat): Prd | null {
+function parsePrdFromOutput(output: string): Prd | null {
 	const startMarker = PRD_OUTPUT_START;
 	const endMarker = PRD_OUTPUT_END;
 
@@ -74,7 +66,7 @@ function parsePrdFromOutput(output: string, format: PrdFormat): Prd | null {
 	const prdContent = output.slice(startIndex + startMarker.length, endIndex).trim();
 
 	try {
-		const parsed: unknown = format === "yaml" ? parseYaml(prdContent) : JSON.parse(prdContent);
+		const parsed: unknown = JSON.parse(prdContent);
 
 		if (!isPrd(parsed)) {
 			return null;
@@ -116,7 +108,6 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	const [state, setState] = useState<WizardState>({
 		step: getInitialStep(),
 		agentType: globalConfig.agent,
-		prdFormat: globalConfig.prdFormat ?? "json",
 		description: "",
 		generatedPrd: null,
 		existingPrdPath: existingPrd,
@@ -152,11 +143,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	};
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
-		setState((prev) => ({ ...prev, agentType: item.value, step: "format" }));
-	};
-
-	const handleFormatSelect = (item: { value: PrdFormat }) => {
-		setState((prev) => ({ ...prev, prdFormat: item.value, step: "description" }));
+		setState((prev) => ({ ...prev, agentType: item.value, step: "description" }));
 		setInputValue("");
 	};
 
@@ -175,7 +162,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 		}));
 
 		try {
-			const prompt = buildPrdGenerationPrompt(description, state.prdFormat);
+			const prompt = buildPrdGenerationPrompt(description);
 			const output = await runAgentWithPrompt({
 				prompt,
 				agentType: state.agentType,
@@ -187,7 +174,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				},
 			});
 
-			const prd = parsePrdFromOutput(output, state.prdFormat);
+			const prd = parsePrdFromOutput(output);
 
 			if (!prd) {
 				setState((prev) => ({
@@ -201,7 +188,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			}
 
 			ensureRalphDirExists();
-			savePrd(prd, state.prdFormat);
+			savePrd(prd);
 			writeFileSync(PROGRESS_FILE_PATH, "");
 
 			const config: RalphConfig = { agent: state.agentType };
@@ -264,18 +251,6 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 					</Box>
 				);
 
-			case "format":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">PRD format:</Text>
-						<SelectInput
-							items={FORMAT_CHOICES}
-							initialIndex={FORMAT_CHOICES.findIndex((choice) => choice.value === state.prdFormat)}
-							onSelect={handleFormatSelect}
-						/>
-					</Box>
-				);
-
 			case "description":
 				return (
 					<Box flexDirection="column" gap={1}>
@@ -311,13 +286,12 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				);
 
 			case "complete": {
-				const prdFileName = state.prdFormat === "yaml" ? "prd.yaml" : "prd.json";
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">
-							Created {RALPH_DIR}/{prdFileName} and {PROGRESS_FILE_PATH}
+							Created {RALPH_DIR}/prd.json and {PROGRESS_FILE_PATH}
 						</Message>
 						<Text>
 							<Text dimColor>Project:</Text>{" "}

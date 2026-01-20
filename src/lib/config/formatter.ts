@@ -4,7 +4,6 @@ import { GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH } from "../paths.ts";
 
 const FIELD_SUGGESTIONS: Record<string, string> = {
 	agent: "Valid options: 'cursor' or 'claude'. Example: \"agent\": \"claude\"",
-	prdFormat: "Valid options: 'json' or 'yaml'. Example: \"prdFormat\": \"json\"",
 	maxRetries: 'Must be a non-negative integer. Recommended: 3-5. Example: "maxRetries": 3',
 	retryDelayMs:
 		'Must be a positive integer in milliseconds. Recommended: 5000-10000. Example: "retryDelayMs": 5000',
@@ -110,7 +109,6 @@ export function getConfigSummary(config: RalphConfig): string {
 
 	lines.push("Agent Settings:");
 	lines.push(`  Agent:              ${config.agent}`);
-	lines.push(`  PRD Format:         ${config.prdFormat ?? "json"}`);
 	lines.push("");
 
 	lines.push("Retry Settings:");

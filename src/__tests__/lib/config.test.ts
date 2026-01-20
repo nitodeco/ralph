@@ -60,21 +60,6 @@ describe("validateConfig", () => {
 		expect(result.errors).toHaveLength(0);
 	});
 
-	test("validates prdFormat field", () => {
-		const validJson = validateConfig({ agent: "cursor", prdFormat: "json" });
-
-		expect(validJson.valid).toBe(true);
-
-		const validYaml = validateConfig({ agent: "cursor", prdFormat: "yaml" });
-
-		expect(validYaml.valid).toBe(true);
-
-		const invalid = validateConfig({ agent: "cursor", prdFormat: "xml" });
-
-		expect(invalid.valid).toBe(false);
-		expect(invalid.errors.some((error) => error.field === "prdFormat")).toBe(true);
-	});
-
 	test("validates maxRetries as non-negative integer", () => {
 		const validZero = validateConfig({ agent: "cursor", maxRetries: 0 });
 
@@ -220,7 +205,6 @@ describe("applyDefaults", () => {
 		const result = applyDefaults({});
 
 		expect(result.agent).toBe(CONFIG_DEFAULTS.agent);
-		expect(result.prdFormat).toBe(CONFIG_DEFAULTS.prdFormat);
 		expect(result.maxRetries).toBe(CONFIG_DEFAULTS.maxRetries);
 		expect(result.retryDelayMs).toBe(CONFIG_DEFAULTS.retryDelayMs);
 		expect(result.logFilePath).toBe(CONFIG_DEFAULTS.logFilePath);
@@ -236,7 +220,6 @@ describe("applyDefaults", () => {
 
 		expect(result.agent).toBe("claude");
 		expect(result.maxRetries).toBe(10);
-		expect(result.prdFormat).toBe(CONFIG_DEFAULTS.prdFormat);
 	});
 
 	test("merges notifications config with defaults", () => {

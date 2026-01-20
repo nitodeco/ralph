@@ -136,7 +136,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 							</Box>
 						) : (
 							<Box flexDirection="column" marginTop={1}>
-								<Text>No PRD found in .ralph/prd.json or .ralph/prd.yaml</Text>
+								<Text>No PRD found in .ralph/prd.json</Text>
 							</Box>
 						)}
 

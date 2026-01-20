@@ -1,13 +1,12 @@
 import { Box, Text, useApp, useInput } from "ink";
 import { useState } from "react";
-import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
-import { findPrdFile, loadPrd, savePrd } from "@/lib/prd.ts";
+import { loadPrd, savePrd } from "@/lib/prd.ts";
 import { buildAddTaskPrompt, TASK_OUTPUT_END, TASK_OUTPUT_START } from "@/lib/prompt.ts";
 import { isPrdTask } from "@/lib/type-guards.ts";
-import type { Prd, PrdFormat, PrdTask } from "@/types.ts";
+import type { Prd, PrdTask } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
 import { TextInput } from "./common/TextInput.tsx";
@@ -24,23 +23,12 @@ interface WizardState {
 	step: WizardStep;
 	description: string;
 	prd: Prd | null;
-	prdFormat: PrdFormat;
 	addedTask: PrdTask | null;
 	errorMessage: string | null;
 	agentOutput: string;
 }
 
-function getPrdFormat(): PrdFormat {
-	const prdPath = findPrdFile();
-
-	if (prdPath?.endsWith(".yaml") || prdPath?.endsWith(".yml")) {
-		return "yaml";
-	}
-
-	return "json";
-}
-
-function parseTaskFromOutput(output: string, format: PrdFormat): PrdTask | null {
+function parseTaskFromOutput(output: string): PrdTask | null {
 	const startMarker = TASK_OUTPUT_START;
 	const endMarker = TASK_OUTPUT_END;
 
@@ -54,7 +42,7 @@ function parseTaskFromOutput(output: string, format: PrdFormat): PrdTask | null 
 	const taskContent = output.slice(startIndex + startMarker.length, endIndex).trim();
 
 	try {
-		const parsed: unknown = format === "yaml" ? parseYaml(taskContent) : JSON.parse(taskContent);
+		const parsed: unknown = JSON.parse(taskContent);
 
 		if (!isPrdTask(parsed)) {
 			return null;
@@ -78,7 +66,6 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 	};
 
 	const existingPrd = loadPrd();
-	const prdFormat = getPrdFormat();
 	const config = loadConfig();
 
 	const getInitialStep = (): WizardStep => {
@@ -93,7 +80,6 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 		step: getInitialStep(),
 		description: "",
 		prd: existingPrd,
-		prdFormat,
 		addedTask: null,
 		errorMessage: null,
 		agentOutput: "",
@@ -126,7 +112,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 		}));
 
 		try {
-			const prompt = buildAddTaskPrompt(description, state.prd, state.prdFormat);
+			const prompt = buildAddTaskPrompt(description, state.prd);
 			const output = await runAgentWithPrompt({
 				prompt,
 				agentType: config.agent,
@@ -138,7 +124,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				},
 			});
 
-			const task = parseTaskFromOutput(output, state.prdFormat);
+			const task = parseTaskFromOutput(output);
 
 			if (!task) {
 				setState((prev) => ({
@@ -156,7 +142,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				tasks: [...state.prd.tasks, task],
 			};
 
-			savePrd(updatedPrd, state.prdFormat);
+			savePrd(updatedPrd);
 
 			setState((prev) => ({
 				...prev,

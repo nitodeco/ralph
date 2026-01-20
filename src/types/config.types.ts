@@ -1,7 +1,5 @@
 export type AgentType = "cursor" | "claude" | "codex";
 
-export type PrdFormat = "json" | "yaml";
-
 export interface NotificationConfig {
 	systemNotification?: boolean;
 	webhookUrl?: string;
@@ -18,7 +16,6 @@ export interface MemoryConfig {
 
 export interface RalphConfig {
 	agent: AgentType;
-	prdFormat?: PrdFormat;
 	lastUpdateCheck?: number;
 	skipVersion?: string;
 	maxRetries?: number;

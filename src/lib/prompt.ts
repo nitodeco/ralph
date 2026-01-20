@@ -1,6 +1,6 @@
 import { formatGuardrailsForPrompt, getActiveGuardrails } from "@/lib/guardrails.ts";
 import { getMemoryForPrompt, getMemoryForTask } from "@/lib/session-memory.ts";
-import type { Prd, PrdFormat } from "@/types.ts";
+import type { Prd } from "@/types.ts";
 
 export const COMPLETION_MARKER = "<promise>COMPLETE</promise>";
 export const DECOMPOSITION_MARKER = "<request>DECOMPOSE_TASK</request>";
@@ -87,23 +87,8 @@ If all tasks in .ralph/prd.json are marked as done, output EXACTLY this: <promis
 `;
 }
 
-export function buildPrdGenerationPrompt(description: string, format: PrdFormat): string {
-	const formatExample =
-		format === "yaml"
-			? `project: "Project Name"
-tasks:
-  - title: "Task 1 Title"
-    description: "Detailed description of what this task accomplishes"
-    steps:
-      - "Step 1"
-      - "Step 2"
-    done: false
-  - title: "Task 2 Title"
-    description: "Another task"
-    steps:
-      - "Step 1"
-    done: false`
-			: `{
+export function buildPrdGenerationPrompt(description: string): string {
+	const formatExample = `{
   "project": "Project Name",
   "tasks": [
     {
@@ -121,7 +106,7 @@ tasks:
   ]
 }`;
 
-	return `You are a project planning assistant. Based on the user's description, generate a complete PRD (Product Requirements Document) in ${format.toUpperCase()} format.
+	return `You are a project planning assistant. Based on the user's description, generate a complete PRD (Product Requirements Document) in JSON format.
 
 ## User's Project Description:
 ${description}
@@ -134,7 +119,7 @@ ${description}
 5. Generate a meaningful project name based on the description
 
 ## Output Format:
-Output ONLY the ${format.toUpperCase()} content wrapped in markers. Do not include any other text.
+Output ONLY the JSON content wrapped in markers. Do not include any other text.
 
 ${PRD_OUTPUT_START}
 ${formatExample}
@@ -143,20 +128,8 @@ ${PRD_OUTPUT_END}
 Generate the PRD now:`;
 }
 
-export function buildAddTaskPrompt(
-	description: string,
-	existingPrd: Prd,
-	format: PrdFormat,
-): string {
-	const formatExample =
-		format === "yaml"
-			? `title: "Task Title"
-description: "Detailed description of what this task accomplishes"
-steps:
-  - "Step 1"
-  - "Step 2"
-done: false`
-			: `{
+export function buildAddTaskPrompt(description: string, existingPrd: Prd): string {
+	const formatExample = `{
   "title": "Task Title",
   "description": "Detailed description of what this task accomplishes",
   "steps": ["Step 1", "Step 2"],
@@ -184,7 +157,7 @@ ${description}
 4. The task should be small enough to complete in one coding session
 
 ## Output Format:
-Output ONLY the ${format.toUpperCase()} content for the single task wrapped in markers. Do not include any other text.
+Output ONLY the JSON content for the single task wrapped in markers. Do not include any other text.
 
 ${TASK_OUTPUT_START}
 ${formatExample}

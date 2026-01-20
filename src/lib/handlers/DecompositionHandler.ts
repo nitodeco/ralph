@@ -59,7 +59,7 @@ export class DecompositionHandler {
 			return false;
 		}
 
-		savePrd(result.updatedPrd, this.config.prdFormat ?? "json");
+		savePrd(result.updatedPrd);
 		this.decompositionCountByTask.set(taskKey, currentCount + 1);
 
 		logger.info("Task decomposed successfully", {

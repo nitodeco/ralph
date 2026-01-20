@@ -128,23 +128,6 @@ describe("integrity functions", () => {
 			expect(result.issues.some((issue) => issue.file === "prd.json")).toBe(true);
 		});
 
-		test("validates prd.yaml when present", () => {
-			writeFileSync(join(RALPH_DIR, "prd.yaml"), "project: Test\ntasks: []");
-			const result = checkRalphDirectoryIntegrity();
-			const yamlIssues = result.issues.filter((issue) => issue.file === "prd.yaml");
-
-			expect(yamlIssues.length).toBe(0);
-		});
-
-		test("prefers prd.json over prd.yaml", () => {
-			writeFileSync(join(RALPH_DIR, "prd.json"), JSON.stringify({ project: "Test", tasks: [] }));
-			writeFileSync(join(RALPH_DIR, "prd.yaml"), "project: Test\ntasks: []");
-			const result = checkRalphDirectoryIntegrity();
-			const jsonIssues = result.issues.filter((issue) => issue.file === "prd.json");
-
-			expect(jsonIssues.length).toBe(0);
-		});
-
 		test("validates session.json when present", () => {
 			writeFileSync(
 				join(RALPH_DIR, "session.json"),
