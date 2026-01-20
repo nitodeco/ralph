@@ -33,7 +33,7 @@ import {
 	updateSessionIteration,
 	updateSessionStatus,
 } from "@/lib/session.ts";
-import type { Prd, RalphConfig, Session } from "@/types.ts";
+import type { Prd, PrdTask, RalphConfig, Session } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 

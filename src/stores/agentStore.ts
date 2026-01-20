@@ -1,6 +1,7 @@
 import type { Subprocess } from "bun";
 import { create } from "zustand";
 import { getAgentCommand, loadConfig } from "@/lib/config.ts";
+import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
@@ -302,6 +303,16 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		abortedRef = false;
 		retryCountRef = 0;
 
+		setShutdownHandler({
+			onShutdown: () => {
+				abortedRef = true;
+				if (processRef) {
+					processRef.kill();
+					processRef = null;
+				}
+			},
+		});
+
 		set({
 			...INITIAL_STATE,
 			isStreaming: true,
@@ -415,6 +426,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			});
 		} finally {
 			processRef = null;
+			clearShutdownHandler();
 		}
 	},
 

@@ -53,7 +53,11 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 	}
 
 	const parts = trimmed.slice(1).split(/\s+/);
-	const commandName = parts[0].toLowerCase() as SlashCommand;
+	const firstPart = parts[0];
+	if (!firstPart) {
+		return null;
+	}
+	const commandName = firstPart.toLowerCase() as SlashCommand;
 
 	if (!VALID_COMMANDS.includes(commandName)) {
 		return null;
