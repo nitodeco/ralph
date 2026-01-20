@@ -1,7 +1,7 @@
 {
-	"agent": "cursor",
-	"prdFormat": "json",
-	"maxRetries": 3,
-	"retryDelayMs": 5000,
-	"lastUpdateCheck": 1768875933651
+  "agent": "cursor",
+  "prdFormat": "json",
+  "maxRetries": 3,
+  "retryDelayMs": 5000,
+  "lastUpdateCheck": 1768880165180
 }
