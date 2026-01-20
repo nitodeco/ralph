@@ -1,4 +1,3 @@
-import type { Subprocess } from "bun";
 import { create } from "zustand";
 import { getAgentCommand, loadConfig } from "@/lib/config.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
@@ -14,6 +13,7 @@ import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
+import { AgentProcessManager } from "@/lib/services/index.ts";
 import { useAppStore } from "./appStore.ts";
 
 interface AgentState {
@@ -158,11 +158,6 @@ function createThrottledFunction<T extends (arg: string) => void>(
 	return { throttled, flush };
 }
 
-let processRef: Subprocess | null = null;
-let abortedRef = false;
-let retryCountRef = 0;
-let forceKillTimeoutRef: ReturnType<typeof setTimeout> | null = null;
-
 interface RunAgentOptions {
 	setOutput: (output: string) => void;
 	specificTask?: string | null;
@@ -197,7 +192,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 		stderr: "pipe",
 	});
 
-	processRef = agentProcess;
+	AgentProcessManager.setProcess(agentProcess);
 
 	const stdoutReader = agentProcess.stdout.getReader();
 	const stderrReader = agentProcess.stderr.getReader();
@@ -226,8 +221,9 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 						timeoutMs: agentTimeoutMs,
 						elapsedMs: Date.now() - processStartTime,
 					});
-					if (processRef) {
-						processRef.kill();
+					const currentProcess = AgentProcessManager.getProcess();
+					if (currentProcess) {
+						currentProcess.kill();
 					}
 				}, agentTimeoutMs)
 			: null;
@@ -243,8 +239,9 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 								stuckThresholdMs,
 								timeSinceLastActivityMs: timeSinceLastActivity,
 							});
-							if (processRef) {
-								processRef.kill();
+							const currentProcess = AgentProcessManager.getProcess();
+							if (currentProcess) {
+								currentProcess.kill();
 							}
 						}
 					},
@@ -253,7 +250,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 			: null;
 
 	const readStdout = async () => {
-		while (!abortedRef) {
+		while (!AgentProcessManager.isAborted()) {
 			const { done, value } = await stdoutReader.read();
 			if (done) break;
 
@@ -277,7 +274,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	};
 
 	const readStderr = async () => {
-		while (!abortedRef) {
+		while (!AgentProcessManager.isAborted()) {
 			const { done, value } = await stderrReader.read();
 			if (done) break;
 			updateLastActivity();
@@ -341,15 +338,16 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 	},
 
 	start: async () => {
-		abortedRef = false;
-		retryCountRef = 0;
+		AgentProcessManager.setAborted(false);
+		AgentProcessManager.resetRetry();
 
 		setShutdownHandler({
 			onShutdown: () => {
-				abortedRef = true;
-				if (processRef) {
-					processRef.kill();
-					processRef = null;
+				AgentProcessManager.setAborted(true);
+				const currentProcess = AgentProcessManager.getProcess();
+				if (currentProcess) {
+					currentProcess.kill();
+					AgentProcessManager.setProcess(null);
 				}
 			},
 		});
@@ -371,15 +369,18 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		}
 
 		try {
-			while (retryCountRef <= maxRetries && !abortedRef) {
+			while (
+				AgentProcessManager.getRetryCount() <= maxRetries &&
+				!AgentProcessManager.isAborted()
+			) {
 				const result = await runAgentInternal({ setOutput: get().setOutput, specificTask });
 
-				if (result.success || abortedRef) {
+				if (result.success || AgentProcessManager.isAborted()) {
 					set({
 						isStreaming: false,
 						isComplete: result.isComplete,
 						exitCode: result.exitCode,
-						retryCount: retryCountRef,
+						retryCount: AgentProcessManager.getRetryCount(),
 					});
 					break;
 				}
@@ -400,26 +401,26 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						isStreaming: false,
 						error: `Fatal error [${categorizedError.code}]: ${errorWithSuggestion}`,
 						exitCode: result.exitCode,
-						retryCount: retryCountRef,
+						retryCount: AgentProcessManager.getRetryCount(),
 					});
 					break;
 				}
 
-				if (retryCountRef < maxRetries) {
-					retryCountRef += 1;
-					const delay = calculateRetryDelay(retryDelayMs, retryCountRef - 1);
+				if (AgentProcessManager.getRetryCount() < maxRetries) {
+					const currentRetryCount = AgentProcessManager.incrementRetry();
+					const delay = calculateRetryDelay(retryDelayMs, currentRetryCount - 1);
 
-					logger.logAgentRetry(retryCountRef, maxRetries, delay);
+					logger.logAgentRetry(currentRetryCount, maxRetries, delay);
 
 					set({
 						isRetrying: true,
-						retryCount: retryCountRef,
+						retryCount: currentRetryCount,
 						output: "",
 					});
 
 					await sleep(delay);
 
-					if (abortedRef) break;
+					if (AgentProcessManager.isAborted()) break;
 
 					set({
 						isRetrying: false,
@@ -431,7 +432,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						{
 							lastError: categorizedError.message,
 							exitCode: result.exitCode,
-							retryCount: retryCountRef,
+							retryCount: AgentProcessManager.getRetryCount(),
 						},
 					);
 
@@ -450,7 +451,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						isStreaming: false,
 						error: errorMessage,
 						exitCode: result.exitCode,
-						retryCount: retryCountRef,
+						retryCount: AgentProcessManager.getRetryCount(),
 					});
 					break;
 				}
@@ -461,44 +462,23 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			set({
 				isStreaming: false,
 				error: errorMessage,
-				retryCount: retryCountRef,
+				retryCount: AgentProcessManager.getRetryCount(),
 			});
 		} finally {
-			processRef = null;
+			AgentProcessManager.setProcess(null);
 			clearShutdownHandler();
 		}
 	},
 
 	stop: () => {
-		abortedRef = true;
-		if (forceKillTimeoutRef) {
-			clearTimeout(forceKillTimeoutRef);
-			forceKillTimeoutRef = null;
-		}
-		if (processRef) {
-			const processToKill = processRef;
-			try {
-				processToKill.kill("SIGTERM");
-			} catch {}
-			forceKillTimeoutRef = setTimeout(() => {
-				if (processRef === processToKill) {
-					try {
-						processToKill.kill("SIGKILL");
-					} catch {}
-					processRef = null;
-				}
-				forceKillTimeoutRef = null;
-			}, 500);
-			processRef = null;
-		}
+		AgentProcessManager.kill();
 		set({
 			isStreaming: false,
 		});
 	},
 
 	reset: () => {
-		const { stop } = get();
-		stop();
+		AgentProcessManager.reset();
 		set(INITIAL_STATE);
 	},
 

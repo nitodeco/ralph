@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { DEFAULTS } from "@/lib/defaults.ts";
+import { IterationTimer } from "@/lib/services/index.ts";
 
 interface IterationState {
 	current: number;
@@ -49,16 +50,6 @@ const INITIAL_STATE: IterationState = {
 	isPaused: false,
 };
 
-let delayTimeoutRef: ReturnType<typeof setTimeout> | null = null;
-let projectCompleteRef = false;
-
-function clearDelayTimeout() {
-	if (delayTimeoutRef) {
-		clearTimeout(delayTimeoutRef);
-		delayTimeoutRef = null;
-	}
-}
-
 export const useIterationStore = create<IterationStore>((set, get) => ({
 	...INITIAL_STATE,
 	callbacks: {},
@@ -102,7 +93,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 	},
 
 	start: () => {
-		projectCompleteRef = false;
+		IterationTimer.setProjectComplete(false);
 		const state = get();
 		const startTime = state.startTime ?? Date.now();
 		set({
@@ -116,7 +107,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 	},
 
 	pause: () => {
-		clearDelayTimeout();
+		IterationTimer.cancel();
 		set({
 			isPaused: true,
 			isDelaying: false,
@@ -130,7 +121,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 	},
 
 	stop: () => {
-		clearDelayTimeout();
+		IterationTimer.cancel();
 		set({
 			isRunning: false,
 			isDelaying: false,
@@ -144,7 +135,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	next: () => {
 		const state = get();
-		if (state.current >= state.total || projectCompleteRef) {
+		if (state.current >= state.total || IterationTimer.isProjectComplete()) {
 			state.callbacks.onAllComplete?.();
 			set({
 				isRunning: false,
@@ -173,7 +164,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	markIterationComplete: (isProjectComplete: boolean) => {
 		const state = get();
-		projectCompleteRef = isProjectComplete;
+		IterationTimer.setProjectComplete(isProjectComplete);
 		state.callbacks.onIterationComplete?.(state.current);
 
 		if (isProjectComplete) {
@@ -196,8 +187,8 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 		set({ isDelaying: true });
 
-		delayTimeoutRef = setTimeout(() => {
+		IterationTimer.scheduleNext(state.delayMs, () => {
 			get().next();
-		}, state.delayMs);
+		});
 	},
 }));

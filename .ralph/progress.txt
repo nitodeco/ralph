@@ -66,3 +66,19 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Encapsulate module-level mutable state in service classes
+Date: 2026-01-20
+
+Changes made:
+- Created src/lib/services/AgentProcessManager.ts as a singleton class to manage: process (Subprocess | null), aborted state, retry count, and force kill timeout
+- Created src/lib/services/IterationTimer.ts as a singleton class to manage: delay timeout and project complete state
+- Updated src/stores/agentStore.ts to use AgentProcessManager instead of module-level refs (processRef, abortedRef, retryCountRef, forceKillTimeoutRef)
+- Updated src/stores/iterationStore.ts to use IterationTimer instead of module-level refs (delayTimeoutRef, projectCompleteRef)
+- Exported both services from src/lib/services/index.ts
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

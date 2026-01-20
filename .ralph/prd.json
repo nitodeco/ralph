@@ -65,7 +65,7 @@
 				"Export service instances from src/lib/services/index.ts",
 				"Ensure cleanup methods are called appropriately on store reset/stop actions"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Introduce event bus to decouple stores",
