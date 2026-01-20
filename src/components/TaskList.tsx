@@ -1,14 +1,31 @@
 import { Box, Text } from "ink";
 import { useAgentStore, useAppStore } from "@/stores/index.ts";
-import type { Prd } from "@/types.ts";
+import type { Prd, TaskPriority } from "@/types.ts";
 
 function getCurrentTaskIndex(prd: Prd): number {
 	return prd.tasks.findIndex((task) => !task.done);
 }
 
+function getPriorityIndicator(priority?: TaskPriority): { icon: string; color: string } | null {
+	if (!priority) {
+		return null;
+	}
+	switch (priority) {
+		case "high":
+			return { icon: "↑", color: "red" };
+		case "medium":
+			return { icon: "→", color: "yellow" };
+		case "low":
+			return { icon: "↓", color: "gray" };
+		default:
+			return null;
+	}
+}
+
 export function TaskList(): React.ReactElement {
 	const prd = useAppStore((state) => state.prd);
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
+	const manualNextTask = useAppStore((state) => state.manualNextTask);
 
 	if (!prd) {
 		return (
@@ -43,10 +60,21 @@ export function TaskList(): React.ReactElement {
 		);
 	}
 
+	const manualTask = manualNextTask
+		? tasks.find((task) => task.title.toLowerCase() === manualNextTask.toLowerCase())
+		: null;
+
 	const currentTask =
-		currentTaskIndex !== undefined && currentTaskIndex >= 0 ? tasks[currentTaskIndex] : null;
+		manualTask ??
+		(currentTaskIndex !== undefined && currentTaskIndex >= 0 ? tasks[currentTaskIndex] : null);
+
+	const displayTaskIndex = manualTask
+		? tasks.findIndex((task) => task.title.toLowerCase() === manualNextTask?.toLowerCase())
+		: currentTaskIndex;
 
 	const allTasksComplete = completedCount === totalCount;
+
+	const priorityIndicator = currentTask ? getPriorityIndicator(currentTask.priority) : null;
 
 	return (
 		<Box flexDirection="column" paddingX={1}>
@@ -55,11 +83,15 @@ export function TaskList(): React.ReactElement {
 					Tasks ({completedCount}/{totalCount})
 				</Text>
 			</Box>
-			{currentTask && currentTaskIndex !== undefined ? (
+			{currentTask && displayTaskIndex !== undefined && displayTaskIndex >= 0 ? (
 				<Box>
 					<Text color="yellow">▶ </Text>
-					<Text dimColor>{currentTaskIndex + 1}. </Text>
+					<Text dimColor>{displayTaskIndex + 1}. </Text>
 					<Text color="white">{currentTask.title}</Text>
+					{priorityIndicator && (
+						<Text color={priorityIndicator.color}> [{priorityIndicator.icon}]</Text>
+					)}
+					{manualTask && <Text color="cyan"> (manual)</Text>}
 				</Box>
 			) : allTasksComplete ? (
 				<Box>

@@ -2,19 +2,24 @@ import type { Prd, PrdFormat } from "@/types.ts";
 
 export interface BuildPromptOptions {
 	instructions?: string | null;
+	specificTask?: string | null;
 }
 
 export function buildPrompt(options: BuildPromptOptions = {}): string {
-	const { instructions } = options;
+	const { instructions, specificTask } = options;
 
 	const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
+
+	const taskSelectionInstruction = specificTask
+		? `2. Work on the SPECIFIED task: "${specificTask}"`
+		: "2. Find the next most important task to work on";
 
 	return `@.ralph/prd.json @.ralph/progress.txt
 
 You are a coding agent working on a long running project.
 Your workflow is as follows:
 1. Get oriented by reading .ralph/progress.txt and .ralph/prd.json
-2. Find the next most important task to work on
+${taskSelectionInstruction}
 3. Implement ONLY that task
 4. Verify your implementation
 5. Update .ralph/progress.txt and set the task as done in .ralph/prd.json
@@ -48,11 +53,13 @@ tasks:
       - "Step 1"
       - "Step 2"
     done: false
+    priority: high
   - title: "Task 2 Title"
     description: "A task that depends on Task 1"
     steps:
       - "Step 1"
     done: false
+    priority: medium
     dependsOn:
       - "Task 1 Title"`
 			: `{
@@ -62,13 +69,15 @@ tasks:
       "title": "Task 1 Title",
       "description": "Detailed description of what this task accomplishes",
       "steps": ["Step 1", "Step 2"],
-      "done": false
+      "done": false,
+      "priority": "high"
     },
     {
       "title": "Task 2 Title",
       "description": "A task that depends on Task 1",
       "steps": ["Step 1"],
       "done": false,
+      "priority": "medium",
       "dependsOn": ["Task 1 Title"]
     }
   ]
@@ -84,8 +93,9 @@ ${description}
 2. Each task should be small enough to complete in one coding session
 3. Use the "dependsOn" field to specify task dependencies when a task requires another task to be completed first
 4. Tasks with dependencies will only be worked on after their dependencies are marked as done
-5. Write clear, specific descriptions and steps for each task
-6. Generate a meaningful project name based on the description
+5. Use the "priority" field (high/medium/low) to indicate task importance - higher priority tasks are worked on first
+6. Write clear, specific descriptions and steps for each task
+7. Generate a meaningful project name based on the description
 
 ## Output Format:
 Output ONLY the ${format.toUpperCase()} content wrapped in markers. Do not include any other text.
@@ -110,6 +120,7 @@ steps:
   - "Step 1"
   - "Step 2"
 done: false
+priority: medium
 dependsOn:
   - "Existing Task Title"`
 			: `{
@@ -117,6 +128,7 @@ dependsOn:
   "description": "Detailed description of what this task accomplishes",
   "steps": ["Step 1", "Step 2"],
   "done": false,
+  "priority": "medium",
   "dependsOn": ["Existing Task Title"]
 }`;
 
@@ -139,12 +151,13 @@ ${description}
 2. Make sure it doesn't duplicate existing tasks
 3. Write a clear, specific description and actionable steps
 4. The task should be small enough to complete in one coding session
-5. If this task depends on any existing tasks, include them in the "dependsOn" array (use exact task titles)
-6. Only include "dependsOn" if the task truly requires other tasks to be completed first
+5. Use the "priority" field (high/medium/low) to indicate task importance
+6. If this task depends on any existing tasks, include them in the "dependsOn" array (use exact task titles)
+7. Only include "dependsOn" if the task truly requires other tasks to be completed first
 
 ## Output Format:
 Output ONLY the ${format.toUpperCase()} content for the single task wrapped in markers. Do not include any other text.
-Note: The "dependsOn" field is optional. Only include it if the task has dependencies.
+Note: The "dependsOn" and "priority" fields are optional.
 
 ${TASK_OUTPUT_START}
 ${formatExample}

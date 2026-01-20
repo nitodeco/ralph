@@ -6,6 +6,7 @@ import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { logError as logProgressError, logRetry as logProgressRetry } from "@/lib/progress.ts";
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
+import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 
 const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
@@ -126,15 +127,21 @@ let processRef: Subprocess | null = null;
 let abortedRef = false;
 let retryCountRef = 0;
 
-async function runAgent(setOutput: (output: string) => void): Promise<{
+interface RunAgentOptions {
+	setOutput: (output: string) => void;
+	specificTask?: string | null;
+}
+
+async function runAgentInternal(options: RunAgentOptions): Promise<{
 	success: boolean;
 	exitCode: number | null;
 	output: string;
 	isComplete: boolean;
 	error?: string;
 }> {
+	const { setOutput, specificTask } = options;
 	const instructions = loadInstructions();
-	const prompt = buildPrompt({ instructions });
+	const prompt = buildPrompt({ instructions, specificTask });
 	const config = loadConfig();
 	const logger = getLogger({ logFilePath: config.logFilePath });
 	const baseCommand = getAgentCommand(config.agent);
@@ -305,9 +312,15 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const maxRetries = config.maxRetries ?? 3;
 		const retryDelayMs = config.retryDelayMs ?? 5000;
 
+		const appStore = useAppStore.getState();
+		const specificTask = appStore.getEffectiveNextTask();
+		if (specificTask && appStore.manualNextTask) {
+			appStore.clearManualNextTask();
+		}
+
 		try {
 			while (retryCountRef <= maxRetries && !abortedRef) {
-				const result = await runAgent(get().setOutput);
+				const result = await runAgentInternal({ setOutput: get().setOutput, specificTask });
 
 				if (result.success || abortedRef) {
 					set({

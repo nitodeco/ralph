@@ -4,7 +4,15 @@ import { loadConfig } from "@/lib/config.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { findPrdFile, getNextTask, loadPrd, RALPH_DIR } from "@/lib/prd.ts";
+import {
+	canWorkOnTask,
+	findPrdFile,
+	getNextTask,
+	getTaskByIndex,
+	getTaskByTitle,
+	loadPrd,
+	RALPH_DIR,
+} from "@/lib/prd.ts";
 import {
 	logError as logProgressError,
 	logIterationComplete as logProgressIterationComplete,
@@ -55,6 +63,14 @@ interface AppStoreState {
 	pendingSession: Session | null;
 	currentSession: Session | null;
 	iterations: number;
+	manualNextTask: string | null;
+	singleTaskMode: boolean;
+}
+
+export interface SetManualTaskResult {
+	success: boolean;
+	error?: string;
+	taskTitle?: string;
 }
 
 interface AppStoreActions {
@@ -65,12 +81,16 @@ interface AppStoreActions {
 	resetElapsedTime: () => void;
 	loadInitialState: (autoResume: boolean) => void;
 	startIterations: (iterationCount?: number, full?: boolean) => void;
+	startSingleTask: (taskIdentifier: string) => SetManualTaskResult;
 	resumeSession: () => void;
 	stopAgent: () => void;
 	revalidateAndGoIdle: () => void;
 	handleAgentComplete: () => void;
 	handleFatalError: (error: string) => void;
 	setPrd: (prd: Prd | null) => void;
+	setManualNextTask: (taskIdentifier: string) => SetManualTaskResult;
+	clearManualNextTask: () => void;
+	getEffectiveNextTask: () => string | null;
 }
 
 type AppStore = AppStoreState & AppStoreActions;
@@ -110,6 +130,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	pendingSession: null,
 	currentSession: null,
 	iterations: DEFAULT_ITERATIONS,
+	singleTaskMode: false,
+	manualNextTask: null,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });
@@ -221,6 +243,80 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		useAgentStore.getState().reset();
 		iterationStore.start();
+	},
+
+	startSingleTask: (taskIdentifier: string): SetManualTaskResult => {
+		const _state = get();
+		const warning = validateProject();
+		if (warning) {
+			set({
+				validationWarning: warning,
+				appState: "not_initialized",
+			});
+			return { success: false, error: warning.message };
+		}
+
+		const loadedConfig = loadConfig();
+		const loadedPrd = loadPrd();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
+		if (!loadedPrd) {
+			return { success: false, error: "No PRD loaded" };
+		}
+
+		const taskIndex = Number.parseInt(taskIdentifier, 10);
+		let task: PrdTask | null = null;
+
+		if (!Number.isNaN(taskIndex) && taskIndex > 0 && taskIndex <= loadedPrd.tasks.length) {
+			task = getTaskByIndex(loadedPrd, taskIndex - 1);
+		} else {
+			task = getTaskByTitle(loadedPrd, taskIdentifier);
+		}
+
+		if (!task) {
+			return { success: false, error: `Task not found: ${taskIdentifier}` };
+		}
+
+		const canWork = canWorkOnTask(loadedPrd, task);
+		if (!canWork.canWork) {
+			return { success: false, error: canWork.reason };
+		}
+
+		set({
+			config: loadedConfig,
+			prd: loadedPrd,
+			validationWarning: null,
+			manualNextTask: task.title,
+			singleTaskMode: true,
+		});
+
+		deleteSession();
+		set({ pendingSession: null });
+
+		const iterationStore = useIterationStore.getState();
+		iterationStore.setTotal(1);
+
+		const currentTaskIndex = loadedPrd.tasks.findIndex(
+			(prdTask) => prdTask.title.toLowerCase() === task?.title.toLowerCase(),
+		);
+		const newSession = createSession(1, currentTaskIndex);
+		saveSession(newSession);
+		set({ currentSession: newSession });
+
+		logger.logSessionStart(1, currentTaskIndex);
+		const totalTasks = loadedPrd.tasks.length;
+		const completedTasks = loadedPrd.tasks.filter((prdTask) => prdTask.done).length;
+		logProgressSessionStart(loadedPrd.project, 1, totalTasks, completedTasks);
+
+		set({
+			appState: "running",
+			elapsedTime: 0,
+		});
+
+		useAgentStore.getState().reset();
+		iterationStore.start();
+
+		return { success: true, taskTitle: task.title };
 	},
 
 	resumeSession: () => {
@@ -354,6 +450,58 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			set({ currentSession: stoppedSession });
 		}
 		set({ appState: "error" });
+	},
+
+	setManualNextTask: (taskIdentifier: string): SetManualTaskResult => {
+		const state = get();
+		const prd = state.prd ?? loadPrd();
+
+		if (!prd) {
+			return { success: false, error: "No PRD loaded" };
+		}
+
+		const taskIndex = Number.parseInt(taskIdentifier, 10);
+		const task = Number.isNaN(taskIndex)
+			? getTaskByTitle(prd, taskIdentifier)
+			: getTaskByIndex(prd, taskIndex - 1);
+
+		if (!task) {
+			return {
+				success: false,
+				error: `Task not found: "${taskIdentifier}"`,
+			};
+		}
+
+		const canWork = canWorkOnTask(prd, task);
+		if (!canWork.canWork) {
+			return {
+				success: false,
+				error: canWork.reason ?? "Cannot work on this task",
+			};
+		}
+
+		set({ manualNextTask: task.title });
+		return { success: true, taskTitle: task.title };
+	},
+
+	clearManualNextTask: () => {
+		set({ manualNextTask: null });
+	},
+
+	getEffectiveNextTask: (): string | null => {
+		const state = get();
+		if (state.manualNextTask) {
+			const prd = state.prd ?? loadPrd();
+			if (prd) {
+				const task = getTaskByTitle(prd, state.manualNextTask);
+				if (task && !task.done) {
+					return state.manualNextTask;
+				}
+			}
+			set({ manualNextTask: null });
+		}
+		const prd = state.prd ?? loadPrd();
+		return prd ? getNextTask(prd) : null;
 	},
 }));
 

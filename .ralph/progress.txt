@@ -239,3 +239,72 @@ Implementation:
   - Show dependency chain under each task with ✓/○ icons for status
   - Summary shows completed, ready, and blocked counts
   - Next task only shows tasks that are not blocked
+
+Task 13: Add task priority and manual task selection - COMPLETED
+
+Implementation:
+- Added TaskPriority type ('high' | 'medium' | 'low') and optional 'priority' field to PrdTask in src/types.ts
+- Updated getNextTask in src/lib/prd.ts to sort pending tasks by priority:
+  - High priority tasks are worked on first, then medium, then low
+  - Tasks without priority default to medium priority
+  - Added PRIORITY_WEIGHTS constant and getPriorityWeight helper function
+- Added helper functions in src/lib/prd.ts:
+  - getTaskByTitle: Find task by title (case-insensitive)
+  - getTaskByIndex: Find task by 0-based index
+  - canWorkOnTask: Check if a task can be worked on (not done, dependencies satisfied)
+- Added /next slash command in CommandInput.tsx:
+  - Accepts task identifier (number or title)
+  - Parses task identifier from command arguments
+- Implemented manual task selection in appStore.ts:
+  - Added manualNextTask state to track manually selected task
+  - Added setManualNextTask action to set the next task
+  - Added clearManualNextTask action to clear manual selection
+  - Added getEffectiveNextTask to get manual task or auto-selected next task
+- Updated agentStore.ts to use specific task in prompt:
+  - Gets effective next task from appStore before starting agent
+  - Passes specificTask to buildPrompt for targeted agent instructions
+  - Clears manual task after starting (used once)
+- Updated RunApp.tsx to handle /next command:
+  - Displays success/error messages for task selection
+  - Messages auto-dismiss after 5 seconds
+- Updated TaskList.tsx to show priority indicators:
+  - High priority: red ↑ icon
+  - Medium priority: yellow → icon
+  - Low priority: gray ↓ icon
+  - Shows "(manual)" label when task is manually selected
+- Added --task/-t flag to CLI in index.tsx:
+  - Parses task identifier from command line
+  - Sets iterations to 1 when --task is specified
+  - Auto-starts with the specified task
+- Updated printList in index.tsx to show priority in task list:
+  - Colored priority indicators in CLI output
+  - Priority field included in JSON output
+- Updated HelpView.tsx with /next command documentation
+- Updated printHelp() with --task flag documentation
+- Updated PRD generation prompts to include priority examples:
+  - buildPrdGenerationPrompt: Shows priority field usage
+  - buildAddTaskPrompt: Includes priority in format example
+
+Task 13: Add task priority and manual task selection - COMPLETED
+
+Implementation:
+- TaskPriority type and priority field already existed in src/types.ts
+- Priority sorting already implemented in getNextTask in src/lib/prd.ts
+- Added /next command handler in src/components/RunApp.tsx:
+  - Parses task identifier (number or title) from command args
+  - Calls setManualNextTask action in appStore
+  - Displays success/error message feedback with auto-dismiss after 5 seconds
+- Updated src/components/TaskList.tsx to show priority indicators:
+  - getPriorityIndicator function returns icon and color for each priority level
+  - High priority: ↑ (red), Medium: → (yellow), Low: ↓ (gray)
+  - Shows "(manual)" label when a task was manually selected
+- Updated printList in src/index.tsx to display priority in CLI:
+  - Added priority field to TaskListOutput JSON interface
+  - Human-readable output shows priority with colored icons
+- Added --task (-t) flag to CLI for single task execution:
+  - parseArgs extracts task identifier from --task or -t flag
+  - main() passes task to RunWithSetup component with iterations=1
+  - RunApp uses initialTask prop to call setManualNextTask on mount
+- Updated help documentation:
+  - src/index.tsx printHelp includes /next and --task documentation
+  - src/components/HelpView.tsx includes /next command and CLI options section

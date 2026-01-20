@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import type { Prd, PrdTask } from "@/types.ts";
+import type { Prd, PrdTask, TaskPriority } from "@/types.ts";
 
 export const RALPH_DIR = ".ralph";
 export const INSTRUCTIONS_FILE_PATH = `${RALPH_DIR}/instructions.md`;
@@ -102,9 +102,66 @@ function areDependenciesSatisfied(task: PrdTask, prd: Prd): boolean {
 	return true;
 }
 
+const PRIORITY_WEIGHTS: Record<TaskPriority, number> = {
+	high: 0,
+	medium: 1,
+	low: 2,
+};
+
+function getPriorityWeight(priority?: TaskPriority): number {
+	if (!priority) {
+		return PRIORITY_WEIGHTS.medium;
+	}
+	return PRIORITY_WEIGHTS[priority];
+}
+
 export function getNextTask(prd: Prd): string | null {
-	const nextTask = prd.tasks.find((task) => !task.done && areDependenciesSatisfied(task, prd));
-	return nextTask?.title ?? null;
+	const availableTasks = prd.tasks.filter(
+		(task) => !task.done && areDependenciesSatisfied(task, prd),
+	);
+
+	if (availableTasks.length === 0) {
+		return null;
+	}
+
+	const sortedTasks = [...availableTasks].sort(
+		(taskA, taskB) => getPriorityWeight(taskA.priority) - getPriorityWeight(taskB.priority),
+	);
+
+	return sortedTasks[0].title;
+}
+
+export function getTaskByTitle(prd: Prd, title: string): PrdTask | null {
+	const normalizedTitle = title.toLowerCase();
+	return prd.tasks.find((task) => task.title.toLowerCase() === normalizedTitle) ?? null;
+}
+
+export function getTaskByIndex(prd: Prd, index: number): PrdTask | null {
+	if (index < 0 || index >= prd.tasks.length) {
+		return null;
+	}
+	return prd.tasks[index];
+}
+
+export function canWorkOnTask(prd: Prd, task: PrdTask): { canWork: boolean; reason?: string } {
+	if (task.done) {
+		return { canWork: false, reason: "Task is already completed" };
+	}
+
+	if (!areDependenciesSatisfied(task, prd)) {
+		const unmetDeps = task.dependsOn?.filter((depTitle) => {
+			const depTask = prd.tasks.find(
+				(prdTask) => prdTask.title.toLowerCase() === depTitle.toLowerCase(),
+			);
+			return !depTask?.done;
+		});
+		return {
+			canWork: false,
+			reason: `Task has unmet dependencies: ${unmetDeps?.join(", ")}`,
+		};
+	}
+
+	return { canWork: true };
 }
 
 export function validateDependencies(prd: Prd): DependencyValidationResult {

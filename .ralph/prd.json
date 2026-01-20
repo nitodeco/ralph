@@ -155,7 +155,7 @@
 				"Update task list to show priority indicators",
 				"Add --task flag to run command for single task execution"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement configuration validation and defaults",

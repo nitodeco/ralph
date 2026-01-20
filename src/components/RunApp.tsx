@@ -1,5 +1,5 @@
 import { Box, Text, useApp, useInput } from "ink";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	setupIterationCallbacks,
 	useAgentStore,
@@ -24,6 +24,7 @@ interface RunAppProps {
 	iterations: number;
 	autoResume?: boolean;
 	autoStart?: boolean;
+	initialTask?: string;
 }
 
 export function RunApp({
@@ -31,6 +32,7 @@ export function RunApp({
 	iterations,
 	autoResume = false,
 	autoStart = false,
+	initialTask,
 }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 
@@ -50,6 +52,7 @@ export function RunApp({
 	const handleAgentComplete = useAppStore((state) => state.handleAgentComplete);
 	const handleFatalError = useAppStore((state) => state.handleFatalError);
 	const setIterations = useAppStore((state) => state.setIterations);
+	const setManualNextTask = useAppStore((state) => state.setManualNextTask);
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
@@ -65,6 +68,11 @@ export function RunApp({
 	const iterationPause = useIterationStore((state) => state.pause);
 	const iterationResume = useIterationStore((state) => state.resume);
 
+	const [nextTaskMessage, setNextTaskMessage] = useState<{
+		type: "success" | "error";
+		text: string;
+	} | null>(null);
+
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
 			switch (command) {
@@ -76,6 +84,29 @@ export function RunApp({
 					break;
 				case "stop":
 					stopAgent();
+					break;
+				case "next":
+					if (args?.taskIdentifier) {
+						const result = setManualNextTask(args.taskIdentifier);
+						if (result.success) {
+							setNextTaskMessage({
+								type: "success",
+								text: `Next task set to: ${result.taskTitle}`,
+							});
+						} else {
+							setNextTaskMessage({
+								type: "error",
+								text: result.error ?? "Failed to set next task",
+							});
+						}
+						setTimeout(() => setNextTaskMessage(null), 5000);
+					} else {
+						setNextTaskMessage({
+							type: "error",
+							text: "Usage: /next <task number or title>",
+						});
+						setTimeout(() => setNextTaskMessage(null), 5000);
+					}
 					break;
 				case "init":
 					agentStop();
@@ -108,7 +139,16 @@ export function RunApp({
 					break;
 			}
 		},
-		[agentStop, iterationPause, exit, startIterations, resumeSession, stopAgent, setActiveView],
+		[
+			agentStop,
+			iterationPause,
+			exit,
+			startIterations,
+			resumeSession,
+			stopAgent,
+			setActiveView,
+			setManualNextTask,
+		],
 	);
 
 	const handleViewComplete = useCallback(() => {
@@ -145,10 +185,32 @@ export function RunApp({
 	}, [autoResume, pendingSession, appState, resumeSession]);
 
 	useEffect(() => {
-		if (autoStart && !autoResume && appState === "idle" && !pendingSession) {
+		if (initialTask && appState === "idle" && !pendingSession) {
+			const result = setManualNextTask(initialTask);
+			if (result.success) {
+				setNextTaskMessage({
+					type: "success",
+					text: `Task set: ${result.taskTitle}`,
+				});
+				startIterations(1);
+			} else {
+				setNextTaskMessage({
+					type: "error",
+					text: result.error ?? `Failed to set task: ${initialTask}`,
+				});
+			}
+		} else if (autoStart && !autoResume && appState === "idle" && !pendingSession) {
 			startIterations();
 		}
-	}, [autoStart, autoResume, appState, pendingSession, startIterations]);
+	}, [
+		autoStart,
+		autoResume,
+		appState,
+		pendingSession,
+		startIterations,
+		initialTask,
+		setManualNextTask,
+	]);
 
 	useEffect(() => {
 		if (iterationIsRunning && iterationCurrent > 0 && !agentIsStreaming && !iterationIsDelaying) {
@@ -270,6 +332,14 @@ export function RunApp({
 			<IterationProgress />
 
 			<AgentOutput />
+
+			{nextTaskMessage && (
+				<Box paddingX={1} marginY={1}>
+					<Message type={nextTaskMessage.type === "success" ? "success" : "error"}>
+						{nextTaskMessage.text}
+					</Message>
+				</Box>
+			)}
 
 			{appState === "idle" && (
 				<Box paddingX={1} marginY={1}>

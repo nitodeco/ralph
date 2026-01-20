@@ -12,11 +12,13 @@ export type SlashCommand =
 	| "add"
 	| "start"
 	| "resume"
-	| "stop";
+	| "stop"
+	| "next";
 
 export interface CommandArgs {
 	iterations?: number;
 	full?: boolean;
+	taskIdentifier?: string;
 }
 
 const VALID_COMMANDS: SlashCommand[] = [
@@ -30,6 +32,7 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"start",
 	"resume",
 	"stop",
+	"next",
 ];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help"];
 
@@ -44,20 +47,20 @@ interface ParsedCommand {
 }
 
 function parseSlashCommand(input: string): ParsedCommand | null {
-	const trimmed = input.trim().toLowerCase();
+	const trimmed = input.trim();
 	if (!trimmed.startsWith("/")) {
 		return null;
 	}
 
 	const parts = trimmed.slice(1).split(/\s+/);
-	const commandName = parts[0] as SlashCommand;
+	const commandName = parts[0].toLowerCase() as SlashCommand;
 
 	if (!VALID_COMMANDS.includes(commandName)) {
 		return null;
 	}
 
 	if (commandName === "start" && parts[1]) {
-		if (parts[1] === "full") {
+		if (parts[1].toLowerCase() === "full") {
 			return { command: commandName, args: { full: true } };
 		}
 
@@ -66,6 +69,11 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 		if (!Number.isNaN(iterations) && iterations > 0) {
 			return { command: commandName, args: { iterations } };
 		}
+	}
+
+	if (commandName === "next" && parts.length > 1) {
+		const taskIdentifier = parts.slice(1).join(" ");
+		return { command: commandName, args: { taskIdentifier } };
 	}
 
 	return { command: commandName };

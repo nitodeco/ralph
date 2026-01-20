@@ -45,14 +45,29 @@ interface ParsedArgs {
 	iterations: number;
 	background: boolean;
 	json: boolean;
+	task?: string;
 }
 
 function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
 	const background = relevantArgs.includes("--background") || relevantArgs.includes("-b");
 	const json = relevantArgs.includes("--json");
+
+	let task: string | undefined;
+	const taskIndex = relevantArgs.findIndex((arg) => arg === "--task" || arg === "-t");
+	if (taskIndex !== -1 && taskIndex + 1 < relevantArgs.length) {
+		task = relevantArgs[taskIndex + 1];
+	}
+
 	const filteredArgs = relevantArgs.filter(
-		(arg) => arg !== "--background" && arg !== "-b" && arg !== "--daemon-child" && arg !== "--json",
+		(arg, argIndex) =>
+			arg !== "--background" &&
+			arg !== "-b" &&
+			arg !== "--daemon-child" &&
+			arg !== "--json" &&
+			arg !== "--task" &&
+			arg !== "-t" &&
+			argIndex !== taskIndex + 1,
 	);
 	const command = (filteredArgs[0] ?? "run") as Command;
 
@@ -67,7 +82,7 @@ function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	return { command, iterations, background, json };
+	return { command, iterations, background, json, task };
 }
 
 function printHelp(): void {
@@ -93,11 +108,13 @@ Commands:
 Options:
   -b, --background  Run Ralph in background/daemon mode (detached from terminal)
   --json            Output in JSON format (for list command)
+  -t, --task <n>    Run specific task by number or title (single task mode)
 
 Slash Commands (in-app):
   /start [n|full]   Start the agent loop (default: 10 iterations, full: all tasks)
   /stop             Stop the running agent
   /resume           Resume a previously interrupted session
+  /next <task>      Set next task to work on (by number or title)
   /init             Initialize a new PRD project
   /add              Add a new task to the PRD (AI-generated from description)
   /setup            Configure global preferences
@@ -226,6 +243,7 @@ interface TaskListOutput {
 		title: string;
 		description: string;
 		status: "done" | "pending" | "blocked";
+		priority?: "high" | "medium" | "low";
 		steps: string[];
 		dependsOn?: string[];
 		blockedBy?: string[];
@@ -297,6 +315,7 @@ function printList(jsonOutput: boolean): void {
 					title: task.title,
 					description: task.description,
 					status,
+					priority: task.priority,
 					steps: task.steps,
 					dependsOn: task.dependsOn,
 					blockedBy: unmetDeps.length > 0 ? unmetDeps : undefined,
@@ -327,6 +346,17 @@ function printList(jsonOutput: boolean): void {
 	console.log("Tasks:");
 	console.log("─".repeat(70));
 
+	const priorityColors: Record<string, string> = {
+		high: "\x1b[31m",
+		medium: "\x1b[33m",
+		low: "\x1b[90m",
+	};
+	const priorityIcons: Record<string, string> = {
+		high: "↑",
+		medium: "→",
+		low: "↓",
+	};
+
 	for (const [taskIndex, task] of prd.tasks.entries()) {
 		const unmetDeps = getUnmetDependencies(task, prd);
 		const isBlocked = !task.done && unmetDeps.length > 0;
@@ -349,8 +379,15 @@ function printList(jsonOutput: boolean): void {
 			statusLabel = "pending";
 		}
 
+		let priorityDisplay = "";
+		if (task.priority && !task.done) {
+			const priorityColor = priorityColors[task.priority] ?? "";
+			const priorityIcon = priorityIcons[task.priority] ?? "";
+			priorityDisplay = ` ${priorityColor}[${priorityIcon}${task.priority}]${resetStyle}`;
+		}
+
 		console.log(
-			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}`,
+			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}${priorityDisplay}`,
 		);
 
 		if (task.dependsOn && task.dependsOn.length > 0) {
@@ -467,6 +504,7 @@ interface RunWithSetupProps {
 	iterations: number;
 	autoResume?: boolean;
 	autoStart?: boolean;
+	initialTask?: string;
 }
 
 function RunWithSetup({
@@ -474,6 +512,7 @@ function RunWithSetup({
 	iterations,
 	autoResume = false,
 	autoStart = false,
+	initialTask,
 }: RunWithSetupProps): React.ReactElement {
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
 
@@ -486,7 +525,8 @@ function RunWithSetup({
 			version={version}
 			iterations={iterations}
 			autoResume={autoResume}
-			autoStart={autoStart}
+			autoStart={autoStart || !!initialTask}
+			initialTask={initialTask}
 		/>
 	);
 }
@@ -519,7 +559,7 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-	const { command, iterations, background, json } = parseArgs(process.argv);
+	const { command, iterations, background, json, task } = parseArgs(process.argv);
 
 	if (isDaemonProcess()) {
 		writePidFile(process.pid);
@@ -552,12 +592,25 @@ function main(): void {
 
 	switch (command) {
 		case "run":
-			render(<RunWithSetup version={VERSION} iterations={iterations} autoStart={autoStart} />);
+			render(
+				<RunWithSetup
+					version={VERSION}
+					iterations={task ? 1 : iterations}
+					autoStart={autoStart}
+					initialTask={task}
+				/>,
+			);
 			break;
 
 		case "resume":
 			render(
-				<RunWithSetup version={VERSION} iterations={iterations} autoResume autoStart={autoStart} />,
+				<RunWithSetup
+					version={VERSION}
+					iterations={iterations}
+					autoResume
+					autoStart={autoStart}
+					initialTask={task}
+				/>,
 			);
 			break;
 

@@ -74,6 +74,24 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 
 				<Box flexDirection="column" marginTop={1}>
 					<Text bold color="yellow">
+						CLI Options:
+					</Text>
+					<Box flexDirection="column" paddingLeft={2}>
+						<Text>
+							<Text dimColor>-t, --task {"<n>"}</Text>
+							{"     "}
+							<Text>Run specific task by number or title</Text>
+						</Text>
+						<Text>
+							<Text dimColor>-b, --background</Text>
+							{"  "}
+							<Text>Run in background/daemon mode</Text>
+						</Text>
+					</Box>
+				</Box>
+
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold color="yellow">
 						Slash Commands (in-app):
 					</Text>
 					<Box flexDirection="column" paddingLeft={2}>
@@ -101,6 +119,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text dimColor>/add</Text>
 							{"              "}
 							<Text>Add a new task to the PRD (AI-generated)</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/next [n|title]</Text>
+							{"   "}
+							<Text>Set the next task to work on (by number or title)</Text>
 						</Text>
 						<Text>
 							<Text dimColor>/setup</Text>
@@ -139,6 +162,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text dimColor>ralph 5</Text>
 							{"            "}
 							<Text>Run 5 iterations</Text>
+						</Text>
+						<Text>
+							<Text dimColor>ralph -t 3</Text>
+							{"         "}
+							<Text>Run specific task #3</Text>
 						</Text>
 						<Text>
 							<Text dimColor>ralph init</Text>
