@@ -1,5 +1,18 @@
 # ralph
 
+## 0.7.0
+
+### Minor Changes
+
+- caece1a: Dedicated logs folder and improved log persistence
+- c3ac7e0: Archive completed tasks and progress on session start
+- e638604: Remove dependency definition in PRD
+- f03120d: Add archive command
+
+### Patch Changes
+
+- 67f0c8f: Fix performance issues with long running sessions
+
 ## 0.6.2
 
 ### Patch Changes
