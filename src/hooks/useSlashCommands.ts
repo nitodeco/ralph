@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
@@ -259,6 +260,11 @@ export function useSlashCommands({
 					break;
 				case "quit":
 				case "exit":
+					try {
+						execSync("clear", { stdio: "inherit" });
+					} catch {
+						// Ignore errors - still exit even if clear fails
+					}
 					exit();
 					break;
 			}
