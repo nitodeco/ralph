@@ -167,7 +167,7 @@
 				"Show clear error messages for invalid config",
 				"Add 'ralph config' command to view current configuration"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add Linux support to update system",
