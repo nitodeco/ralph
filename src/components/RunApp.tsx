@@ -127,6 +127,7 @@ export function RunApp({
 			}
 		},
 		onAllComplete: () => {
+			agent.stop();
 			const currentConfig = loadConfig();
 			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
 			logger.logSessionComplete();
@@ -136,6 +137,8 @@ export function RunApp({
 			});
 			setAppState("complete");
 			if (currentSession) {
+				const completedSession = updateSessionStatus(currentSession, "completed");
+				saveSession(completedSession);
 				deleteSession();
 				setCurrentSession(null);
 			}
@@ -144,12 +147,13 @@ export function RunApp({
 
 	const handleAgentComplete = useCallback(() => {
 		if (agent.isComplete) {
-			setAppState("complete");
+			agent.stop();
 			iteration.stop();
+			setAppState("complete");
 		} else {
 			iteration.markIterationComplete(agent.isComplete);
 		}
-	}, [agent.isComplete, iteration]);
+	}, [agent, iteration]);
 
 	const revalidateAndGoIdle = useCallback(() => {
 		const warning = validateProject();
@@ -256,9 +260,14 @@ export function RunApp({
 		if (agent.isStreaming) {
 			agent.stop();
 			iteration.stop();
+			if (currentSession) {
+				const pausedSession = updateSessionStatus(currentSession, "paused");
+				saveSession(pausedSession);
+				setCurrentSession(pausedSession);
+			}
 			setAppState("idle");
 		}
-	}, [agent, iteration]);
+	}, [agent, iteration, currentSession]);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -393,6 +402,11 @@ export function RunApp({
 					completedIterations: iteration.current,
 					totalIterations: iteration.total,
 				});
+				if (currentSession) {
+					const stoppedSession = updateSessionStatus(currentSession, "stopped");
+					saveSession(stoppedSession);
+					setCurrentSession(stoppedSession);
+				}
 				setAppState("max_iterations");
 			}
 		}
@@ -403,6 +417,7 @@ export function RunApp({
 		agent.isComplete,
 		appState,
 		prd?.project,
+		currentSession,
 	]);
 
 	useEffect(() => {
@@ -423,21 +438,14 @@ export function RunApp({
 			sendNotifications(currentConfig.notifications, "fatal_error", prd?.project, {
 				error: agent.error,
 			});
+			if (currentSession) {
+				const stoppedSession = updateSessionStatus(currentSession, "stopped");
+				saveSession(stoppedSession);
+				setCurrentSession(stoppedSession);
+			}
 			setAppState("error");
 		}
-	}, [agent.error, appState, prd?.project]);
-
-	useEffect(() => {
-		if (
-			(appState === "complete" || appState === "max_iterations" || appState === "error") &&
-			activeView === "run"
-		) {
-			const timeout = setTimeout(() => {
-				exit();
-			}, 100);
-			return () => clearTimeout(timeout);
-		}
-	}, [appState, activeView, exit]);
+	}, [agent.error, appState, prd?.project, currentSession]);
 
 	const getStatus = () => {
 		if (appState === "error") return "error";
