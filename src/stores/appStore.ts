@@ -9,6 +9,7 @@ import { RALPH_DIR } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
 	findPrdFile,
+	getCurrentTaskIndex,
 	getNextTask,
 	getTaskByIndex,
 	getTaskByTitle,
@@ -86,10 +87,6 @@ function validateProject(): ValidationWarning | null {
 	}
 
 	return null;
-}
-
-function getCurrentTaskIndex(prd: Prd): number {
-	return prd.tasks.findIndex((task) => !task.done);
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({

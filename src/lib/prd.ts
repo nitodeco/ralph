@@ -122,6 +122,10 @@ export function canWorkOnTask(task: PrdTask): { canWork: boolean; reason?: strin
 	return { canWork: true };
 }
 
+export function getCurrentTaskIndex(prd: Prd): number {
+	return prd.tasks.findIndex((task) => !task.done);
+}
+
 export function createEmptyPrd(projectName: string): Prd {
 	return {
 		project: projectName,

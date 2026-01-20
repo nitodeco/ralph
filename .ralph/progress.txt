@@ -30,3 +30,17 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Extract duplicated getCurrentTaskIndex utility
+Date: 2026-01-20
+
+Changes made:
+- Added getCurrentTaskIndex function to src/lib/prd.ts
+- Updated src/stores/appStore.ts to import getCurrentTaskIndex from @/lib/prd.ts and removed local function definition
+- Updated src/stores/orchestrator.ts to import getCurrentTaskIndex from @/lib/prd.ts and removed local function definition
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

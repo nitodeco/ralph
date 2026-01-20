@@ -9,7 +9,7 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getNextTaskWithIndex, loadPrd } from "@/lib/prd.ts";
+import { getCurrentTaskIndex, getNextTaskWithIndex, loadPrd } from "@/lib/prd.ts";
 import { initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
@@ -34,10 +34,6 @@ interface OrchestratorConfig {
 	config: RalphConfig;
 	iterations: number;
 	maxRuntimeMs?: number;
-}
-
-function getCurrentTaskIndex(prd: Prd): number {
-	return prd.tasks.findIndex((task) => !task.done);
 }
 
 class SessionOrchestrator {

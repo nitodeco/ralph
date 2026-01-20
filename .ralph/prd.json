@@ -37,7 +37,7 @@
 				"Update src/stores/orchestrator.ts to import getCurrentTaskIndex from '@/lib/prd.ts' and remove the local function definition at line 33-35",
 				"Verify both stores still function correctly after the change"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Create ConfigService and PrdService to eliminate repeated disk reads",
