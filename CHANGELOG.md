@@ -1,5 +1,38 @@
 # ralph
 
+## 0.8.0
+
+### Minor Changes
+
+- fc2c48b: Add comprehensive test suite with unit and integration tests for lib functions, CLI commands, and hooks. Tests cover config validation, PRD operations, prompt generation, version comparison, error handling, CLI argument parsing, and formatters. Includes test coverage reporting via `bun test --coverage`.
+- 1a9f8a2: Add max runtime limit configuration
+
+  - Added `maxRuntimeMs` config option to set a maximum total runtime after which Ralph stops gracefully
+  - Added `--max-runtime <seconds>` CLI flag to set runtime limit from command line
+  - Display time remaining in status bar when a runtime limit is set
+  - Useful for time-boxed overnight runs
+
+### Patch Changes
+
+- c1c5a29: Fix stop command not working in some cases
+- 08a682b: Fix UI offset caused by agent output stream on iteration completion
+
+  - AgentOutput component now returns null when there's no content to display, preventing empty boxes from causing layout shifts
+  - Agent state is now properly reset on iteration completion instead of only on iteration start, ensuring clean state between iterations
+
+- c21a1b5: Improve error messages and user feedback throughout the application
+
+  - Add comprehensive error codes system (E001-E999) for programmatic error handling
+  - Add --verbose flag to CLI for detailed error output with suggestions
+  - Improve config validation errors with field-specific hints and examples
+  - Enhance agent errors with actionable suggestions for common issues
+  - Add better task lookup error messages showing available tasks
+  - Include error codes and suggestions in JSON output for list/config commands
+
+- b1ed350: Add iteration statistics and reporting functionality. Track and display statistics about runs including time per task, success rates, and total elapsed time. Added `ralph stats` CLI command to view statistics.
+- 06fd274: Allow resume after stop
+- 53b4fd1: Add comprehensive troubleshooting documentation to README including common error scenarios, FAQ section, configuration options with examples, example PRDs for different project types, and performance tuning recommendations
+
 ## 0.7.1
 
 ### Patch Changes
