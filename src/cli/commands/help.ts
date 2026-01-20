@@ -18,6 +18,7 @@ Commands:
   archive           Archive completed tasks and progress file
   guardrails        View and manage prompt guardrails
   analyze           Analyze failure patterns and get suggestions
+  memory            View and manage session memory (lessons, patterns, notes)
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
@@ -27,10 +28,15 @@ Analyze Subcommands:
   analyze export    Export analysis as JSON
   analyze clear     Clear failure history
 
+Memory Subcommands:
+  memory            Show session memory (default)
+  memory export     Export memory as markdown
+  memory clear      Clear session memory
+
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)
   --dry-run              Simulate agent execution without running agents (validates PRD/config)
-  --json                 Output in JSON format (for list, config, and analyze commands)
+  --json                 Output in JSON format (for list, config, analyze, and memory commands)
   --verbose              Show detailed error information with context and suggestions
   -t, --task <n>         Run specific task by number or title (single task mode)
   --max-runtime <s>      Set maximum runtime in seconds (stops gracefully when reached)
@@ -46,6 +52,9 @@ Slash Commands (in-app):
   /guardrail <text> Add a new guardrail instruction
   /guardrails       View and manage guardrails
   /analyze          View failure pattern analysis
+  /learn <lesson>   Add a lesson to session memory
+  /note <note>      Add a note about the current task
+  /memory           View and manage session memory
   /setup            Configure global preferences
   /update           Check for updates
   /archive          Archive completed tasks and progress file

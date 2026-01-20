@@ -247,7 +247,7 @@
 				"Add 'ralph memory export' CLI command to export memory as markdown for documentation",
 				"Implement memory pruning to keep only the most relevant/recent entries (max 50 lessons, 20 patterns, 20 failed approaches)"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add automatic update check on startup with non-intrusive UI notification",

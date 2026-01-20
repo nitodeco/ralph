@@ -8,6 +8,8 @@ import {
 	handleGuardrailsAdd,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
+	handleMemoryClear,
+	handleMemoryExport,
 	handleStopCommand,
 	parseArgs,
 	printAnalyze,
@@ -16,6 +18,7 @@ import {
 	printGuardrails,
 	printHelp,
 	printList,
+	printMemory,
 	printStats,
 	printStatus,
 	printVersion,
@@ -128,6 +131,7 @@ function main(): void {
 		guardrailsSubcommand,
 		guardrailsArg,
 		analyzeSubcommand,
+		memorySubcommand,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -256,6 +260,20 @@ function main(): void {
 					break;
 				default:
 					printAnalyze(json);
+					break;
+			}
+			break;
+
+		case "memory":
+			switch (memorySubcommand) {
+				case "export":
+					handleMemoryExport();
+					break;
+				case "clear":
+					handleMemoryClear();
+					break;
+				default:
+					printMemory(json);
 					break;
 			}
 			break;

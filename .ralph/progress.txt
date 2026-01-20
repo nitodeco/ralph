@@ -315,3 +315,33 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Implement session memory for cross-session learning
+Date: 2026-01-20
+
+Changes made:
+- Created SessionMemory interface in src/types/session.types.ts with fields: projectName, lessonsLearned, successfulPatterns, failedApproaches, taskNotes, lastUpdated
+- Added SESSION_MEMORY_FILE_PATH constant to src/lib/paths.ts pointing to .ralph/session-memory.json
+- Created src/lib/session-memory.ts with functions: loadSessionMemory(), saveSessionMemory(), addLesson(), addSuccessPattern(), addFailedApproach(), addTaskNote(), getMemoryForPrompt(), getMemoryForTask(), exportMemoryAsMarkdown(), clearSessionMemory(), getSessionMemoryStats()
+- Updated buildPrompt() in src/lib/prompt.ts to include session memory section with lessons, patterns, and failed approaches
+- Added '/learn <lesson>' slash command to manually add lessons during sessions
+- Added '/note <note>' slash command to add notes about the current task
+- Added '/memory' slash command to open the memory management view
+- Created MemoryView component in src/components/views/MemoryView.tsx with tabbed interface for lessons, patterns, failed approaches, and notes
+- Added 'ralph memory' CLI command with list, export, and clear subcommands
+- Created src/cli/commands/memory.ts with printMemory(), handleMemoryExport(), handleMemoryClear()
+- Added MemorySubcommand type to src/types/cli.types.ts
+- Updated parser.ts to handle memory subcommands
+- Added 'memory' to ActiveView type and updated ViewRouter
+- Integrated automatic memory recording in orchestrator:
+  - Record lessons when tasks complete after retry
+  - Record successful patterns when tasks complete
+  - Record failed approaches when verification fails
+- Memory is pruned to max 50 lessons, 20 patterns, 20 failed approaches
+- Updated HelpView and help.ts to include memory documentation
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

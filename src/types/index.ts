@@ -10,6 +10,7 @@ export type {
 	Command,
 	ConfigOutput,
 	GuardrailsSubcommand,
+	MemorySubcommand,
 	ParsedArgs,
 	TaskListOutput,
 } from "./cli.types.ts";
@@ -46,6 +47,7 @@ export type {
 	IterationLogVerification,
 	IterationTiming,
 	Session,
+	SessionMemory,
 	SessionStatistics,
 	SessionStatus,
 } from "./session.types.ts";

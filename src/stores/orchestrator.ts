@@ -30,6 +30,12 @@ import {
 	updateSessionStatus,
 } from "@/lib/session.ts";
 import {
+	addFailedApproach,
+	addLesson,
+	addSuccessPattern,
+	initializeSessionMemory,
+} from "@/lib/session-memory.ts";
+import {
 	calculateStatisticsFromLogs,
 	displayStatisticsReport,
 	logStatisticsToProgress,
@@ -345,6 +351,34 @@ class SessionOrchestrator {
 							topPattern: significantPatterns[0]?.category,
 						});
 					}
+
+					if (verificationFailed && this.lastVerificationResult) {
+						const failedChecks = this.lastVerificationResult.failedChecks;
+						if (failedChecks.length > 0) {
+							addFailedApproach(`Verification failed: ${failedChecks.join(", ")}`);
+						}
+					}
+				}
+
+				if (loadedConfig.learningEnabled !== false) {
+					const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
+					const wasSuccessful = !agentStore.error && agentStore.isComplete && !verificationFailed;
+
+					if (wasSuccessful && agentStore.retryCount > 0 && this.lastRetryContexts.length > 0) {
+						const lastContext = this.lastRetryContexts[this.lastRetryContexts.length - 1];
+						if (lastContext) {
+							addLesson(
+								`Task "${taskWithIndex?.title ?? "Unknown"}" succeeded after retry: ${lastContext.rootCause} was resolved`,
+							);
+							addSuccessPattern(
+								`Recovered from ${lastContext.failureCategory} by addressing: ${lastContext.rootCause}`,
+							);
+						}
+					}
+
+					if (wasSuccessful && taskWithIndex) {
+						addSuccessPattern(`Completed task: ${taskWithIndex.title}`);
+					}
 				}
 
 				const retryContextsForLog =
@@ -481,6 +515,8 @@ class SessionOrchestrator {
 
 		const sessionId = generateSessionId();
 		initializeLogsIndex(sessionId, prd?.project ?? "Unknown Project");
+
+		initializeSessionMemory(prd?.project ?? "Unknown Project");
 
 		eventBus.emit("session:start", { totalIterations, taskIndex });
 

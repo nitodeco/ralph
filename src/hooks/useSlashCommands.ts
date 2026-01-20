@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { addGuardrail } from "@/lib/guardrails.ts";
+import { addLesson, addTaskNote } from "@/lib/session-memory.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types/index.ts";
 
 interface SlashCommandMessage {
@@ -17,12 +18,14 @@ interface UseSlashCommandsDependencies {
 	iterationPause: () => void;
 	setActiveView: (view: ActiveView) => void;
 	exit: () => void;
+	getCurrentTaskTitle?: () => string | null;
 }
 
 interface UseSlashCommandsResult {
 	handleSlashCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
+	memoryMessage: SlashCommandMessage | null;
 }
 
 export function useSlashCommands({
@@ -34,9 +37,11 @@ export function useSlashCommands({
 	iterationPause,
 	setActiveView,
 	exit,
+	getCurrentTaskTitle,
 }: UseSlashCommandsDependencies): UseSlashCommandsResult {
 	const [nextTaskMessage, setNextTaskMessage] = useState<SlashCommandMessage | null>(null);
 	const [guardrailMessage, setGuardrailMessage] = useState<SlashCommandMessage | null>(null);
+	const [memoryMessage, setMemoryMessage] = useState<SlashCommandMessage | null>(null);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -98,6 +103,65 @@ export function useSlashCommands({
 					iterationPause();
 					setActiveView("guardrails");
 					break;
+				case "learn":
+					if (args?.lesson) {
+						try {
+							addLesson(args.lesson);
+							setMemoryMessage({
+								type: "success",
+								text: `Added lesson: "${args.lesson}"`,
+							});
+						} catch {
+							setMemoryMessage({
+								type: "error",
+								text: "Failed to add lesson",
+							});
+						}
+						setTimeout(() => setMemoryMessage(null), 5000);
+					} else {
+						setMemoryMessage({
+							type: "error",
+							text: "Usage: /learn <lesson>",
+						});
+						setTimeout(() => setMemoryMessage(null), 5000);
+					}
+					break;
+				case "note":
+					if (args?.note) {
+						const taskTitle = getCurrentTaskTitle?.();
+						if (taskTitle) {
+							try {
+								addTaskNote(taskTitle, args.note);
+								setMemoryMessage({
+									type: "success",
+									text: `Added note to task: "${taskTitle}"`,
+								});
+							} catch {
+								setMemoryMessage({
+									type: "error",
+									text: "Failed to add note",
+								});
+							}
+						} else {
+							setMemoryMessage({
+								type: "error",
+								text: "No current task to add note to",
+							});
+						}
+						setTimeout(() => setMemoryMessage(null), 5000);
+					} else {
+						setMemoryMessage({
+							type: "error",
+							text: "Usage: /note <note>",
+						});
+						setTimeout(() => setMemoryMessage(null), 5000);
+					}
+					break;
+				case "memory":
+					agentStop();
+					iterationPause();
+					setActiveView("memory");
+					break;
 				case "init":
 				case "setup":
 				case "update":
@@ -125,8 +189,9 @@ export function useSlashCommands({
 			stopAgent,
 			setActiveView,
 			setManualNextTask,
+			getCurrentTaskTitle,
 		],
 	);
 
-	return { handleSlashCommand, nextTaskMessage, guardrailMessage };
+	return { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage };
 }

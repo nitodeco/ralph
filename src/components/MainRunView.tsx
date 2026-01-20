@@ -24,6 +24,7 @@ interface MainRunViewProps {
 	agentIsStreaming: boolean;
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
+	memoryMessage: SlashCommandMessage | null;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 }
 
@@ -37,6 +38,7 @@ export function MainRunView({
 	agentIsStreaming,
 	nextTaskMessage,
 	guardrailMessage,
+	memoryMessage,
 	onCommand,
 }: MainRunViewProps): React.ReactElement {
 	return (
@@ -58,6 +60,14 @@ export function MainRunView({
 				<Box paddingX={1} marginY={1}>
 					<Message type={guardrailMessage.type === "success" ? "success" : "error"}>
 						{guardrailMessage.text}
+					</Message>
+				</Box>
+			)}
+
+			{memoryMessage && (
+				<Box paddingX={1} marginY={1}>
+					<Message type={memoryMessage.type === "success" ? "success" : "error"}>
+						{memoryMessage.text}
 					</Message>
 				</Box>
 			)}

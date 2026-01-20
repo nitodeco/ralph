@@ -1,8 +1,15 @@
 import { DEFAULTS } from "@/lib/defaults.ts";
-import type { AnalyzeSubcommand, Command, GuardrailsSubcommand, ParsedArgs } from "@/types.ts";
+import type {
+	AnalyzeSubcommand,
+	Command,
+	GuardrailsSubcommand,
+	MemorySubcommand,
+	ParsedArgs,
+} from "@/types.ts";
 
 const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "remove", "toggle"];
 const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
+const VALID_MEMORY_SUBCOMMANDS: MemorySubcommand[] = ["list", "clear", "export"];
 
 export function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
@@ -86,6 +93,17 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let memorySubcommand: MemorySubcommand | undefined;
+
+	if (command === "memory") {
+		const subcommand = filteredArgs[1] as MemorySubcommand | undefined;
+		if (subcommand && VALID_MEMORY_SUBCOMMANDS.includes(subcommand)) {
+			memorySubcommand = subcommand;
+		} else {
+			memorySubcommand = "list";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -99,5 +117,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 		guardrailsSubcommand,
 		guardrailsArg,
 		analyzeSubcommand,
+		memorySubcommand,
 	};
 }

@@ -25,6 +25,7 @@ export const GLOBAL_CONFIG_PATH = join(GLOBAL_RALPH_DIR, "config.json");
 export const PROJECT_CONFIG_PATH = join(RALPH_DIR, "config.json");
 export const GUARDRAILS_FILE_PATH = join(RALPH_DIR, "guardrails.json");
 export const FAILURE_HISTORY_FILE_PATH = join(RALPH_DIR, "failure-history.json");
+export const SESSION_MEMORY_FILE_PATH = join(RALPH_DIR, "session-memory.json");
 
 export const PATHS = {
 	ralphDir: RALPH_DIR,
@@ -41,6 +42,7 @@ export const PATHS = {
 	projectConfig: PROJECT_CONFIG_PATH,
 	guardrails: GUARDRAILS_FILE_PATH,
 	failureHistory: FAILURE_HISTORY_FILE_PATH,
+	sessionMemory: SESSION_MEMORY_FILE_PATH,
 } as const;
 
 export function isDirectoryWritable(directory: string): boolean {

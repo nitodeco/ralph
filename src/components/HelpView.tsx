@@ -161,6 +161,21 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>View failure pattern analysis</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/learn {"<lesson>"}</Text>
+							{"   "}
+							<Text>Add a lesson to session memory</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/note {"<note>"}</Text>
+							{"      "}
+							<Text>Add a note about the current task</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/memory</Text>
+							{"           "}
+							<Text>View and manage session memory</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/help</Text>
 							{"             "}
 							<Text>Show this help message</Text>

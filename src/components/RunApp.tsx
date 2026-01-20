@@ -62,16 +62,25 @@ export function RunApp({
 
 	const dryRunState = useDryRun(dryRun, config, iterations);
 
-	const { handleSlashCommand, nextTaskMessage, guardrailMessage } = useSlashCommands({
-		startIterations,
-		resumeSession,
-		stopAgent,
-		setManualNextTask,
-		agentStop,
-		iterationPause,
-		setActiveView,
-		exit,
-	});
+	const getCurrentTaskTitle = useCallback(() => {
+		if (!prd) return null;
+		const currentTask = prd.tasks.find((task) => !task.done);
+		return currentTask?.title ?? null;
+	}, [prd]);
+
+	const { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage } = useSlashCommands(
+		{
+			startIterations,
+			resumeSession,
+			stopAgent,
+			setManualNextTask,
+			agentStop,
+			iterationPause,
+			setActiveView,
+			exit,
+			getCurrentTaskTitle,
+		},
+	);
 
 	useSessionLifecycle(
 		{
@@ -155,6 +164,7 @@ export function RunApp({
 				agentIsStreaming={agentIsStreaming}
 				nextTaskMessage={displayedMessage}
 				guardrailMessage={guardrailMessage}
+				memoryMessage={memoryMessage}
 				onCommand={handleSlashCommand}
 			/>
 		</ViewRouter>

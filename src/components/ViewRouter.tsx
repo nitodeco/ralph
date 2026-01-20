@@ -17,6 +17,7 @@ import {
 	ArchiveView,
 	DryRunView,
 	GuardrailsView,
+	MemoryView,
 	NotInitializedView,
 	ResumePromptView,
 	StatusView,
@@ -87,6 +88,10 @@ export function ViewRouter({
 
 	if (activeView === "analyze") {
 		return <AnalyzeView version={version} onClose={onHelpClose} />;
+	}
+
+	if (activeView === "memory") {
+		return <MemoryView version={version} onClose={onHelpClose} />;
 	}
 
 	if (dryRun) {

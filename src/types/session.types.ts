@@ -138,3 +138,12 @@ export interface FailureHistory {
 	patterns: FailurePattern[];
 	lastAnalyzedAt: string | null;
 }
+
+export interface SessionMemory {
+	projectName: string;
+	lessonsLearned: string[];
+	successfulPatterns: string[];
+	failedApproaches: string[];
+	taskNotes: Record<string, string>;
+	lastUpdated: string;
+}
