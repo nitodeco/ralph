@@ -6,7 +6,16 @@ import { InitWizard } from "@/components/InitWizard.tsx";
 import { RunApp } from "@/components/RunApp.tsx";
 import { SetupWizard } from "@/components/SetupWizard.tsx";
 import { UpdatePrompt } from "@/components/UpdatePrompt.tsx";
-import { globalConfigExists, loadConfig } from "@/lib/config.ts";
+import {
+	CONFIG_DEFAULTS,
+	formatValidationErrors,
+	getEffectiveConfig,
+	getGlobalConfigPath,
+	getProjectConfigPath,
+	globalConfigExists,
+	loadConfig,
+	validateConfig,
+} from "@/lib/config.ts";
 import {
 	cleanupDaemon,
 	isBackgroundProcessRunning,
@@ -33,6 +42,7 @@ type Command =
 	| "status"
 	| "stop"
 	| "list"
+	| "config"
 	| "help"
 	| "version"
 	| "-v"
@@ -101,13 +111,14 @@ Commands:
   status            Show current session state, progress, and recent logs
   stop              Stop a running Ralph process gracefully
   list              Display all PRD tasks and their completion status
+  config            View current configuration with validation
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
 Options:
   -b, --background  Run Ralph in background/daemon mode (detached from terminal)
-  --json            Output in JSON format (for list command)
+  --json            Output in JSON format (for list and config commands)
   -t, --task <n>    Run specific task by number or title (single task mode)
 
 Slash Commands (in-app):
@@ -130,6 +141,7 @@ Examples:
   ralph stop        Stop a background Ralph process gracefully
   ralph list        View all tasks and their completion status
   ralph list --json Output task list as JSON for scripting
+  ralph config      View current configuration
   ralph update      Check for and install updates
   ralph -b          Start Ralph in background mode (logs to .ralph/ralph.log)
   ralph resume -b   Resume session in background mode
@@ -155,6 +167,33 @@ function formatElapsedTime(seconds: number): string {
 	parts.push(`${remainingSeconds}s`);
 
 	return parts.join(" ");
+}
+
+function formatDuration(milliseconds: number): string {
+	if (milliseconds === 0) {
+		return "disabled";
+	}
+	const seconds = Math.floor(milliseconds / 1000);
+	const minutes = Math.floor(seconds / 60);
+	const hours = Math.floor(minutes / 60);
+
+	if (hours > 0) {
+		return `${hours}h ${minutes % 60}m`;
+	}
+	if (minutes > 0) {
+		return `${minutes}m ${seconds % 60}s`;
+	}
+	return `${seconds}s`;
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes === 0) {
+		return "0 B";
+	}
+	const units = ["B", "KB", "MB", "GB"];
+	const unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
+	const value = bytes / 1024 ** unitIndex;
+	return `${value.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
 }
 
 function printStatus(): void {
@@ -429,47 +468,107 @@ function printList(jsonOutput: boolean): void {
 	}
 }
 
-async function _handleStopCommand(): Promise<void> {
-	console.log(`◆ ralph v${VERSION} - Stop\n`);
+function printConfig(jsonOutput: boolean): void {
+	const {
+		global: globalConfig,
+		project: projectConfig,
+		effective: effectiveConfig,
+	} = getEffectiveConfig();
+	const validation = validateConfig(effectiveConfig);
 
-	const { running, pid } = isBackgroundProcessRunning();
-
-	if (!running || pid === null) {
-		const session = loadSession();
-		if (session && session.status === "running") {
-			const stoppedSession = updateSessionStatus(session, "stopped");
-			saveSession(stoppedSession);
-			console.log("No running process found, but session was marked as running.");
-			console.log("Session status has been updated to 'stopped'.");
-			console.log("\nUse 'ralph resume' to continue from where you left off.");
-		} else {
-			console.log("No Ralph process is currently running.");
-		}
+	if (jsonOutput) {
+		const output = {
+			globalConfigPath: getGlobalConfigPath(),
+			projectConfigPath: getProjectConfigPath(),
+			globalConfig,
+			projectConfig,
+			effectiveConfig,
+			defaults: CONFIG_DEFAULTS,
+			validation: {
+				valid: validation.valid,
+				errors: validation.errors,
+				warnings: validation.warnings,
+			},
+		};
+		console.log(JSON.stringify(output, null, 2));
 		return;
 	}
 
-	console.log(`Stopping Ralph process (PID: ${pid})...`);
+	console.log(`◆ ralph v${VERSION} - Configuration\n`);
 
-	const session = loadSession();
-	if (session) {
-		const stoppedSession = updateSessionStatus(session, "stopped");
-		saveSession(stoppedSession);
+	if (!validation.valid) {
+		console.log("\x1b[31mConfiguration errors found:\x1b[0m");
+		console.log(formatValidationErrors(validation));
+		console.log("");
+	} else if (validation.warnings.length > 0) {
+		console.log("\x1b[33mConfiguration warnings:\x1b[0m");
+		console.log(formatValidationErrors(validation));
+		console.log("");
 	}
 
-	const result = await stopDaemonProcess();
+	console.log("Config Files:");
+	console.log(`  Global:  ${getGlobalConfigPath()}`);
+	console.log(`  Project: ${getProjectConfigPath()}`);
+	console.log("");
 
-	if (result.success) {
-		console.log(result.message);
-		if (result.wasKilled) {
-			console.log(
-				"Note: Process did not respond to graceful shutdown and was forcefully terminated.",
-			);
+	console.log("Effective Configuration:");
+	console.log("─".repeat(60));
+
+	console.log("\nAgent Settings:");
+	console.log(`  agent:              ${effectiveConfig.agent}`);
+	console.log(`  prdFormat:          ${effectiveConfig.prdFormat ?? CONFIG_DEFAULTS.prdFormat}`);
+
+	console.log("\nRetry Settings:");
+	console.log(`  maxRetries:         ${effectiveConfig.maxRetries ?? CONFIG_DEFAULTS.maxRetries}`);
+	console.log(
+		`  retryDelayMs:       ${formatDuration(effectiveConfig.retryDelayMs ?? CONFIG_DEFAULTS.retryDelayMs)}`,
+	);
+
+	console.log("\nTimeout Settings:");
+	console.log(
+		`  agentTimeoutMs:     ${formatDuration(effectiveConfig.agentTimeoutMs ?? CONFIG_DEFAULTS.agentTimeoutMs)}`,
+	);
+	console.log(
+		`  stuckThresholdMs:   ${formatDuration(effectiveConfig.stuckThresholdMs ?? CONFIG_DEFAULTS.stuckThresholdMs)}`,
+	);
+
+	console.log("\nLogging:");
+	console.log(
+		`  logFilePath:        ${effectiveConfig.logFilePath ?? CONFIG_DEFAULTS.logFilePath}`,
+	);
+
+	const notifications = effectiveConfig.notifications ?? CONFIG_DEFAULTS.notifications;
+	console.log("\nNotifications:");
+	console.log(`  systemNotification: ${notifications.systemNotification ?? false}`);
+	console.log(`  webhookUrl:         ${notifications.webhookUrl ?? "(not set)"}`);
+	console.log(`  markerFilePath:     ${notifications.markerFilePath ?? "(not set)"}`);
+
+	const memory = effectiveConfig.memory ?? CONFIG_DEFAULTS.memory;
+	console.log("\nMemory Management:");
+	console.log(
+		`  maxOutputBuffer:    ${formatBytes(memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes)}`,
+	);
+	console.log(
+		`  memoryWarning:      ${memory.memoryWarningThresholdMb ? `${memory.memoryWarningThresholdMb} MB` : "disabled"}`,
+	);
+	console.log(
+		`  gcHints:            ${(memory.enableGarbageCollectionHints ?? CONFIG_DEFAULTS.memory.enableGarbageCollectionHints) ? "enabled" : "disabled"}`,
+	);
+
+	console.log(`\n${"─".repeat(60)}`);
+
+	if (globalConfig && !projectConfig) {
+		console.log("\nUsing global configuration only.");
+	} else if (projectConfig) {
+		console.log("\nProject config overrides global config for:");
+		const overrides: string[] = [];
+		for (const key of Object.keys(projectConfig)) {
+			overrides.push(`  • ${key}`);
 		}
-		console.log("\nUse 'ralph resume' to continue from where you left off.");
-	} else {
-		console.error(`Error: ${result.message}`);
-		process.exit(1);
+		console.log(overrides.join("\n"));
 	}
+
+	console.log("\nRun 'ralph setup' to modify global configuration.");
 }
 
 async function handleStopCommand(): Promise<void> {
@@ -632,6 +731,10 @@ function main(): void {
 
 		case "list":
 			printList(json);
+			break;
+
+		case "config":
+			printConfig(json);
 			break;
 
 		case "stop":

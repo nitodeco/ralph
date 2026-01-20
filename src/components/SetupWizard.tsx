@@ -2,12 +2,13 @@ import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import { useState } from "react";
-import { loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
 import {
 	DEFAULT_ENABLE_GC_HINTS,
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
 	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
-} from "@/lib/memory.ts";
+	loadGlobalConfig,
+	saveGlobalConfig,
+} from "@/lib/config.ts";
 import type {
 	AgentType,
 	MemoryConfig,
