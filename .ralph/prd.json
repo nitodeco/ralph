@@ -26,7 +26,7 @@
 				"Search codebase for any imports that use these re-export paths (e.g., import from '@/lib/config' for types) and update to import from '@/types' directly",
 				"Verify all 24 files that import from @/types still compile correctly"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Extract duplicated getCurrentTaskIndex utility",

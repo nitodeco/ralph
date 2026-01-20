@@ -15,3 +15,18 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Consolidate type exports to single canonical path
+Date: 2026-01-20
+
+Changes made:
+- Removed type re-exports from src/lib/config.ts (ConfigValidationError, ConfigValidationResult)
+- Removed type re-exports from src/lib/prd.ts (LoadPrdResult)
+- Removed type re-exports from src/stores/appStore.ts (ActiveView, AppState, SetManualTaskResult, ValidationWarning)
+- Updated src/stores/index.ts to re-export types from @/types instead of appStore.ts
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

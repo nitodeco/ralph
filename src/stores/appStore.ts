@@ -37,8 +37,6 @@ import { useAgentStore } from "./agentStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 import { orchestrator } from "./orchestrator.ts";
 
-export type { ActiveView, AppState, SetManualTaskResult, ValidationWarning } from "@/types.ts";
-
 interface AppStoreState {
 	appState: AppState;
 	activeView: ActiveView;

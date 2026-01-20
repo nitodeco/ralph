@@ -54,8 +54,6 @@ const DEFAULT_CONFIG: RalphConfig = {
 const VALID_AGENTS: AgentType[] = ["cursor", "claude"];
 const VALID_PRD_FORMATS: PrdFormat[] = ["json", "yaml"];
 
-export type { ConfigValidationError, ConfigValidationResult } from "@/types.ts";
-
 function validatePositiveInteger(
 	value: unknown,
 	fieldName: string,
