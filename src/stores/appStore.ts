@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { create } from "zustand";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { loadConfig } from "@/lib/config.ts";
@@ -19,7 +18,6 @@ import {
 	logSessionResume as logProgressSessionResume,
 	logSessionStart as logProgressSessionStart,
 	logSessionStopped as logProgressSessionStopped,
-	PROGRESS_FILE_PATH,
 } from "@/lib/progress.ts";
 import {
 	createSession,
@@ -86,13 +84,6 @@ function validateProject(): ValidationWarning | null {
 	if (!prdFile) {
 		return {
 			message: `No prd.json or prd.yaml found in ${RALPH_DIR}/`,
-			hint: "Run 'ralph init' or type /init to create one",
-		};
-	}
-
-	if (!existsSync(PROGRESS_FILE_PATH)) {
-		return {
-			message: `No ${PROGRESS_FILE_PATH} found`,
 			hint: "Run 'ralph init' or type /init to create one",
 		};
 	}
