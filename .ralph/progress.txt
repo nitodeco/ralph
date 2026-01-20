@@ -308,3 +308,53 @@ Implementation:
 - Updated help documentation:
   - src/index.tsx printHelp includes /next and --task documentation
   - src/components/HelpView.tsx includes /next command and CLI options section
+
+Task 14: Implement configuration validation and defaults - COMPLETED
+
+Implementation:
+- Config validation schema already existed in src/lib/config.ts with comprehensive validation rules
+- validateConfig function validates all RalphConfig fields:
+  - agent: Required, must be "cursor" or "claude"
+  - prdFormat: Optional, must be "json" or "yaml"
+  - maxRetries: Optional, must be non-negative integer
+  - retryDelayMs: Optional, must be positive integer
+  - agentTimeoutMs: Optional, must be non-negative integer (0 = disabled)
+  - stuckThresholdMs: Optional, must be non-negative integer (0 = disabled)
+  - notifications: Validates nested systemNotification (boolean), webhookUrl (valid URL), markerFilePath (string)
+  - memory: Validates nested maxOutputBufferBytes, memoryWarningThresholdMb, enableGarbageCollectionHints
+- Added warnings for potentially problematic configurations:
+  - stuckThresholdMs >= agentTimeoutMs (stuck detection will never trigger)
+  - maxRetries > 10 (long recovery times)
+  - retryDelayMs < 1000 (rapid retries)
+  - agentTimeoutMs < 60000 (may timeout before completing tasks)
+- Added formatValidationErrors function for clear, actionable error messages
+- Added CONFIG_DEFAULTS with complete defaults for all optional fields
+- Added applyDefaults function to merge user config with defaults
+- Added 'ralph config' command to src/index.tsx:
+  - Displays effective configuration with all settings
+  - Shows global and project config file paths
+  - Indicates which settings are overridden by project config
+  - Supports --json flag for machine-readable output
+  - Shows validation errors and warnings
+- Added helper functions: getEffectiveConfig, getGlobalConfigPath, getProjectConfigPath
+- Exported DEFAULT_ENABLE_GC_HINTS from config.ts
+- Updated SetupWizard.tsx to import memory defaults from config.ts instead of memory.ts
+
+Task 14: Implement configuration validation and defaults - COMPLETED
+
+Implementation:
+- Config schema with validation rules already existed in src/lib/config.ts
+- validateConfig function validates all config fields including nested objects
+- Added warnings for common configuration issues (e.g., stuckThreshold > agentTimeout)
+- applyDefaults function provides sensible defaults for all optional config fields
+- CONFIG_DEFAULTS constant defines defaults for agent, prdFormat, retries, timeouts, etc.
+- formatValidationErrors formats validation errors and warnings for display
+- Added 'ralph config' command to CLI in src/index.tsx:
+  - Shows config file paths (global and project)
+  - Displays effective configuration with all settings
+  - Shows validation errors and warnings with clear messages
+  - Supports --json flag for machine-readable output
+  - Shows which settings are overridden by project config
+- Added getEffectiveConfig to get global, project, and merged config
+- Added getGlobalConfigPath and getProjectConfigPath helper functions
+- Updated help text with config command documentation

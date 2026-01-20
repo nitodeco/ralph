@@ -8,7 +8,6 @@ import { SetupWizard } from "@/components/SetupWizard.tsx";
 import { UpdatePrompt } from "@/components/UpdatePrompt.tsx";
 import {
 	CONFIG_DEFAULTS,
-	formatValidationErrors,
 	getEffectiveConfig,
 	getGlobalConfigPath,
 	getProjectConfigPath,
@@ -141,7 +140,8 @@ Examples:
   ralph stop        Stop a background Ralph process gracefully
   ralph list        View all tasks and their completion status
   ralph list --json Output task list as JSON for scripting
-  ralph config      View current configuration
+  ralph config      View current configuration and validation status
+  ralph config --json  Output configuration as JSON for scripting
   ralph update      Check for and install updates
   ralph -b          Start Ralph in background mode (logs to .ralph/ralph.log)
   ralph resume -b   Resume session in background mode
@@ -173,27 +173,41 @@ function formatDuration(milliseconds: number): string {
 	if (milliseconds === 0) {
 		return "disabled";
 	}
-	const seconds = Math.floor(milliseconds / 1000);
-	const minutes = Math.floor(seconds / 60);
-	const hours = Math.floor(minutes / 60);
-
-	if (hours > 0) {
-		return `${hours}h ${minutes % 60}m`;
+	const seconds = milliseconds / 1000;
+	if (seconds < 60) {
+		return `${seconds}s`;
 	}
-	if (minutes > 0) {
-		return `${minutes}m ${seconds % 60}s`;
+	const minutes = seconds / 60;
+	if (minutes < 60) {
+		return `${minutes}m`;
 	}
-	return `${seconds}s`;
+	const hours = minutes / 60;
+	return `${hours}h`;
 }
 
 function formatBytes(bytes: number): string {
-	if (bytes === 0) {
-		return "0 B";
+	if (bytes < 1024) {
+		return `${bytes}B`;
 	}
-	const units = ["B", "KB", "MB", "GB"];
-	const unitIndex = Math.floor(Math.log(bytes) / Math.log(1024));
-	const value = bytes / 1024 ** unitIndex;
-	return `${value.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
+	const kilobytes = bytes / 1024;
+	if (kilobytes < 1024) {
+		return `${kilobytes.toFixed(1)}KB`;
+	}
+	const megabytes = kilobytes / 1024;
+	return `${megabytes.toFixed(1)}MB`;
+}
+
+function _formatConfigValue(value: unknown): string {
+	if (value === null || value === undefined) {
+		return "\x1b[2mnot set\x1b[0m";
+	}
+	if (typeof value === "boolean") {
+		return value ? "\x1b[32mtrue\x1b[0m" : "\x1b[31mfalse\x1b[0m";
+	}
+	if (typeof value === "number") {
+		return `\x1b[33m${value}\x1b[0m`;
+	}
+	return `\x1b[36m${value}\x1b[0m`;
 }
 
 function printStatus(): void {
@@ -240,8 +254,8 @@ function printStatus(): void {
 		console.log(`  Project:          ${prd.project}`);
 		console.log(`  Tasks:            ${completedTasks} / ${totalTasks} (${progressPercent}%)`);
 
-		if (session.currentTaskIndex >= 0 && session.currentTaskIndex < prd.tasks.length) {
-			const currentTask = prd.tasks[session.currentTaskIndex];
+		const currentTask = prd.tasks[session.currentTaskIndex];
+		if (session.currentTaskIndex >= 0 && session.currentTaskIndex < prd.tasks.length && currentTask) {
 			console.log(`  Current Task:     ${currentTask.title}`);
 		} else {
 			const nextTask = prd.tasks.find((task) => !task.done);
@@ -468,22 +482,42 @@ function printList(jsonOutput: boolean): void {
 	}
 }
 
+interface ConfigOutput {
+	global: {
+		path: string;
+		exists: boolean;
+		values: Record<string, unknown> | null;
+	};
+	project: {
+		path: string;
+		exists: boolean;
+		values: Record<string, unknown> | null;
+	};
+	effective: Record<string, unknown>;
+	validation: {
+		valid: boolean;
+		errors: Array<{ field: string; message: string; value?: unknown }>;
+		warnings: Array<{ field: string; message: string; value?: unknown }>;
+	};
+}
+
 function printConfig(jsonOutput: boolean): void {
-	const {
-		global: globalConfig,
-		project: projectConfig,
-		effective: effectiveConfig,
-	} = getEffectiveConfig();
-	const validation = validateConfig(effectiveConfig);
+	const { global: globalConfig, project: projectConfig, effective } = getEffectiveConfig();
+	const validation = validateConfig(effective);
 
 	if (jsonOutput) {
-		const output = {
-			globalConfigPath: getGlobalConfigPath(),
-			projectConfigPath: getProjectConfigPath(),
-			globalConfig,
-			projectConfig,
-			effectiveConfig,
-			defaults: CONFIG_DEFAULTS,
+		const output: ConfigOutput = {
+			global: {
+				path: getGlobalConfigPath(),
+				exists: globalConfig !== null,
+				values: globalConfig,
+			},
+			project: {
+				path: getProjectConfigPath(),
+				exists: projectConfig !== null,
+				values: projectConfig,
+			},
+			effective: effective as unknown as Record<string, unknown>,
 			validation: {
 				valid: validation.valid,
 				errors: validation.errors,
@@ -496,79 +530,84 @@ function printConfig(jsonOutput: boolean): void {
 
 	console.log(`◆ ralph v${VERSION} - Configuration\n`);
 
-	if (!validation.valid) {
-		console.log("\x1b[31mConfiguration errors found:\x1b[0m");
-		console.log(formatValidationErrors(validation));
-		console.log("");
-	} else if (validation.warnings.length > 0) {
-		console.log("\x1b[33mConfiguration warnings:\x1b[0m");
-		console.log(formatValidationErrors(validation));
-		console.log("");
+	console.log("Config Files:");
+	console.log(`  Global:  ${getGlobalConfigPath()} ${globalConfig ? "(exists)" : "(not found)"}`);
+	console.log(`  Project: ${getProjectConfigPath()} ${projectConfig ? "(exists)" : "(not found)"}`);
+
+	console.log(`\n${"─".repeat(60)}`);
+	console.log("\nEffective Configuration:\n");
+
+	console.log("  Agent Settings:");
+	console.log(`    agent:            ${effective.agent}`);
+	console.log(`    prdFormat:        ${effective.prdFormat}`);
+
+	console.log("\n  Retry Settings:");
+	console.log(`    maxRetries:       ${effective.maxRetries}`);
+	console.log(
+		`    retryDelayMs:     ${effective.retryDelayMs} (${formatDuration(effective.retryDelayMs ?? 0)})`,
+	);
+
+	console.log("\n  Timeout Settings:");
+	console.log(
+		`    agentTimeoutMs:   ${effective.agentTimeoutMs} (${formatDuration(effective.agentTimeoutMs ?? 0)})`,
+	);
+	console.log(
+		`    stuckThresholdMs: ${effective.stuckThresholdMs} (${formatDuration(effective.stuckThresholdMs ?? 0)})`,
+	);
+
+	console.log("\n  Logging:");
+	console.log(`    logFilePath:      ${effective.logFilePath}`);
+
+	console.log("\n  Notifications:");
+	if (effective.notifications) {
+		console.log(
+			`    systemNotification: ${effective.notifications.systemNotification ? "enabled" : "disabled"}`,
+		);
+		console.log(`    webhookUrl:         ${effective.notifications.webhookUrl ?? "(not set)"}`);
+		console.log(`    markerFilePath:     ${effective.notifications.markerFilePath ?? "(not set)"}`);
+	} else {
+		console.log("    (not configured)");
 	}
 
-	console.log("Config Files:");
-	console.log(`  Global:  ${getGlobalConfigPath()}`);
-	console.log(`  Project: ${getProjectConfigPath()}`);
-	console.log("");
-
-	console.log("Effective Configuration:");
-	console.log("─".repeat(60));
-
-	console.log("\nAgent Settings:");
-	console.log(`  agent:              ${effectiveConfig.agent}`);
-	console.log(`  prdFormat:          ${effectiveConfig.prdFormat ?? CONFIG_DEFAULTS.prdFormat}`);
-
-	console.log("\nRetry Settings:");
-	console.log(`  maxRetries:         ${effectiveConfig.maxRetries ?? CONFIG_DEFAULTS.maxRetries}`);
-	console.log(
-		`  retryDelayMs:       ${formatDuration(effectiveConfig.retryDelayMs ?? CONFIG_DEFAULTS.retryDelayMs)}`,
-	);
-
-	console.log("\nTimeout Settings:");
-	console.log(
-		`  agentTimeoutMs:     ${formatDuration(effectiveConfig.agentTimeoutMs ?? CONFIG_DEFAULTS.agentTimeoutMs)}`,
-	);
-	console.log(
-		`  stuckThresholdMs:   ${formatDuration(effectiveConfig.stuckThresholdMs ?? CONFIG_DEFAULTS.stuckThresholdMs)}`,
-	);
-
-	console.log("\nLogging:");
-	console.log(
-		`  logFilePath:        ${effectiveConfig.logFilePath ?? CONFIG_DEFAULTS.logFilePath}`,
-	);
-
-	const notifications = effectiveConfig.notifications ?? CONFIG_DEFAULTS.notifications;
-	console.log("\nNotifications:");
-	console.log(`  systemNotification: ${notifications.systemNotification ?? false}`);
-	console.log(`  webhookUrl:         ${notifications.webhookUrl ?? "(not set)"}`);
-	console.log(`  markerFilePath:     ${notifications.markerFilePath ?? "(not set)"}`);
-
-	const memory = effectiveConfig.memory ?? CONFIG_DEFAULTS.memory;
-	console.log("\nMemory Management:");
-	console.log(
-		`  maxOutputBuffer:    ${formatBytes(memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes)}`,
-	);
-	console.log(
-		`  memoryWarning:      ${memory.memoryWarningThresholdMb ? `${memory.memoryWarningThresholdMb} MB` : "disabled"}`,
-	);
-	console.log(
-		`  gcHints:            ${(memory.enableGarbageCollectionHints ?? CONFIG_DEFAULTS.memory.enableGarbageCollectionHints) ? "enabled" : "disabled"}`,
-	);
+	console.log("\n  Memory Management:");
+	if (effective.memory) {
+		const bufferSize = effective.memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
+		console.log(`    maxOutputBuffer:    ${formatBytes(bufferSize)}`);
+		const warningThreshold = effective.memory.memoryWarningThresholdMb;
+		console.log(
+			`    memoryWarning:      ${warningThreshold === 0 ? "disabled" : `${warningThreshold}MB`}`,
+		);
+		console.log(
+			`    gcHints:            ${effective.memory.enableGarbageCollectionHints ? "enabled" : "disabled"}`,
+		);
+	} else {
+		console.log("    (using defaults)");
+	}
 
 	console.log(`\n${"─".repeat(60)}`);
 
-	if (globalConfig && !projectConfig) {
-		console.log("\nUsing global configuration only.");
-	} else if (projectConfig) {
-		console.log("\nProject config overrides global config for:");
-		const overrides: string[] = [];
-		for (const key of Object.keys(projectConfig)) {
-			overrides.push(`  • ${key}`);
+	if (!validation.valid) {
+		console.log("\nValidation Errors:");
+		for (const error of validation.errors) {
+			const valueInfo = error.value !== undefined ? ` (got: ${JSON.stringify(error.value)})` : "";
+			console.log(`  \x1b[31m✗\x1b[0m ${error.field}: ${error.message}${valueInfo}`);
 		}
-		console.log(overrides.join("\n"));
 	}
 
-	console.log("\nRun 'ralph setup' to modify global configuration.");
+	if (validation.warnings.length > 0) {
+		console.log("\nWarnings:");
+		for (const warning of validation.warnings) {
+			const valueInfo =
+				warning.value !== undefined ? ` (value: ${JSON.stringify(warning.value)})` : "";
+			console.log(`  \x1b[33m!\x1b[0m ${warning.field}: ${warning.message}${valueInfo}`);
+		}
+	}
+
+	if (validation.valid && validation.warnings.length === 0) {
+		console.log("\n\x1b[32m✓\x1b[0m Configuration is valid");
+	}
+
+	console.log("\nRun 'ralph setup' to reconfigure settings.");
 }
 
 async function handleStopCommand(): Promise<void> {
