@@ -182,5 +182,7 @@ export function updateSessionStatus(session: Session, status: SessionStatus): Se
 
 export function isSessionResumable(session: Session | null): boolean {
 	if (!session) return false;
-	return session.status === "running" || session.status === "paused";
+	return (
+		session.status === "running" || session.status === "paused" || session.status === "stopped"
+	);
 }
