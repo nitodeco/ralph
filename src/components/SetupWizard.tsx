@@ -2,8 +2,8 @@ import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import { useState } from "react";
-import { loadGlobalConfig, saveGlobalConfig } from "../lib/config.ts";
-import type { AgentType, NotificationConfig, PrdFormat, RalphConfig } from "../types.ts";
+import { loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
+import type { AgentType, NotificationConfig, PrdFormat, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Header } from "./Header.tsx";
 

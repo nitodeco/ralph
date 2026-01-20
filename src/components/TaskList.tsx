@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
-import { useAgentStore, useAppStore } from "../stores/index.ts";
-import type { Prd } from "../types.ts";
+import { useAgentStore, useAppStore } from "@/stores/index.ts";
+import type { Prd } from "@/types.ts";
 
 function getCurrentTaskIndex(prd: Prd): number {
 	return prd.tasks.findIndex((task) => !task.done);

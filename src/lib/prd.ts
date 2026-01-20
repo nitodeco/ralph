@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import type { Prd } from "../types.ts";
+import type { Prd } from "@/types.ts";
 
 export const RALPH_DIR = ".ralph";
 export const PROGRESS_FILE_PATH = `${RALPH_DIR}/progress.txt`;

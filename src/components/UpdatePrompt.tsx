@@ -1,7 +1,7 @@
 import { Box, Text, useApp } from "ink";
 import SelectInput from "ink-select-input";
 import { useCallback, useEffect, useState } from "react";
-import { loadConfig, saveConfig } from "../lib/config.ts";
+import { loadConfig, saveConfig } from "@/lib/config.ts";
 import {
 	compareVersions,
 	downloadBinary,
@@ -10,7 +10,8 @@ import {
 	getBinaryPath,
 	getOperatingSystem,
 	installBinary,
-} from "../lib/update.ts";
+	restartApplication,
+} from "@/lib/update.ts";
 import { Message } from "./common/Message.tsx";
 import { ProgressBar } from "./common/ProgressBar.tsx";
 import { Spinner } from "./common/Spinner.tsx";
@@ -64,6 +65,7 @@ export function UpdatePrompt({
 	const [error, setError] = useState<string | null>(null);
 	const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
 	const [totalBytes, setTotalBytes] = useState<number>(0);
+	const [updatePerformed, setUpdatePerformed] = useState<boolean>(false);
 
 	useEffect(() => {
 		const checkForUpdates = async () => {
@@ -136,6 +138,7 @@ export function UpdatePrompt({
 			const targetPath = getBinaryPath();
 			await installBinary(binaryData, targetPath);
 
+			setUpdatePerformed(true);
 			setState("complete");
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : String(err);
@@ -147,11 +150,15 @@ export function UpdatePrompt({
 	useEffect(() => {
 		if (state === "complete" || state === "up_to_date" || state === "error") {
 			const timeout = setTimeout(() => {
-				handleExit();
+				if (state === "complete" && updatePerformed) {
+					restartApplication();
+				} else {
+					handleExit();
+				}
 			}, 2000);
 			return () => clearTimeout(timeout);
 		}
-	}, [state, handleExit]);
+	}, [state, handleExit, updatePerformed]);
 
 	const renderContent = () => {
 		switch (state) {
@@ -203,8 +210,11 @@ export function UpdatePrompt({
 			case "complete":
 				return (
 					<Box flexDirection="column" gap={1}>
-						{latestVersion && state === "complete" ? (
-							<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
+						{updatePerformed ? (
+							<>
+								<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
+								<Text dimColor>Restarting...</Text>
+							</>
 						) : (
 							<Text dimColor>You can update later by running 'ralph update'.</Text>
 						)}

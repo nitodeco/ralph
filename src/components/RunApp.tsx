@@ -5,7 +5,7 @@ import {
 	useAgentStore,
 	useAppStore,
 	useIterationStore,
-} from "../stores/index.ts";
+} from "@/stores/index.ts";
 import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import { AgentOutput } from "./AgentOutput.tsx";
 import { type CommandArgs, CommandInput, type SlashCommand } from "./CommandInput.tsx";

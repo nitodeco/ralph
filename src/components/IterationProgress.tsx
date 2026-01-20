@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useIterationStore } from "../stores/index.ts";
+import { useIterationStore } from "@/stores/index.ts";
 import { Spinner } from "./common/Spinner.tsx";
 
 function createProgressBar(current: number, total: number, width: number): string {

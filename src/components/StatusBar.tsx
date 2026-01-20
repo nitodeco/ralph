@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
-import { useAgentStore, useAppStore, useIterationStore } from "../stores/index.ts";
-import type { Prd } from "../types.ts";
+import { useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
+import type { Prd } from "@/types.ts";
 
 type AgentStatus = "idle" | "running" | "complete" | "error";
 

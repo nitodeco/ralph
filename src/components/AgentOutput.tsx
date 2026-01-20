@@ -1,5 +1,5 @@
 import { Box, Static, Text } from "ink";
-import { useAgentStore } from "../stores/index.ts";
+import { useAgentStore } from "@/stores/index.ts";
 import { Spinner } from "./common/Spinner.tsx";
 
 interface OutputLine {

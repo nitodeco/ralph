@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import { accessSync, constants, existsSync, unlinkSync } from "node:fs";
 import { loadConfig } from "./config.ts";
 
@@ -160,4 +161,16 @@ export function shouldCheckForUpdates(): boolean {
 export function isVersionSkipped(version: string): boolean {
 	const config = loadConfig();
 	return config.skipVersion === version;
+}
+
+export function restartApplication(): void {
+	const binaryPath = getBinaryPath();
+	const args = process.argv.slice(2).filter((arg) => arg !== "update");
+
+	spawn(binaryPath, args, {
+		detached: true,
+		stdio: "inherit",
+	}).unref();
+
+	process.exit(0);
 }

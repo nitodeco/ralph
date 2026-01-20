@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
 import { create } from "zustand";
-import { loadConfig } from "../lib/config.ts";
-import { getLogger } from "../lib/logger.ts";
-import { sendNotifications } from "../lib/notifications.ts";
-import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
+import { loadConfig } from "@/lib/config.ts";
+import { getLogger } from "@/lib/logger.ts";
+import { sendNotifications } from "@/lib/notifications.ts";
+import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "@/lib/prd.ts";
 import {
 	createSession,
 	deleteSession,
@@ -12,8 +12,8 @@ import {
 	saveSession,
 	updateSessionIteration,
 	updateSessionStatus,
-} from "../lib/session.ts";
-import type { Prd, RalphConfig, Session } from "../types.ts";
+} from "@/lib/session.ts";
+import type { Prd, RalphConfig, Session } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 

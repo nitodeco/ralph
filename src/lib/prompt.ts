@@ -1,4 +1,4 @@
-import type { Prd, PrdFormat } from "../types.ts";
+import type { Prd, PrdFormat } from "@/types.ts";
 
 export interface BuildPromptOptions {
 	instructions?: string | null;

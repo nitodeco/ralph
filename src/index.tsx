@@ -2,19 +2,19 @@
 
 import { render } from "ink";
 import { useState } from "react";
-import packageJson from "../package.json";
-import { InitWizard } from "./components/InitWizard.tsx";
-import { RunApp } from "./components/RunApp.tsx";
-import { SetupWizard } from "./components/SetupWizard.tsx";
-import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
-import { globalConfigExists, loadConfig } from "./lib/config.ts";
+import { InitWizard } from "@/components/InitWizard.tsx";
+import { RunApp } from "@/components/RunApp.tsx";
+import { SetupWizard } from "@/components/SetupWizard.tsx";
+import { UpdatePrompt } from "@/components/UpdatePrompt.tsx";
+import { globalConfigExists, loadConfig } from "@/lib/config.ts";
 import {
 	cleanupDaemon,
 	isBackgroundProcessRunning,
 	isDaemonProcess,
 	spawnDaemonProcess,
 	writePidFile,
-} from "./lib/daemon.ts";
+} from "@/lib/daemon.ts";
+import packageJson from "../package.json";
 
 declare const RALPH_VERSION: string | undefined;
 

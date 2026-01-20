@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { platform } from "node:os";
-import type { NotificationConfig, NotificationEvent } from "../types.ts";
+import type { NotificationConfig, NotificationEvent } from "@/types.ts";
 
 interface NotificationPayload {
 	event: NotificationEvent;

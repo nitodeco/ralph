@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { AgentType, RalphConfig } from "../types.ts";
+import type { AgentType, RalphConfig } from "@/types.ts";
 import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
 
 const GLOBAL_RALPH_DIR = join(homedir(), ".ralph");

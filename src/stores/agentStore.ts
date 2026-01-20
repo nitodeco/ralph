@@ -1,9 +1,9 @@
 import type { Subprocess } from "bun";
 import { create } from "zustand";
-import { getAgentCommand, loadConfig } from "../lib/config.ts";
-import { getLogger } from "../lib/logger.ts";
-import { loadInstructions } from "../lib/prd.ts";
-import { buildPrompt, COMPLETION_MARKER } from "../lib/prompt.ts";
+import { getAgentCommand, loadConfig } from "@/lib/config.ts";
+import { getLogger } from "@/lib/logger.ts";
+import { loadInstructions } from "@/lib/prd.ts";
+import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
 
 const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
 const DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000;

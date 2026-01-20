@@ -4,17 +4,17 @@ import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import { useState } from "react";
 import { parse as parseYaml } from "yaml";
-import { runAgentWithPrompt } from "../lib/agent.ts";
-import { loadGlobalConfig, saveConfig } from "../lib/config.ts";
+import { runAgentWithPrompt } from "@/lib/agent.ts";
+import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
 import {
 	ensureRalphDirExists,
 	findPrdFile,
 	PROGRESS_FILE_PATH,
 	RALPH_DIR,
 	savePrd,
-} from "../lib/prd.ts";
-import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "../lib/prompt.ts";
-import type { AgentType, Prd, PrdFormat, RalphConfig } from "../types.ts";
+} from "@/lib/prd.ts";
+import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
+import type { AgentType, Prd, PrdFormat, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
 import { Header } from "./Header.tsx";

@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import type { AgentType } from "../types.ts";
+import type { AgentType } from "@/types.ts";
 
 interface HeaderProps {
 	version: string;

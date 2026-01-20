@@ -1,4 +1,4 @@
-import type { AgentResult, AgentType } from "../types.ts";
+import type { AgentResult, AgentType } from "@/types.ts";
 import { getAgentCommand, loadConfig } from "./config.ts";
 import { loadInstructions } from "./prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "./prompt.ts";
