@@ -214,3 +214,28 @@ Implementation:
   - Memory warning threshold selection (250MB to 2GB, or disabled)
   - GC hints enable/disable toggle
   - Display memory settings in setup completion summary
+
+Task 12: Implement task dependency and ordering - COMPLETED
+
+Implementation:
+- Added optional 'dependsOn' field to PrdTask type in src/types.ts (already present)
+- Implemented dependency resolution in getNextTask in src/lib/prd.ts:
+  - areDependenciesSatisfied: Checks if all task dependencies are marked as done
+  - getNextTask: Now only returns tasks with satisfied dependencies
+  - getTaskDependencies: Gets the dependency tasks for a task
+  - getTaskDependents: Gets the tasks that depend on a given task
+- Implemented circular dependency validation in validateDependencies in src/lib/prd.ts:
+  - Validates all dependency references point to existing tasks
+  - Uses DFS with recursion stack to detect circular dependencies
+  - Returns detailed error message with circular path when detected
+  - Validation runs on PRD load by default (can be skipped with flag)
+- Updated prompts in src/lib/prompt.ts to support dependency specification:
+  - buildPrdGenerationPrompt: Example shows dependsOn usage and instructions
+  - buildAddTaskPrompt: Format example includes dependsOn field
+- Updated printList in src/index.tsx to display dependency tree:
+  - TaskListOutput interface includes dependsOn and blockedBy fields
+  - Added "blocked" status for tasks with unmet dependencies
+  - Display blocked tasks with ⊘ icon and yellow color
+  - Show dependency chain under each task with ✓/○ icons for status
+  - Summary shows completed, ready, and blocked counts
+  - Next task only shows tasks that are not blocked

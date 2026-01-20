@@ -10,6 +10,12 @@ export interface NotificationConfig {
 
 export type NotificationEvent = "complete" | "max_iterations" | "fatal_error";
 
+export interface MemoryConfig {
+	maxOutputBufferBytes?: number;
+	memoryWarningThresholdMb?: number;
+	enableGarbageCollectionHints?: boolean;
+}
+
 export interface RalphConfig {
 	agent: AgentType;
 	prdFormat?: PrdFormat;
@@ -21,6 +27,7 @@ export interface RalphConfig {
 	agentTimeoutMs?: number;
 	stuckThresholdMs?: number;
 	notifications?: NotificationConfig;
+	memory?: MemoryConfig;
 	maxOutputHistoryBytes?: number;
 }
 

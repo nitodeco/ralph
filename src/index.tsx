@@ -225,15 +225,37 @@ interface TaskListOutput {
 		index: number;
 		title: string;
 		description: string;
-		status: "done" | "pending";
+		status: "done" | "pending" | "blocked";
 		steps: string[];
+		dependsOn?: string[];
+		blockedBy?: string[];
 	}>;
 	summary: {
 		total: number;
 		completed: number;
 		pending: number;
+		blocked: number;
 		percentComplete: number;
 	};
+}
+
+function getUnmetDependencies(
+	task: { dependsOn?: string[] },
+	prd: { tasks: Array<{ title: string; done: boolean }> },
+): string[] {
+	if (!task.dependsOn || task.dependsOn.length === 0) {
+		return [];
+	}
+
+	const taskTitleMap = new Map<string, boolean>();
+	for (const prdTask of prd.tasks) {
+		taskTitleMap.set(prdTask.title.toLowerCase(), prdTask.done);
+	}
+
+	return task.dependsOn.filter((depTitle) => {
+		const isDone = taskTitleMap.get(depTitle.toLowerCase());
+		return isDone !== true;
+	});
 }
 
 function printList(jsonOutput: boolean): void {
@@ -250,24 +272,41 @@ function printList(jsonOutput: boolean): void {
 	}
 
 	const completedTasks = prd.tasks.filter((task) => task.done).length;
-	const pendingTasks = prd.tasks.length - completedTasks;
+	const blockedTaskCount = prd.tasks.filter(
+		(task) => !task.done && getUnmetDependencies(task, prd).length > 0,
+	).length;
+	const pendingTasks = prd.tasks.length - completedTasks - blockedTaskCount;
 	const percentComplete =
 		prd.tasks.length > 0 ? Math.round((completedTasks / prd.tasks.length) * 100) : 0;
 
 	if (jsonOutput) {
 		const output: TaskListOutput = {
 			project: prd.project,
-			tasks: prd.tasks.map((task, taskIndex) => ({
-				index: taskIndex + 1,
-				title: task.title,
-				description: task.description,
-				status: task.done ? "done" : "pending",
-				steps: task.steps,
-			})),
+			tasks: prd.tasks.map((task, taskIndex) => {
+				const unmetDeps = getUnmetDependencies(task, prd);
+				let status: "done" | "pending" | "blocked";
+				if (task.done) {
+					status = "done";
+				} else if (unmetDeps.length > 0) {
+					status = "blocked";
+				} else {
+					status = "pending";
+				}
+				return {
+					index: taskIndex + 1,
+					title: task.title,
+					description: task.description,
+					status,
+					steps: task.steps,
+					dependsOn: task.dependsOn,
+					blockedBy: unmetDeps.length > 0 ? unmetDeps : undefined,
+				};
+			}),
 			summary: {
 				total: prd.tasks.length,
 				completed: completedTasks,
 				pending: pendingTasks,
+				blocked: blockedTaskCount,
 				percentComplete,
 			},
 		};
@@ -286,28 +325,69 @@ function printList(jsonOutput: boolean): void {
 	}
 
 	console.log("Tasks:");
-	console.log("─".repeat(60));
+	console.log("─".repeat(70));
 
 	for (const [taskIndex, task] of prd.tasks.entries()) {
-		const statusIcon = task.done ? "✓" : "○";
-		const statusLabel = task.done ? "done" : "pending";
-		const dimStyle = task.done ? "\x1b[2m" : "";
-		const resetStyle = task.done ? "\x1b[0m" : "";
+		const unmetDeps = getUnmetDependencies(task, prd);
+		const isBlocked = !task.done && unmetDeps.length > 0;
+
+		let statusIcon: string;
+		let statusLabel: string;
+		let dimStyle = "";
+		const resetStyle = "\x1b[0m";
+
+		if (task.done) {
+			statusIcon = "✓";
+			statusLabel = "done";
+			dimStyle = "\x1b[2m";
+		} else if (isBlocked) {
+			statusIcon = "⊘";
+			statusLabel = "blocked";
+			dimStyle = "\x1b[33m";
+		} else {
+			statusIcon = "○";
+			statusLabel = "pending";
+		}
 
 		console.log(
 			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}`,
 		);
+
+		if (task.dependsOn && task.dependsOn.length > 0) {
+			const depsDisplay = task.dependsOn
+				.map((depTitle) => {
+					const depTask = prd.tasks.find(
+						(prdTask) => prdTask.title.toLowerCase() === depTitle.toLowerCase(),
+					);
+					const depIcon = depTask?.done ? "✓" : "○";
+					return `${depIcon} ${depTitle}`;
+				})
+				.join(", ");
+			console.log(`   └─ depends on: ${depsDisplay}`);
+		}
 	}
 
-	console.log("─".repeat(60));
-	console.log(`\nSummary: ${completedTasks} completed, ${pendingTasks} pending`);
+	console.log("─".repeat(70));
 
+	const summaryParts = [`${completedTasks} completed`];
 	if (pendingTasks > 0) {
-		const nextTask = prd.tasks.find((task) => !task.done);
+		summaryParts.push(`${pendingTasks} ready`);
+	}
+	if (blockedTaskCount > 0) {
+		summaryParts.push(`${blockedTaskCount} blocked`);
+	}
+	console.log(`\nSummary: ${summaryParts.join(", ")}`);
+
+	if (pendingTasks > 0 || blockedTaskCount > 0) {
+		const nextTask = prd.tasks.find(
+			(task) => !task.done && getUnmetDependencies(task, prd).length === 0,
+		);
 		if (nextTask) {
 			console.log(`\nNext task: ${nextTask.title}`);
+		} else if (blockedTaskCount > 0) {
+			console.log("\nNo tasks ready - all pending tasks are blocked by dependencies.");
 		}
-	} else {
+	} else if (completedTasks === prd.tasks.length) {
 		console.log("\nAll tasks complete!");
 	}
 }
