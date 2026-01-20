@@ -95,7 +95,7 @@
 				"Update session.json with stopped state",
 				"Add timeout and SIGKILL fallback if process doesn't exit"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add 'ralph list' command to display PRD tasks",
@@ -262,6 +262,18 @@
 				"Document configuration options with examples",
 				"Create example PRDs for different project types",
 				"Add performance tuning recommendations"
+			],
+			"done": false
+		},
+		{
+			"title": "Fix UI offset caused by agent output stream on iteration completion",
+			"description": "When a Ralph iteration completes, the last agent output stream causes the entire UI to become offset/misaligned. This visual bug needs to be fixed to maintain consistent UI layout.",
+			"steps": [
+				"Investigate AgentOutput component rendering behavior on iteration completion",
+				"Identify the cause of UI offset when agent output stream ends",
+				"Clear or reset agent output buffer properly between iterations",
+				"Ensure UI layout remains stable after iteration completion",
+				"Test fix across multiple consecutive iterations"
 			],
 			"done": false
 		}

@@ -105,3 +105,40 @@ Implementation:
 - Handles case where session was interrupted (not running but status is "running")
 - Added "status" command case to CLI switch statement
 - Updated help text with status command documentation and examples
+
+Task 8: Add 'ralph stop' command for graceful shutdown - COMPLETED
+
+Implementation:
+- Added "stop" to the Command type in src/index.tsx
+- Created StopResult interface in src/lib/daemon.ts with success, pid, message, and wasKilled fields
+- Implemented stopDaemonProcess function in src/lib/daemon.ts:
+  - Reads PID from .ralph/ralph.pid using isBackgroundProcessRunning
+  - Sends SIGTERM signal for graceful shutdown
+  - Polls process status with configurable timeout (default 5 seconds)
+  - Falls back to SIGKILL if process doesn't exit within timeout
+  - Returns detailed result with success status and whether force kill was required
+- Created handleStopCommand function in src/index.tsx:
+  - Updates session status to "stopped" before stopping process
+  - Handles case where no process is running but session was marked as running
+  - Displays appropriate messages for graceful stop, force kill, and errors
+- Added "stop" case to CLI switch statement
+- Updated help text with stop command documentation and examples
+- Exported stopDaemonProcess from daemon.ts for use in index.tsx
+
+Task 8: Add 'ralph stop' command for graceful shutdown - COMPLETED
+
+Implementation:
+- Added stopDaemonProcess function to src/lib/daemon.ts:
+  - Reads PID from .ralph/ralph.pid
+  - Sends SIGTERM for graceful shutdown
+  - Waits for process to exit with configurable timeout (default 5000ms)
+  - Falls back to SIGKILL if process doesn't exit gracefully
+  - Cleans up PID file after process termination
+  - Returns StopResult with success status, message, and PID
+- Added handleStopCommand async function to src/index.tsx:
+  - Calls stopDaemonProcess to terminate the background process
+  - Updates session.json status to "stopped" for resumability
+  - Displays appropriate messages based on stop result
+  - Suggests using 'ralph resume' to continue later
+- Added "stop" case to CLI switch statement
+- Help text already includes stop command documentation

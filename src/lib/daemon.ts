@@ -113,3 +113,89 @@ export function isDaemonProcess(): boolean {
 export function cleanupDaemon(): void {
 	deletePidFile();
 }
+
+export interface StopResult {
+	success: boolean;
+	pid: number | null;
+	message: string;
+	wasKilled: boolean;
+}
+
+export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
+	const { running, pid } = isBackgroundProcessRunning();
+
+	if (!running || pid === null) {
+		return {
+			success: false,
+			pid: null,
+			message: "No Ralph process is currently running",
+			wasKilled: false,
+		};
+	}
+
+	const logger = getLogger({});
+
+	try {
+		process.kill(pid, "SIGTERM");
+		logger.info("Sent SIGTERM to daemon process", { pid });
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		logger.error("Failed to send SIGTERM", { pid, error: errorMessage });
+		deletePidFile();
+		return {
+			success: false,
+			pid,
+			message: `Failed to send stop signal: ${errorMessage}`,
+			wasKilled: false,
+		};
+	}
+
+	const pollIntervalMs = 100;
+	const maxAttempts = Math.ceil(timeoutMs / pollIntervalMs);
+	let attempts = 0;
+
+	while (attempts < maxAttempts) {
+		await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+		attempts++;
+
+		if (!isProcessRunning(pid)) {
+			logger.info("Daemon process stopped gracefully", { pid });
+			deletePidFile();
+			return {
+				success: true,
+				pid,
+				message: `Ralph process (PID: ${pid}) stopped gracefully`,
+				wasKilled: false,
+			};
+		}
+	}
+
+	logger.warn("Process did not exit after SIGTERM, sending SIGKILL", { pid, timeoutMs });
+
+	try {
+		process.kill(pid, "SIGKILL");
+		logger.info("Sent SIGKILL to daemon process", { pid });
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		logger.error("Failed to send SIGKILL", { pid, error: errorMessage });
+	}
+
+	await new Promise((resolve) => setTimeout(resolve, 500));
+
+	if (!isProcessRunning(pid)) {
+		deletePidFile();
+		return {
+			success: true,
+			pid,
+			message: `Ralph process (PID: ${pid}) was forcefully terminated`,
+			wasKilled: true,
+		};
+	}
+
+	return {
+		success: false,
+		pid,
+		message: `Failed to stop Ralph process (PID: ${pid})`,
+		wasKilled: false,
+	};
+}

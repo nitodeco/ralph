@@ -12,11 +12,12 @@ import {
 	isBackgroundProcessRunning,
 	isDaemonProcess,
 	spawnDaemonProcess,
+	stopDaemonProcess,
 	writePidFile,
 } from "@/lib/daemon.ts";
 import { getRecentLogEntries } from "@/lib/logger.ts";
 import { loadPrd } from "@/lib/prd.ts";
-import { loadSession } from "@/lib/session.ts";
+import { loadSession, saveSession, updateSessionStatus } from "@/lib/session.ts";
 import packageJson from "../package.json";
 
 declare const RALPH_VERSION: string | undefined;
@@ -30,6 +31,7 @@ type Command =
 	| "update"
 	| "resume"
 	| "status"
+	| "stop"
 	| "help"
 	| "version"
 	| "-v"
@@ -79,6 +81,7 @@ Commands:
   init              Initialize a new PRD project (AI-generated from description)
   resume            Resume a previously interrupted session
   status            Show current session state, progress, and recent logs
+  stop              Stop a running Ralph process gracefully
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
@@ -102,6 +105,7 @@ Examples:
   ralph init        Create a new PRD project from a description
   ralph resume      Resume a previously interrupted session
   ralph status      Check on a running or interrupted session
+  ralph stop        Stop a background Ralph process gracefully
   ralph update      Check for and install updates
   ralph -b          Start Ralph in background mode (logs to .ralph/ralph.log)
   ralph resume -b   Resume session in background mode
@@ -206,6 +210,72 @@ function printStatus(): void {
 		console.log("Note: Session appears to have been interrupted.");
 		console.log("Use 'ralph resume' to continue from where you left off.");
 	}
+}
+
+async function _handleStopCommand(): Promise<void> {
+	console.log(`◆ ralph v${VERSION} - Stop\n`);
+
+	const { running, pid } = isBackgroundProcessRunning();
+
+	if (!running || pid === null) {
+		const session = loadSession();
+		if (session && session.status === "running") {
+			const stoppedSession = updateSessionStatus(session, "stopped");
+			saveSession(stoppedSession);
+			console.log("No running process found, but session was marked as running.");
+			console.log("Session status has been updated to 'stopped'.");
+			console.log("\nUse 'ralph resume' to continue from where you left off.");
+		} else {
+			console.log("No Ralph process is currently running.");
+		}
+		return;
+	}
+
+	console.log(`Stopping Ralph process (PID: ${pid})...`);
+
+	const session = loadSession();
+	if (session) {
+		const stoppedSession = updateSessionStatus(session, "stopped");
+		saveSession(stoppedSession);
+	}
+
+	const result = await stopDaemonProcess();
+
+	if (result.success) {
+		console.log(result.message);
+		if (result.wasKilled) {
+			console.log(
+				"Note: Process did not respond to graceful shutdown and was forcefully terminated.",
+			);
+		}
+		console.log("\nUse 'ralph resume' to continue from where you left off.");
+	} else {
+		console.error(`Error: ${result.message}`);
+		process.exit(1);
+	}
+}
+
+async function handleStopCommand(): Promise<void> {
+	console.log(`◆ ralph v${VERSION} - Stop\n`);
+
+	const result = await stopDaemonProcess();
+
+	if (result.success && result.pid !== null) {
+		const session = loadSession();
+		if (session && (session.status === "running" || session.status === "paused")) {
+			const updatedSession = updateSessionStatus(session, "stopped");
+			saveSession(updatedSession);
+			console.log("Session state updated to 'stopped'");
+		}
+	}
+
+	console.log(result.message);
+
+	if (result.success) {
+		console.log("\nUse 'ralph resume' to continue the session later.");
+	}
+
+	process.exit(result.success ? 0 : 1);
 }
 
 function clearTerminal(): void {
@@ -326,6 +396,13 @@ function main(): void {
 		case "status":
 			printStatus();
 			break;
+
+		case "stop":
+			handleStopCommand().catch((error) => {
+				console.error("Failed to stop:", error);
+				process.exit(1);
+			});
+			return;
 
 		case "version":
 		case "-v":
