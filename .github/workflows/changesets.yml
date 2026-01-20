@@ -41,13 +41,23 @@ jobs:
         id: version
         run: echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
 
+      - name: Extract changelog for version
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          CHANGELOG=$(awk "/^## ${VERSION}$/,/^## [0-9]/" CHANGELOG.md | sed '$d' | tail -n +2)
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.notes }}
           files: |
             dist/ralph-darwin-arm64
             dist/ralph-darwin-x64
-          generate_release_notes: true
