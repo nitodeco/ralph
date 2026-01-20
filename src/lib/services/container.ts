@@ -1,29 +1,6 @@
-import type { ConfigValidationResult, RalphConfig } from "@/types.ts";
+import type { ConfigService } from "./config/types.ts";
 import type { SessionService } from "./session/types.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
-
-export interface ConfigService {
-	get(): RalphConfig;
-	load(): RalphConfig;
-	loadGlobal(): RalphConfig;
-	loadGlobalRaw(): Partial<RalphConfig> | null;
-	loadProjectRaw(): Partial<RalphConfig> | null;
-	getWithValidation(validateFn: (config: unknown) => ConfigValidationResult): {
-		config: RalphConfig;
-		validation: ConfigValidationResult;
-	};
-	saveGlobal(config: RalphConfig): void;
-	saveProject(config: RalphConfig): void;
-	invalidate(): void;
-	invalidateGlobal(): void;
-	invalidateAll(): void;
-	globalConfigExists(): boolean;
-	getEffective(): {
-		global: Partial<RalphConfig> | null;
-		project: Partial<RalphConfig> | null;
-		effective: RalphConfig;
-	};
-}
 
 export interface LoadPrdResult {
 	prd: Prd | null;

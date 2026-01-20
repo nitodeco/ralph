@@ -7,9 +7,11 @@ export {
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
 	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
 	DEFAULT_STUCK_THRESHOLD_MS,
+	DEFAULT_VERIFICATION,
+	DEFAULTS,
 	VALID_AGENTS,
-} from "./config.ts";
-export { createDefaultGuardrails, DEFAULT_VERIFICATION, DEFAULTS } from "./defaults.ts";
+} from "@/lib/services/config/constants.ts";
+export { createDefaultGuardrails } from "./defaults.ts";
 export {
 	DEFAULT_DAEMON_STOP_TIMEOUT_MS,
 	FORCE_KILL_TIMEOUT_MS,

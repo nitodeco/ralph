@@ -1,9 +1,4 @@
-import type {
-	GuardrailCategory,
-	GuardrailTrigger,
-	PromptGuardrail,
-	RalphConfig,
-} from "@/types/config.types.ts";
+import type { GuardrailCategory, GuardrailTrigger, PromptGuardrail } from "@/types/config.types.ts";
 import type { Prd, PrdTask } from "@/types/prd.types.ts";
 import type {
 	FailureHistory,
@@ -16,7 +11,6 @@ import type {
 	IterationLogsIndexEntry,
 } from "@/types/session.types.ts";
 import type { StreamJsonMessage } from "./agent-stream.ts";
-import { VALID_AGENTS } from "./constants/config.ts";
 import type { GuardrailsFile } from "./guardrails.ts";
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -65,37 +59,6 @@ export function isPrd(value: unknown): value is Prd {
 	}
 
 	return tasks.every((task) => isPrdTask(task));
-}
-
-export function isRalphConfig(value: unknown): value is RalphConfig {
-	if (!isObject(value)) {
-		return false;
-	}
-
-	const { agent } = value;
-
-	if (!isString(agent) || !VALID_AGENTS.includes(agent as RalphConfig["agent"])) {
-		return false;
-	}
-
-	return true;
-}
-
-export function isPartialRalphConfig(value: unknown): value is Partial<RalphConfig> {
-	if (!isObject(value)) {
-		return false;
-	}
-
-	const { agent } = value;
-
-	if (
-		agent !== undefined &&
-		(!isString(agent) || !VALID_AGENTS.includes(agent as RalphConfig["agent"]))
-	) {
-		return false;
-	}
-
-	return true;
 }
 
 const VALID_GUARDRAIL_TRIGGERS: GuardrailTrigger[] = ["always", "on-error", "on-task-type"];

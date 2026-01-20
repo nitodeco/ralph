@@ -1,5 +1,26 @@
-import type { AgentType, RalphConfig } from "@/types.ts";
-import { DEFAULT_VERIFICATION, DEFAULTS } from "./defaults.ts";
+import type { AgentType, RalphConfig, VerificationConfig } from "./types.ts";
+
+export const DEFAULTS = {
+	agent: "cursor" as const,
+	maxRetries: 3,
+	retryDelayMs: 5000,
+	agentTimeoutMs: 30 * 60 * 1000,
+	stuckThresholdMs: 5 * 60 * 1000,
+	maxOutputBufferBytes: 5 * 1024 * 1024,
+	memoryWarningThresholdMb: 500,
+	enableGcHints: true,
+	logFilePath: ".ralph/ralph.log",
+	iterationDelayMs: 2000,
+	iterations: 10,
+	retryWithContext: true,
+	maxDecompositionsPerTask: 2,
+	learningEnabled: true,
+} as const;
+
+export const DEFAULT_VERIFICATION: VerificationConfig = {
+	enabled: false,
+	failOnWarning: false,
+};
 
 export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
 	agent: DEFAULTS.agent,

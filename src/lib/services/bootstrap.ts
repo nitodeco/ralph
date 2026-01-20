@@ -1,6 +1,6 @@
-import { ConfigService as ConfigServiceSingleton } from "./ConfigService.ts";
+import { createConfigService } from "./config/implementation.ts";
+import type { ConfigService } from "./config/types.ts";
 import {
-	type ConfigService,
 	initializeServices,
 	type PrdService,
 	resetServices,
@@ -14,7 +14,7 @@ import type { SessionMemoryService } from "./session-memory/types.ts";
 
 export function bootstrapServices(): void {
 	initializeServices({
-		config: ConfigServiceSingleton as ConfigService,
+		config: createConfigService(),
 		prd: PrdServiceSingleton as PrdService,
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),

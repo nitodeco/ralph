@@ -42,3 +42,25 @@
 - Re-exported Session types from src/types/index.ts via services
 - Deleted src/lib/session.ts
 - All 414 tests pass
+
+### Migrate ConfigService to new architecture
+- Created src/lib/services/config/ directory with self-contained service files
+- Created types.ts with RalphConfig, AgentType, NotificationConfig, MemoryConfig, VerificationConfig, ConfigValidationError, ConfigValidationResult interfaces and ConfigService interface
+- Created validation.ts with isRalphConfig, isPartialRalphConfig, validateConfig type guards and validation functions
+- Created constants.ts with DEFAULTS, CONFIG_DEFAULTS, DEFAULT_CONFIG, VALID_AGENTS, AGENT_COMMANDS and default value constants
+- Created formatter.ts with formatValidationErrors, formatMs, formatBytes, getConfigSummary functions
+- Created implementation.ts with createConfigService factory function using closure-based caching, plus applyDefaults, getAgentCommand, getGlobalConfigPath, getProjectConfigPath exports
+- Updated container.ts to import ConfigService from ./config/types.ts
+- Updated bootstrap.ts to use createConfigService() instead of singleton
+- Updated index.ts to re-export all config types, constants, formatters, and validation functions
+- Updated src/lib/config.ts facade to re-export from new service location
+- Updated src/types/index.ts to export config types from services
+- Removed RalphConfig, AgentType, NotificationConfig, MemoryConfig, VerificationConfig, ConfigValidationError, ConfigValidationResult from src/types/config.types.ts
+- Removed isRalphConfig, isPartialRalphConfig from src/lib/type-guards.ts
+- Updated src/types/session.types.ts to import AgentType from new location
+- Updated src/lib/constants/defaults.ts to re-export from config service
+- Updated src/lib/constants/index.ts to re-export from config service
+- Deleted src/lib/services/ConfigService.ts (old singleton)
+- Deleted src/lib/config/ directory (old config module)
+- Deleted src/lib/constants/config.ts (migrated to service)
+- All 414 tests pass

@@ -1,5 +1,13 @@
 export type {
+	AgentType,
+	ConfigService,
+	ConfigValidationError,
+	ConfigValidationResult,
 	IterationTiming,
+	MemoryConfig,
+	NotificationConfig,
+	NotificationEvent,
+	RalphConfig,
 	Session,
 	SessionMemory,
 	SessionMemoryService,
@@ -7,6 +15,7 @@ export type {
 	SessionService,
 	SessionStatistics,
 	SessionStatus,
+	VerificationConfig,
 } from "@/lib/services/index.ts";
 export type { AgentResult, RunOptions } from "./agent.types.ts";
 export type {
@@ -25,18 +34,10 @@ export type {
 	TaskListOutput,
 } from "./cli.types.ts";
 export type {
-	AgentType,
 	CheckResult,
-	ConfigValidationError,
-	ConfigValidationResult,
 	GuardrailCategory,
 	GuardrailTrigger,
-	MemoryConfig,
-	NotificationConfig,
-	NotificationEvent,
 	PromptGuardrail,
-	RalphConfig,
-	VerificationConfig,
 	VerificationResult,
 } from "./config.types.ts";
 export type {

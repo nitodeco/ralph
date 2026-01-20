@@ -60,7 +60,7 @@
 				"Remove config types from src/types/config.types.ts and config type guards from src/lib/type-guards.ts",
 				"Delete src/lib/config.ts, src/lib/config/ directory, and src/lib/constants/config.ts after migration"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Migrate PrdService to new architecture",

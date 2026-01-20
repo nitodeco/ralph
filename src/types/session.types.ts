@@ -1,4 +1,4 @@
-import type { AgentType } from "./config.types.ts";
+import type { AgentType } from "@/lib/services/config/types.ts";
 
 export type IterationLogStatus =
 	| "running"

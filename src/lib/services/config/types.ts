@@ -1,0 +1,78 @@
+export type AgentType = "cursor" | "claude" | "codex";
+
+export interface NotificationConfig {
+	systemNotification?: boolean;
+	webhookUrl?: string;
+	markerFilePath?: string;
+}
+
+export type NotificationEvent = "complete" | "max_iterations" | "fatal_error";
+
+export interface MemoryConfig {
+	maxOutputBufferBytes?: number;
+	memoryWarningThresholdMb?: number;
+	enableGarbageCollectionHints?: boolean;
+}
+
+export interface VerificationConfig {
+	enabled: boolean;
+	buildCommand?: string;
+	testCommand?: string;
+	lintCommand?: string;
+	customChecks?: string[];
+	failOnWarning: boolean;
+}
+
+export interface RalphConfig {
+	agent: AgentType;
+	lastUpdateCheck?: number;
+	skipVersion?: string;
+	maxRetries?: number;
+	retryDelayMs?: number;
+	logFilePath?: string;
+	agentTimeoutMs?: number;
+	stuckThresholdMs?: number;
+	notifications?: NotificationConfig;
+	memory?: MemoryConfig;
+	maxOutputHistoryBytes?: number;
+	maxRuntimeMs?: number;
+	retryWithContext?: boolean;
+	verification?: VerificationConfig;
+	maxDecompositionsPerTask?: number;
+	learningEnabled?: boolean;
+}
+
+export interface ConfigValidationError {
+	field: string;
+	message: string;
+	value?: unknown;
+}
+
+export interface ConfigValidationResult {
+	valid: boolean;
+	errors: ConfigValidationError[];
+	warnings: ConfigValidationError[];
+}
+
+export interface ConfigService {
+	get(): RalphConfig;
+	load(): RalphConfig;
+	loadGlobal(): RalphConfig;
+	loadGlobalRaw(): Partial<RalphConfig> | null;
+	loadProjectRaw(): Partial<RalphConfig> | null;
+	getWithValidation(validateFn: (config: unknown) => ConfigValidationResult): {
+		config: RalphConfig;
+		validation: ConfigValidationResult;
+	};
+	saveGlobal(config: RalphConfig): void;
+	saveProject(config: RalphConfig): void;
+	invalidate(): void;
+	invalidateGlobal(): void;
+	invalidateAll(): void;
+	globalConfigExists(): boolean;
+	getEffective(): {
+		global: Partial<RalphConfig> | null;
+		project: Partial<RalphConfig> | null;
+		effective: RalphConfig;
+	};
+}

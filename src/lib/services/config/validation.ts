@@ -1,11 +1,50 @@
+import { VALID_AGENTS } from "./constants.ts";
 import type {
 	ConfigValidationError,
 	ConfigValidationResult,
 	MemoryConfig,
 	NotificationConfig,
 	RalphConfig,
-} from "@/types.ts";
-import { VALID_AGENTS } from "../constants/config.ts";
+} from "./types.ts";
+
+function isObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isString(value: unknown): value is string {
+	return typeof value === "string";
+}
+
+export function isRalphConfig(value: unknown): value is RalphConfig {
+	if (!isObject(value)) {
+		return false;
+	}
+
+	const { agent } = value;
+
+	if (!isString(agent) || !VALID_AGENTS.includes(agent as RalphConfig["agent"])) {
+		return false;
+	}
+
+	return true;
+}
+
+export function isPartialRalphConfig(value: unknown): value is Partial<RalphConfig> {
+	if (!isObject(value)) {
+		return false;
+	}
+
+	const { agent } = value;
+
+	if (
+		agent !== undefined &&
+		(!isString(agent) || !VALID_AGENTS.includes(agent as RalphConfig["agent"]))
+	) {
+		return false;
+	}
+
+	return true;
+}
 
 function validatePositiveInteger(
 	value: unknown,
