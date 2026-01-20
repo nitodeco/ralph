@@ -1,6 +1,7 @@
 import type { Subprocess } from "bun";
 import { useCallback, useRef, useState } from "react";
 import { getAgentCommand, loadConfig } from "../lib/config.ts";
+import { getLogger } from "../lib/logger.ts";
 import { buildPrompt, COMPLETION_MARKER } from "../lib/prompt.ts";
 
 interface UseAgentState {
@@ -125,7 +126,10 @@ export function useAgent(): UseAgentReturn {
 	}> => {
 		const prompt = buildPrompt();
 		const config = loadConfig();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const baseCommand = getAgentCommand(config.agent);
+
+		logger.logAgentStart(config.agent, prompt);
 
 		const agentProcess = Bun.spawn([...baseCommand, prompt], {
 			stdin: null,
@@ -185,9 +189,11 @@ export function useAgent(): UseAgentReturn {
 
 		if (exitCode !== 0 && !isComplete) {
 			const errorMessage = stderrOutput || `Agent exited with code ${exitCode}`;
+			logger.logAgentError(errorMessage, exitCode);
 			return { success: false, exitCode, output: parsedOutput, isComplete, error: errorMessage };
 		}
 
+		logger.logAgentComplete(exitCode, isComplete);
 		return { success: true, exitCode, output: parsedOutput, isComplete };
 	}, []);
 
@@ -201,6 +207,7 @@ export function useAgent(): UseAgentReturn {
 		});
 
 		const config = loadConfig();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const maxRetries = config.maxRetries ?? 3;
 		const retryDelayMs = config.retryDelayMs ?? 5000;
 
@@ -221,29 +228,35 @@ export function useAgent(): UseAgentReturn {
 
 				const categorizedError = categorizeError(result.error ?? "", result.exitCode);
 
-				if (categorizedError.category === "fatal") {
-					setState((prev) => ({
-						...prev,
-						isStreaming: false,
-						error: `Fatal error: ${categorizedError.message}`,
-						exitCode: result.exitCode,
-						retryCount: retryCountRef.current,
-					}));
-					break;
-				}
+			if (categorizedError.category === "fatal") {
+				logger.error("Fatal error encountered, not retrying", {
+					error: categorizedError.message,
+					exitCode: result.exitCode,
+				});
+				setState((prev) => ({
+					...prev,
+					isStreaming: false,
+					error: `Fatal error: ${categorizedError.message}`,
+					exitCode: result.exitCode,
+					retryCount: retryCountRef.current,
+				}));
+				break;
+			}
 
-				if (retryCountRef.current < maxRetries) {
-					retryCountRef.current += 1;
-					const delay = calculateRetryDelay(retryDelayMs, retryCountRef.current - 1);
+			if (retryCountRef.current < maxRetries) {
+				retryCountRef.current += 1;
+				const delay = calculateRetryDelay(retryDelayMs, retryCountRef.current - 1);
 
-					setState((prev) => ({
-						...prev,
-						isRetrying: true,
-						retryCount: retryCountRef.current,
-						output: "",
-					}));
+				logger.logAgentRetry(retryCountRef.current, maxRetries, delay);
 
-					await sleep(delay);
+				setState((prev) => ({
+					...prev,
+					isRetrying: true,
+					retryCount: retryCountRef.current,
+					output: "",
+				}));
+
+				await sleep(delay);
 
 					if (abortedRef.current) break;
 
@@ -251,19 +264,25 @@ export function useAgent(): UseAgentReturn {
 						...prev,
 						isRetrying: false,
 					}));
-				} else {
-					setState((prev) => ({
-						...prev,
-						isStreaming: false,
-						error: `Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,
-						exitCode: result.exitCode,
-						retryCount: retryCountRef.current,
-					}));
-					break;
-				}
+			} else {
+				logger.error("Max retries exceeded", {
+					maxRetries,
+					lastError: categorizedError.message,
+					exitCode: result.exitCode,
+				});
+				setState((prev) => ({
+					...prev,
+					isStreaming: false,
+					error: `Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,
+					exitCode: result.exitCode,
+					retryCount: retryCountRef.current,
+				}));
+				break;
+			}
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+			logger.error("Unexpected error during agent execution", { error: errorMessage });
 			setState((prev) => ({
 				...prev,
 				isStreaming: false,

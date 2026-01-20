@@ -20,3 +20,15 @@ Implementation:
 - Added "ralph resume" CLI command to index.tsx that auto-resumes existing sessions
 - Updated HelpView with /resume command and resume CLI command documentation
 - Updated printHelp() with resume command documentation
+
+Task 3: Add comprehensive logging system - COMPLETED
+
+Implementation:
+- Created src/lib/logger.ts with Logger class supporting log levels (debug, info, warn, error)
+- Implemented log rotation with configurable max file size (default 5MB) and backup count (default 3)
+- Added logFilePath configuration option to RalphConfig in src/types.ts
+- Logs are written to .ralph/ralph.log by default
+- Integrated logging in useAgent hook for agent executions, outputs, exit codes, errors, and retries
+- Integrated logging in RunApp for iteration starts, completions, session starts, resumes, and max iterations
+- Each log entry includes ISO timestamp, log level, message, and optional context
+- Added helper functions: getLogger, createLogger, readLogFile, getRecentLogEntries

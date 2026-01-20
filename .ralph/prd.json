@@ -35,7 +35,7 @@
 				"Log iteration starts, completions, and failures",
 				"Add log file path configuration option"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement agent timeout and watchdog functionality",

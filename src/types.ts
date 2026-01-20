@@ -9,6 +9,7 @@ export interface RalphConfig {
 	skipVersion?: string;
 	maxRetries?: number;
 	retryDelayMs?: number;
+	logFilePath?: string;
 }
 
 export interface PrdTask {

@@ -1,8 +1,10 @@
 import { Box, Text, useApp, useInput } from "ink";
+import { existsSync } from "node:fs";
 import { useCallback, useEffect, useState } from "react";
 import { useAgent } from "../hooks/useAgent.ts";
 import { useIteration } from "../hooks/useIteration.ts";
 import { loadConfig } from "../lib/config.ts";
+import { getLogger } from "../lib/logger.ts";
 import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
 import {
 	createSession,
@@ -26,7 +28,6 @@ import { SetupWizard } from "./SetupWizard.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
 import { UpdatePrompt } from "./UpdatePrompt.tsx";
-import { existsSync } from "node:fs";
 
 interface RunAppProps {
 	version: string;
@@ -82,7 +83,10 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 
 	const iteration = useIteration({
 		total: iterations || DEFAULT_ITERATIONS,
-		onIterationStart: () => {
+		onIterationStart: (iterationNumber) => {
+			const currentConfig = loadConfig();
+			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
+			logger.logIterationStart(iterationNumber, iterations || DEFAULT_ITERATIONS);
 			agent.reset();
 			const currentPrd = loadPrd();
 			if (currentPrd) {
@@ -90,6 +94,9 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 			}
 		},
 		onIterationComplete: (iterationNumber) => {
+			const currentConfig = loadConfig();
+			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
+			logger.logIterationComplete(iterationNumber, iterations || DEFAULT_ITERATIONS, agent.isComplete);
 			if (currentSession) {
 				const currentPrd = loadPrd();
 				const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
@@ -104,6 +111,9 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 			}
 		},
 		onAllComplete: () => {
+			const currentConfig = loadConfig();
+			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
+			logger.logSessionComplete();
 			setAppState("complete");
 			if (currentSession) {
 				deleteSession();
@@ -150,6 +160,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		setConfig(loadedConfig);
 		setPrd(loadedPrd);
@@ -169,6 +180,8 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		const newSession = createSession(totalIters, taskIndex);
 		saveSession(newSession);
 		setCurrentSession(newSession);
+
+		logger.logSessionStart(totalIters, taskIndex);
 
 		setAppState("running");
 		setElapsedTime(0);
@@ -190,6 +203,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		setConfig(loadedConfig);
 		setPrd(loadedPrd);
@@ -202,6 +216,12 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		saveSession(resumedSession);
 		setCurrentSession(resumedSession);
 		setPendingSession(null);
+
+		logger.logSessionResume(
+			pendingSession.currentIteration,
+			pendingSession.totalIterations,
+			pendingSession.elapsedTimeSeconds
+		);
 
 		setAppState("running");
 		setElapsedTime(pendingSession.elapsedTimeSeconds);
@@ -309,6 +329,9 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 	useEffect(() => {
 		if (iteration.current >= iteration.total && !agent.isStreaming && appState === "running") {
 			if (!agent.isComplete) {
+				const currentConfig = loadConfig();
+				const logger = getLogger({ logFilePath: currentConfig.logFilePath });
+				logger.logMaxIterationsReached(iteration.total);
 				setAppState("max_iterations");
 			}
 		}
