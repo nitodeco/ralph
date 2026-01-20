@@ -2,14 +2,14 @@ import { isBackgroundProcessRunning } from "@/lib/daemon.ts";
 import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
 import { getRecentLogEntries } from "@/lib/logger.ts";
 import { loadPrd } from "@/lib/prd.ts";
-import { loadSession } from "@/lib/session.ts";
+import { getSessionService } from "@/lib/services/index.ts";
 import { formatElapsedTime } from "../formatters.ts";
 
 export function printStatus(version: string, verbose = false): void {
 	console.log(`◆ ralph v${version} - Status\n`);
 
 	const { running, pid } = isBackgroundProcessRunning();
-	const session = loadSession();
+	const session = getSessionService().load();
 	const prd = loadPrd();
 
 	if (running && pid !== null) {

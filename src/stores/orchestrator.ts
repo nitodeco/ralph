@@ -19,16 +19,7 @@ import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
-import { getSessionMemoryService } from "@/lib/services/index.ts";
-import {
-	createSession,
-	deleteSession,
-	recordIterationEnd,
-	recordIterationStart,
-	saveSession,
-	updateSessionIteration,
-	updateSessionStatus,
-} from "@/lib/session.ts";
+import { getSessionMemoryService, getSessionService } from "@/lib/services/index.ts";
 import {
 	calculateStatisticsFromLogs,
 	displayStatisticsReport,
@@ -236,9 +227,13 @@ class SessionOrchestrator {
 				}
 
 				if (appState.currentSession) {
-					const updatedSession = recordIterationStart(appState.currentSession, iterationNumber);
+					const sessionService = getSessionService();
+					const updatedSession = sessionService.recordIterationStart(
+						appState.currentSession,
+						iterationNumber,
+					);
 
-					saveSession(updatedSession);
+					sessionService.save(updatedSession);
 					useAppStore.setState({ currentSession: updatedSession });
 				}
 
@@ -269,21 +264,22 @@ class SessionOrchestrator {
 				const currentPrd = reloadPrd();
 
 				if (appState.currentSession) {
+					const sessionService = getSessionService();
 					const wasSuccessful = !agentStore.error && agentStore.isComplete;
-					let updatedSession = recordIterationEnd(
+					let updatedSession = sessionService.recordIterationEnd(
 						appState.currentSession,
 						iterationNumber,
 						wasSuccessful,
 					);
 					const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
 
-					updatedSession = updateSessionIteration(
+					updatedSession = sessionService.updateIteration(
 						updatedSession,
 						iterationNumber,
 						taskIndex,
 						appState.elapsedTime,
 					);
-					saveSession(updatedSession);
+					sessionService.save(updatedSession);
 					useAppStore.setState({ currentSession: updatedSession });
 				}
 
@@ -390,14 +386,18 @@ class SessionOrchestrator {
 				});
 
 				if (appState.currentSession) {
+					const sessionService = getSessionService();
 					const finalStatistics = calculateStatisticsFromLogs(appState.currentSession);
 
 					displayStatisticsReport(finalStatistics);
 					logStatisticsToProgress(finalStatistics);
-					const completedSession = updateSessionStatus(appState.currentSession, "completed");
+					const completedSession = sessionService.updateStatus(
+						appState.currentSession,
+						"completed",
+					);
 
-					saveSession(completedSession);
-					deleteSession();
+					sessionService.save(completedSession);
+					sessionService.delete();
 					useAppStore.setState({ currentSession: null });
 				}
 
@@ -421,9 +421,10 @@ class SessionOrchestrator {
 				});
 
 				if (appState.currentSession) {
-					const stoppedSession = updateSessionStatus(appState.currentSession, "stopped");
+					const sessionService = getSessionService();
+					const stoppedSession = sessionService.updateStatus(appState.currentSession, "stopped");
 
-					saveSession(stoppedSession);
+					sessionService.save(stoppedSession);
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
 
@@ -451,9 +452,10 @@ class SessionOrchestrator {
 				});
 
 				if (appState.currentSession) {
-					const stoppedSession = updateSessionStatus(appState.currentSession, "stopped");
+					const sessionService = getSessionService();
+					const stoppedSession = sessionService.updateStatus(appState.currentSession, "stopped");
 
-					saveSession(stoppedSession);
+					sessionService.save(stoppedSession);
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
 
@@ -466,11 +468,12 @@ class SessionOrchestrator {
 	startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const sessionService = getSessionService();
 
 		const taskIndex = prd ? getCurrentTaskIndex(prd) : 0;
-		const newSession = createSession(totalIterations, taskIndex);
+		const newSession = sessionService.create(totalIterations, taskIndex);
 
-		saveSession(newSession);
+		sessionService.save(newSession);
 
 		logger.logSessionStart(totalIterations, taskIndex);
 		initializeProgressFile();
@@ -489,11 +492,12 @@ class SessionOrchestrator {
 	resumeSession(pendingSession: Session, _prd: Prd | null): ResumeSessionResult {
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const sessionService = getSessionService();
 
 		const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
-		const resumedSession = updateSessionStatus(pendingSession, "running");
+		const resumedSession = sessionService.updateStatus(pendingSession, "running");
 
-		saveSession(resumedSession);
+		sessionService.save(resumedSession);
 
 		logger.logSessionResume(
 			pendingSession.currentIteration,
@@ -535,9 +539,10 @@ class SessionOrchestrator {
 		eventBus.emit("session:stop", { reason: "fatal_error" });
 
 		if (currentSession) {
-			const stoppedSession = updateSessionStatus(currentSession, "stopped");
+			const sessionService = getSessionService();
+			const stoppedSession = sessionService.updateStatus(currentSession, "stopped");
 
-			saveSession(stoppedSession);
+			sessionService.save(stoppedSession);
 
 			return stoppedSession;
 		}

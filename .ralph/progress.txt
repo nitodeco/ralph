@@ -26,3 +26,19 @@
 - Re-exported SessionMemory types from src/types/index.ts via services
 - Deleted src/lib/session-memory.ts
 - All 414 tests pass
+
+### Migrate SessionService to new architecture
+- Created src/lib/services/session/ directory with self-contained service files
+- Created types.ts with Session, SessionStatus, SessionStatistics, IterationTiming interfaces and SessionService interface
+- Created validation.ts with isSession, isSessionStatus type guards
+- Created implementation.ts with createSessionService factory function using closure-based caching
+- Updated container.ts to add SessionService to ServiceContainer and getSessionService() accessor
+- Updated bootstrap.ts to create SessionService instance and add mock for tests
+- Updated index.ts to re-export Session, SessionService, SessionStatus types
+- Updated all consumers (orchestrator.ts, appStore.ts, daemon.ts, CLI commands, useSlashCommands.ts, integrity.ts)
+- Updated test files to use the new service
+- Removed Session, SessionStatus, SessionStatistics, IterationTiming from src/types/session.types.ts
+- Removed isSession, isSessionStatus from src/lib/type-guards.ts
+- Re-exported Session types from src/types/index.ts via services
+- Deleted src/lib/session.ts
+- All 414 tests pass

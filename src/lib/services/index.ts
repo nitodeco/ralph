@@ -12,6 +12,7 @@ export {
 	getPrdService,
 	getServices,
 	getSessionMemoryService,
+	getSessionService,
 	initializeServices,
 	isInitialized,
 	type LoadPrdResult,
@@ -22,7 +23,14 @@ export {
 	type ServiceContainer,
 } from "./container.ts";
 export { IterationTimer } from "./IterationTimer.ts";
-
+export type {
+	IterationTiming,
+	Session,
+	SessionService,
+	SessionStatistics,
+	SessionStatus,
+} from "./session/types.ts";
+export { VALID_SESSION_STATUSES } from "./session/types.ts";
 export type {
 	SessionMemory,
 	SessionMemoryService,

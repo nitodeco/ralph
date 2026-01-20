@@ -4,7 +4,8 @@ import type { Session } from "@/types.ts";
 import { validateConfig } from "./config.ts";
 import { getErrorMessage } from "./errors.ts";
 import { RALPH_DIR } from "./paths.ts";
-import { isPrd, isSession } from "./type-guards.ts";
+import { isSession } from "./services/session/validation.ts";
+import { isPrd } from "./type-guards.ts";
 
 const CONFIG_PATH = join(RALPH_DIR, "config.json");
 const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");

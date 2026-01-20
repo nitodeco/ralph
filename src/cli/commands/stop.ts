@@ -1,5 +1,5 @@
 import { stopDaemonProcess } from "@/lib/daemon.ts";
-import { loadSession, saveSession, updateSessionStatus } from "@/lib/session.ts";
+import { getSessionService } from "@/lib/services/index.ts";
 
 export async function handleStopCommand(version: string): Promise<void> {
 	console.log(`◆ ralph v${version} - Stop\n`);
@@ -7,12 +7,13 @@ export async function handleStopCommand(version: string): Promise<void> {
 	const result = await stopDaemonProcess();
 
 	if (result.success && result.pid !== null) {
-		const session = loadSession();
+		const sessionService = getSessionService();
+		const session = sessionService.load();
 
 		if (session && (session.status === "running" || session.status === "paused")) {
-			const updatedSession = updateSessionStatus(session, "stopped");
+			const updatedSession = sessionService.updateStatus(session, "stopped");
 
-			saveSession(updatedSession);
+			sessionService.save(updatedSession);
 			console.log("Session state updated to 'stopped'");
 		}
 	}

@@ -4,7 +4,7 @@ import { DEFAULT_DAEMON_STOP_TIMEOUT_MS, FORCE_KILL_TIMEOUT_MS } from "@/lib/con
 import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
-import { loadSession, saveSession, updateSessionStatus } from "./session.ts";
+import { getSessionService } from "./services/index.ts";
 
 export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";
 
@@ -252,12 +252,13 @@ function handleShutdownSignal(signal: ShutdownSignal): void {
 
 	logger.info("Shutdown signal received", { signal });
 
-	const session = loadSession();
+	const sessionService = getSessionService();
+	const session = sessionService.load();
 
 	if (session && (session.status === "running" || session.status === "paused")) {
-		const updatedSession = updateSessionStatus(session, "stopped");
+		const updatedSession = sessionService.updateStatus(session, "stopped");
 
-		saveSession(updatedSession);
+		sessionService.save(updatedSession);
 		logger.info("Session state saved as stopped", { signal });
 	}
 

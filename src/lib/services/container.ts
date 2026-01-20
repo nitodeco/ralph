@@ -1,4 +1,5 @@
 import type { ConfigValidationResult, RalphConfig } from "@/types.ts";
+import type { SessionService } from "./session/types.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
 
 export interface ConfigService {
@@ -56,6 +57,7 @@ export interface ServiceContainer {
 	config: ConfigService;
 	prd: PrdService;
 	sessionMemory: SessionMemoryService;
+	session: SessionService;
 }
 
 let container: ServiceContainer | null = null;
@@ -96,4 +98,8 @@ export function getPrdService(): PrdService {
 
 export function getSessionMemoryService(): SessionMemoryService {
 	return getServices().sessionMemory;
+}
+
+export function getSessionService(): SessionService {
+	return getServices().session;
 }

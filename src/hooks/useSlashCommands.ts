@@ -4,8 +4,7 @@ import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { addGuardrail } from "@/lib/guardrails.ts";
-import { getSessionMemoryService } from "@/lib/services/index.ts";
-import { deleteSession } from "@/lib/session.ts";
+import { getSessionMemoryService, getSessionService } from "@/lib/services/index.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types.ts";
 
 interface SlashCommandMessage {
@@ -213,7 +212,7 @@ export function useSlashCommands({
 					try {
 						const archiveResult = performSessionArchive();
 
-						deleteSession();
+						getSessionService().delete();
 						clearSession?.();
 
 						const messages: string[] = [];

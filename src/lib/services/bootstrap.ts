@@ -7,6 +7,8 @@ import {
 	type ServiceContainer,
 } from "./container.ts";
 import { PrdService as PrdServiceSingleton } from "./PrdService.ts";
+import { createSessionService } from "./session/implementation.ts";
+import type { SessionService } from "./session/types.ts";
 import { createSessionMemoryService } from "./session-memory/implementation.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
 
@@ -15,6 +17,7 @@ export function bootstrapServices(): void {
 		config: ConfigServiceSingleton as ConfigService,
 		prd: PrdServiceSingleton as PrdService,
 		sessionMemory: createSessionMemoryService(),
+		session: createSessionService(),
 	});
 }
 
@@ -22,6 +25,7 @@ export interface TestServiceOverrides {
 	config?: Partial<ConfigService>;
 	prd?: Partial<PrdService>;
 	sessionMemory?: Partial<SessionMemoryService>;
+	session?: Partial<SessionService>;
 }
 
 function createMockConfigService(overrides: Partial<ConfigService> = {}): ConfigService {
@@ -119,6 +123,48 @@ function createMockSessionMemoryService(
 	};
 }
 
+function createMockSessionService(overrides: Partial<SessionService> = {}): SessionService {
+	const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
+		startTime: Date.now(),
+		lastUpdateTime: Date.now(),
+		currentIteration: 0,
+		totalIterations,
+		currentTaskIndex,
+		status: "running" as const,
+		elapsedTimeSeconds: 0,
+		statistics: {
+			totalIterations,
+			completedIterations: 0,
+			failedIterations: 0,
+			successfulIterations: 0,
+			totalDurationMs: 0,
+			averageDurationMs: 0,
+			successRate: 0,
+			iterationTimings: [],
+		},
+	});
+
+	return {
+		load: () => null,
+		save: () => {},
+		delete: () => {},
+		exists: () => false,
+		create: createMockSession,
+		recordIterationStart: (session) => ({ ...session, lastUpdateTime: Date.now() }),
+		recordIterationEnd: (session) => ({ ...session, lastUpdateTime: Date.now() }),
+		updateIteration: (session, currentIteration, currentTaskIndex, elapsedTimeSeconds) => ({
+			...session,
+			currentIteration,
+			currentTaskIndex,
+			elapsedTimeSeconds,
+			lastUpdateTime: Date.now(),
+		}),
+		updateStatus: (session, status) => ({ ...session, status, lastUpdateTime: Date.now() }),
+		isResumable: () => false,
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -126,6 +172,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		config: createMockConfigService(overrides.config),
 		prd: createMockPrdService(overrides.prd),
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
+		session: createMockSessionService(overrides.session),
 	};
 
 	initializeServices(testContainer);

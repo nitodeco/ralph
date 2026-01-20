@@ -43,7 +43,7 @@
 				"Remove Session types from src/types/session.types.ts and session type guards from src/lib/type-guards.ts",
 				"Delete src/lib/session.ts after all consumers are migrated"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Migrate ConfigService to new architecture",

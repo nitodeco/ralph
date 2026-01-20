@@ -14,8 +14,6 @@ import type {
 	IterationLogStatus,
 	IterationLogsIndex,
 	IterationLogsIndexEntry,
-	Session,
-	SessionStatus,
 } from "@/types/session.types.ts";
 import type { StreamJsonMessage } from "./agent-stream.ts";
 import { VALID_AGENTS } from "./constants/config.ts";
@@ -67,51 +65,6 @@ export function isPrd(value: unknown): value is Prd {
 	}
 
 	return tasks.every((task) => isPrdTask(task));
-}
-
-const VALID_SESSION_STATUSES: SessionStatus[] = ["running", "paused", "stopped", "completed"];
-
-function isSessionStatus(value: unknown): value is SessionStatus {
-	return isString(value) && VALID_SESSION_STATUSES.includes(value as SessionStatus);
-}
-
-export function isSession(value: unknown): value is Session {
-	if (!isObject(value)) {
-		return false;
-	}
-
-	const {
-		startTime,
-		lastUpdateTime,
-		currentIteration,
-		totalIterations,
-		currentTaskIndex,
-		status,
-		elapsedTimeSeconds,
-		statistics,
-	} = value;
-
-	if (!isNumber(startTime) || !isNumber(lastUpdateTime)) {
-		return false;
-	}
-
-	if (!isNumber(currentIteration) || !isNumber(totalIterations)) {
-		return false;
-	}
-
-	if (!isNumber(currentTaskIndex) || !isNumber(elapsedTimeSeconds)) {
-		return false;
-	}
-
-	if (!isSessionStatus(status)) {
-		return false;
-	}
-
-	if (!isObject(statistics)) {
-		return false;
-	}
-
-	return true;
 }
 
 export function isRalphConfig(value: unknown): value is RalphConfig {

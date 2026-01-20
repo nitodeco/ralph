@@ -3,7 +3,7 @@ import { formatElapsedTime } from "@/cli/formatters.ts";
 import { isBackgroundProcessRunning } from "@/lib/daemon.ts";
 import { getRecentLogEntries } from "@/lib/logger.ts";
 import { loadPrd } from "@/lib/prd.ts";
-import { loadSession } from "@/lib/session.ts";
+import { getSessionService } from "@/lib/services/index.ts";
 
 interface StatusViewProps {
 	version: string;
@@ -18,7 +18,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 	});
 
 	const { running, pid } = isBackgroundProcessRunning();
-	const session = loadSession();
+	const session = getSessionService().load();
 	const prd = loadPrd();
 
 	return (

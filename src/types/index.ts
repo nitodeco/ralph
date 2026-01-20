@@ -1,7 +1,12 @@
 export type {
+	IterationTiming,
+	Session,
 	SessionMemory,
 	SessionMemoryService,
 	SessionMemoryStats,
+	SessionService,
+	SessionStatistics,
+	SessionStatus,
 } from "@/lib/services/index.ts";
 export type { AgentResult, RunOptions } from "./agent.types.ts";
 export type {
@@ -55,8 +60,4 @@ export type {
 	IterationLogsIndexEntry,
 	IterationLogTask,
 	IterationLogVerification,
-	IterationTiming,
-	Session,
-	SessionStatistics,
-	SessionStatus,
 } from "./session.types.ts";

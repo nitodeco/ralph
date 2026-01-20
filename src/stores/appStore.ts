@@ -14,13 +14,7 @@ import {
 	invalidatePrdCache,
 	loadPrd,
 } from "@/lib/prd.ts";
-import {
-	deleteSession,
-	isSessionResumable,
-	loadSession,
-	saveSession,
-	updateSessionStatus,
-} from "@/lib/session.ts";
+import { getSessionService } from "@/lib/services/index.ts";
 import type {
 	ActiveView,
 	AppState,
@@ -174,9 +168,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			prd: loadedPrd,
 		});
 
-		const existingSession = loadSession();
+		const sessionService = getSessionService();
+		const existingSession = sessionService.load();
 
-		if (isSessionResumable(existingSession)) {
+		if (sessionService.isResumable(existingSession)) {
 			set({ pendingSession: existingSession });
 
 			if (autoResume) {
@@ -213,7 +208,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			validationWarning: null,
 		});
 
-		deleteSession();
+		getSessionService().delete();
 		set({ pendingSession: null });
 
 		let totalIters = iterationCount || state.iterations || DEFAULTS.iterations;
@@ -303,7 +298,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			singleTaskMode: true,
 		});
 
-		deleteSession();
+		getSessionService().delete();
 		set({ pendingSession: null });
 
 		const iterationStore = useIterationStore.getState();
@@ -392,9 +387,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			iterationStore.stop();
 
 			if (state.currentSession) {
-				const stoppedSession = updateSessionStatus(state.currentSession, "stopped");
+				const sessionService = getSessionService();
+				const stoppedSession = sessionService.updateStatus(state.currentSession, "stopped");
 
-				saveSession(stoppedSession);
+				sessionService.save(stoppedSession);
 				set({ currentSession: stoppedSession });
 			}
 

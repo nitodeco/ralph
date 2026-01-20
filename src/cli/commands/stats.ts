@@ -1,10 +1,10 @@
-import { loadSession } from "@/lib/session.ts";
+import { getSessionService } from "@/lib/services/index.ts";
 import { calculateStatisticsFromLogs, displayStatisticsReport } from "@/lib/statistics.ts";
 
 export function printStats(version: string): void {
 	console.log(`◆ ralph v${version} - Statistics\n`);
 
-	const session = loadSession();
+	const session = getSessionService().load();
 
 	if (!session) {
 		console.log("No session data found.");

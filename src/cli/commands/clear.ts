@@ -1,5 +1,5 @@
 import { performSessionArchive } from "@/lib/archive.ts";
-import { deleteSession } from "@/lib/session.ts";
+import { getSessionService } from "@/lib/services/index.ts";
 
 export function printClear(version: string): void {
 	console.log(`◆ ralph v${version} - Clear Session\n`);
@@ -16,7 +16,7 @@ export function printClear(version: string): void {
 		console.log("Archived progress file");
 	}
 
-	deleteSession();
+	getSessionService().delete();
 	console.log("Cleared session data");
 
 	console.log("\nSession cleared successfully. Run 'ralph' to start fresh.");
