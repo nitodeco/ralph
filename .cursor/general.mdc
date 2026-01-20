@@ -9,3 +9,62 @@ alwaysApply: true
 - Use typescript best practices
 - This is a CLI project
 - After every implementation, run `bun check` to ensure the code is correct
+
+## Core Principles
+
+- Verify assumptions using CLI tools before implementing
+- Run check, typecheck and build commands after changes
+- Check available CLI tools before running commands
+
+## Variables & Naming
+
+- Use `const` only; never reassign with `let`
+- Use descriptive names; avoid single letters (except common shorthands like `acc`)
+- Prefix booleans: `is`, `has`, `does`
+- Prefix optional/Option types: `maybe` (e.g., `maybeUser`)
+- Include units in names: `timeInMs` not `time`
+- Use `_` for number readability: `1_000_000`
+- Name mapping objects: `X_BY_Y` (e.g., `USER_BY_ID`), never `X_MAP`
+- Use `get` prefix, never `derive` (e.g., `getColor` not `deriveColor`)
+- Extract variables only for reuse or genuine complexity; inline single-use expressions
+- Move magic numbers to named constants  
+
+## Arrays & Data Access
+
+- Never use `[index]` access; use destructuring or `.at(index)`
+- Prefer pattern matching: `const [a, b] = text.match(regex) ?? []`
+- Use nested destructuring in single statements: `const { items: [first] } = getResult()`
+
+## Functions & Control Flow
+
+- Define helper functions above their usage; never nested named functions
+- Write callbacks inline at call site; never define separately
+- Use functional methods (`map`, `filter`, `reduce`) over loops
+- Use regular `for` loops for side effects; never `.forEach`
+- Use `ts-pattern` `match` instead of `switch` statements
+- Follow functional programming principles
+
+## Type Safety
+
+- Never use `as` casting; use type guards, generics, or `satisfies`
+- Specify accumulator types in `.reduce<Type>()`, never cast initial value
+- Define reusable types at module level; never inline type aliases in functions
+
+## Code Style
+
+- Add spacing before/after conditions and before `return`
+- Never use single-line if statements
+- Use consistent object key formatting
+- Use `dedent` for multiline strings when available
+- Use object shorthand: `{ imageBuffer }` not `{ imageBuffer: imageBuffer }`
+
+## Dependencies & Tests
+
+- Use project's package manager (bun)
+- Fix npm package versions to an exact version
+- Write unit tests with given/when/then pattern using the bun test runner
+
+## Maintenance
+
+- Never add explanatory comments unless requested
+- Never write READMEs or markdown files unless requested
