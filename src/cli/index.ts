@@ -4,6 +4,7 @@ export {
 	printConfig,
 	printHelp,
 	printList,
+	printStats,
 	printStatus,
 	printVersion,
 } from "./commands/index.ts";

@@ -182,6 +182,10 @@ function main(): void {
 			printStatus(VERSION);
 			break;
 
+		case "stats":
+			printStats(VERSION);
+			break;
+
 		case "list":
 			printList(VERSION, json);
 			break;

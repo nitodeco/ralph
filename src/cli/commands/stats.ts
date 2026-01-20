@@ -1,8 +1,5 @@
 import { loadSession } from "@/lib/session.ts";
-import {
-	calculateStatisticsFromLogs,
-	displayStatisticsReport,
-} from "@/lib/statistics.ts";
+import { calculateStatisticsFromLogs, displayStatisticsReport } from "@/lib/statistics.ts";
 
 export function printStats(version: string): void {
 	console.log(`◆ ralph v${version} - Statistics\n`);

@@ -5,6 +5,7 @@ export type Command =
 	| "update"
 	| "resume"
 	| "status"
+	| "stats"
 	| "stop"
 	| "list"
 	| "config"

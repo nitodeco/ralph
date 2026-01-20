@@ -2,18 +2,6 @@
 	"project": "Ralph CLI",
 	"tasks": [
 		{
-			"title": "Add Linux support to update system",
-			"description": "Extend the self-update system to support Linux platforms, not just macOS.",
-			"steps": [
-				"Update getOperatingSystem to support linux platform",
-				"Add linux binaries to build configuration",
-				"Update GitHub Actions workflow to build linux binaries",
-				"Test update flow on Linux environments",
-				"Update documentation with Linux support"
-			],
-			"done": true
-		},
-		{
 			"title": "Implement iteration statistics and reporting",
 			"description": "Track and display statistics about the run including time per task, success rates, and total elapsed time.",
 			"steps": [
@@ -23,7 +11,7 @@
 				"Calculate average iteration duration",
 				"Display summary report on completion"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add max runtime limit configuration",
