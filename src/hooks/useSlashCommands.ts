@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
+import { performSessionArchive } from "@/lib/archive.ts";
 import { addGuardrail } from "@/lib/guardrails.ts";
+import { deleteSession } from "@/lib/session.ts";
 import { addLesson, addTaskNote } from "@/lib/session-memory.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types/index.ts";
 
@@ -28,6 +30,7 @@ interface UseSlashCommandsDependencies {
 	getCurrentTaskTitle?: () => string | null;
 	dismissUpdateBanner?: () => void;
 	refreshState?: () => RefreshStateResult;
+	clearSession?: () => void;
 }
 
 interface UseSlashCommandsResult {
@@ -36,6 +39,7 @@ interface UseSlashCommandsResult {
 	guardrailMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
+	clearMessage: SlashCommandMessage | null;
 }
 
 export function useSlashCommands({
@@ -50,11 +54,13 @@ export function useSlashCommands({
 	getCurrentTaskTitle,
 	dismissUpdateBanner,
 	refreshState,
+	clearSession,
 }: UseSlashCommandsDependencies): UseSlashCommandsResult {
 	const [nextTaskMessage, setNextTaskMessage] = useState<SlashCommandMessage | null>(null);
 	const [guardrailMessage, setGuardrailMessage] = useState<SlashCommandMessage | null>(null);
 	const [memoryMessage, setMemoryMessage] = useState<SlashCommandMessage | null>(null);
 	const [refreshMessage, setRefreshMessage] = useState<SlashCommandMessage | null>(null);
+	const [clearMessage, setClearMessage] = useState<SlashCommandMessage | null>(null);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -190,6 +196,46 @@ export function useSlashCommands({
 				case "dismiss-update":
 					dismissUpdateBanner?.();
 					break;
+				case "clear":
+					try {
+						const archiveResult = performSessionArchive();
+						deleteSession();
+						clearSession?.();
+
+						const messages: string[] = [];
+						if (archiveResult.tasksArchived > 0) {
+							messages.push(
+								`archived ${archiveResult.tasksArchived} task${archiveResult.tasksArchived === 1 ? "" : "s"}`,
+							);
+						}
+						if (archiveResult.progressArchived) {
+							messages.push("archived progress");
+						}
+						messages.push("session cleared");
+
+						if (refreshState) {
+							const refreshResult = refreshState();
+							if (refreshResult.success) {
+								const taskDisplay =
+									refreshResult.currentTaskIndex >= 0
+										? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
+										: `${refreshResult.taskCount} tasks (all done)`;
+								messages.push(`refreshed: ${taskDisplay}`);
+							}
+						}
+
+						setClearMessage({
+							type: "success",
+							text: messages.join(", "),
+						});
+					} catch {
+						setClearMessage({
+							type: "error",
+							text: "Failed to clear session",
+						});
+					}
+					setTimeout(() => setClearMessage(null), 5000);
+					break;
 				case "refresh":
 					if (refreshState) {
 						const result = refreshState();
@@ -229,8 +275,16 @@ export function useSlashCommands({
 			getCurrentTaskTitle,
 			dismissUpdateBanner,
 			refreshState,
+			clearSession,
 		],
 	);
 
-	return { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage, refreshMessage };
+	return {
+		handleSlashCommand,
+		nextTaskMessage,
+		guardrailMessage,
+		memoryMessage,
+		refreshMessage,
+		clearMessage,
+	};
 }

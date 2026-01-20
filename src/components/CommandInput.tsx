@@ -16,6 +16,7 @@ export type SlashCommand =
 	| "next"
 	| "status"
 	| "archive"
+	| "clear"
 	| "guardrail"
 	| "guardrails"
 	| "analyze"
@@ -48,6 +49,7 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"next",
 	"status",
 	"archive",
+	"clear",
 	"guardrail",
 	"guardrails",
 	"analyze",

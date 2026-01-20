@@ -14,6 +14,7 @@ import {
 	parseArgs,
 	printAnalyze,
 	printArchive,
+	printClear,
 	printConfig,
 	printGuardrails,
 	printHelp,
@@ -231,6 +232,10 @@ function main(): void {
 
 		case "archive":
 			printArchive(VERSION);
+			break;
+
+		case "clear":
+			printClear(VERSION);
 			break;
 
 		case "guardrails":

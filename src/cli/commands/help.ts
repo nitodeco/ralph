@@ -16,6 +16,7 @@ Commands:
   list              Display all PRD tasks and their completion status
   config            View current configuration with validation
   archive           Archive completed tasks and progress file
+  clear             Clear session data (archives first, then resets session)
   guardrails        View and manage prompt guardrails
   analyze           Analyze failure patterns and get suggestions
   memory            View and manage session memory (lessons, patterns, notes)
@@ -58,6 +59,7 @@ Slash Commands (in-app):
   /setup            Configure global preferences
   /update           Check for updates
   /archive          Archive completed tasks and progress file
+  /clear            Clear session data (archives first, then resets session)
   /help             Show help message
   /quit             Exit the application
 `);

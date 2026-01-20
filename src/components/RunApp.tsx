@@ -49,6 +49,7 @@ export function RunApp({
 	const updateBannerDismissed = useAppStore((state) => state.updateBannerDismissed);
 	const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
 	const refreshState = useAppStore((state) => state.refreshState);
+	const clearSession = useAppStore((state) => state.clearSession);
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
@@ -73,20 +74,27 @@ export function RunApp({
 		return currentTask?.title ?? null;
 	}, [prd]);
 
-	const { handleSlashCommand, nextTaskMessage, guardrailMessage, memoryMessage, refreshMessage } =
-		useSlashCommands({
-			startIterations,
-			resumeSession,
-			stopAgent,
-			setManualNextTask,
-			agentStop,
-			iterationPause,
-			setActiveView,
-			exit,
-			getCurrentTaskTitle,
-			dismissUpdateBanner,
-			refreshState,
-		});
+	const {
+		handleSlashCommand,
+		nextTaskMessage,
+		guardrailMessage,
+		memoryMessage,
+		refreshMessage,
+		clearMessage,
+	} = useSlashCommands({
+		startIterations,
+		resumeSession,
+		stopAgent,
+		setManualNextTask,
+		agentStop,
+		iterationPause,
+		setActiveView,
+		exit,
+		getCurrentTaskTitle,
+		dismissUpdateBanner,
+		refreshState,
+		clearSession,
+	});
 
 	useSessionLifecycle(
 		{
@@ -173,6 +181,7 @@ export function RunApp({
 				guardrailMessage={guardrailMessage}
 				memoryMessage={memoryMessage}
 				refreshMessage={refreshMessage}
+				clearMessage={clearMessage}
 				onCommand={handleSlashCommand}
 				updateAvailable={updateAvailable}
 				latestVersion={latestVersion}

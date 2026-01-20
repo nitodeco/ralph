@@ -88,6 +88,7 @@ interface AppStoreActions {
 	setUpdateStatus: (updateAvailable: boolean, latestVersion: string | null) => void;
 	dismissUpdateBanner: () => void;
 	refreshState: () => RefreshStateResult;
+	clearSession: () => void;
 }
 
 type AppStore = AppStoreState & AppStoreActions;
@@ -529,6 +530,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 				error: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
+	},
+
+	clearSession: () => {
+		set({
+			pendingSession: null,
+			currentSession: null,
+			appState: "idle",
+		});
 	},
 }));
 

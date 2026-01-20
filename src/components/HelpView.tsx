@@ -146,6 +146,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Archive completed tasks and progress file</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/clear</Text>
+							{"            "}
+							<Text>Clear session data (archives first, then resets)</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/guardrail {"<text>"}</Text>
 							{"  "}
 							<Text>Add a new guardrail instruction</Text>

@@ -10,6 +10,7 @@ export type Command =
 	| "list"
 	| "config"
 	| "archive"
+	| "clear"
 	| "guardrails"
 	| "analyze"
 	| "memory"

@@ -9,6 +9,7 @@ export {
 	handleStopCommand,
 	printAnalyze,
 	printArchive,
+	printClear,
 	printConfig,
 	printGuardrails,
 	printHelp,

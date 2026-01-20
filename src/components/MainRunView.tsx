@@ -27,6 +27,7 @@ interface MainRunViewProps {
 	guardrailMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
+	clearMessage: SlashCommandMessage | null;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	updateAvailable: boolean;
 	latestVersion: string | null;
@@ -45,6 +46,7 @@ export function MainRunView({
 	guardrailMessage,
 	memoryMessage,
 	refreshMessage,
+	clearMessage,
 	onCommand,
 	updateAvailable,
 	latestVersion,
@@ -88,6 +90,14 @@ export function MainRunView({
 				<Box paddingX={1} marginY={1}>
 					<Message type={refreshMessage.type === "success" ? "success" : "error"}>
 						{refreshMessage.text}
+					</Message>
+				</Box>
+			)}
+
+			{clearMessage && (
+				<Box paddingX={1} marginY={1}>
+					<Message type={clearMessage.type === "success" ? "success" : "error"}>
+						{clearMessage.text}
 					</Message>
 				</Box>
 			)}
