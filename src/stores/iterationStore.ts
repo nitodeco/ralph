@@ -14,6 +14,7 @@ interface IterationCallbacks {
 	onIterationComplete?: (iteration: number) => void;
 	onAllComplete?: () => void;
 	onMaxIterations?: () => void;
+	onMaxRuntime?: () => void;
 }
 
 interface IterationActions {
@@ -26,10 +27,19 @@ interface IterationActions {
 	markIterationComplete: (isProjectComplete: boolean) => void;
 	setCallbacks: (callbacks: IterationCallbacks) => void;
 	setDelayMs: (delayMs: number) => void;
+	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => void;
+	setStartTime: (startTime: number) => void;
+	getTimeRemaining: () => number | null;
+	isMaxRuntimeReached: () => boolean;
 }
 
 type IterationStore = IterationState &
-	IterationActions & { callbacks: IterationCallbacks; delayMs: number };
+	IterationActions & {
+		callbacks: IterationCallbacks;
+		delayMs: number;
+		maxRuntimeMs: number | undefined;
+		startTime: number | null;
+	};
 
 const INITIAL_STATE: IterationState = {
 	current: 0,
@@ -53,6 +63,8 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 	...INITIAL_STATE,
 	callbacks: {},
 	delayMs: DEFAULTS.iterationDelayMs,
+	maxRuntimeMs: undefined,
+	startTime: null,
 
 	setCallbacks: (callbacks: IterationCallbacks) => {
 		set({ callbacks });
@@ -62,13 +74,43 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		set({ delayMs });
 	},
 
+	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => {
+		set({ maxRuntimeMs });
+	},
+
+	setStartTime: (startTime: number) => {
+		set({ startTime });
+	},
+
+	getTimeRemaining: () => {
+		const state = get();
+		if (!state.maxRuntimeMs || !state.startTime) {
+			return null;
+		}
+		const elapsed = Date.now() - state.startTime;
+		const remaining = state.maxRuntimeMs - elapsed;
+		return remaining > 0 ? remaining : 0;
+	},
+
+	isMaxRuntimeReached: () => {
+		const state = get();
+		if (!state.maxRuntimeMs || !state.startTime) {
+			return false;
+		}
+		const elapsed = Date.now() - state.startTime;
+		return elapsed >= state.maxRuntimeMs;
+	},
+
 	start: () => {
 		projectCompleteRef = false;
+		const state = get();
+		const startTime = state.startTime ?? Date.now();
 		set({
 			current: 1,
 			isRunning: true,
 			isDelaying: false,
 			isPaused: false,
+			startTime,
 		});
 		get().callbacks.onIterationStart?.(1);
 	},
@@ -104,6 +146,15 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		const state = get();
 		if (state.current >= state.total || projectCompleteRef) {
 			state.callbacks.onAllComplete?.();
+			set({
+				isRunning: false,
+				isDelaying: false,
+			});
+			return;
+		}
+
+		if (state.isMaxRuntimeReached()) {
+			state.callbacks.onMaxRuntime?.();
 			set({
 				isRunning: false,
 				isDelaying: false,

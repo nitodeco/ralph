@@ -24,6 +24,7 @@ export interface ParsedArgs {
 	json: boolean;
 	dryRun: boolean;
 	task?: string;
+	maxRuntimeMs?: number;
 }
 
 export interface TaskListOutput {

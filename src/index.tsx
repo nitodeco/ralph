@@ -46,6 +46,7 @@ interface RunWithSetupProps {
 	autoStart?: boolean;
 	dryRun?: boolean;
 	initialTask?: string;
+	maxRuntimeMs?: number;
 }
 
 function RunWithSetup({
@@ -55,6 +56,7 @@ function RunWithSetup({
 	autoStart = false,
 	dryRun = false,
 	initialTask,
+	maxRuntimeMs,
 }: RunWithSetupProps): React.ReactElement {
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
 
@@ -70,6 +72,7 @@ function RunWithSetup({
 			autoStart={autoStart || !!initialTask}
 			dryRun={dryRun}
 			initialTask={initialTask}
+			maxRuntimeMs={maxRuntimeMs}
 		/>
 	);
 }
@@ -102,7 +105,9 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-	const { command, iterations, background, json, dryRun, task } = parseArgs(process.argv);
+	const { command, iterations, background, json, dryRun, task, maxRuntimeMs } = parseArgs(
+		process.argv,
+	);
 
 	setShutdownHandler({
 		onShutdown: () => {
@@ -150,6 +155,7 @@ function main(): void {
 					autoStart={autoStart}
 					dryRun={dryRun}
 					initialTask={task}
+					maxRuntimeMs={maxRuntimeMs}
 				/>,
 			);
 			break;
@@ -163,6 +169,7 @@ function main(): void {
 					autoStart={autoStart}
 					dryRun={dryRun}
 					initialTask={task}
+					maxRuntimeMs={maxRuntimeMs}
 				/>,
 			);
 			break;

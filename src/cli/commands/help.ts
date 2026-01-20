@@ -25,6 +25,7 @@ Options:
   --dry-run         Simulate agent execution without running agents (validates PRD/config)
   --json            Output in JSON format (for list and config commands)
   -t, --task <n>    Run specific task by number or title (single task mode)
+  --max-runtime <s> Set maximum runtime in seconds (stops gracefully when reached)
 
 Slash Commands (in-app):
   /start [n|full]   Start the agent loop (default: 10 iterations, full: all tasks)

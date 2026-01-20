@@ -50,12 +50,14 @@ interface AppStoreState {
 	iterations: number;
 	manualNextTask: string | null;
 	singleTaskMode: boolean;
+	maxRuntimeMs: number | null;
 }
 
 interface AppStoreActions {
 	setAppState: (state: AppState) => void;
 	setActiveView: (view: ActiveView) => void;
 	setIterations: (iterations: number) => void;
+	setMaxRuntimeMs: (maxRuntimeMs: number | null) => void;
 	incrementElapsedTime: () => void;
 	resetElapsedTime: () => void;
 	loadInitialState: (autoResume: boolean) => void;
@@ -70,6 +72,7 @@ interface AppStoreActions {
 	setManualNextTask: (taskIdentifier: string) => SetManualTaskResult;
 	clearManualNextTask: () => void;
 	getEffectiveNextTask: () => string | null;
+	getRemainingRuntimeMs: () => number | null;
 }
 
 type AppStore = AppStoreState & AppStoreActions;
@@ -102,6 +105,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	iterations: DEFAULTS.iterations,
 	singleTaskMode: false,
 	manualNextTask: null,
+	maxRuntimeMs: null,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });
@@ -113,6 +117,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	setIterations: (iterations: number) => {
 		set({ iterations });
+	},
+
+	setMaxRuntimeMs: (maxRuntimeMs: number | null) => {
+		set({ maxRuntimeMs });
 	},
 
 	incrementElapsedTime: () => {
@@ -192,6 +200,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const iterationStore = useIterationStore.getState();
 		iterationStore.setTotal(totalIters);
+		iterationStore.setStartTime(Date.now());
 
 		const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
 		const newSession = createSession(totalIters, taskIndex);
@@ -262,6 +271,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const iterationStore = useIterationStore.getState();
 		iterationStore.setTotal(1);
+		iterationStore.setStartTime(Date.now());
 
 		const currentTaskIndex = loadedPrd.tasks.findIndex(
 			(prdTask) => prdTask.title.toLowerCase() === task?.title.toLowerCase(),
@@ -316,6 +326,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const iterationStore = useIterationStore.getState();
 		iterationStore.setTotal(remainingIterations > 0 ? remainingIterations : 1);
+
+		const elapsedMs = state.pendingSession.elapsedTimeSeconds * 1000;
+		iterationStore.setStartTime(Date.now() - elapsedMs);
 
 		const resumedSession = updateSessionStatus(state.pendingSession, "running");
 		saveSession(resumedSession);
@@ -453,10 +466,25 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		const prd = state.prd ?? loadPrd();
 		return prd ? getNextTask(prd) : null;
 	},
+
+	getRemainingRuntimeMs: (): number | null => {
+		const state = get();
+		if (state.maxRuntimeMs === null) {
+			return null;
+		}
+		const elapsedMs = state.elapsedTime * 1000;
+		const remaining = state.maxRuntimeMs - elapsedMs;
+		return remaining > 0 ? remaining : 0;
+	},
 }));
 
-export function setupIterationCallbacks(iterations: number) {
+export function setupIterationCallbacks(iterations: number, maxRuntimeMs?: number) {
 	const loadedConfig = loadConfig();
-	orchestrator.initialize({ config: loadedConfig, iterations });
+	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
+	orchestrator.initialize({
+		config: loadedConfig,
+		iterations,
+		maxRuntimeMs: effectiveMaxRuntimeMs,
+	});
 	orchestrator.setupIterationCallbacks();
 }

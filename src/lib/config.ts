@@ -251,6 +251,7 @@ export function validateConfig(config: unknown): ConfigValidationResult {
 	validatePositiveInteger(ralphConfig.lastUpdateCheck, "lastUpdateCheck", errors, true);
 	validateString(ralphConfig.skipVersion, "skipVersion", errors);
 	validatePositiveInteger(ralphConfig.maxOutputHistoryBytes, "maxOutputHistoryBytes", errors);
+	validatePositiveInteger(ralphConfig.maxRuntimeMs, "maxRuntimeMs", errors);
 	validateNotificationConfig(ralphConfig.notifications, errors);
 	validateMemoryConfig(ralphConfig.memory, errors);
 

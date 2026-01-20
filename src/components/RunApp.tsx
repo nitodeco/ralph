@@ -35,6 +35,7 @@ interface RunAppProps {
 	autoStart?: boolean;
 	dryRun?: boolean;
 	initialTask?: string;
+	maxRuntimeMs?: number;
 }
 
 export function RunApp({
@@ -44,6 +45,7 @@ export function RunApp({
 	autoStart = false,
 	dryRun = false,
 	initialTask,
+	maxRuntimeMs,
 }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 
@@ -60,14 +62,12 @@ export function RunApp({
 	const resumeSession = useAppStore((state) => state.resumeSession);
 	const stopAgent = useAppStore((state) => state.stopAgent);
 	const revalidateAndGoIdle = useAppStore((state) => state.revalidateAndGoIdle);
-	const handleAgentComplete = useAppStore((state) => state.handleAgentComplete);
 	const handleFatalError = useAppStore((state) => state.handleFatalError);
 	const setIterations = useAppStore((state) => state.setIterations);
 	const setManualNextTask = useAppStore((state) => state.setManualNextTask);
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
-	const agentExitCode = useAgentStore((state) => state.exitCode);
 	const agentStart = useAgentStore((state) => state.start);
 	const agentStop = useAgentStore((state) => state.stop);
 
@@ -170,9 +170,9 @@ export function RunApp({
 
 	useEffect(() => {
 		setIterations(iterations);
-		setupIterationCallbacks(iterations);
+		setupIterationCallbacks(iterations, maxRuntimeMs);
 		loadInitialState(autoResume);
-	}, [autoResume, iterations, loadInitialState, setIterations]);
+	}, [autoResume, iterations, loadInitialState, setIterations, maxRuntimeMs]);
 
 	useEffect(() => {
 		if (autoResume && pendingSession && appState === "idle") {
@@ -212,12 +212,6 @@ export function RunApp({
 			agentStart();
 		}
 	}, [iterationIsRunning, iterationCurrent, iterationIsDelaying, agentIsStreaming, agentStart]);
-
-	useEffect(() => {
-		if (!agentIsStreaming && agentExitCode !== null) {
-			handleAgentComplete();
-		}
-	}, [agentIsStreaming, agentExitCode, handleAgentComplete]);
 
 	useEffect(() => {
 		if (appState !== "running" || activeView !== "run") return;
@@ -318,6 +312,14 @@ export function RunApp({
 				<Box paddingX={1} marginY={1}>
 					<Message type="warning">
 						Completed {iterationTotal} iterations. PRD is not completed.
+					</Message>
+				</Box>
+			)}
+
+			{appState === "max_runtime" && (
+				<Box paddingX={1} marginY={1}>
+					<Message type="warning">
+						Max runtime limit reached. Stopped after {iterationCurrent} iterations.
 					</Message>
 				</Box>
 			)}

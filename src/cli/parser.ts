@@ -13,6 +13,18 @@ export function parseArgs(args: string[]): ParsedArgs {
 		task = relevantArgs[taskIndex + 1];
 	}
 
+	let maxRuntimeMs: number | undefined;
+	const maxRuntimeIndex = relevantArgs.findIndex(
+		(arg) => arg === "--max-runtime" || arg === "--max-runtime-ms",
+	);
+	if (maxRuntimeIndex !== -1 && maxRuntimeIndex + 1 < relevantArgs.length) {
+		const maxRuntimeValue = relevantArgs[maxRuntimeIndex + 1];
+		const parsed = Number.parseInt(maxRuntimeValue, 10);
+		if (!Number.isNaN(parsed) && parsed > 0) {
+			maxRuntimeMs = parsed * 1000;
+		}
+	}
+
 	const filteredArgs = relevantArgs.filter(
 		(arg, argIndex) =>
 			arg !== "--background" &&
@@ -22,7 +34,10 @@ export function parseArgs(args: string[]): ParsedArgs {
 			arg !== "--dry-run" &&
 			arg !== "--task" &&
 			arg !== "-t" &&
-			(taskIndex === -1 || argIndex !== taskIndex + 1),
+			arg !== "--max-runtime" &&
+			arg !== "--max-runtime-ms" &&
+			(taskIndex === -1 || argIndex !== taskIndex + 1) &&
+			(maxRuntimeIndex === -1 || argIndex !== maxRuntimeIndex + 1),
 	);
 	const command = (filteredArgs[0] ?? "run") as Command;
 
@@ -37,5 +52,5 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	return { command, iterations, background, json, dryRun, task };
+	return { command, iterations, background, json, dryRun, task, maxRuntimeMs };
 }

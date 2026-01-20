@@ -29,6 +29,7 @@ export interface RalphConfig {
 	notifications?: NotificationConfig;
 	memory?: MemoryConfig;
 	maxOutputHistoryBytes?: number;
+	maxRuntimeMs?: number;
 }
 
 export interface ConfigValidationError {

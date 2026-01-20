@@ -33,6 +33,7 @@ import { useIterationStore } from "./iterationStore.ts";
 interface OrchestratorConfig {
 	config: RalphConfig;
 	iterations: number;
+	maxRuntimeMs?: number;
 }
 
 function getCurrentTaskIndex(prd: Prd): number {
@@ -42,6 +43,7 @@ function getCurrentTaskIndex(prd: Prd): number {
 class SessionOrchestrator {
 	private config: RalphConfig | null = null;
 	private iterations = 0;
+	private maxRuntimeMs: number | undefined = undefined;
 	private unsubscribers: (() => void)[] = [];
 	private initialized = false;
 
@@ -52,8 +54,12 @@ class SessionOrchestrator {
 
 		this.config = options.config;
 		this.iterations = options.iterations;
+		this.maxRuntimeMs = options.maxRuntimeMs;
 		this.initialized = true;
 		this.setupSubscriptions();
+
+		const iterationStore = useIterationStore.getState();
+		iterationStore.setMaxRuntimeMs(this.maxRuntimeMs);
 	}
 
 	private setupSubscriptions(): void {
@@ -223,6 +229,29 @@ class SessionOrchestrator {
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
 				useAppStore.setState({ appState: "max_iterations" });
+			},
+			onMaxRuntime: () => {
+				const appState = useAppStore.getState();
+				const iterationState = useIterationStore.getState();
+				useAgentStore.getState().stop();
+				const loadedConfig = loadConfig();
+				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+				logger.info("Max runtime limit reached", {
+					maxRuntimeMs: iterationState.maxRuntimeMs,
+					completedIterations: iterationState.current,
+				});
+				const currentPrd = loadPrd();
+				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
+					completedIterations: iterationState.current,
+					totalIterations: iterationState.total,
+					reason: "max_runtime",
+				});
+				if (appState.currentSession) {
+					const stoppedSession = updateSessionStatus(appState.currentSession, "stopped");
+					saveSession(stoppedSession);
+					useAppStore.setState({ currentSession: stoppedSession });
+				}
+				useAppStore.setState({ appState: "max_runtime" });
 			},
 		});
 	}

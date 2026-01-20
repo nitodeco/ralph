@@ -4,6 +4,7 @@ export type AppState =
 	| "complete"
 	| "error"
 	| "max_iterations"
+	| "max_runtime"
 	| "not_initialized"
 	| "resume_prompt";
 

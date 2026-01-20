@@ -2,18 +2,6 @@
 	"project": "Ralph CLI",
 	"tasks": [
 		{
-			"title": "Implement iteration statistics and reporting",
-			"description": "Track and display statistics about the run including time per task, success rates, and total elapsed time.",
-			"steps": [
-				"Create stats tracking structure in session",
-				"Record start/end time for each iteration",
-				"Track success/failure counts",
-				"Calculate average iteration duration",
-				"Display summary report on completion"
-			],
-			"done": true
-		},
-		{
 			"title": "Add max runtime limit configuration",
 			"description": "Allow users to set a maximum total runtime after which Ralph will stop gracefully. Useful for time-boxed overnight runs.",
 			"steps": [
@@ -23,7 +11,7 @@
 				"Add --max-runtime CLI flag",
 				"Display time remaining in status bar when limit set"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Improve error messages and user feedback",
