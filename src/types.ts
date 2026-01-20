@@ -1,7 +1,10 @@
 export type AgentType = "cursor" | "claude";
 
+export type PrdFormat = "json" | "yaml";
+
 export interface RalphConfig {
 	agent: AgentType;
+	prdFormat?: PrdFormat;
 	lastUpdateCheck?: number;
 	skipVersion?: string;
 }

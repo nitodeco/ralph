@@ -3,11 +3,12 @@
 import { render } from "ink";
 import { InitWizard } from "./components/InitWizard.tsx";
 import { RunApp } from "./components/RunApp.tsx";
+import { SetupWizard } from "./components/SetupWizard.tsx";
 import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
 
 export const VERSION = "1.0.0";
 
-type Command = "run" | "init" | "update" | "help" | "version" | "-v" | "--version" | "-h" | "--help";
+type Command = "run" | "init" | "setup" | "update" | "help" | "version" | "-v" | "--version" | "-h" | "--help";
 
 interface ParsedArgs {
 	command: Command;
@@ -41,6 +42,7 @@ Usage:
 Commands:
   run [iterations]  Run the agent loop (default: 10 iterations)
   init              Initialize a new PRD project
+  setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
@@ -66,6 +68,10 @@ function main(): void {
 
 		case "init":
 			render(<InitWizard version={VERSION} />);
+			break;
+
+		case "setup":
+			render(<SetupWizard version={VERSION} />);
 			break;
 
 		case "update":

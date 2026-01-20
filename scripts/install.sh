@@ -85,7 +85,8 @@ main() {
     echo ""
     echo "Ralph CLI installed successfully!"
     echo ""
-    echo "Run 'ralph --help' to get started."
+
+    "${INSTALL_DIR}/${BINARY_NAME}" setup
 }
 
 main

@@ -3,7 +3,7 @@ import TextInput from "ink-text-input";
 import SelectInput from "ink-select-input";
 import { existsSync, writeFileSync } from "node:fs";
 import { useState } from "react";
-import { saveConfig } from "../lib/config.ts";
+import { loadGlobalConfig, saveConfig } from "../lib/config.ts";
 import {
 	ensureRalphDirExists,
 	findPrdFile,
@@ -67,6 +67,7 @@ export function InitWizard({ version }: InitWizardProps): React.ReactElement {
 
 	const existingPrd = findPrdFile();
 	const existingProgress = existsSync(PROGRESS_FILE_PATH);
+	const globalConfig = loadGlobalConfig();
 
 	const getInitialStep = (): WizardStep => {
 		if (existingPrd) return "check_existing_prd";
@@ -77,8 +78,8 @@ export function InitWizard({ version }: InitWizardProps): React.ReactElement {
 	const [state, setState] = useState<WizardState>({
 		step: getInitialStep(),
 		projectName: getDefaultProjectName(),
-		agentType: "cursor",
-		useYaml: false,
+		agentType: globalConfig.agent,
+		useYaml: globalConfig.prdFormat === "yaml",
 		tasks: [],
 		currentTask: {},
 		existingPrdPath: existingPrd,
@@ -243,7 +244,11 @@ export function InitWizard({ version }: InitWizardProps): React.ReactElement {
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Text color="cyan">Which AI agent do you want to use?</Text>
-						<SelectInput items={AGENT_CHOICES} onSelect={handleAgentSelect} />
+						<SelectInput
+							items={AGENT_CHOICES}
+							initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
+							onSelect={handleAgentSelect}
+						/>
 					</Box>
 				);
 
@@ -251,7 +256,11 @@ export function InitWizard({ version }: InitWizardProps): React.ReactElement {
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Text color="cyan">PRD format:</Text>
-						<SelectInput items={FORMAT_CHOICES} onSelect={handleFormatSelect} />
+						<SelectInput
+							items={FORMAT_CHOICES}
+							initialIndex={FORMAT_CHOICES.findIndex((choice) => choice.value === state.useYaml)}
+							onSelect={handleFormatSelect}
+						/>
 					</Box>
 				);
 
