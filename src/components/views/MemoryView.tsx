@@ -1,11 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
-import {
-	clearSessionMemory,
-	getSessionMemoryStats,
-	loadSessionMemory,
-	sessionMemoryExists,
-} from "@/lib/session-memory.ts";
+import { getSessionMemoryService } from "@/lib/services/index.ts";
 import { Header } from "../Header.tsx";
 
 interface MemoryViewProps {
@@ -16,10 +11,11 @@ interface MemoryViewProps {
 type MemoryTab = "lessons" | "patterns" | "failed" | "notes";
 
 export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
-	const [memory] = useState(() => loadSessionMemory());
+	const sessionMemoryService = getSessionMemoryService();
+	const [memory] = useState(() => sessionMemoryService.get());
 	const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 	const [activeTab, setActiveTab] = useState<MemoryTab>("lessons");
-	const hasMemory = sessionMemoryExists();
+	const hasMemory = sessionMemoryService.exists();
 
 	const tabs: { key: MemoryTab; label: string; count: number }[] = [
 		{ key: "lessons", label: "Lessons", count: memory.lessonsLearned.length },
@@ -34,7 +30,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 		}
 
 		if (input === "c") {
-			const stats = getSessionMemoryStats();
+			const stats = sessionMemoryService.getStats();
 
 			if (
 				stats.lessonsCount === 0 &&
@@ -44,7 +40,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 			) {
 				setMessage({ type: "error", text: "Session memory is already empty" });
 			} else {
-				clearSessionMemory();
+				sessionMemoryService.clear();
 				setMessage({ type: "success", text: "Session memory cleared" });
 			}
 

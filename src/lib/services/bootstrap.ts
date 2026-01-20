@@ -7,17 +7,21 @@ import {
 	type ServiceContainer,
 } from "./container.ts";
 import { PrdService as PrdServiceSingleton } from "./PrdService.ts";
+import { createSessionMemoryService } from "./session-memory/implementation.ts";
+import type { SessionMemoryService } from "./session-memory/types.ts";
 
 export function bootstrapServices(): void {
 	initializeServices({
 		config: ConfigServiceSingleton as ConfigService,
 		prd: PrdServiceSingleton as PrdService,
+		sessionMemory: createSessionMemoryService(),
 	});
 }
 
 export interface TestServiceOverrides {
 	config?: Partial<ConfigService>;
 	prd?: Partial<PrdService>;
+	sessionMemory?: Partial<SessionMemoryService>;
 }
 
 function createMockConfigService(overrides: Partial<ConfigService> = {}): ConfigService {
@@ -76,12 +80,52 @@ function createMockPrdService(overrides: Partial<PrdService> = {}): PrdService {
 	};
 }
 
+function createMockSessionMemoryService(
+	overrides: Partial<SessionMemoryService> = {},
+): SessionMemoryService {
+	const emptyMemory = {
+		projectName: "Test Project",
+		lessonsLearned: [],
+		successfulPatterns: [],
+		failedApproaches: [],
+		taskNotes: {},
+		lastUpdated: new Date().toISOString(),
+	};
+
+	return {
+		get: () => emptyMemory,
+		load: () => emptyMemory,
+		save: () => {},
+		exists: () => false,
+		initialize: () => emptyMemory,
+		invalidate: () => {},
+		addLesson: () => {},
+		addSuccessPattern: () => {},
+		addFailedApproach: () => {},
+		addTaskNote: () => {},
+		getTaskNote: () => null,
+		clear: () => {},
+		getStats: () => ({
+			lessonsCount: 0,
+			patternsCount: 0,
+			failedApproachesCount: 0,
+			taskNotesCount: 0,
+			lastUpdated: null,
+		}),
+		formatForPrompt: () => "",
+		formatForTask: () => "",
+		exportAsMarkdown: () => "",
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
 	const testContainer: ServiceContainer = {
 		config: createMockConfigService(overrides.config),
 		prd: createMockPrdService(overrides.prd),
+		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 	};
 
 	initializeServices(testContainer);

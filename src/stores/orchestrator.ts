@@ -19,6 +19,7 @@ import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
+import { getSessionMemoryService } from "@/lib/services/index.ts";
 import {
 	createSession,
 	deleteSession,
@@ -28,7 +29,6 @@ import {
 	updateSessionIteration,
 	updateSessionStatus,
 } from "@/lib/session.ts";
-import { initializeSessionMemory } from "@/lib/session-memory.ts";
 import {
 	calculateStatisticsFromLogs,
 	displayStatisticsReport,
@@ -479,7 +479,7 @@ class SessionOrchestrator {
 
 		initializeLogsIndex(sessionId, prd?.project ?? "Unknown Project");
 
-		initializeSessionMemory(prd?.project ?? "Unknown Project");
+		getSessionMemoryService().initialize(prd?.project ?? "Unknown Project");
 
 		eventBus.emit("session:start", { totalIterations, taskIndex });
 

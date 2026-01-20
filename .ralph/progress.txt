@@ -9,3 +9,20 @@
 - Updated src/lib/services/index.ts to export all container and bootstrap functions
 - Updated src/index.tsx to call bootstrapServices() at application startup
 - Verified with bun check and build
+
+### Migrate SessionMemoryService to new architecture
+- Created src/lib/services/session-memory/ directory with self-contained service files
+- Created types.ts with SessionMemory, SessionMemoryStats, SessionMemoryService interfaces and SESSION_MEMORY_CONSTANTS
+- Created validation.ts with isSessionMemory type guard
+- Created formatters.ts with formatForPrompt, formatForTask, and exportAsMarkdown functions
+- Created implementation.ts with createSessionMemoryService factory function using closure-based caching
+- Updated container.ts to add SessionMemoryService to ServiceContainer and getSessionMemoryService() accessor
+- Updated bootstrap.ts to create SessionMemoryService instance and add mock for tests
+- Updated index.ts to re-export SessionMemory, SessionMemoryService, SessionMemoryStats types
+- Updated all consumers (prompt.ts, orchestrator.ts, LearningHandler.ts, useSlashCommands.ts, MemoryView.tsx, memory.ts CLI command)
+- Updated test files to use bootstrapTestServices() with real or mock SessionMemoryService
+- Removed SessionMemory from src/types/session.types.ts
+- Removed isSessionMemory from src/lib/type-guards.ts
+- Re-exported SessionMemory types from src/types/index.ts via services
+- Deleted src/lib/session-memory.ts
+- All 414 tests pass

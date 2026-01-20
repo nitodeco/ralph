@@ -27,7 +27,7 @@
 				"Remove SessionMemory from src/types/session.types.ts and isSessionMemory from src/lib/type-guards.ts",
 				"Delete src/lib/session-memory.ts after all consumers are migrated"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Migrate SessionService to new architecture",

@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { LearningHandler } from "@/lib/handlers/LearningHandler.ts";
-import { loadSessionMemory } from "@/lib/session-memory.ts";
+import {
+	bootstrapTestServices,
+	getSessionMemoryService,
+	teardownTestServices,
+} from "@/lib/services/index.ts";
+import { createSessionMemoryService } from "@/lib/services/session-memory/implementation.ts";
 import type { IterationLogRetryContext } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-learning-handler";
@@ -14,9 +19,14 @@ describe("LearningHandler", () => {
 
 		mkdirSync(`${TEST_DIR}/.ralph`, { recursive: true });
 		process.chdir(TEST_DIR);
+		bootstrapTestServices({
+			sessionMemory: createSessionMemoryService(),
+		});
 	});
 
 	afterEach(() => {
+		teardownTestServices();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
@@ -38,7 +48,7 @@ describe("LearningHandler", () => {
 			failedChecks: ["lint"],
 		});
 
-		const memory = loadSessionMemory();
+		const memory = getSessionMemoryService().get();
 
 		expect(memory.failedApproaches).toContain("Verification failed: lint");
 	});
@@ -67,7 +77,7 @@ describe("LearningHandler", () => {
 			failedChecks: [],
 		});
 
-		const memory = loadSessionMemory();
+		const memory = getSessionMemoryService().get();
 
 		expect(memory.lessonsLearned).toContain(
 			'Task "Task B" succeeded after retry: Missing dependency was resolved',

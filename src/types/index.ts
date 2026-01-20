@@ -1,3 +1,8 @@
+export type {
+	SessionMemory,
+	SessionMemoryService,
+	SessionMemoryStats,
+} from "@/lib/services/index.ts";
 export type { AgentResult, RunOptions } from "./agent.types.ts";
 export type {
 	ActiveView,
@@ -52,7 +57,6 @@ export type {
 	IterationLogVerification,
 	IterationTiming,
 	Session,
-	SessionMemory,
 	SessionStatistics,
 	SessionStatus,
 } from "./session.types.ts";

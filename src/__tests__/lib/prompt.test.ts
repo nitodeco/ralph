@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
 	buildAddTaskPrompt,
 	buildPrdGenerationPrompt,
@@ -9,9 +9,18 @@ import {
 	TASK_OUTPUT_END,
 	TASK_OUTPUT_START,
 } from "@/lib/prompt.ts";
+import { bootstrapTestServices, teardownTestServices } from "@/lib/services/index.ts";
 import type { Prd } from "@/types.ts";
 
 describe("buildPrompt", () => {
+	beforeEach(() => {
+		bootstrapTestServices();
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("generates basic prompt without options", () => {
 		const prompt = buildPrompt();
 

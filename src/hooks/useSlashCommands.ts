@@ -4,8 +4,8 @@ import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { addGuardrail } from "@/lib/guardrails.ts";
+import { getSessionMemoryService } from "@/lib/services/index.ts";
 import { deleteSession } from "@/lib/session.ts";
-import { addLesson, addTaskNote } from "@/lib/session-memory.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types.ts";
 
 interface SlashCommandMessage {
@@ -133,7 +133,7 @@ export function useSlashCommands({
 				case "learn":
 					if (args?.lesson) {
 						try {
-							addLesson(args.lesson);
+							getSessionMemoryService().addLesson(args.lesson);
 							setMemoryMessage({
 								type: "success",
 								text: `Added lesson: "${args.lesson}"`,
@@ -161,7 +161,7 @@ export function useSlashCommands({
 
 						if (taskTitle) {
 							try {
-								addTaskNote(taskTitle, args.note);
+								getSessionMemoryService().addTaskNote(taskTitle, args.note);
 								setMemoryMessage({
 									type: "success",
 									text: `Added note to task: "${taskTitle}"`,

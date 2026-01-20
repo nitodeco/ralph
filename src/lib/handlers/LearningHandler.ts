@@ -1,6 +1,6 @@
 import { analyzePatterns, recordFailure } from "@/lib/failure-patterns.ts";
 import { getLogger } from "@/lib/logger.ts";
-import { addFailedApproach, addLesson, addSuccessPattern } from "@/lib/session-memory.ts";
+import { getSessionMemoryService } from "@/lib/services/index.ts";
 import type { IterationLogRetryContext } from "@/types.ts";
 
 interface LearningHandlerOptions {
@@ -60,7 +60,11 @@ export class LearningHandler {
 			}
 
 			if (params.verificationFailed && params.failedChecks.length > 0) {
-				addFailedApproach(`Verification failed: ${params.failedChecks.join(", ")}`);
+				const sessionMemoryService = getSessionMemoryService();
+
+				sessionMemoryService.addFailedApproach(
+					`Verification failed: ${params.failedChecks.join(", ")}`,
+				);
 			}
 		}
 
@@ -68,17 +72,21 @@ export class LearningHandler {
 			const lastContext = params.retryContexts[params.retryContexts.length - 1];
 
 			if (lastContext) {
-				addLesson(
+				const sessionMemoryService = getSessionMemoryService();
+
+				sessionMemoryService.addLesson(
 					`Task "${params.taskTitle}" succeeded after retry: ${lastContext.rootCause} was resolved`,
 				);
-				addSuccessPattern(
+				sessionMemoryService.addSuccessPattern(
 					`Recovered from ${lastContext.failureCategory} by addressing: ${lastContext.rootCause}`,
 				);
 			}
 		}
 
 		if (params.wasSuccessful) {
-			addSuccessPattern(`Completed task: ${params.taskTitle}`);
+			const sessionMemoryService = getSessionMemoryService();
+
+			sessionMemoryService.addSuccessPattern(`Completed task: ${params.taskTitle}`);
 		}
 	}
 }

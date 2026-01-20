@@ -1,13 +1,9 @@
-import {
-	clearSessionMemory,
-	exportMemoryAsMarkdown,
-	getSessionMemoryStats,
-	loadSessionMemory,
-	sessionMemoryExists,
-} from "@/lib/session-memory.ts";
+import { getSessionMemoryService } from "@/lib/services/index.ts";
 
 export function printMemory(json: boolean): void {
-	if (!sessionMemoryExists()) {
+	const sessionMemoryService = getSessionMemoryService();
+
+	if (!sessionMemoryService.exists()) {
 		if (json) {
 			console.log(JSON.stringify({ error: "No session memory found" }));
 		} else {
@@ -17,7 +13,7 @@ export function printMemory(json: boolean): void {
 		return;
 	}
 
-	const memory = loadSessionMemory();
+	const memory = sessionMemoryService.get();
 
 	if (json) {
 		console.log(JSON.stringify(memory, null, 2));
@@ -79,7 +75,7 @@ export function printMemory(json: boolean): void {
 		console.log();
 	}
 
-	const stats = getSessionMemoryStats();
+	const stats = sessionMemoryService.getStats();
 
 	console.log("Summary:");
 	console.log(`  Lessons: ${stats.lessonsCount}`);
@@ -89,19 +85,22 @@ export function printMemory(json: boolean): void {
 }
 
 export function handleMemoryExport(): void {
-	if (!sessionMemoryExists()) {
+	const sessionMemoryService = getSessionMemoryService();
+
+	if (!sessionMemoryService.exists()) {
 		console.log("No session memory found.");
 
 		return;
 	}
 
-	const markdown = exportMemoryAsMarkdown();
+	const markdown = sessionMemoryService.exportAsMarkdown();
 
 	console.log(markdown);
 }
 
 export function handleMemoryClear(): void {
-	const stats = getSessionMemoryStats();
+	const sessionMemoryService = getSessionMemoryService();
+	const stats = sessionMemoryService.getStats();
 
 	if (
 		stats.lessonsCount === 0 &&
@@ -114,7 +113,7 @@ export function handleMemoryClear(): void {
 		return;
 	}
 
-	clearSessionMemory();
+	sessionMemoryService.clear();
 	console.log("Session memory cleared.");
 	console.log(`  Removed ${stats.lessonsCount} lessons`);
 	console.log(`  Removed ${stats.patternsCount} patterns`);

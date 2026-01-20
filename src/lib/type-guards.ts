@@ -15,7 +15,6 @@ import type {
 	IterationLogsIndex,
 	IterationLogsIndexEntry,
 	Session,
-	SessionMemory,
 	SessionStatus,
 } from "@/types/session.types.ts";
 import type { StreamJsonMessage } from "./agent-stream.ts";
@@ -109,39 +108,6 @@ export function isSession(value: unknown): value is Session {
 	}
 
 	if (!isObject(statistics)) {
-		return false;
-	}
-
-	return true;
-}
-
-export function isSessionMemory(value: unknown): value is SessionMemory {
-	if (!isObject(value)) {
-		return false;
-	}
-
-	const {
-		projectName,
-		lessonsLearned,
-		successfulPatterns,
-		failedApproaches,
-		taskNotes,
-		lastUpdated,
-	} = value;
-
-	if (!isString(projectName)) {
-		return false;
-	}
-
-	if (!isStringArray(lessonsLearned) || !isStringArray(successfulPatterns)) {
-		return false;
-	}
-
-	if (!isStringArray(failedApproaches)) {
-		return false;
-	}
-
-	if (!isObject(taskNotes) || !isString(lastUpdated)) {
 		return false;
 	}
 

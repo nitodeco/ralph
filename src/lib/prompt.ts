@@ -1,5 +1,5 @@
 import { formatGuardrailsForPrompt, getActiveGuardrails } from "@/lib/guardrails.ts";
-import { getMemoryForPrompt, getMemoryForTask } from "@/lib/session-memory.ts";
+import { getSessionMemoryService } from "@/lib/services/index.ts";
 import type { Prd } from "@/types.ts";
 
 export const COMPLETION_MARKER = "<promise>COMPLETE</promise>";
@@ -30,8 +30,9 @@ export function buildPrompt(options: BuildPromptOptions = {}): string {
 	let memorySection = "";
 
 	if (includeMemory) {
-		const generalMemory = getMemoryForPrompt();
-		const taskMemory = specificTask ? getMemoryForTask(specificTask) : "";
+		const sessionMemoryService = getSessionMemoryService();
+		const generalMemory = sessionMemoryService.formatForPrompt();
+		const taskMemory = specificTask ? sessionMemoryService.formatForTask(specificTask) : "";
 
 		if (generalMemory || taskMemory) {
 			memorySection = `${generalMemory}${taskMemory}`;
