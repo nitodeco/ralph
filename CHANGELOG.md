@@ -1,5 +1,45 @@
 # ralph
 
+## 0.8.1
+
+### Patch Changes
+
+- 2a9f49c: Centralize path constants into src/lib/paths.ts for better maintainability
+- a6535e9: Add ConfigService and PrdService singleton classes to cache config and PRD reads, eliminating repeated disk reads for improved performance and consistency
+- 72f738a: Consolidate session lifecycle management in orchestrator
+
+  - Moved session creation logic from appStore.startIterations() to orchestrator.startSession()
+  - Moved session resume logic from appStore.resumeSession() to orchestrator.resumeSession()
+  - Moved fatal error handling from appStore.handleFatalError() to orchestrator.handleFatalError()
+  - Simplified appStore methods to only manage UI state and delegate session lifecycle to orchestrator
+  - Added StartSessionResult and ResumeSessionResult types to orchestrator for better type safety
+  - Orchestrator now emits session events (session:start, session:resume, session:stop) centrally
+
+- 882d3f4: Consolidate type exports to single canonical path (@/types)
+
+  - Remove type re-exports from src/lib/config.ts (ConfigValidationError, ConfigValidationResult)
+  - Remove type re-exports from src/lib/prd.ts (LoadPrdResult)
+  - Remove type re-exports from src/stores/appStore.ts (ActiveView, AppState, SetManualTaskResult, ValidationWarning)
+  - Update src/stores/index.ts to re-export types from @/types instead of appStore
+
+- 6f165bf: Refactor: Encapsulate module-level mutable state in service classes
+
+  - Create AgentProcessManager service to manage process, abort state, and retry count
+  - Create IterationTimer service to manage delay timeouts and project completion state
+  - Update agentStore to use AgentProcessManager instead of module-level refs
+  - Update iterationStore to use IterationTimer instead of module-level refs
+
+- 1506576: Introduce event bus to decouple stores
+
+  - Create typed EventEmitter class in src/lib/events.ts with events for agent, iteration, and session lifecycle
+  - Update agentStore to emit events instead of directly calling other stores
+  - Update iterationStore to emit iteration lifecycle events
+  - Update orchestrator to subscribe to event bus and coordinate between stores
+  - Update appStore to emit session lifecycle events
+  - Remove direct cross-store getState() calls from agentStore (orchestrator now coordinates)
+
+- 1104b27: Extract duplicated getCurrentTaskIndex utility to src/lib/prd.ts
+
 ## 0.8.0
 
 ### Minor Changes
