@@ -188,3 +188,29 @@ Implementation:
 - Updated src/stores/agentStore.ts to log errors and retries to progress file
 - Updated src/lib/prd.ts to remove PROGRESS_FILE_PATH (now in progress.ts)
 - Updated src/components/InitWizard.tsx to import PROGRESS_FILE_PATH from progress.ts
+
+Task 11: Add memory and resource management - COMPLETED
+
+Implementation:
+- Added MemoryConfig interface to src/types.ts with configurable options:
+  - maxOutputBufferBytes: Maximum size for agent output buffer (default 5MB)
+  - memoryWarningThresholdMb: Threshold for memory warnings (default 500MB)
+  - enableGarbageCollectionHints: Enable/disable GC hints between iterations (default true)
+- Created src/lib/memory.ts with memory management utilities:
+  - getMemoryUsage: Returns current memory usage stats (heapUsed, heapTotal, rss, external in MB)
+  - checkMemoryWarning: Monitors memory and logs warnings when heap exceeds threshold
+  - suggestGarbageCollection: Hints to GC when available (globalThis.gc)
+  - truncateOutputBuffer: Limits output buffer size, preserving 30% start and 70% end with truncation notice
+  - cleanupTempFiles: Removes temporary files (.tmp, .temp, ~) from .ralph directory
+  - performIterationCleanup: Orchestrates cleanup between iterations (temp files, GC, memory check)
+- Updated src/stores/agentStore.ts:
+  - Added clearOutput action to explicitly clear output buffer between iterations
+  - Updated setOutput to automatically truncate output when it exceeds maxOutputBufferBytes
+- Updated src/stores/appStore.ts:
+  - Integrated performIterationCleanup in onIterationComplete callback
+  - Clear agent output buffer after each iteration completes
+- Added memory configuration steps to SetupWizard:
+  - Output buffer size selection (1MB to 50MB)
+  - Memory warning threshold selection (250MB to 2GB, or disabled)
+  - GC hints enable/disable toggle
+  - Display memory settings in setup completion summary

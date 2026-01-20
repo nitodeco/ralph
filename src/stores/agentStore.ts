@@ -2,6 +2,7 @@ import type { Subprocess } from "bun";
 import { create } from "zustand";
 import { getAgentCommand, loadConfig } from "@/lib/config.ts";
 import { getLogger } from "@/lib/logger.ts";
+import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { logError as logProgressError, logRetry as logProgressRetry } from "@/lib/progress.ts";
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
@@ -25,6 +26,7 @@ interface AgentActions {
 	stop: () => void;
 	reset: () => void;
 	setOutput: (output: string) => void;
+	clearOutput: () => void;
 }
 
 type AgentStore = AgentState & AgentActions;
@@ -283,7 +285,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 	...INITIAL_STATE,
 
 	setOutput: (output: string) => {
-		set({ output });
+		const config = loadConfig();
+		const maxBytes = getMaxOutputBytes(config.maxOutputHistoryBytes);
+		const truncatedOutput = truncateOutputBuffer(output, maxBytes);
+		set({ output: truncatedOutput });
 	},
 
 	start: async () => {
@@ -415,5 +420,9 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const { stop } = get();
 		stop();
 		set(INITIAL_STATE);
+	},
+
+	clearOutput: () => {
+		set({ output: "" });
 	},
 }));

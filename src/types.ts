@@ -21,6 +21,7 @@ export interface RalphConfig {
 	agentTimeoutMs?: number;
 	stuckThresholdMs?: number;
 	notifications?: NotificationConfig;
+	maxOutputHistoryBytes?: number;
 }
 
 export interface PrdTask {
@@ -28,6 +29,7 @@ export interface PrdTask {
 	description: string;
 	steps: string[];
 	done: boolean;
+	dependsOn?: string[];
 }
 
 export interface Prd {

@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { create } from "zustand";
 import { loadConfig } from "@/lib/config.ts";
 import { getLogger } from "@/lib/logger.ts";
+import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { findPrdFile, getNextTask, loadPrd, RALPH_DIR } from "@/lib/prd.ts";
 import {
@@ -397,6 +398,15 @@ export function setupIterationCallbacks(iterations: number) {
 				);
 				saveSession(updatedSession);
 				useAppStore.setState({ currentSession: updatedSession });
+			}
+
+			agentStore.clearOutput();
+			const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
+			if (cleanupResult.memoryStatus !== "ok") {
+				logger.warn("Memory cleanup completed with warnings", {
+					status: cleanupResult.memoryStatus,
+					tempFilesRemoved: cleanupResult.tempFilesRemoved,
+				});
 			}
 		},
 		onAllComplete: () => {

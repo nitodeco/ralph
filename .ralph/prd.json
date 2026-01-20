@@ -131,7 +131,7 @@
 				"Limit stored output history to configurable amount",
 				"Clean up temporary files between iterations"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement task dependency and ordering",
