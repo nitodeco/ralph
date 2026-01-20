@@ -6,6 +6,7 @@ export type SlashCommand = "init" | "setup" | "update" | "help" | "quit" | "exit
 
 export interface CommandArgs {
 	iterations?: number;
+	full?: boolean;
 }
 
 const VALID_COMMANDS: SlashCommand[] = ["init", "setup", "update", "help", "quit", "exit", "add", "start", "resume"];
@@ -34,7 +35,12 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 	}
 
 	if (commandName === "start" && parts[1]) {
+		if (parts[1] === "full") {
+			return { command: commandName, args: { full: true } };
+		}
+
 		const iterations = Number.parseInt(parts[1], 10);
+		
 		if (!Number.isNaN(iterations) && iterations > 0) {
 			return { command: commandName, args: { iterations } };
 		}

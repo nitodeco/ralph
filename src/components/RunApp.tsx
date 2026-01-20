@@ -140,7 +140,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		agent.reset();
 	}, [agent]);
 
-	const startIterations = useCallback((iterationCount?: number) => {
+	const startIterations = useCallback((iterationCount?: number, full?: boolean) => {
 		const warning = validateProject();
 		if (warning) {
 			setValidationWarning(warning);
@@ -158,10 +158,12 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		deleteSession();
 		setPendingSession(null);
 
-		const totalIters = iterationCount || iterations || DEFAULT_ITERATIONS;
-		if (iterationCount) {
-			iteration.setTotal(iterationCount);
+		let totalIters = iterationCount || iterations || DEFAULT_ITERATIONS;
+		if (full && loadedPrd) {
+			const incompleteTasks = loadedPrd.tasks.filter((task) => !task.done).length;
+			totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
 		}
+		iteration.setTotal(totalIters);
 
 		const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
 		const newSession = createSession(totalIters, taskIndex);
@@ -210,7 +212,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 	const handleSlashCommand = useCallback((command: SlashCommand, args?: CommandArgs) => {
 		switch (command) {
 			case "start":
-				startIterations(args?.iterations);
+				startIterations(args?.iterations, args?.full);
 				break;
 			case "resume":
 				resumeSession();
@@ -460,7 +462,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 			{appState === "idle" && (
 				<Box paddingX={1} marginY={1}>
 					<Text dimColor>
-						Type <Text color="cyan">/start</Text> or <Text color="cyan">/start [n]</Text> to begin iterations
+						Type <Text color="cyan">/start</Text>, <Text color="cyan">/start [n]</Text>, or <Text color="cyan">/start full</Text> to begin iterations
 					</Text>
 				</Box>
 			)}

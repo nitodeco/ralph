@@ -77,9 +77,9 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 					<Text bold color="yellow">Slash Commands (in-app):</Text>
 					<Box flexDirection="column" paddingLeft={2}>
 						<Text>
-							<Text dimColor>/start [n]</Text>
-							{"        "}
-							<Text>Start the agent loop (default: 10 iterations)</Text>
+							<Text dimColor>/start [n|full]</Text>
+							{"   "}
+							<Text>Start the agent loop (default: 10, full: all tasks)</Text>
 						</Text>
 						<Text>
 							<Text dimColor>/resume</Text>

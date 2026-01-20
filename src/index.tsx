@@ -53,7 +53,7 @@ Commands:
   help              Show this help message
 
 Slash Commands (in-app):
-  /start [n]        Start the agent loop (default: 10 iterations)
+  /start [n|full]   Start the agent loop (default: 10 iterations, full: all tasks)
   /resume           Resume a previously interrupted session
   /init             Initialize a new PRD project
   /add              Add a new task to the PRD (AI-generated from description)
