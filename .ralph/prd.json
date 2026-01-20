@@ -83,7 +83,7 @@
 				"Show recent log entries if log file exists",
 				"Handle case where no session is active gracefully"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add 'ralph stop' command for graceful shutdown",

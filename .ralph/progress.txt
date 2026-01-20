@@ -90,3 +90,18 @@ Implementation:
   - Added autoStart prop to automatically begin iterations in daemon mode
   - Added useEffect to trigger auto-start when running as daemon
 - Updated help text with background mode documentation and examples
+
+Task 7: Add 'ralph status' command - COMPLETED
+
+Implementation:
+- Added "status" to the Command type in src/index.tsx
+- Created printStatus function that displays:
+  - Process status (running with PID or not running)
+  - Session information (status, start time, last update, elapsed time, iteration count)
+  - Project progress (project name, tasks completed, percentage, current/next task)
+  - Recent log entries (last 10 entries from ralph.log)
+- Added formatElapsedTime helper function for human-readable time display
+- Handles case where no session exists gracefully
+- Handles case where session was interrupted (not running but status is "running")
+- Added "status" command case to CLI switch statement
+- Updated help text with status command documentation and examples
