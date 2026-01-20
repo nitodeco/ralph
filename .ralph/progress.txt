@@ -142,3 +142,19 @@ Implementation:
   - Suggests using 'ralph resume' to continue later
 - Added "stop" case to CLI switch statement
 - Help text already includes stop command documentation
+
+Task 9: Add 'ralph list' command to display PRD tasks - COMPLETED
+
+Implementation:
+- Added "list" to the Command type in src/index.tsx
+- Added --json flag parsing to parseArgs function
+- Created TaskListOutput interface for JSON output structure
+- Implemented printList function with:
+  - PRD loading with error handling for missing files
+  - Human-readable output with status indicators (✓ for done, ○ for pending)
+  - Dimmed styling for completed tasks
+  - Completion percentage and task count summary
+  - Display of next pending task
+  - JSON output mode with full task details (title, description, status, steps)
+- Added "list" case to CLI switch statement
+- Updated help text with list command documentation and examples

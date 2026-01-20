@@ -32,6 +32,7 @@ type Command =
 	| "resume"
 	| "status"
 	| "stop"
+	| "list"
 	| "help"
 	| "version"
 	| "-v"
@@ -43,13 +44,15 @@ interface ParsedArgs {
 	command: Command;
 	iterations: number;
 	background: boolean;
+	json: boolean;
 }
 
 function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
 	const background = relevantArgs.includes("--background") || relevantArgs.includes("-b");
+	const json = relevantArgs.includes("--json");
 	const filteredArgs = relevantArgs.filter(
-		(arg) => arg !== "--background" && arg !== "-b" && arg !== "--daemon-child",
+		(arg) => arg !== "--background" && arg !== "-b" && arg !== "--daemon-child" && arg !== "--json",
 	);
 	const command = (filteredArgs[0] ?? "run") as Command;
 
@@ -64,7 +67,7 @@ function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	return { command, iterations, background };
+	return { command, iterations, background, json };
 }
 
 function printHelp(): void {
@@ -82,12 +85,14 @@ Commands:
   resume            Resume a previously interrupted session
   status            Show current session state, progress, and recent logs
   stop              Stop a running Ralph process gracefully
+  list              Display all PRD tasks and their completion status
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
 Options:
   -b, --background  Run Ralph in background/daemon mode (detached from terminal)
+  --json            Output in JSON format (for list command)
 
 Slash Commands (in-app):
   /start [n|full]   Start the agent loop (default: 10 iterations, full: all tasks)
@@ -106,6 +111,8 @@ Examples:
   ralph resume      Resume a previously interrupted session
   ralph status      Check on a running or interrupted session
   ralph stop        Stop a background Ralph process gracefully
+  ralph list        View all tasks and their completion status
+  ralph list --json Output task list as JSON for scripting
   ralph update      Check for and install updates
   ralph -b          Start Ralph in background mode (logs to .ralph/ralph.log)
   ralph resume -b   Resume session in background mode
@@ -209,6 +216,99 @@ function printStatus(): void {
 	if (!running && session.status === "running") {
 		console.log("Note: Session appears to have been interrupted.");
 		console.log("Use 'ralph resume' to continue from where you left off.");
+	}
+}
+
+interface TaskListOutput {
+	project: string;
+	tasks: Array<{
+		index: number;
+		title: string;
+		description: string;
+		status: "done" | "pending";
+		steps: string[];
+	}>;
+	summary: {
+		total: number;
+		completed: number;
+		pending: number;
+		percentComplete: number;
+	};
+}
+
+function printList(jsonOutput: boolean): void {
+	const prd = loadPrd();
+
+	if (!prd) {
+		if (jsonOutput) {
+			console.log(JSON.stringify({ error: "No PRD found" }));
+		} else {
+			console.log("No PRD found in .ralph/prd.json or .ralph/prd.yaml");
+			console.log("\nRun 'ralph init' to create a new PRD.");
+		}
+		return;
+	}
+
+	const completedTasks = prd.tasks.filter((task) => task.done).length;
+	const pendingTasks = prd.tasks.length - completedTasks;
+	const percentComplete =
+		prd.tasks.length > 0 ? Math.round((completedTasks / prd.tasks.length) * 100) : 0;
+
+	if (jsonOutput) {
+		const output: TaskListOutput = {
+			project: prd.project,
+			tasks: prd.tasks.map((task, taskIndex) => ({
+				index: taskIndex + 1,
+				title: task.title,
+				description: task.description,
+				status: task.done ? "done" : "pending",
+				steps: task.steps,
+			})),
+			summary: {
+				total: prd.tasks.length,
+				completed: completedTasks,
+				pending: pendingTasks,
+				percentComplete,
+			},
+		};
+		console.log(JSON.stringify(output, null, 2));
+		return;
+	}
+
+	console.log(`◆ ralph v${VERSION} - Task List\n`);
+	console.log(`Project: ${prd.project}`);
+	console.log(`Progress: ${completedTasks}/${prd.tasks.length} tasks (${percentComplete}%)\n`);
+
+	if (prd.tasks.length === 0) {
+		console.log("No tasks defined.");
+		console.log("\nRun 'ralph init' to add tasks or use '/add' in the UI.");
+		return;
+	}
+
+	console.log("Tasks:");
+	console.log("─".repeat(60));
+
+	for (const [taskIndex, task] of prd.tasks.entries()) {
+		const statusIcon = task.done ? "✓" : "○";
+		const statusLabel = task.done ? "done" : "pending";
+		const dimStyle = task.done ? "\x1b[2m" : "";
+		const resetStyle = task.done ? "\x1b[0m" : "";
+
+		console.log(
+			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}`,
+		);
+	}
+
+	console.log("─".repeat(60));
+	console.log(`\nSummary: ${completedTasks} completed, ${pendingTasks} pending`);
+
+	if (pendingTasks > 0) {
+		const nextTask = prd.tasks.find((task) => !task.done);
+		if (nextTask) {
+			console.log(`\nNext task: ${nextTask.title}`);
+		}
+	} else {
+		console.log("\nAll tasks complete!");
 	}
 }
 
@@ -339,7 +439,7 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-	const { command, iterations, background } = parseArgs(process.argv);
+	const { command, iterations, background, json } = parseArgs(process.argv);
 
 	if (isDaemonProcess()) {
 		writePidFile(process.pid);
@@ -395,6 +495,10 @@ function main(): void {
 
 		case "status":
 			printStatus();
+			break;
+
+		case "list":
+			printList(json);
 			break;
 
 		case "stop":

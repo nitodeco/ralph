@@ -107,7 +107,7 @@
 				"Show completion percentage and task count summary",
 				"Support --json flag for machine-readable output"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement progress file improvements",
