@@ -112,7 +112,7 @@
 				"Run TypeScript compiler to verify no broken imports",
 				"Run tests to verify all functionality still works"
 			],
-			"done": false
+			"done": true
 		}
 	]
 }

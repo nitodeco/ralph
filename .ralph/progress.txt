@@ -102,3 +102,15 @@
 - Updated src/lib/constants/defaults.ts to re-export createDefaultGuardrails from service
 - Deleted src/lib/guardrails.ts
 - All 414 tests pass
+
+### Clean up legacy files and types after service migration
+- Verified src/types/session.types.ts contains only IterationLog and FailureHistory types (cross-cutting, not migrated)
+- Verified src/types/config.types.ts contains only CheckResult and VerificationResult (verification types, not migrated)
+- Confirmed src/types/prd.types.ts was already deleted during PrdService migration
+- Verified src/lib/type-guards.ts contains only guards for non-migrated types (IterationLog, FailureHistory, StreamJsonMessage)
+- Verified src/types/index.ts properly exports service types from @/lib/services/index.ts and cross-cutting types
+- Confirmed src/lib/config.ts facade is intentionally kept for backward compatibility (15+ files import from it)
+- Confirmed src/lib/config/ directory was already deleted during ConfigService migration
+- Confirmed src/lib/constants/config.ts was already deleted during ConfigService migration
+- Verified src/lib/constants/index.ts properly re-exports from config service constants
+- Build passes, all 414 tests pass
