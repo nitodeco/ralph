@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { getLogger } from "./logger.ts";
-import { RALPH_DIR } from "./prd.ts";
+import { RALPH_DIR } from "./paths.ts";
 
 export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = 5 * 1024 * 1024;
 export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = 500;

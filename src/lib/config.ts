@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import type {
 	AgentType,
 	ConfigValidationError,
@@ -13,12 +12,9 @@ import { DEFAULTS } from "./defaults.ts";
 import {
 	ensureGlobalRalphDirExists,
 	ensureRalphDirExists,
-	GLOBAL_RALPH_DIR,
-	RALPH_DIR,
+	GLOBAL_CONFIG_PATH,
+	PROJECT_CONFIG_PATH,
 } from "./paths.ts";
-
-const GLOBAL_CONFIG_PATH = join(GLOBAL_RALPH_DIR, "config.json");
-const PROJECT_CONFIG_PATH = `${RALPH_DIR}/config.json`;
 
 export const DEFAULT_AGENT_TIMEOUT_MS = DEFAULTS.agentTimeoutMs;
 export const DEFAULT_STUCK_THRESHOLD_MS = DEFAULTS.stuckThresholdMs;

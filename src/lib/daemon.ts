@@ -1,7 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { getLogger } from "./logger.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
+import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
 import { loadSession, saveSession, updateSessionStatus } from "./session.ts";
 
 export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";

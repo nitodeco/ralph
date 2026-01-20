@@ -2,14 +2,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { LoadPrdResult, Prd, PrdTask } from "@/types.ts";
 import { createError, ErrorCode, formatError } from "./errors.ts";
-import { RALPH_DIR } from "./paths.ts";
+import { INSTRUCTIONS_FILE_PATH, PRD_JSON_PATH, PRD_YAML_PATH } from "./paths.ts";
 
 export type { LoadPrdResult } from "@/types.ts";
-export { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
-
-export const INSTRUCTIONS_FILE_PATH = `${RALPH_DIR}/instructions.md`;
-const PRD_JSON_PATH = `${RALPH_DIR}/prd.json`;
-const PRD_YAML_PATH = `${RALPH_DIR}/prd.yaml`;
+export { INSTRUCTIONS_FILE_PATH } from "./paths.ts";
 
 export function findPrdFile(): string | null {
 	if (existsSync(PRD_JSON_PATH)) {

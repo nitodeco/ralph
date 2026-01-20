@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import type { IterationTiming, Session, SessionStatistics, SessionStatus } from "@/types.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
+import { ensureRalphDirExists, SESSION_FILE_PATH } from "./paths.ts";
 
-const SESSION_FILE_PATH = `${RALPH_DIR}/session.json`;
+export { SESSION_FILE_PATH } from "./paths.ts";
 
 export function loadSession(): Session | null {
 	if (!existsSync(SESSION_FILE_PATH)) {

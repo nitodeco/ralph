@@ -1,13 +1,17 @@
-[2026-01-20] Completed: Create troubleshooting documentation
-- Added comprehensive configuration options documentation with all settings explained
-- Created FAQ section covering common questions about sessions, tasks, and logging
-- Documented all error codes (E001-E042) with causes and solutions
-- Added example PRDs for web applications, CLI tools, and API backends
-- Included performance tuning recommendations for long-running sessions, memory-constrained systems, and fast iteration scenarios
-- Added task design best practices
+=== Task Completed ===
+Task: Refactor: Centralize path constants
+Date: 2026-01-20
 
-[2026-01-20] Completed: Fix UI offset caused by agent output stream on iteration completion
-- Modified AgentOutput component to return null when there's no content to display
-- Changed from always rendering a Box with padding to conditionally rendering only when there's actual content
-- Updated orchestrator to call agentStore.reset() on iteration completion instead of just clearOutput()
-- This ensures clean agent state between iterations and prevents empty boxes from causing layout shifts
+Changes made:
+- Added all path constants to src/lib/paths.ts: PROGRESS_FILE_PATH, SESSION_FILE_PATH, INSTRUCTIONS_FILE_PATH, PRD_JSON_PATH, PRD_YAML_PATH, GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH
+- Created structured PATHS object for organized access to all paths
+- Updated src/lib/progress.ts to import and re-export PROGRESS_FILE_PATH from paths.ts
+- Updated src/lib/session.ts to import and re-export SESSION_FILE_PATH from paths.ts
+- Updated src/lib/prd.ts to import path constants from paths.ts, removed local definitions and re-exports of ensureRalphDirExists/RALPH_DIR
+- Updated src/lib/config.ts to import GLOBAL_CONFIG_PATH and PROJECT_CONFIG_PATH from paths.ts
+- Updated consumers (InitWizard.tsx, daemon.ts, memory.ts) to import directly from paths.ts instead of prd.ts
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed
