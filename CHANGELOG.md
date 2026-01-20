@@ -1,5 +1,14 @@
 # ralph
 
+## 0.7.1
+
+### Patch Changes
+
+- e50cfce: Add Linux support to update system - extend getOperatingSystem to support linux platform and add Linux binaries to build configuration
+- 674b21b: Show status instead of agent stream preview while agent is working
+- 289671a: Remove obsolete warning if progress.txt is missing from current ralph directory
+- 674b21b: Fix broken progress file write
+
 ## 0.7.0
 
 ### Minor Changes
