@@ -76,10 +76,12 @@ class SessionOrchestrator {
 					exitCode: state.exitCode,
 					isComplete: state.isComplete,
 				};
-				if (previousAgentState.isStreaming && !current.isStreaming && current.exitCode !== null) {
+				const shouldComplete =
+					previousAgentState.isStreaming && !current.isStreaming && current.exitCode !== null;
+				previousAgentState = current;
+				if (shouldComplete) {
 					this.handleAgentComplete(current.isComplete);
 				}
-				previousAgentState = current;
 			}),
 		);
 	}

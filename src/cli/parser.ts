@@ -18,8 +18,8 @@ export function parseArgs(args: string[]): ParsedArgs {
 	const maxRuntimeIndex = relevantArgs.findIndex(
 		(arg) => arg === "--max-runtime" || arg === "--max-runtime-ms",
 	);
-	if (maxRuntimeIndex !== -1 && maxRuntimeIndex + 1 < relevantArgs.length) {
-		const maxRuntimeValue = relevantArgs[maxRuntimeIndex + 1];
+	const maxRuntimeValue = relevantArgs[maxRuntimeIndex + 1];
+	if (maxRuntimeIndex !== -1 && maxRuntimeValue !== undefined) {
 		const parsed = Number.parseInt(maxRuntimeValue, 10);
 		if (!Number.isNaN(parsed) && parsed > 0) {
 			maxRuntimeMs = parsed * 1000;

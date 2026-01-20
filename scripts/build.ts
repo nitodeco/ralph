@@ -40,8 +40,32 @@ async function compileTarget(buildTarget: BuildTarget): Promise<boolean> {
 	return true;
 }
 
+async function typecheck(): Promise<boolean> {
+	console.log("Running TypeScript type check...\n");
+
+	const typecheckProcess = Bun.spawn(["bun", "run", "tsc", "--noEmit"], {
+		stdout: "inherit",
+		stderr: "inherit",
+	});
+
+	const exitCode = await typecheckProcess.exited;
+
+	if (exitCode !== 0) {
+		console.error("\nTypeScript type check failed. Fix errors before building.\n");
+		return false;
+	}
+
+	console.log("Type check passed!\n");
+	return true;
+}
+
 async function build(): Promise<void> {
 	console.log("Building Ralph CLI...\n");
+
+	const typecheckPassed = await typecheck();
+	if (!typecheckPassed) {
+		process.exit(1);
+	}
 
 	if (existsSync(config.outDir)) {
 		await rm(config.outDir, { recursive: true });

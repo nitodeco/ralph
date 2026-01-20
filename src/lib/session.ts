@@ -12,10 +12,12 @@ export function loadSession(): Session | null {
 	try {
 		const content = readFileSync(SESSION_FILE_PATH, "utf-8");
 		const session = JSON.parse(content) as Session;
+
 		if (!session.statistics) {
 			session.statistics = createInitialStatistics(session.totalIterations);
 			saveSession(session);
 		}
+
 		return session;
 	} catch {
 		return null;
@@ -66,17 +68,15 @@ export function createSession(totalIterations: number, currentTaskIndex: number)
 
 export function recordIterationStart(session: Session, iteration: number): Session {
 	const now = Date.now();
-	const existingTimingIndex = session.statistics.iterationTimings.findIndex(
+	const existingTiming = session.statistics.iterationTimings.find(
 		(timing) => timing.iteration === iteration,
 	);
 
 	let updatedTimings: IterationTiming[];
-	if (existingTimingIndex >= 0) {
-		updatedTimings = [...session.statistics.iterationTimings];
-		updatedTimings[existingTimingIndex] = {
-			...updatedTimings[existingTimingIndex],
-			startTime: now,
-		};
+	if (existingTiming) {
+		updatedTimings = session.statistics.iterationTimings.map((timing) =>
+			timing.iteration === iteration ? { ...timing, startTime: now } : timing,
+		);
 	} else {
 		updatedTimings = [
 			...session.statistics.iterationTimings,
@@ -105,22 +105,18 @@ export function recordIterationEnd(
 	wasSuccessful: boolean,
 ): Session {
 	const now = Date.now();
-	const existingTimingIndex = session.statistics.iterationTimings.findIndex(
+	const existingTiming = session.statistics.iterationTimings.find(
 		(timing) => timing.iteration === iteration,
 	);
 
 	let updatedTimings: IterationTiming[];
 	let durationMs = 0;
 
-	if (existingTimingIndex >= 0) {
-		const existingTiming = session.statistics.iterationTimings[existingTimingIndex];
+	if (existingTiming) {
 		durationMs = now - existingTiming.startTime;
-		updatedTimings = [...session.statistics.iterationTimings];
-		updatedTimings[existingTimingIndex] = {
-			...existingTiming,
-			endTime: now,
-			durationMs,
-		};
+		updatedTimings = session.statistics.iterationTimings.map((timing) =>
+			timing.iteration === iteration ? { ...timing, endTime: now, durationMs } : timing,
+		);
 	} else {
 		updatedTimings = [
 			...session.statistics.iterationTimings,

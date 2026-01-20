@@ -50,9 +50,9 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 				{!session ? (
 					<Box flexDirection="column" marginTop={1}>
 						<Text>No session data found.</Text>
-						<Text dimColor marginTop={1}>
-							Run 'ralph' or 'ralph -b' to start a new session.
-						</Text>
+						<Box marginTop={1}>
+							<Text dimColor>Run 'ralph' or 'ralph -b' to start a new session.</Text>
+						</Box>
 					</Box>
 				) : (
 					<>
@@ -169,12 +169,12 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 								<Text color="yellow" bold>
 									Note:
 								</Text>
-								<Text color="yellow" marginTop={1}>
-									Session appears to have been interrupted.
-								</Text>
-								<Text color="yellow">
-									Use 'ralph resume' or type /resume to continue from where you left off.
-								</Text>
+								<Box marginTop={1} flexDirection="column">
+									<Text color="yellow">Session appears to have been interrupted.</Text>
+									<Text color="yellow">
+										Use 'ralph resume' or type /resume to continue from where you left off.
+									</Text>
+								</Box>
 							</Box>
 						)}
 					</>

@@ -369,13 +369,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		const iterationStore = useIterationStore.getState();
 		const state = get();
 
-		if (agentStore.isStreaming) {
+		if (agentStore.isStreaming || iterationStore.isRunning) {
 			agentStore.stop();
 			iterationStore.stop();
 			if (state.currentSession) {
-				const pausedSession = updateSessionStatus(state.currentSession, "paused");
-				saveSession(pausedSession);
-				set({ currentSession: pausedSession });
+				const stoppedSession = updateSessionStatus(state.currentSession, "stopped");
+				saveSession(stoppedSession);
+				set({ currentSession: stoppedSession });
 			}
 			set({ appState: "idle" });
 		}

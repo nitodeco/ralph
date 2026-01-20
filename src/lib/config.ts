@@ -45,6 +45,7 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 		enableGarbageCollectionHints: DEFAULTS.enableGcHints,
 	},
 	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
+	maxRuntimeMs: 0,
 };
 
 const DEFAULT_CONFIG: RalphConfig = {
