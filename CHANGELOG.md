@@ -1,5 +1,11 @@
 # ralph
 
+## 0.3.1
+
+### Patch Changes
+
+- afb9aed: Add progress bar to update download
+
 ## 0.3.0
 
 ### Minor Changes
