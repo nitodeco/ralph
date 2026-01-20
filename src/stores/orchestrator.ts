@@ -172,7 +172,7 @@ class SessionOrchestrator {
 					taskWasCompleted: agentStore.isComplete,
 				});
 
-				agentStore.clearOutput();
+				agentStore.reset();
 				const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
 				if (cleanupResult.memoryStatus !== "ok") {
 					logger.warn("Memory cleanup completed with warnings", {

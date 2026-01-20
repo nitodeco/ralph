@@ -5,3 +5,9 @@
 - Added example PRDs for web applications, CLI tools, and API backends
 - Included performance tuning recommendations for long-running sessions, memory-constrained systems, and fast iteration scenarios
 - Added task design best practices
+
+[2026-01-20] Completed: Fix UI offset caused by agent output stream on iteration completion
+- Modified AgentOutput component to return null when there's no content to display
+- Changed from always rendering a Box with padding to conditionally rendering only when there's actual content
+- Updated orchestrator to call agentStore.reset() on iteration completion instead of just clearOutput()
+- This ensures clean agent state between iterations and prevents empty boxes from causing layout shifts
