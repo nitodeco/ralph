@@ -1,5 +1,13 @@
 # ralph
 
+## 0.6.1
+
+### Patch Changes
+
+- 26ce7db: Make /status command available within ralph
+- e2b1f47: Fix task creation result parsing
+- c4f7397: Fix command interface not applying inputs properly
+
 ## 0.6.0
 
 ### Minor Changes
