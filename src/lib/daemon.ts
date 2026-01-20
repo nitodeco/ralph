@@ -67,9 +67,13 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 	const execPath = process.execPath;
 	const scriptPath = process.argv[1];
 
+	if (!scriptPath) {
+		return null;
+	}
+
 	const argsWithoutBackground = args.filter((arg) => arg !== "--background" && arg !== "-b");
 
-	const spawnArgs = [scriptPath, ...argsWithoutBackground, "--daemon-child"];
+	const spawnArgs: string[] = [scriptPath, ...argsWithoutBackground, "--daemon-child"];
 
 	try {
 		ensureRalphDirExists();
