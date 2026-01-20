@@ -5,6 +5,8 @@ interface AgentOutputProps {
 	output: string;
 	isStreaming: boolean;
 	error?: string | null;
+	retryCount?: number;
+	isRetrying?: boolean;
 }
 
 interface OutputLine {
@@ -23,6 +25,8 @@ export function AgentOutput({
 	output,
 	isStreaming,
 	error,
+	retryCount = 0,
+	isRetrying = false,
 }: AgentOutputProps): React.ReactElement {
 	const lines = parseOutputLines(output);
 	const completedLines = isStreaming ? lines.slice(0, -1) : lines;
@@ -33,6 +37,18 @@ export function AgentOutput({
 			{error && (
 				<Box marginBottom={1}>
 					<Text color="red">Error: {error}</Text>
+				</Box>
+			)}
+
+			{retryCount > 0 && !isRetrying && !error && (
+				<Box marginBottom={1}>
+					<Text color="yellow">Retry attempt {retryCount}</Text>
+				</Box>
+			)}
+
+			{isRetrying && (
+				<Box marginBottom={1}>
+					<Spinner label={`Retrying (attempt ${retryCount})...`} />
 				</Box>
 			)}
 
@@ -51,7 +67,7 @@ export function AgentOutput({
 				</Text>
 			)}
 
-			{isStreaming && !output && (
+			{isStreaming && !output && !isRetrying && (
 				<Box>
 					<Spinner label="Starting agent..." />
 				</Box>

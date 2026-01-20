@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, rm, unlink } from "node:fs/promises";
-import { type BuildTarget, config } from "./build.config";
 import packageJson from "../package.json";
+import { type BuildTarget, config } from "./build.config";
 
 async function cleanupTempFiles(): Promise<void> {
 	const tempFiles = readdirSync(".").filter((file) => file.endsWith(".bun-build"));

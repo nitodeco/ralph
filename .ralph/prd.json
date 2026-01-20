@@ -11,7 +11,7 @@
 				"Update RunApp to handle retry states and display retry count",
 				"Add configuration options in SetupWizard for retry settings"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement session persistence and resume capability",

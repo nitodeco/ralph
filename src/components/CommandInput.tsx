@@ -2,13 +2,13 @@ import { Box, Text } from "ink";
 import TextInput from "ink-text-input";
 import { useState } from "react";
 
-export type SlashCommand = "init" | "setup" | "update" | "help" | "quit" | "exit" | "add" | "start";
+export type SlashCommand = "init" | "setup" | "update" | "help" | "quit" | "exit" | "add" | "start" | "resume";
 
 export interface CommandArgs {
 	iterations?: number;
 }
 
-const VALID_COMMANDS: SlashCommand[] = ["init", "setup", "update", "help", "quit", "exit", "add", "start"];
+const VALID_COMMANDS: SlashCommand[] = ["init", "setup", "update", "help", "quit", "exit", "add", "start", "resume"];
 
 interface CommandInputProps {
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;

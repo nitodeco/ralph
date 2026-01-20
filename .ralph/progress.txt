@@ -1,0 +1,9 @@
+Task 1: Add retry logic and error recovery for agent failures - COMPLETED
+
+Implementation:
+- Added maxRetries and retryDelayMs to RalphConfig type in src/types.ts
+- Implemented exponential backoff retry logic in useAgent hook with calculateRetryDelay function
+- Added error categorization with FATAL_ERROR_PATTERNS to determine retryable vs fatal errors
+- Updated RunApp to pass retryCount and isRetrying props to AgentOutput
+- Added configuration options in SetupWizard for max_retries and retry_delay steps
+- Display retry configuration in setup completion summary

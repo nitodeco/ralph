@@ -11,12 +11,14 @@ interface SetupWizardProps {
 	onComplete?: () => void;
 }
 
-type SetupStep = "agent_type" | "prd_format" | "complete";
+type SetupStep = "agent_type" | "prd_format" | "max_retries" | "retry_delay" | "complete";
 
 interface SetupState {
 	step: SetupStep;
 	agentType: AgentType;
 	prdFormat: PrdFormat;
+	maxRetries: number;
+	retryDelayMs: number;
 }
 
 const AGENT_CHOICES = [
@@ -27,6 +29,22 @@ const AGENT_CHOICES = [
 const FORMAT_CHOICES = [
 	{ label: "JSON", value: "json" as const },
 	{ label: "YAML", value: "yaml" as const },
+];
+
+const MAX_RETRIES_CHOICES = [
+	{ label: "0 (No retries)", value: 0 },
+	{ label: "1 retry", value: 1 },
+	{ label: "3 retries (default)", value: 3 },
+	{ label: "5 retries", value: 5 },
+	{ label: "10 retries", value: 10 },
+];
+
+const RETRY_DELAY_CHOICES = [
+	{ label: "1 second", value: 1000 },
+	{ label: "5 seconds (default)", value: 5000 },
+	{ label: "10 seconds", value: 10000 },
+	{ label: "30 seconds", value: 30000 },
+	{ label: "1 minute", value: 60000 },
 ];
 
 export function SetupWizard({ version, onComplete }: SetupWizardProps): React.ReactElement {
@@ -45,6 +63,8 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 		step: "agent_type",
 		agentType: existingConfig.agent,
 		prdFormat: existingConfig.prdFormat ?? "json",
+		maxRetries: existingConfig.maxRetries ?? 3,
+		retryDelayMs: existingConfig.retryDelayMs ?? 5000,
 	});
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
@@ -52,12 +72,22 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	};
 
 	const handleFormatSelect = (item: { value: PrdFormat }) => {
+		setState((prev) => ({ ...prev, prdFormat: item.value, step: "max_retries" }));
+	};
+
+	const handleMaxRetriesSelect = (item: { value: number }) => {
+		setState((prev) => ({ ...prev, maxRetries: item.value, step: "retry_delay" }));
+	};
+
+	const handleRetryDelaySelect = (item: { value: number }) => {
 		const newConfig: RalphConfig = {
 			agent: state.agentType,
-			prdFormat: item.value,
+			prdFormat: state.prdFormat,
+			maxRetries: state.maxRetries,
+			retryDelayMs: item.value,
 		};
 		saveGlobalConfig(newConfig);
-		setState((prev) => ({ ...prev, prdFormat: item.value, step: "complete" }));
+		setState((prev) => ({ ...prev, retryDelayMs: item.value, step: "complete" }));
 	};
 
 	useInput((_, key) => {
@@ -94,9 +124,35 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					</Box>
 				);
 
+			case "max_retries":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">How many times should Ralph retry on agent failures?</Text>
+						<SelectInput
+							items={MAX_RETRIES_CHOICES}
+							initialIndex={MAX_RETRIES_CHOICES.findIndex((choice) => choice.value === state.maxRetries)}
+							onSelect={handleMaxRetriesSelect}
+						/>
+					</Box>
+				);
+
+			case "retry_delay":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">How long should Ralph wait before retrying?</Text>
+						<Text dimColor>(Uses exponential backoff - this is the base delay)</Text>
+						<SelectInput
+							items={RETRY_DELAY_CHOICES}
+							initialIndex={RETRY_DELAY_CHOICES.findIndex((choice) => choice.value === state.retryDelayMs)}
+							onSelect={handleRetryDelaySelect}
+						/>
+					</Box>
+				);
+
 			case "complete": {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 				const formatName = state.prdFormat.toUpperCase();
+				const retryDelayLabel = RETRY_DELAY_CHOICES.find((choice) => choice.value === state.retryDelayMs)?.label ?? `${state.retryDelayMs}ms`;
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">Setup complete!</Message>
@@ -106,6 +162,12 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 							</Text>
 							<Text>
 								<Text dimColor>PRD Format:</Text> <Text color="yellow">{formatName}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Max Retries:</Text> <Text color="yellow">{state.maxRetries}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Retry Delay:</Text> <Text color="yellow">{retryDelayLabel}</Text>
 							</Text>
 						</Box>
 						<Box marginTop={1}>

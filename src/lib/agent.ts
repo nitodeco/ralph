@@ -10,6 +10,7 @@ export async function runAgent(): Promise<AgentResult> {
 	const baseCommand = getAgentCommand(config.agent);
 
 	const process = Bun.spawn([...baseCommand, prompt], {
+		stdin: null,
 		stdout: "pipe",
 		stderr: "pipe",
 	});
@@ -53,6 +54,7 @@ export async function runAgentWithPrompt({
 	const baseCommand = getAgentCommand(agentType);
 
 	const agentProcess = Bun.spawn([...baseCommand, prompt], {
+		stdin: null,
 		stdout: "pipe",
 		stderr: "pipe",
 	});

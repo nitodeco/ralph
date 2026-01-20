@@ -11,10 +11,12 @@ const PROJECT_CONFIG_PATH = `${RALPH_DIR}/config.json`;
 const DEFAULT_CONFIG: RalphConfig = {
 	agent: "cursor",
 	prdFormat: "json",
+	maxRetries: 3,
+	retryDelayMs: 5000,
 };
 
 export const AGENT_COMMANDS: Record<AgentType, string[]> = {
-	cursor: ["agent", "-p", "--force"],
+	cursor: ["agent", "-p", "--force", "--output-format", "stream-json", "--stream-partial-output"],
 	claude: ["claude", "-p", "--dangerously-skip-permissions"],
 };
 

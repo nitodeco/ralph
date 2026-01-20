@@ -1,10 +1,19 @@
-import { Box, Text, useApp } from "ink";
+import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { useAgent } from "../hooks/useAgent.ts";
 import { useIteration } from "../hooks/useIteration.ts";
 import { loadConfig } from "../lib/config.ts";
 import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
-import type { Prd, RalphConfig } from "../types.ts";
+import {
+	createSession,
+	deleteSession,
+	isSessionResumable,
+	loadSession,
+	saveSession,
+	updateSessionIteration,
+	updateSessionStatus,
+} from "../lib/session.ts";
+import type { Prd, RalphConfig, Session } from "../types.ts";
 import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import { AgentOutput } from "./AgentOutput.tsx";
 import { CommandInput, type CommandArgs, type SlashCommand } from "./CommandInput.tsx";
@@ -24,7 +33,7 @@ interface RunAppProps {
 	iterations: number;
 }
 
-type AppState = "idle" | "running" | "complete" | "error" | "max_iterations" | "not_initialized";
+type AppState = "idle" | "running" | "complete" | "error" | "max_iterations" | "not_initialized" | "resume_prompt";
 type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add";
 
 interface ValidationWarning {
@@ -65,6 +74,8 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 	const [config, setConfig] = useState<RalphConfig | null>(null);
 	const [prd, setPrd] = useState<Prd | null>(null);
 	const [elapsedTime, setElapsedTime] = useState(0);
+	const [pendingSession, setPendingSession] = useState<Session | null>(null);
+	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 
 	const agent = useAgent();
 
@@ -77,8 +88,26 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 				setPrd(currentPrd);
 			}
 		},
+		onIterationComplete: (iterationNumber) => {
+			if (currentSession) {
+				const currentPrd = loadPrd();
+				const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
+				const updatedSession = updateSessionIteration(
+					currentSession,
+					iterationNumber,
+					taskIndex,
+					elapsedTime
+				);
+				saveSession(updatedSession);
+				setCurrentSession(updatedSession);
+			}
+		},
 		onAllComplete: () => {
 			setAppState("complete");
+			if (currentSession) {
+				deleteSession();
+				setCurrentSession(null);
+			}
 		},
 	});
 
@@ -125,15 +154,57 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		setPrd(loadedPrd);
 		setValidationWarning(null);
 
+		deleteSession();
+		setPendingSession(null);
+
+		const totalIters = iterationCount || iterations || DEFAULT_ITERATIONS;
 		if (iterationCount) {
 			iteration.setTotal(iterationCount);
 		}
+
+		const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
+		const newSession = createSession(totalIters, taskIndex);
+		saveSession(newSession);
+		setCurrentSession(newSession);
 
 		setAppState("running");
 		setElapsedTime(0);
 		agent.reset();
 		iteration.start();
-	}, [agent, iteration]);
+	}, [agent, iteration, iterations]);
+
+	const resumeSession = useCallback(() => {
+		if (!pendingSession) {
+			return;
+		}
+
+		const warning = validateProject();
+		if (warning) {
+			setValidationWarning(warning);
+			setAppState("not_initialized");
+			return;
+		}
+
+		const loadedConfig = loadConfig();
+		const loadedPrd = loadPrd();
+
+		setConfig(loadedConfig);
+		setPrd(loadedPrd);
+		setValidationWarning(null);
+
+		const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
+		iteration.setTotal(remainingIterations > 0 ? remainingIterations : 1);
+
+		const resumedSession = updateSessionStatus(pendingSession, "running");
+		saveSession(resumedSession);
+		setCurrentSession(resumedSession);
+		setPendingSession(null);
+
+		setAppState("running");
+		setElapsedTime(pendingSession.elapsedTimeSeconds);
+		agent.reset();
+		iteration.start();
+	}, [agent, iteration, pendingSession]);
 
 	const handleSlashCommand = useCallback((command: SlashCommand, args?: CommandArgs) => {
 		switch (command) {
@@ -197,7 +268,14 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 
 		setConfig(loadedConfig);
 		setPrd(loadedPrd);
-		setAppState("idle");
+
+		const existingSession = loadSession();
+		if (isSessionResumable(existingSession)) {
+			setPendingSession(existingSession);
+			setAppState("resume_prompt");
+		} else {
+			setAppState("idle");
+		}
 	}, []);
 
 	useEffect(() => {
@@ -312,6 +390,8 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 				output={agent.output}
 				isStreaming={agent.isStreaming}
 				error={agent.error}
+				retryCount={agent.retryCount}
+				isRetrying={agent.isRetrying}
 			/>
 
 			{appState === "idle" && (
