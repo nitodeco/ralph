@@ -1,5 +1,7 @@
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
+import { validateConfig } from "@/lib/config.ts";
+import { getNextTask, loadPrd } from "@/lib/prd.ts";
 import {
 	setupIterationCallbacks,
 	useAgentStore,
@@ -10,6 +12,7 @@ import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import { AgentOutput } from "./AgentOutput.tsx";
 import { type CommandArgs, CommandInput, type SlashCommand } from "./CommandInput.tsx";
 import { Message } from "./common/Message.tsx";
+import { Spinner } from "./common/Spinner.tsx";
 import { Header } from "./Header.tsx";
 import { HelpView } from "./HelpView.tsx";
 import { InitWizard } from "./InitWizard.tsx";
@@ -24,6 +27,7 @@ interface RunAppProps {
 	iterations: number;
 	autoResume?: boolean;
 	autoStart?: boolean;
+	dryRun?: boolean;
 	initialTask?: string;
 }
 
@@ -32,6 +36,7 @@ export function RunApp({
 	iterations,
 	autoResume = false,
 	autoStart = false,
+	dryRun = false,
 	initialTask,
 }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
@@ -72,6 +77,20 @@ export function RunApp({
 		type: "success" | "error";
 		text: string;
 	} | null>(null);
+
+	const [dryRunState, setDryRunState] = useState<{
+		status: "idle" | "validating" | "simulating" | "complete";
+		currentIteration: number;
+		logs: string[];
+		errors: string[];
+		warnings: string[];
+	}>({
+		status: "idle",
+		currentIteration: 0,
+		logs: [],
+		errors: [],
+		warnings: [],
+	});
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -185,6 +204,9 @@ export function RunApp({
 	}, [autoResume, pendingSession, appState, resumeSession]);
 
 	useEffect(() => {
+		if (dryRun) {
+			return;
+		}
 		if (initialTask && appState === "idle" && !pendingSession) {
 			const result = setManualNextTask(initialTask);
 			if (result.success) {
@@ -210,7 +232,140 @@ export function RunApp({
 		startIterations,
 		initialTask,
 		setManualNextTask,
+		dryRun,
 	]);
+
+	useEffect(() => {
+		if (!dryRun || dryRunState.status !== "idle") {
+			return;
+		}
+
+		const runDryRunSimulation = async () => {
+			const logs: string[] = [];
+			const errors: string[] = [];
+			const warnings: string[] = [];
+
+			setDryRunState((prev) => ({
+				...prev,
+				status: "validating",
+				logs: ["Validating configuration..."],
+			}));
+
+			await new Promise((resolve) => setTimeout(resolve, 500));
+
+			if (config) {
+				const validation = validateConfig(config);
+				if (!validation.valid) {
+					for (const error of validation.errors) {
+						errors.push(`Config error: ${error.field} - ${error.message}`);
+					}
+				}
+				for (const warning of validation.warnings) {
+					warnings.push(`Config warning: ${warning.field} - ${warning.message}`);
+				}
+				logs.push(`Configuration validated (agent: ${config.agent})`);
+			} else {
+				errors.push("No configuration found. Run 'ralph setup' first.");
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 300));
+
+			const currentPrd = loadPrd();
+			if (currentPrd) {
+				logs.push(`PRD loaded: "${currentPrd.project}"`);
+				logs.push(`Total tasks: ${currentPrd.tasks.length}`);
+				const completedCount = currentPrd.tasks.filter((task) => task.done).length;
+				const pendingCount = currentPrd.tasks.length - completedCount;
+				logs.push(`Completed: ${completedCount}, Pending: ${pendingCount}`);
+			} else {
+				errors.push("No PRD found. Run 'ralph init' first.");
+			}
+
+			setDryRunState((prev) => ({
+				...prev,
+				logs: [...logs],
+				errors: [...errors],
+				warnings: [...warnings],
+			}));
+
+			if (errors.length > 0) {
+				setDryRunState((prev) => ({ ...prev, status: "complete" }));
+				return;
+			}
+
+			setDryRunState((prev) => ({ ...prev, status: "simulating" }));
+
+			const prdForSimulation = currentPrd;
+			if (!prdForSimulation) {
+				setDryRunState((prev) => ({ ...prev, status: "complete" }));
+				return;
+			}
+
+			const simulationIterations = Math.min(
+				iterations,
+				prdForSimulation.tasks.filter((task) => !task.done).length,
+			);
+			logs.push(`\nSimulating ${simulationIterations} iteration(s)...`);
+			logs.push("─".repeat(50));
+
+			for (let iterationIndex = 1; iterationIndex <= simulationIterations; iterationIndex++) {
+				setDryRunState((prev) => ({
+					...prev,
+					currentIteration: iterationIndex,
+					logs: [...prev.logs, `\n[Iteration ${iterationIndex}/${simulationIterations}]`],
+				}));
+
+				await new Promise((resolve) => setTimeout(resolve, 800));
+
+				const nextTask = getNextTask(prdForSimulation);
+				if (nextTask) {
+					setDryRunState((prev) => ({
+						...prev,
+						logs: [...prev.logs, `  → Would work on: "${nextTask.title}"`],
+					}));
+
+					await new Promise((resolve) => setTimeout(resolve, 500));
+
+					setDryRunState((prev) => ({
+						...prev,
+						logs: [
+							...prev.logs,
+							`  → Agent (${config?.agent ?? "cursor"}) would execute with prompt`,
+							`  → Steps: ${nextTask.steps.length} defined`,
+						],
+					}));
+
+					await new Promise((resolve) => setTimeout(resolve, 500));
+
+					setDryRunState((prev) => ({
+						...prev,
+						logs: [...prev.logs, `  ✓ Simulated completion`],
+					}));
+
+					nextTask.done = true;
+				} else {
+					setDryRunState((prev) => ({
+						...prev,
+						logs: [...prev.logs, `  → No pending tasks remaining`],
+					}));
+					break;
+				}
+			}
+
+			setDryRunState((prev) => ({
+				...prev,
+				status: "complete",
+				logs: [
+					...prev.logs,
+					"\n─".repeat(50),
+					"Dry-run simulation complete.",
+					"No changes were made to your project.",
+				],
+			}));
+		};
+
+		runDryRunSimulation();
+	}, [dryRun, dryRunState.status, config, iterations]);
 
 	useEffect(() => {
 		if (iterationIsRunning && iterationCurrent > 0 && !agentIsStreaming && !iterationIsDelaying) {
@@ -259,6 +414,58 @@ export function RunApp({
 
 	if (activeView === "add") {
 		return <AddTaskWizard version={version} onComplete={handleViewComplete} />;
+	}
+
+	if (dryRun) {
+		return (
+			<Box flexDirection="column" padding={1}>
+				<Header version={version} agent={config?.agent} projectName={prd?.project} />
+				<Box flexDirection="column" marginY={1} paddingX={1}>
+					<Box marginBottom={1}>
+						<Text color="cyan" bold>
+							◆ Dry-Run Mode
+						</Text>
+						{dryRunState.status !== "complete" && (
+							<Box marginLeft={1}>
+								<Spinner />
+							</Box>
+						)}
+					</Box>
+
+					{dryRunState.logs.map((log, logIndex) => (
+						<Text key={`log-${logIndex}-${log.slice(0, 20)}`} dimColor={log.startsWith("  ")}>
+							{log}
+						</Text>
+					))}
+
+					{dryRunState.errors.length > 0 && (
+						<Box flexDirection="column" marginTop={1}>
+							{dryRunState.errors.map((error, errorIndex) => (
+								<Text key={`error-${errorIndex}-${error.slice(0, 20)}`} color="red">
+									✗ {error}
+								</Text>
+							))}
+						</Box>
+					)}
+
+					{dryRunState.warnings.length > 0 && (
+						<Box flexDirection="column" marginTop={1}>
+							{dryRunState.warnings.map((warning, warningIndex) => (
+								<Text key={`warning-${warningIndex}-${warning.slice(0, 20)}`} color="yellow">
+									! {warning}
+								</Text>
+							))}
+						</Box>
+					)}
+
+					{dryRunState.status === "complete" && (
+						<Box marginTop={1}>
+							<Text dimColor>Press Ctrl+C to exit</Text>
+						</Box>
+					)}
+				</Box>
+			</Box>
+		);
 	}
 
 	if (appState === "not_initialized" && validationWarning) {

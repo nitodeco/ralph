@@ -379,3 +379,28 @@ Implementation:
 - Process exit handler cleans up PID file if shutdown wasn't already in progress
 - Added null check in CommandInput.tsx parseSlashCommand for safer command parsing
 
+Task 17: Add dry-run mode for testing - COMPLETED
+
+Implementation:
+- Added --dry-run flag to CLI argument parser in src/index.tsx
+- Added dryRun field to ParsedArgs interface
+- Filter --dry-run flag from command arguments during parsing
+- Pass dryRun prop through RunWithSetup to RunApp component
+- Implemented dry-run simulation in RunApp.tsx:
+  - Added dryRunState to track status, logs, errors, and warnings
+  - Created runDryRunSimulation async function that:
+    - Validates configuration using validateConfig()
+    - Loads and validates PRD file
+    - Displays task counts and completion status
+    - Simulates iteration flow with 500-800ms delays
+    - Shows what task would be worked on each iteration
+    - Reports which agent would be used
+- Added dedicated dry-run UI view with:
+  - Header showing "Dry-Run Mode" with spinner during simulation
+  - Log output with dimmed styling for indented lines
+  - Red error messages and yellow warning messages
+  - Exit instructions on completion
+- Updated printHelp() with --dry-run documentation and example
+- Dry-run cannot be combined with background mode (error on attempt)
+- Auto-starts simulation when --dry-run flag is provided
+

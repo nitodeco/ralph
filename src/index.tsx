@@ -56,6 +56,7 @@ interface ParsedArgs {
 	iterations: number;
 	background: boolean;
 	json: boolean;
+	dryRun: boolean;
 	task?: string;
 }
 
@@ -63,6 +64,7 @@ function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
 	const background = relevantArgs.includes("--background") || relevantArgs.includes("-b");
 	const json = relevantArgs.includes("--json");
+	const dryRun = relevantArgs.includes("--dry-run");
 
 	let task: string | undefined;
 	const taskIndex = relevantArgs.findIndex((arg) => arg === "--task" || arg === "-t");
@@ -76,6 +78,7 @@ function parseArgs(args: string[]): ParsedArgs {
 			arg !== "-b" &&
 			arg !== "--daemon-child" &&
 			arg !== "--json" &&
+			arg !== "--dry-run" &&
 			arg !== "--task" &&
 			arg !== "-t" &&
 			(taskIndex === -1 || argIndex !== taskIndex + 1),
@@ -93,7 +96,7 @@ function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	return { command, iterations, background, json, task };
+	return { command, iterations, background, json, dryRun, task };
 }
 
 function printHelp(): void {
@@ -119,6 +122,7 @@ Commands:
 
 Options:
   -b, --background  Run Ralph in background/daemon mode (detached from terminal)
+  --dry-run         Simulate agent execution without running agents (validates PRD/config)
   --json            Output in JSON format (for list and config commands)
   -t, --task <n>    Run specific task by number or title (single task mode)
 
@@ -147,6 +151,7 @@ Examples:
   ralph update      Check for and install updates
   ralph -b          Start Ralph in background mode (logs to .ralph/ralph.log)
   ralph resume -b   Resume session in background mode
+  ralph --dry-run   Test configuration and PRD without running agents
 `);
 }
 
@@ -649,6 +654,7 @@ interface RunWithSetupProps {
 	iterations: number;
 	autoResume?: boolean;
 	autoStart?: boolean;
+	dryRun?: boolean;
 	initialTask?: string;
 }
 
@@ -657,6 +663,7 @@ function RunWithSetup({
 	iterations,
 	autoResume = false,
 	autoStart = false,
+	dryRun = false,
 	initialTask,
 }: RunWithSetupProps): React.ReactElement {
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
@@ -671,6 +678,7 @@ function RunWithSetup({
 			iterations={iterations}
 			autoResume={autoResume}
 			autoStart={autoStart || !!initialTask}
+			dryRun={dryRun}
 			initialTask={initialTask}
 		/>
 	);
@@ -704,7 +712,7 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-	const { command, iterations, background, json, task } = parseArgs(process.argv);
+	const { command, iterations, background, json, dryRun, task } = parseArgs(process.argv);
 
 	setShutdownHandler({
 		onShutdown: () => {
@@ -726,11 +734,15 @@ function main(): void {
 			console.error("Background mode is only supported for 'run' and 'resume' commands");
 			process.exit(1);
 		}
+		if (dryRun) {
+			console.error("Dry-run mode cannot be used with background mode");
+			process.exit(1);
+		}
 		handleBackgroundMode(command, iterations);
 		return;
 	}
 
-	const autoStart = isDaemonProcess();
+	const autoStart = isDaemonProcess() || dryRun;
 
 	switch (command) {
 		case "run":
@@ -739,6 +751,7 @@ function main(): void {
 					version={VERSION}
 					iterations={task ? 1 : iterations}
 					autoStart={autoStart}
+					dryRun={dryRun}
 					initialTask={task}
 				/>,
 			);
@@ -751,6 +764,7 @@ function main(): void {
 					iterations={iterations}
 					autoResume
 					autoStart={autoStart}
+					dryRun={dryRun}
 					initialTask={task}
 				/>,
 			);

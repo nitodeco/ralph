@@ -203,7 +203,7 @@
 				"Validate PRD and config in dry-run mode",
 				"Display simulated iteration flow"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement iteration statistics and reporting",
