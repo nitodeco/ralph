@@ -1,17 +1,27 @@
 import { Box, Text } from "ink";
-import type { PrdTask } from "../types.ts";
+import { useAgentStore, useAppStore } from "../stores/index.ts";
+import type { Prd } from "../types.ts";
 
-interface TaskListProps {
-	tasks: PrdTask[];
-	currentTaskIndex?: number;
-	collapsed?: boolean;
+function getCurrentTaskIndex(prd: Prd): number {
+	return prd.tasks.findIndex((task) => !task.done);
 }
 
-export function TaskList({
-	tasks,
-	currentTaskIndex,
-	collapsed = false,
-}: TaskListProps): React.ReactElement {
+export function TaskList(): React.ReactElement {
+	const prd = useAppStore((state) => state.prd);
+	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
+
+	if (!prd) {
+		return (
+			<Box paddingX={1}>
+				<Text dimColor>No PRD loaded</Text>
+			</Box>
+		);
+	}
+
+	const tasks = prd.tasks;
+	const currentTaskIndex = getCurrentTaskIndex(prd);
+	const collapsed = agentIsStreaming;
+
 	const completedCount = tasks.filter((task) => task.done).length;
 	const totalCount = tasks.length;
 

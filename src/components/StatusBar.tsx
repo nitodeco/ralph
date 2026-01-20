@@ -1,12 +1,8 @@
 import { Box, Text } from "ink";
+import { useAgentStore, useAppStore, useIterationStore } from "../stores/index.ts";
+import type { Prd } from "../types.ts";
 
 type AgentStatus = "idle" | "running" | "complete" | "error";
-
-interface StatusBarProps {
-	status: AgentStatus;
-	elapsedTime?: number;
-	currentTask?: string;
-}
 
 const STATUS_INDICATORS: Record<AgentStatus, { color: string; label: string }> = {
 	idle: { color: "gray", label: "Idle" },
@@ -24,11 +20,32 @@ function formatElapsedTime(seconds: number): string {
 	return `${remainingSeconds}s`;
 }
 
-export function StatusBar({
-	status,
-	elapsedTime,
-	currentTask,
-}: StatusBarProps): React.ReactElement {
+function getCurrentTaskIndex(prd: Prd): number {
+	return prd.tasks.findIndex((task) => !task.done);
+}
+
+export function StatusBar(): React.ReactElement {
+	const appState = useAppStore((state) => state.appState);
+	const elapsedTime = useAppStore((state) => state.elapsedTime);
+	const prd = useAppStore((state) => state.prd);
+	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
+	const iterationIsDelaying = useIterationStore((state) => state.isDelaying);
+
+	const getStatus = (): AgentStatus => {
+		if (appState === "error") return "error";
+		if (appState === "complete") return "complete";
+		if (agentIsStreaming) return "running";
+		if (iterationIsDelaying) return "idle";
+		return "idle";
+	};
+
+	const currentTaskIndex = prd ? getCurrentTaskIndex(prd) : undefined;
+	const currentTask =
+		prd && currentTaskIndex !== undefined && currentTaskIndex >= 0
+			? prd.tasks[currentTaskIndex]?.title
+			: undefined;
+
+	const status = getStatus();
 	const indicator = STATUS_INDICATORS[status];
 
 	return (

@@ -1,12 +1,6 @@
 import { Box, Text } from "ink";
+import { useIterationStore } from "../stores/index.ts";
 import { Spinner } from "./common/Spinner.tsx";
-
-interface IterationProgressProps {
-	current: number;
-	total: number;
-	isRunning: boolean;
-	isDelaying: boolean;
-}
 
 function createProgressBar(current: number, total: number, width: number): string {
 	const filled = Math.round((current / total) * width);
@@ -14,12 +8,12 @@ function createProgressBar(current: number, total: number, width: number): strin
 	return `${"█".repeat(filled)}${"░".repeat(empty)}`;
 }
 
-export function IterationProgress({
-	current,
-	total,
-	isRunning,
-	isDelaying,
-}: IterationProgressProps): React.ReactElement {
+export function IterationProgress(): React.ReactElement {
+	const current = useIterationStore((state) => state.current);
+	const total = useIterationStore((state) => state.total);
+	const isRunning = useIterationStore((state) => state.isRunning);
+	const isDelaying = useIterationStore((state) => state.isDelaying);
+
 	const progressBar = createProgressBar(current, total, 20);
 	const percentage = Math.round((current / total) * 100);
 

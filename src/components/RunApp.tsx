@@ -1,22 +1,11 @@
-import { existsSync } from "node:fs";
 import { Box, Text, useApp, useInput } from "ink";
-import { useCallback, useEffect, useState } from "react";
-import { useAgent } from "../hooks/useAgent.ts";
-import { useIteration } from "../hooks/useIteration.ts";
-import { loadConfig } from "../lib/config.ts";
-import { getLogger } from "../lib/logger.ts";
-import { sendNotifications } from "../lib/notifications.ts";
-import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
+import { useCallback, useEffect } from "react";
 import {
-	createSession,
-	deleteSession,
-	isSessionResumable,
-	loadSession,
-	saveSession,
-	updateSessionIteration,
-	updateSessionStatus,
-} from "../lib/session.ts";
-import type { Prd, RalphConfig, Session } from "../types.ts";
+	setupIterationCallbacks,
+	useAgentStore,
+	useAppStore,
+	useIterationStore,
+} from "../stores/index.ts";
 import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import { AgentOutput } from "./AgentOutput.tsx";
 import { type CommandArgs, CommandInput, type SlashCommand } from "./CommandInput.tsx";
@@ -37,46 +26,6 @@ interface RunAppProps {
 	autoStart?: boolean;
 }
 
-type AppState =
-	| "idle"
-	| "running"
-	| "complete"
-	| "error"
-	| "max_iterations"
-	| "not_initialized"
-	| "resume_prompt";
-type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add";
-
-interface ValidationWarning {
-	message: string;
-	hint: string;
-}
-
-function validateProject(): ValidationWarning | null {
-	const prdFile = findPrdFile();
-	if (!prdFile) {
-		return {
-			message: `No prd.json or prd.yaml found in ${RALPH_DIR}/`,
-			hint: "Run 'ralph init' or type /init to create one",
-		};
-	}
-
-	if (!existsSync(PROGRESS_FILE_PATH)) {
-		return {
-			message: `No ${PROGRESS_FILE_PATH} found`,
-			hint: "Run 'ralph init' or type /init to create one",
-		};
-	}
-
-	return null;
-}
-
-function getCurrentTaskIndex(prd: Prd): number {
-	return prd.tasks.findIndex((task) => !task.done);
-}
-
-const DEFAULT_ITERATIONS = 10;
-
 export function RunApp({
 	version,
 	iterations,
@@ -84,192 +33,37 @@ export function RunApp({
 	autoStart = false,
 }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
-	const [appState, setAppState] = useState<AppState>("idle");
-	const [activeView, setActiveView] = useState<ActiveView>("run");
-	const [validationWarning, setValidationWarning] = useState<ValidationWarning | null>(null);
-	const [config, setConfig] = useState<RalphConfig | null>(null);
-	const [prd, setPrd] = useState<Prd | null>(null);
-	const [elapsedTime, setElapsedTime] = useState(0);
-	const [pendingSession, setPendingSession] = useState<Session | null>(null);
-	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 
-	const agent = useAgent();
+	const appState = useAppStore((state) => state.appState);
+	const activeView = useAppStore((state) => state.activeView);
+	const validationWarning = useAppStore((state) => state.validationWarning);
+	const config = useAppStore((state) => state.config);
+	const prd = useAppStore((state) => state.prd);
+	const pendingSession = useAppStore((state) => state.pendingSession);
 
-	const iteration = useIteration({
-		total: iterations || DEFAULT_ITERATIONS,
-		onIterationStart: (iterationNumber) => {
-			const currentConfig = loadConfig();
-			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
-			logger.logIterationStart(iterationNumber, iterations || DEFAULT_ITERATIONS);
-			agent.reset();
-			const currentPrd = loadPrd();
-			if (currentPrd) {
-				setPrd(currentPrd);
-			}
-		},
-		onIterationComplete: (iterationNumber) => {
-			const currentConfig = loadConfig();
-			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
-			logger.logIterationComplete(
-				iterationNumber,
-				iterations || DEFAULT_ITERATIONS,
-				agent.isComplete,
-			);
-			if (currentSession) {
-				const currentPrd = loadPrd();
-				const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
-				const updatedSession = updateSessionIteration(
-					currentSession,
-					iterationNumber,
-					taskIndex,
-					elapsedTime,
-				);
-				saveSession(updatedSession);
-				setCurrentSession(updatedSession);
-			}
-		},
-		onAllComplete: () => {
-			agent.stop();
-			const currentConfig = loadConfig();
-			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
-			logger.logSessionComplete();
-			const currentPrd = loadPrd();
-			sendNotifications(currentConfig.notifications, "complete", currentPrd?.project, {
-				totalIterations: iterations || DEFAULT_ITERATIONS,
-			});
-			setAppState("complete");
-			if (currentSession) {
-				const completedSession = updateSessionStatus(currentSession, "completed");
-				saveSession(completedSession);
-				deleteSession();
-				setCurrentSession(null);
-			}
-		},
-	});
+	const setActiveView = useAppStore((state) => state.setActiveView);
+	const loadInitialState = useAppStore((state) => state.loadInitialState);
+	const startIterations = useAppStore((state) => state.startIterations);
+	const resumeSession = useAppStore((state) => state.resumeSession);
+	const stopAgent = useAppStore((state) => state.stopAgent);
+	const revalidateAndGoIdle = useAppStore((state) => state.revalidateAndGoIdle);
+	const handleAgentComplete = useAppStore((state) => state.handleAgentComplete);
+	const handleFatalError = useAppStore((state) => state.handleFatalError);
+	const setIterations = useAppStore((state) => state.setIterations);
 
-	const handleAgentComplete = useCallback(() => {
-		if (agent.isComplete) {
-			agent.stop();
-			iteration.stop();
-			setAppState("complete");
-		} else {
-			iteration.markIterationComplete(agent.isComplete);
-		}
-	}, [agent, iteration]);
+	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
+	const agentError = useAgentStore((state) => state.error);
+	const agentExitCode = useAgentStore((state) => state.exitCode);
+	const agentStart = useAgentStore((state) => state.start);
+	const agentStop = useAgentStore((state) => state.stop);
 
-	const revalidateAndGoIdle = useCallback(() => {
-		const warning = validateProject();
-		if (warning) {
-			setValidationWarning(warning);
-			setAppState("not_initialized");
-			return;
-		}
-
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
-
-		setConfig(loadedConfig);
-		setPrd(loadedPrd);
-		setValidationWarning(null);
-		setAppState("idle");
-		setElapsedTime(0);
-		agent.reset();
-	}, [agent]);
-
-	const startIterations = useCallback(
-		(iterationCount?: number, full?: boolean) => {
-			const warning = validateProject();
-			if (warning) {
-				setValidationWarning(warning);
-				setAppState("not_initialized");
-				return;
-			}
-
-			const loadedConfig = loadConfig();
-			const loadedPrd = loadPrd();
-			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-			setConfig(loadedConfig);
-			setPrd(loadedPrd);
-			setValidationWarning(null);
-
-			deleteSession();
-			setPendingSession(null);
-
-			let totalIters = iterationCount || iterations || DEFAULT_ITERATIONS;
-			if (full && loadedPrd) {
-				const incompleteTasks = loadedPrd.tasks.filter((task) => !task.done).length;
-				totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
-			}
-			iteration.setTotal(totalIters);
-
-			const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
-			const newSession = createSession(totalIters, taskIndex);
-			saveSession(newSession);
-			setCurrentSession(newSession);
-
-			logger.logSessionStart(totalIters, taskIndex);
-
-			setAppState("running");
-			setElapsedTime(0);
-			agent.reset();
-			iteration.start();
-		},
-		[agent, iteration, iterations],
-	);
-
-	const resumeSession = useCallback(() => {
-		if (!pendingSession) {
-			return;
-		}
-
-		const warning = validateProject();
-		if (warning) {
-			setValidationWarning(warning);
-			setAppState("not_initialized");
-			return;
-		}
-
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		setConfig(loadedConfig);
-		setPrd(loadedPrd);
-		setValidationWarning(null);
-
-		const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
-		iteration.setTotal(remainingIterations > 0 ? remainingIterations : 1);
-
-		const resumedSession = updateSessionStatus(pendingSession, "running");
-		saveSession(resumedSession);
-		setCurrentSession(resumedSession);
-		setPendingSession(null);
-
-		logger.logSessionResume(
-			pendingSession.currentIteration,
-			pendingSession.totalIterations,
-			pendingSession.elapsedTimeSeconds,
-		);
-
-		setAppState("running");
-		setElapsedTime(pendingSession.elapsedTimeSeconds);
-		agent.reset();
-		iteration.start();
-	}, [agent, iteration, pendingSession]);
-
-	const stopAgent = useCallback(() => {
-		if (agent.isStreaming) {
-			agent.stop();
-			iteration.stop();
-			if (currentSession) {
-				const pausedSession = updateSessionStatus(currentSession, "paused");
-				saveSession(pausedSession);
-				setCurrentSession(pausedSession);
-			}
-			setAppState("idle");
-		}
-	}, [agent, iteration, currentSession]);
+	const iterationCurrent = useIterationStore((state) => state.current);
+	const iterationTotal = useIterationStore((state) => state.total);
+	const iterationIsRunning = useIterationStore((state) => state.isRunning);
+	const iterationIsDelaying = useIterationStore((state) => state.isDelaying);
+	const iterationIsPaused = useIterationStore((state) => state.isPaused);
+	const iterationPause = useIterationStore((state) => state.pause);
+	const iterationResume = useIterationStore((state) => state.resume);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -284,28 +78,28 @@ export function RunApp({
 					stopAgent();
 					break;
 				case "init":
-					agent.stop();
-					iteration.pause();
+					agentStop();
+					iterationPause();
 					setActiveView("init");
 					break;
 				case "setup":
-					agent.stop();
-					iteration.pause();
+					agentStop();
+					iterationPause();
 					setActiveView("setup");
 					break;
 				case "update":
-					agent.stop();
-					iteration.pause();
+					agentStop();
+					iterationPause();
 					setActiveView("update");
 					break;
 				case "help":
-					agent.stop();
-					iteration.pause();
+					agentStop();
+					iterationPause();
 					setActiveView("help");
 					break;
 				case "add":
-					agent.stop();
-					iteration.pause();
+					agentStop();
+					iterationPause();
 					setActiveView("add");
 					break;
 				case "quit":
@@ -314,24 +108,24 @@ export function RunApp({
 					break;
 			}
 		},
-		[agent, iteration, exit, startIterations, resumeSession, stopAgent],
+		[agentStop, iterationPause, exit, startIterations, resumeSession, stopAgent, setActiveView],
 	);
 
 	const handleViewComplete = useCallback(() => {
 		setActiveView("run");
 		revalidateAndGoIdle();
-	}, [revalidateAndGoIdle]);
+	}, [revalidateAndGoIdle, setActiveView]);
 
 	const handleHelpClose = useCallback(() => {
 		setActiveView("run");
-		if (appState === "running" && iteration.isPaused) {
-			iteration.resume();
+		if (appState === "running" && iterationIsPaused) {
+			iterationResume();
 		}
-	}, [appState, iteration]);
+	}, [appState, iterationIsPaused, iterationResume, setActiveView]);
 
 	useInput(
 		(_input, key) => {
-			if (key.escape && agent.isStreaming && activeView === "run") {
+			if (key.escape && agentIsStreaming && activeView === "run") {
 				stopAgent();
 			}
 		},
@@ -339,31 +133,10 @@ export function RunApp({
 	);
 
 	useEffect(() => {
-		const warning = validateProject();
-		if (warning) {
-			setValidationWarning(warning);
-			setAppState("not_initialized");
-			return;
-		}
-
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
-
-		setConfig(loadedConfig);
-		setPrd(loadedPrd);
-
-		const existingSession = loadSession();
-		if (isSessionResumable(existingSession)) {
-			setPendingSession(existingSession);
-			if (autoResume) {
-				setAppState("idle");
-			} else {
-				setAppState("resume_prompt");
-			}
-		} else {
-			setAppState("idle");
-		}
-	}, [autoResume]);
+		setIterations(iterations);
+		setupIterationCallbacks(iterations);
+		loadInitialState(autoResume);
+	}, [autoResume, iterations, loadInitialState, setIterations]);
 
 	useEffect(() => {
 		if (autoResume && pendingSession && appState === "idle") {
@@ -378,96 +151,33 @@ export function RunApp({
 	}, [autoStart, autoResume, appState, pendingSession, startIterations]);
 
 	useEffect(() => {
-		if (
-			iteration.isRunning &&
-			iteration.current > 0 &&
-			!agent.isStreaming &&
-			!iteration.isDelaying
-		) {
-			agent.start();
+		if (iterationIsRunning && iterationCurrent > 0 && !agentIsStreaming && !iterationIsDelaying) {
+			agentStart();
 		}
-	}, [
-		iteration.isRunning,
-		iteration.current,
-		iteration.isDelaying,
-		agent.isStreaming,
-		agent.start,
-	]);
+	}, [iterationIsRunning, iterationCurrent, iterationIsDelaying, agentIsStreaming, agentStart]);
 
 	useEffect(() => {
-		if (!agent.isStreaming && agent.exitCode !== null) {
+		if (!agentIsStreaming && agentExitCode !== null) {
 			handleAgentComplete();
 		}
-	}, [agent.isStreaming, agent.exitCode, handleAgentComplete]);
-
-	useEffect(() => {
-		if (iteration.current >= iteration.total && !agent.isStreaming && appState === "running") {
-			if (!agent.isComplete) {
-				const currentConfig = loadConfig();
-				const logger = getLogger({ logFilePath: currentConfig.logFilePath });
-				logger.logMaxIterationsReached(iteration.total);
-				sendNotifications(currentConfig.notifications, "max_iterations", prd?.project, {
-					completedIterations: iteration.current,
-					totalIterations: iteration.total,
-				});
-				if (currentSession) {
-					const stoppedSession = updateSessionStatus(currentSession, "stopped");
-					saveSession(stoppedSession);
-					setCurrentSession(stoppedSession);
-				}
-				setAppState("max_iterations");
-			}
-		}
-	}, [
-		iteration.current,
-		iteration.total,
-		agent.isStreaming,
-		agent.isComplete,
-		appState,
-		prd?.project,
-		currentSession,
-	]);
+	}, [agentIsStreaming, agentExitCode, handleAgentComplete]);
 
 	useEffect(() => {
 		if (appState !== "running" || activeView !== "run") return;
 
+		const incrementElapsedTime = useAppStore.getState().incrementElapsedTime;
 		const timer = setInterval(() => {
-			setElapsedTime((prev) => prev + 1);
+			incrementElapsedTime();
 		}, 1000);
 
 		return () => clearInterval(timer);
 	}, [appState, activeView]);
 
 	useEffect(() => {
-		if (agent.error?.startsWith("Fatal error:") && appState === "running") {
-			const currentConfig = loadConfig();
-			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
-			logger.error("Fatal error occurred", { error: agent.error });
-			sendNotifications(currentConfig.notifications, "fatal_error", prd?.project, {
-				error: agent.error,
-			});
-			if (currentSession) {
-				const stoppedSession = updateSessionStatus(currentSession, "stopped");
-				saveSession(stoppedSession);
-				setCurrentSession(stoppedSession);
-			}
-			setAppState("error");
+		if (agentError?.startsWith("Fatal error:") && appState === "running") {
+			handleFatalError(agentError);
 		}
-	}, [agent.error, appState, prd?.project, currentSession]);
-
-	const getStatus = () => {
-		if (appState === "error") return "error";
-		if (appState === "complete") return "complete";
-		if (agent.isStreaming) return "running";
-		if (iteration.isDelaying) return "idle";
-		return "idle";
-	};
-
-	const currentTaskIndex = prd ? getCurrentTaskIndex(prd) : undefined;
-	const currentTask =
-		prd && currentTaskIndex !== undefined && currentTaskIndex >= 0
-			? prd.tasks[currentTaskIndex]?.title
-			: undefined;
+	}, [agentError, appState, handleFatalError]);
 
 	if (activeView === "init") {
 		return <InitWizard version={version} onComplete={handleViewComplete} />;
@@ -555,28 +265,11 @@ export function RunApp({
 		<Box flexDirection="column" minHeight={20}>
 			<Header version={version} agent={config?.agent} projectName={prd?.project} />
 
-			{prd && (
-				<TaskList
-					tasks={prd.tasks}
-					currentTaskIndex={currentTaskIndex}
-					collapsed={agent.isStreaming}
-				/>
-			)}
+			<TaskList />
 
-			<IterationProgress
-				current={iteration.current}
-				total={iteration.total}
-				isRunning={iteration.isRunning}
-				isDelaying={iteration.isDelaying}
-			/>
+			<IterationProgress />
 
-			<AgentOutput
-				output={agent.output}
-				isStreaming={agent.isStreaming}
-				error={agent.error}
-				retryCount={agent.retryCount}
-				isRetrying={agent.isRetrying}
-			/>
+			<AgentOutput />
 
 			{appState === "idle" && (
 				<Box paddingX={1} marginY={1}>
@@ -596,14 +289,14 @@ export function RunApp({
 			{appState === "max_iterations" && (
 				<Box paddingX={1} marginY={1}>
 					<Message type="warning">
-						Completed {iteration.total} iterations. PRD is not completed.
+						Completed {iterationTotal} iterations. PRD is not completed.
 					</Message>
 				</Box>
 			)}
 
-			<CommandInput onCommand={handleSlashCommand} isRunning={agent.isStreaming} />
+			<CommandInput onCommand={handleSlashCommand} isRunning={agentIsStreaming} />
 
-			<StatusBar status={getStatus()} elapsedTime={elapsedTime} currentTask={currentTask} />
+			<StatusBar />
 		</Box>
 	);
 }

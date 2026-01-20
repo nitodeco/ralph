@@ -1,13 +1,6 @@
 import { Box, Static, Text } from "ink";
+import { useAgentStore } from "../stores/index.ts";
 import { Spinner } from "./common/Spinner.tsx";
-
-interface AgentOutputProps {
-	output: string;
-	isStreaming: boolean;
-	error?: string | null;
-	retryCount?: number;
-	isRetrying?: boolean;
-}
 
 interface OutputLine {
 	id: string;
@@ -21,13 +14,13 @@ function parseOutputLines(output: string): OutputLine[] {
 	}));
 }
 
-export function AgentOutput({
-	output,
-	isStreaming,
-	error,
-	retryCount = 0,
-	isRetrying = false,
-}: AgentOutputProps): React.ReactElement {
+export function AgentOutput(): React.ReactElement {
+	const output = useAgentStore((state) => state.output);
+	const isStreaming = useAgentStore((state) => state.isStreaming);
+	const error = useAgentStore((state) => state.error);
+	const retryCount = useAgentStore((state) => state.retryCount);
+	const isRetrying = useAgentStore((state) => state.isRetrying);
+
 	const lines = parseOutputLines(output);
 	const completedLines = isStreaming ? lines.slice(0, -1) : lines;
 	const currentLine = isStreaming ? lines[lines.length - 1] : null;
