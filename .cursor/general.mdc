@@ -5,6 +5,7 @@ alwaysApply: true
 # Guidelines
 
 - Use `bun` as package manager and runtime, and use `bunx` insted of `npx`
+- Never use pnpm or any other package manager, always use bun!
 - Use typescript best practices
 - This is a CLI project
 - After every implementation, run `bun check` to ensure the code is correct

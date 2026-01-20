@@ -1,6 +1,7 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
+import { checkAndRotateFile, formatTimestamp } from "./logging-utils.ts";
+import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -29,11 +30,6 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 	error: 3,
 };
 
-function formatTimestamp(): string {
-	const now = new Date();
-	return now.toISOString();
-}
-
 function formatLogEntry(entry: LogEntry): string {
 	const levelTag = `[${entry.level.toUpperCase()}]`.padEnd(7);
 	const contextStr = entry.context ? ` ${JSON.stringify(entry.context)}` : "";
@@ -44,48 +40,11 @@ function shouldLog(logLevel: LogLevel, minLevel: LogLevel): boolean {
 	return LOG_LEVEL_PRIORITY[logLevel] >= LOG_LEVEL_PRIORITY[minLevel];
 }
 
-function rotateLogFile(logFilePath: string, maxBackupFiles: number): void {
-	if (!existsSync(logFilePath)) {
-		return;
-	}
-
-	for (let backupIndex = maxBackupFiles - 1; backupIndex >= 0; backupIndex--) {
-		const currentBackup = backupIndex === 0 ? logFilePath : `${logFilePath}.${backupIndex}`;
-		const nextBackup = `${logFilePath}.${backupIndex + 1}`;
-
-		if (existsSync(currentBackup)) {
-			if (backupIndex === maxBackupFiles - 1) {
-				continue;
-			}
-			try {
-				renameSync(currentBackup, nextBackup);
-			} catch {}
-		}
-	}
-}
-
 function ensureLogDirectoryExists(logFilePath: string): void {
 	const logDir = dirname(logFilePath);
 	if (!existsSync(logDir)) {
 		mkdirSync(logDir, { recursive: true });
 	}
-}
-
-function checkAndRotate(
-	logFilePath: string,
-	maxFileSizeBytes: number,
-	maxBackupFiles: number,
-): void {
-	if (!existsSync(logFilePath)) {
-		return;
-	}
-
-	try {
-		const stats = statSync(logFilePath);
-		if (stats.size >= maxFileSizeBytes) {
-			rotateLogFile(logFilePath, maxBackupFiles);
-		}
-	} catch {}
 }
 
 class Logger {
@@ -107,7 +66,7 @@ class Logger {
 		try {
 			ensureRalphDirExists();
 			ensureLogDirectoryExists(logFilePath);
-			checkAndRotate(logFilePath, this.config.maxFileSizeBytes, this.config.maxBackupFiles);
+			checkAndRotateFile(logFilePath, this.config.maxFileSizeBytes, this.config.maxBackupFiles);
 			appendFileSync(logFilePath, `${formattedEntry}\n`);
 		} catch {}
 	}

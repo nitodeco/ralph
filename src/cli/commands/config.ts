@@ -1,0 +1,119 @@
+import {
+	CONFIG_DEFAULTS,
+	getEffectiveConfig,
+	getGlobalConfigPath,
+	getProjectConfigPath,
+	validateConfig,
+} from "@/lib/config.ts";
+import type { ConfigOutput } from "@/types.ts";
+import { formatBytes, formatDuration } from "../formatters.ts";
+
+export function printConfig(version: string, jsonOutput: boolean): void {
+	const { global: globalConfig, project: projectConfig, effective } = getEffectiveConfig();
+	const validation = validateConfig(effective);
+
+	if (jsonOutput) {
+		const output: ConfigOutput = {
+			global: {
+				path: getGlobalConfigPath(),
+				exists: globalConfig !== null,
+				values: globalConfig,
+			},
+			project: {
+				path: getProjectConfigPath(),
+				exists: projectConfig !== null,
+				values: projectConfig,
+			},
+			effective: effective as unknown as Record<string, unknown>,
+			validation: {
+				valid: validation.valid,
+				errors: validation.errors,
+				warnings: validation.warnings,
+			},
+		};
+		console.log(JSON.stringify(output, null, 2));
+		return;
+	}
+
+	console.log(`◆ ralph v${version} - Configuration\n`);
+
+	console.log("Config Files:");
+	console.log(`  Global:  ${getGlobalConfigPath()} ${globalConfig ? "(exists)" : "(not found)"}`);
+	console.log(`  Project: ${getProjectConfigPath()} ${projectConfig ? "(exists)" : "(not found)"}`);
+
+	console.log(`\n${"─".repeat(60)}`);
+	console.log("\nEffective Configuration:\n");
+
+	console.log("  Agent Settings:");
+	console.log(`    agent:            ${effective.agent}`);
+	console.log(`    prdFormat:        ${effective.prdFormat}`);
+
+	console.log("\n  Retry Settings:");
+	console.log(`    maxRetries:       ${effective.maxRetries}`);
+	console.log(
+		`    retryDelayMs:     ${effective.retryDelayMs} (${formatDuration(effective.retryDelayMs ?? 0)})`,
+	);
+
+	console.log("\n  Timeout Settings:");
+	console.log(
+		`    agentTimeoutMs:   ${effective.agentTimeoutMs} (${formatDuration(effective.agentTimeoutMs ?? 0)})`,
+	);
+	console.log(
+		`    stuckThresholdMs: ${effective.stuckThresholdMs} (${formatDuration(effective.stuckThresholdMs ?? 0)})`,
+	);
+
+	console.log("\n  Logging:");
+	console.log(`    logFilePath:      ${effective.logFilePath}`);
+
+	console.log("\n  Notifications:");
+	if (effective.notifications) {
+		console.log(
+			`    systemNotification: ${effective.notifications.systemNotification ? "enabled" : "disabled"}`,
+		);
+		console.log(`    webhookUrl:         ${effective.notifications.webhookUrl ?? "(not set)"}`);
+		console.log(`    markerFilePath:     ${effective.notifications.markerFilePath ?? "(not set)"}`);
+	} else {
+		console.log("    (not configured)");
+	}
+
+	console.log("\n  Memory Management:");
+	if (effective.memory) {
+		const bufferSize =
+			effective.memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
+		console.log(`    maxOutputBuffer:    ${formatBytes(bufferSize)}`);
+		const warningThreshold = effective.memory.memoryWarningThresholdMb;
+		console.log(
+			`    memoryWarning:      ${warningThreshold === 0 ? "disabled" : `${warningThreshold}MB`}`,
+		);
+		console.log(
+			`    gcHints:            ${effective.memory.enableGarbageCollectionHints ? "enabled" : "disabled"}`,
+		);
+	} else {
+		console.log("    (using defaults)");
+	}
+
+	console.log(`\n${"─".repeat(60)}`);
+
+	if (!validation.valid) {
+		console.log("\nValidation Errors:");
+		for (const error of validation.errors) {
+			const valueInfo = error.value !== undefined ? ` (got: ${JSON.stringify(error.value)})` : "";
+			console.log(`  \x1b[31m✗\x1b[0m ${error.field}: ${error.message}${valueInfo}`);
+		}
+	}
+
+	if (validation.warnings.length > 0) {
+		console.log("\nWarnings:");
+		for (const warning of validation.warnings) {
+			const valueInfo =
+				warning.value !== undefined ? ` (value: ${JSON.stringify(warning.value)})` : "";
+			console.log(`  \x1b[33m!\x1b[0m ${warning.field}: ${warning.message}${valueInfo}`);
+		}
+	}
+
+	if (validation.valid && validation.warnings.length === 0) {
+		console.log("\n\x1b[32m✓\x1b[0m Configuration is valid");
+	}
+
+	console.log("\nRun 'ralph setup' to reconfigure settings.");
+}

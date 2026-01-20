@@ -1,44 +1,5 @@
-import type { AgentResult, AgentType } from "@/types.ts";
-import { getAgentCommand, loadConfig } from "./config.ts";
-import { loadInstructions } from "./prd.ts";
-import { buildPrompt, COMPLETION_MARKER } from "./prompt.ts";
-
-export async function runAgent(): Promise<AgentResult> {
-	const instructions = loadInstructions();
-	const prompt = buildPrompt({ instructions });
-	const config = loadConfig();
-	const baseCommand = getAgentCommand(config.agent);
-
-	const process = Bun.spawn([...baseCommand, prompt], {
-		stdin: null,
-		stdout: "pipe",
-		stderr: "pipe",
-	});
-
-	const outputChunks: string[] = [];
-
-	const stdoutReader = process.stdout.getReader();
-	const decoder = new TextDecoder();
-
-	while (true) {
-		const { done, value } = await stdoutReader.read();
-		if (done) break;
-
-		const text = decoder.decode(value);
-		outputChunks.push(text);
-		Bun.write(Bun.stdout, text);
-	}
-
-	const exitCode = await process.exited;
-	const output = outputChunks.join("");
-	const isComplete = output.includes(COMPLETION_MARKER);
-
-	return {
-		output,
-		isComplete,
-		exitCode,
-	};
-}
+import type { AgentType } from "@/types.ts";
+import { getAgentCommand } from "./config.ts";
 
 export interface RunAgentWithPromptOptions {
 	prompt: string;
@@ -78,3 +39,5 @@ export async function runAgentWithPrompt({
 	await agentProcess.exited;
 	return outputChunks.join("");
 }
+
+export { AgentRunner, type AgentRunnerConfig, type AgentRunResult } from "./AgentRunner.ts";

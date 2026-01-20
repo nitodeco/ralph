@@ -1,53 +1,14 @@
-import {
-	appendFileSync,
-	existsSync,
-	readFileSync,
-	renameSync,
-	statSync,
-	writeFileSync,
-} from "node:fs";
-import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import type { ProgressEntry, SessionSummary } from "@/types.ts";
+import { checkAndRotateFile, formatTimestamp } from "./logging-utils.ts";
+import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
+
+export type { ProgressEntry, ProgressEntryType, SessionSummary } from "@/types.ts";
 
 export const PROGRESS_FILE_PATH = `${RALPH_DIR}/progress.txt`;
 
-export type ProgressEntryType =
-	| "session_start"
-	| "session_resume"
-	| "iteration_start"
-	| "iteration_complete"
-	| "task_complete"
-	| "error"
-	| "retry"
-	| "session_complete"
-	| "session_stopped"
-	| "max_iterations";
-
-export interface ProgressEntry {
-	timestamp: string;
-	type: ProgressEntryType;
-	iteration?: number;
-	totalIterations?: number;
-	message: string;
-	context?: Record<string, unknown>;
-}
-
-export interface SessionSummary {
-	projectName: string;
-	startedAt: string;
-	lastUpdatedAt: string;
-	totalIterations: number;
-	completedIterations: number;
-	tasksCompleted: number;
-	totalTasks: number;
-	status: string;
-}
-
 const DEFAULT_MAX_FILE_SIZE_BYTES = 1024 * 1024;
 const DEFAULT_MAX_BACKUP_FILES = 2;
-
-function formatTimestamp(): string {
-	return new Date().toISOString();
-}
 
 function formatEntryLine(entry: ProgressEntry): string {
 	const iterationInfo =
@@ -77,41 +38,11 @@ function formatSessionSummary(summary: SessionSummary): string {
 	return lines.join("\n");
 }
 
-function rotateProgressFile(maxBackupFiles: number): void {
-	if (!existsSync(PROGRESS_FILE_PATH)) {
-		return;
-	}
-
-	for (let backupIndex = maxBackupFiles - 1; backupIndex >= 0; backupIndex--) {
-		const currentBackup =
-			backupIndex === 0 ? PROGRESS_FILE_PATH : `${PROGRESS_FILE_PATH}.${backupIndex}`;
-		const nextBackup = `${PROGRESS_FILE_PATH}.${backupIndex + 1}`;
-
-		if (existsSync(currentBackup)) {
-			if (backupIndex === maxBackupFiles - 1) {
-				continue;
-			}
-			try {
-				renameSync(currentBackup, nextBackup);
-			} catch {}
-		}
-	}
-}
-
 function checkAndRotate(
 	maxFileSizeBytes: number = DEFAULT_MAX_FILE_SIZE_BYTES,
 	maxBackupFiles: number = DEFAULT_MAX_BACKUP_FILES,
 ): void {
-	if (!existsSync(PROGRESS_FILE_PATH)) {
-		return;
-	}
-
-	try {
-		const stats = statSync(PROGRESS_FILE_PATH);
-		if (stats.size >= maxFileSizeBytes) {
-			rotateProgressFile(maxBackupFiles);
-		}
-	} catch {}
+	checkAndRotateFile(PROGRESS_FILE_PATH, maxFileSizeBytes, maxBackupFiles);
 }
 
 export function writeProgressEntry(entry: ProgressEntry): void {

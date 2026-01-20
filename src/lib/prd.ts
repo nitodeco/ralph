@@ -1,23 +1,20 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import type { Prd, PrdTask, TaskPriority } from "@/types.ts";
+import type {
+	DependencyValidationResult,
+	LoadPrdResult,
+	Prd,
+	PrdTask,
+	TaskPriority,
+} from "@/types.ts";
+import { RALPH_DIR } from "./paths.ts";
 
-export const RALPH_DIR = ".ralph";
+export type { DependencyValidationResult, LoadPrdResult } from "@/types.ts";
+export { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
+
 export const INSTRUCTIONS_FILE_PATH = `${RALPH_DIR}/instructions.md`;
 const PRD_JSON_PATH = `${RALPH_DIR}/prd.json`;
 const PRD_YAML_PATH = `${RALPH_DIR}/prd.yaml`;
-
-export interface DependencyValidationResult {
-	valid: boolean;
-	error?: string;
-	circularPath?: string[];
-}
-
-export function ensureRalphDirExists(): void {
-	if (!existsSync(RALPH_DIR)) {
-		mkdirSync(RALPH_DIR, { recursive: true });
-	}
-}
 
 export function findPrdFile(): string | null {
 	if (existsSync(PRD_JSON_PATH)) {
@@ -27,11 +24,6 @@ export function findPrdFile(): string | null {
 		return PRD_YAML_PATH;
 	}
 	return null;
-}
-
-export interface LoadPrdResult {
-	prd: Prd | null;
-	validationError?: string;
 }
 
 export function loadPrd(skipValidation = false): Prd | null {

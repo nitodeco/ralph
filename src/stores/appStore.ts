@@ -1,9 +1,10 @@
 import { existsSync } from "node:fs";
 import { create } from "zustand";
 import { loadConfig } from "@/lib/config.ts";
+import { DEFAULTS } from "@/lib/defaults.ts";
 import { getLogger } from "@/lib/logger.ts";
-import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
+import { RALPH_DIR } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
 	findPrdFile,
@@ -11,14 +12,9 @@ import {
 	getTaskByIndex,
 	getTaskByTitle,
 	loadPrd,
-	RALPH_DIR,
 } from "@/lib/prd.ts";
 import {
 	logError as logProgressError,
-	logIterationComplete as logProgressIterationComplete,
-	logIterationStart as logProgressIterationStart,
-	logMaxIterationsReached as logProgressMaxIterations,
-	logSessionComplete as logProgressSessionComplete,
 	logSessionResume as logProgressSessionResume,
 	logSessionStart as logProgressSessionStart,
 	logSessionStopped as logProgressSessionStopped,
@@ -30,28 +26,23 @@ import {
 	isSessionResumable,
 	loadSession,
 	saveSession,
-	updateSessionIteration,
 	updateSessionStatus,
 } from "@/lib/session.ts";
-import type { Prd, PrdTask, RalphConfig, Session } from "@/types.ts";
+import type {
+	ActiveView,
+	AppState,
+	Prd,
+	PrdTask,
+	RalphConfig,
+	Session,
+	SetManualTaskResult,
+	ValidationWarning,
+} from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
+import { orchestrator } from "./orchestrator.ts";
 
-export type AppState =
-	| "idle"
-	| "running"
-	| "complete"
-	| "error"
-	| "max_iterations"
-	| "not_initialized"
-	| "resume_prompt";
-
-export type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add";
-
-export interface ValidationWarning {
-	message: string;
-	hint: string;
-}
+export type { ActiveView, AppState, SetManualTaskResult, ValidationWarning } from "@/types.ts";
 
 interface AppStoreState {
 	appState: AppState;
@@ -65,12 +56,6 @@ interface AppStoreState {
 	iterations: number;
 	manualNextTask: string | null;
 	singleTaskMode: boolean;
-}
-
-export interface SetManualTaskResult {
-	success: boolean;
-	error?: string;
-	taskTitle?: string;
 }
 
 interface AppStoreActions {
@@ -94,8 +79,6 @@ interface AppStoreActions {
 }
 
 type AppStore = AppStoreState & AppStoreActions;
-
-const DEFAULT_ITERATIONS = 10;
 
 function validateProject(): ValidationWarning | null {
 	const prdFile = findPrdFile();
@@ -129,7 +112,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	elapsedTime: 0,
 	pendingSession: null,
 	currentSession: null,
-	iterations: DEFAULT_ITERATIONS,
+	iterations: DEFAULTS.iterations,
 	singleTaskMode: false,
 	manualNextTask: null,
 
@@ -212,7 +195,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		deleteSession();
 		set({ pendingSession: null });
 
-		let totalIters = iterationCount || state.iterations || DEFAULT_ITERATIONS;
+		let totalIters = iterationCount || state.iterations || DEFAULTS.iterations;
 		if (full && loadedPrd) {
 			const incompleteTasks = loadedPrd.tasks.filter((task) => !task.done).length;
 			totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
@@ -506,108 +489,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 }));
 
 export function setupIterationCallbacks(iterations: number) {
-	const iterationStore = useIterationStore.getState();
-
-	iterationStore.setCallbacks({
-		onIterationStart: (iterationNumber: number) => {
-			const appState = useAppStore.getState();
-			const loadedConfig = loadConfig();
-			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-			logger.logIterationStart(iterationNumber, iterations);
-			const currentPrd = loadPrd();
-			const currentTask = currentPrd ? getNextTask(currentPrd) : null;
-			logProgressIterationStart(iterationNumber, iterations, currentTask ?? undefined);
-			useAgentStore.getState().reset();
-			if (currentPrd) {
-				appState.setPrd(currentPrd);
-			}
-		},
-		onIterationComplete: (iterationNumber: number) => {
-			const appState = useAppStore.getState();
-			const agentStore = useAgentStore.getState();
-			const loadedConfig = loadConfig();
-			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-			logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
-			const currentPrd = loadPrd();
-			const taskTitle = currentPrd ? getNextTask(currentPrd) : undefined;
-			logProgressIterationComplete(
-				iterationNumber,
-				iterations,
-				agentStore.isComplete,
-				taskTitle ?? undefined,
-			);
-			if (appState.currentSession) {
-				const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
-				const updatedSession = updateSessionIteration(
-					appState.currentSession,
-					iterationNumber,
-					taskIndex,
-					appState.elapsedTime,
-				);
-				saveSession(updatedSession);
-				useAppStore.setState({ currentSession: updatedSession });
-			}
-
-			agentStore.clearOutput();
-			const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
-			if (cleanupResult.memoryStatus !== "ok") {
-				logger.warn("Memory cleanup completed with warnings", {
-					status: cleanupResult.memoryStatus,
-					tempFilesRemoved: cleanupResult.tempFilesRemoved,
-				});
-			}
-		},
-		onAllComplete: () => {
-			const appState = useAppStore.getState();
-			useAgentStore.getState().stop();
-			const loadedConfig = loadConfig();
-			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-			logger.logSessionComplete();
-			const currentPrd = loadPrd();
-			const totalTasks = currentPrd?.tasks.length ?? 0;
-			logProgressSessionComplete(
-				currentPrd?.project ?? "Unknown Project",
-				iterations,
-				totalTasks,
-				appState.elapsedTime,
-			);
-			sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
-				totalIterations: iterations,
-			});
-			useAppStore.setState({ appState: "complete" });
-			if (appState.currentSession) {
-				const completedSession = updateSessionStatus(appState.currentSession, "completed");
-				saveSession(completedSession);
-				deleteSession();
-				useAppStore.setState({ currentSession: null });
-			}
-		},
-		onMaxIterations: () => {
-			const appState = useAppStore.getState();
-			const iterationState = useIterationStore.getState();
-			useAgentStore.getState().stop();
-			const loadedConfig = loadConfig();
-			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-			logger.logMaxIterationsReached(iterationState.total);
-			const currentPrd = loadPrd();
-			const totalTasks = currentPrd?.tasks.length ?? 0;
-			const completedTasks = currentPrd?.tasks.filter((task) => task.done).length ?? 0;
-			logProgressMaxIterations(
-				currentPrd?.project ?? "Unknown Project",
-				iterationState.total,
-				completedTasks,
-				totalTasks,
-			);
-			sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
-				completedIterations: iterationState.current,
-				totalIterations: iterationState.total,
-			});
-			if (appState.currentSession) {
-				const stoppedSession = updateSessionStatus(appState.currentSession, "stopped");
-				saveSession(stoppedSession);
-				useAppStore.setState({ currentSession: stoppedSession });
-			}
-			useAppStore.setState({ appState: "max_iterations" });
-		},
-	});
+	const loadedConfig = loadConfig();
+	orchestrator.initialize({ config: loadedConfig, iterations });
+	orchestrator.setupIterationCallbacks();
 }

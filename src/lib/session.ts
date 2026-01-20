@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import type { Session, SessionStatus } from "@/types.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
+import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
 
 const SESSION_FILE_PATH = `${RALPH_DIR}/session.json`;
 

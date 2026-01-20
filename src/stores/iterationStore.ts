@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULTS } from "@/lib/defaults.ts";
 
 interface IterationState {
 	current: number;
@@ -30,8 +31,6 @@ interface IterationActions {
 type IterationStore = IterationState &
 	IterationActions & { callbacks: IterationCallbacks; delayMs: number };
 
-const DEFAULT_DELAY_MS = 2000;
-
 const INITIAL_STATE: IterationState = {
 	current: 0,
 	total: 10,
@@ -53,7 +52,7 @@ function clearDelayTimeout() {
 export const useIterationStore = create<IterationStore>((set, get) => ({
 	...INITIAL_STATE,
 	callbacks: {},
-	delayMs: DEFAULT_DELAY_MS,
+	delayMs: DEFAULTS.iterationDelayMs,
 
 	setCallbacks: (callbacks: IterationCallbacks) => {
 		set({ callbacks });

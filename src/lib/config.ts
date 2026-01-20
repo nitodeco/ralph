@@ -1,67 +1,63 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type {
 	AgentType,
+	ConfigValidationError,
+	ConfigValidationResult,
 	MemoryConfig,
 	NotificationConfig,
 	PrdFormat,
 	RalphConfig,
 } from "@/types.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
+import { DEFAULTS } from "./defaults.ts";
+import {
+	ensureGlobalRalphDirExists,
+	ensureRalphDirExists,
+	GLOBAL_RALPH_DIR,
+	RALPH_DIR,
+} from "./paths.ts";
 
-const GLOBAL_RALPH_DIR = join(homedir(), ".ralph");
 const GLOBAL_CONFIG_PATH = join(GLOBAL_RALPH_DIR, "config.json");
 const PROJECT_CONFIG_PATH = `${RALPH_DIR}/config.json`;
 
-export const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
-export const DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000;
-export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = 5 * 1024 * 1024;
-export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = 500;
-export const DEFAULT_ENABLE_GC_HINTS = true;
+export const DEFAULT_AGENT_TIMEOUT_MS = DEFAULTS.agentTimeoutMs;
+export const DEFAULT_STUCK_THRESHOLD_MS = DEFAULTS.stuckThresholdMs;
+export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = DEFAULTS.maxOutputBufferBytes;
+export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = DEFAULTS.memoryWarningThresholdMb;
+export const DEFAULT_ENABLE_GC_HINTS = DEFAULTS.enableGcHints;
 
 export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
-	agent: "cursor",
-	prdFormat: "json",
-	maxRetries: 3,
-	retryDelayMs: 5000,
-	logFilePath: ".ralph/ralph.log",
-	agentTimeoutMs: DEFAULT_AGENT_TIMEOUT_MS,
-	stuckThresholdMs: DEFAULT_STUCK_THRESHOLD_MS,
+	agent: DEFAULTS.agent,
+	prdFormat: DEFAULTS.prdFormat,
+	maxRetries: DEFAULTS.maxRetries,
+	retryDelayMs: DEFAULTS.retryDelayMs,
+	logFilePath: DEFAULTS.logFilePath,
+	agentTimeoutMs: DEFAULTS.agentTimeoutMs,
+	stuckThresholdMs: DEFAULTS.stuckThresholdMs,
 	notifications: {
 		systemNotification: false,
 		webhookUrl: undefined,
 		markerFilePath: undefined,
 	},
 	memory: {
-		maxOutputBufferBytes: DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
-		memoryWarningThresholdMb: DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
-		enableGarbageCollectionHints: true,
+		maxOutputBufferBytes: DEFAULTS.maxOutputBufferBytes,
+		memoryWarningThresholdMb: DEFAULTS.memoryWarningThresholdMb,
+		enableGarbageCollectionHints: DEFAULTS.enableGcHints,
 	},
-	maxOutputHistoryBytes: DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
+	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
 };
 
 const DEFAULT_CONFIG: RalphConfig = {
-	agent: "cursor",
-	prdFormat: "json",
-	maxRetries: 3,
-	retryDelayMs: 5000,
+	agent: DEFAULTS.agent,
+	prdFormat: DEFAULTS.prdFormat,
+	maxRetries: DEFAULTS.maxRetries,
+	retryDelayMs: DEFAULTS.retryDelayMs,
 };
 
 const VALID_AGENTS: AgentType[] = ["cursor", "claude"];
 const VALID_PRD_FORMATS: PrdFormat[] = ["json", "yaml"];
 
-export interface ConfigValidationError {
-	field: string;
-	message: string;
-	value?: unknown;
-}
-
-export interface ConfigValidationResult {
-	valid: boolean;
-	errors: ConfigValidationError[];
-	warnings: ConfigValidationError[];
-}
+export type { ConfigValidationError, ConfigValidationResult } from "@/types.ts";
 
 function validatePositiveInteger(
 	value: unknown,
@@ -451,12 +447,6 @@ export const AGENT_COMMANDS: Record<AgentType, string[]> = {
 	cursor: ["agent", "-p", "--force", "--output-format", "stream-json", "--stream-partial-output"],
 	claude: ["claude", "-p", "--dangerously-skip-permissions"],
 };
-
-function ensureGlobalRalphDirExists(): void {
-	if (!existsSync(GLOBAL_RALPH_DIR)) {
-		mkdirSync(GLOBAL_RALPH_DIR, { recursive: true });
-	}
-}
 
 export function loadGlobalConfig(): RalphConfig {
 	if (!existsSync(GLOBAL_CONFIG_PATH)) {

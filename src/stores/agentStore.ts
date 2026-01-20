@@ -2,6 +2,7 @@ import type { Subprocess } from "bun";
 import { create } from "zustand";
 import { getAgentCommand, loadConfig } from "@/lib/config.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
+import { DEFAULTS } from "@/lib/defaults.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
@@ -9,9 +10,6 @@ import { logError as logProgressError, logRetry as logProgressRetry } from "@/li
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
 import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
-
-const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
-const DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000;
 
 interface AgentState {
 	output: string;
@@ -146,8 +144,8 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	const config = loadConfig();
 	const logger = getLogger({ logFilePath: config.logFilePath });
 	const baseCommand = getAgentCommand(config.agent);
-	const agentTimeoutMs = config.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
-	const stuckThresholdMs = config.stuckThresholdMs ?? DEFAULT_STUCK_THRESHOLD_MS;
+	const agentTimeoutMs = config.agentTimeoutMs ?? DEFAULTS.agentTimeoutMs;
+	const stuckThresholdMs = config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs;
 
 	logger.logAgentStart(config.agent, prompt);
 
