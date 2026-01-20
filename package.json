@@ -14,7 +14,8 @@
 		"check": "biome format --write && biome check --write --unsafe",
 		"prepare": "husky",
 		"changeset": "changeset",
-		"version": "changeset version"
+		"version": "changeset version",
+		"release": "bun run build"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.11",
