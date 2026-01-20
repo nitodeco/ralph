@@ -1,34 +1,7 @@
 import type { ConfigService } from "./config/types.ts";
+import type { PrdService } from "./prd/types.ts";
 import type { SessionService } from "./session/types.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
-
-export interface LoadPrdResult {
-	prd: Prd | null;
-	validationError?: string;
-}
-
-export interface Prd {
-	project: string;
-	tasks: PrdTask[];
-}
-
-export interface PrdTask {
-	title: string;
-	description: string;
-	steps: string[];
-	done: boolean;
-}
-
-export interface PrdService {
-	get(verbose?: boolean): Prd | null;
-	load(verbose?: boolean): Prd | null;
-	loadWithValidation(): LoadPrdResult;
-	reload(verbose?: boolean): Prd | null;
-	reloadWithValidation(): LoadPrdResult;
-	save(prd: Prd): void;
-	invalidate(): void;
-	findPrdFile(): string | null;
-}
 
 export interface ServiceContainer {
 	config: ConfigService;

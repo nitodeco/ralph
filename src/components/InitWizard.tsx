@@ -9,7 +9,7 @@ import { ensureRalphDirExists, RALPH_DIR } from "@/lib/paths.ts";
 import { findPrdFile, savePrd } from "@/lib/prd.ts";
 import { PROGRESS_FILE_PATH } from "@/lib/progress.ts";
 import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
-import { isPrd } from "@/lib/type-guards.ts";
+import { isPrd } from "@/lib/services/index.ts";
 import type { AgentType, Prd, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";

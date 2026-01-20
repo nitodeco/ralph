@@ -1,12 +1,8 @@
 import { createConfigService } from "./config/implementation.ts";
 import type { ConfigService } from "./config/types.ts";
-import {
-	initializeServices,
-	type PrdService,
-	resetServices,
-	type ServiceContainer,
-} from "./container.ts";
-import { PrdService as PrdServiceSingleton } from "./PrdService.ts";
+import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
+import { createPrdService } from "./prd/implementation.ts";
+import type { PrdService } from "./prd/types.ts";
 import { createSessionService } from "./session/implementation.ts";
 import type { SessionService } from "./session/types.ts";
 import { createSessionMemoryService } from "./session-memory/implementation.ts";
@@ -15,7 +11,7 @@ import type { SessionMemoryService } from "./session-memory/types.ts";
 export function bootstrapServices(): void {
 	initializeServices({
 		config: createConfigService(),
-		prd: PrdServiceSingleton as PrdService,
+		prd: createPrdService(),
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
 	});
@@ -79,7 +75,16 @@ function createMockPrdService(overrides: Partial<PrdService> = {}): PrdService {
 		reloadWithValidation: () => ({ prd: null }),
 		save: () => {},
 		invalidate: () => {},
-		findPrdFile: () => null,
+		findFile: () => null,
+		isComplete: () => false,
+		getNextTask: () => null,
+		getNextTaskWithIndex: () => null,
+		getTaskByTitle: () => null,
+		getTaskByIndex: () => null,
+		getCurrentTaskIndex: () => -1,
+		canWorkOnTask: () => ({ canWork: true }),
+		createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
+		loadInstructions: () => null,
 		...overrides,
 	};
 }

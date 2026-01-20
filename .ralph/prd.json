@@ -76,7 +76,7 @@
 				"Remove PRD types from src/types/prd.types.ts and PRD type guards from src/lib/type-guards.ts",
 				"Delete src/lib/prd.ts and src/lib/services/PrdService.ts after migration"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Migrate GuardrailsService to new architecture",

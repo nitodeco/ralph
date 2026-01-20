@@ -3,6 +3,11 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { DecompositionHandler } from "@/lib/handlers/DecompositionHandler.ts";
 import { ensureRalphDirExists, PRD_JSON_PATH } from "@/lib/paths.ts";
 import { reloadPrd } from "@/lib/prd.ts";
+import {
+	bootstrapTestServices,
+	createPrdService,
+	teardownTestServices,
+} from "@/lib/services/index.ts";
 import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-decomposition-handler";
@@ -14,6 +19,8 @@ function writePrdFile(prd: Prd): void {
 
 describe("DecompositionHandler", () => {
 	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
@@ -23,6 +30,8 @@ describe("DecompositionHandler", () => {
 	});
 
 	afterEach(() => {
+		teardownTestServices();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}

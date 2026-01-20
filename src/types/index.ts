@@ -1,12 +1,19 @@
 export type {
 	AgentType,
+	CanWorkResult,
 	ConfigService,
 	ConfigValidationError,
 	ConfigValidationResult,
+	DecompositionRequest,
+	DecompositionSubtask,
 	IterationTiming,
+	LoadPrdResult,
 	MemoryConfig,
 	NotificationConfig,
 	NotificationEvent,
+	Prd,
+	PrdService,
+	PrdTask,
 	RalphConfig,
 	Session,
 	SessionMemory,
@@ -15,6 +22,7 @@ export type {
 	SessionService,
 	SessionStatistics,
 	SessionStatus,
+	TaskWithIndex,
 	VerificationConfig,
 } from "@/lib/services/index.ts";
 export type { AgentResult, RunOptions } from "./agent.types.ts";
@@ -40,13 +48,6 @@ export type {
 	PromptGuardrail,
 	VerificationResult,
 } from "./config.types.ts";
-export type {
-	DecompositionRequest,
-	DecompositionSubtask,
-	LoadPrdResult,
-	Prd,
-	PrdTask,
-} from "./prd.types.ts";
 export type {
 	FailureHistory,
 	FailureHistoryEntry,

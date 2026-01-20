@@ -12,6 +12,11 @@ import {
 	isPrdComplete,
 	loadPrdWithValidation,
 } from "@/lib/prd.ts";
+import {
+	bootstrapTestServices,
+	createPrdService,
+	teardownTestServices,
+} from "@/lib/services/index.ts";
 import type { Prd, PrdTask } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-prd";
@@ -19,6 +24,7 @@ const RALPH_DIR = `${TEST_DIR}/.ralph`;
 
 describe("prd functions", () => {
 	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
 		invalidatePrdCache();
 
 		if (existsSync(TEST_DIR)) {
@@ -30,6 +36,8 @@ describe("prd functions", () => {
 	});
 
 	afterEach(() => {
+		teardownTestServices();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
@@ -103,6 +111,14 @@ describe("prd functions", () => {
 });
 
 describe("isPrdComplete", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("returns true when all tasks are done", () => {
 		const prd: Prd = {
 			project: "Test",
@@ -135,6 +151,14 @@ describe("isPrdComplete", () => {
 });
 
 describe("getNextTask", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("returns first incomplete task title", () => {
 		const prd: Prd = {
 			project: "Test",
@@ -168,6 +192,14 @@ describe("getNextTask", () => {
 });
 
 describe("getNextTaskWithIndex", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("returns task with index for first incomplete task", () => {
 		const prd: Prd = {
 			project: "Test",
@@ -194,6 +226,14 @@ describe("getNextTaskWithIndex", () => {
 });
 
 describe("getTaskByTitle", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("finds task by exact title", () => {
 		const prd: Prd = {
 			project: "Test",
@@ -230,6 +270,14 @@ describe("getTaskByTitle", () => {
 });
 
 describe("getTaskByIndex", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("returns task at valid index", () => {
 		const prd: Prd = {
 			project: "Test",
@@ -263,6 +311,14 @@ describe("getTaskByIndex", () => {
 });
 
 describe("canWorkOnTask", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("returns canWork true for incomplete task", () => {
 		const task: PrdTask = { title: "Task", description: "", steps: [], done: false };
 		const result = canWorkOnTask(task);
@@ -281,6 +337,14 @@ describe("canWorkOnTask", () => {
 });
 
 describe("createEmptyPrd", () => {
+	beforeEach(() => {
+		bootstrapTestServices({ prd: createPrdService() });
+	});
+
+	afterEach(() => {
+		teardownTestServices();
+	});
+
 	test("creates PRD with project name and empty tasks", () => {
 		const prd = createEmptyPrd("My Project");
 

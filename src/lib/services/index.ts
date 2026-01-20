@@ -51,14 +51,22 @@ export {
 	getSessionService,
 	initializeServices,
 	isInitialized,
-	type LoadPrdResult,
-	type Prd,
-	type PrdService,
-	type PrdTask,
 	resetServices,
 	type ServiceContainer,
 } from "./container.ts";
 export { IterationTimer } from "./IterationTimer.ts";
+export { createPrdService } from "./prd/implementation.ts";
+export type {
+	CanWorkResult,
+	DecompositionRequest,
+	DecompositionSubtask,
+	LoadPrdResult,
+	Prd,
+	PrdService,
+	PrdTask,
+	TaskWithIndex,
+} from "./prd/types.ts";
+export { isPrd, isPrdTask } from "./prd/validation.ts";
 export type {
 	IterationTiming,
 	Session,

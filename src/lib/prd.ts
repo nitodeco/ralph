@@ -1,98 +1,70 @@
-import { existsSync, readFileSync } from "node:fs";
-import type { LoadPrdResult, Prd, PrdTask } from "@/types.ts";
-import { INSTRUCTIONS_FILE_PATH } from "./paths.ts";
-import { PrdService } from "./services/PrdService.ts";
+import type {
+	CanWorkResult,
+	LoadPrdResult,
+	Prd,
+	PrdTask,
+	TaskWithIndex,
+} from "@/lib/services/index.ts";
+import { getPrdService } from "@/lib/services/index.ts";
 
 export { INSTRUCTIONS_FILE_PATH } from "./paths.ts";
 
 export function findPrdFile(): string | null {
-	return PrdService.findPrdFile();
+	return getPrdService().findFile();
 }
 
 export function loadPrd(verbose = false): Prd | null {
-	return PrdService.get(verbose);
+	return getPrdService().get(verbose);
 }
 
 export function loadPrdWithValidation(): LoadPrdResult {
-	return PrdService.loadWithValidation();
+	return getPrdService().loadWithValidation();
 }
 
 export function savePrd(prd: Prd): void {
-	PrdService.save(prd);
+	getPrdService().save(prd);
 }
 
 export function reloadPrd(verbose = false): Prd | null {
-	return PrdService.reload(verbose);
+	return getPrdService().reload(verbose);
 }
 
 export function invalidatePrdCache(): void {
-	PrdService.invalidate();
+	getPrdService().invalidate();
 }
 
 export function isPrdComplete(prd: Prd): boolean {
-	return prd.tasks.every((task) => task.done);
+	return getPrdService().isComplete(prd);
 }
 
 export function getNextTask(prd: Prd): string | null {
-	const nextTask = prd.tasks.find((task) => !task.done);
-
-	return nextTask ? nextTask.title : null;
-}
-
-export interface TaskWithIndex {
-	title: string;
-	index: number;
+	return getPrdService().getNextTask(prd);
 }
 
 export function getNextTaskWithIndex(prd: Prd): TaskWithIndex | null {
-	for (let taskIndex = 0; taskIndex < prd.tasks.length; taskIndex++) {
-		const task = prd.tasks.at(taskIndex);
-
-		if (task && !task.done) {
-			return { title: task.title, index: taskIndex };
-		}
-	}
-
-	return null;
+	return getPrdService().getNextTaskWithIndex(prd);
 }
 
 export function getTaskByTitle(prd: Prd, title: string): PrdTask | null {
-	const normalizedTitle = title.toLowerCase();
-
-	return prd.tasks.find((task) => task.title.toLowerCase() === normalizedTitle) ?? null;
+	return getPrdService().getTaskByTitle(prd, title);
 }
 
 export function getTaskByIndex(prd: Prd, index: number): PrdTask | null {
-	if (index < 0 || index >= prd.tasks.length) {
-		return null;
-	}
-
-	return prd.tasks.at(index) ?? null;
-}
-
-export function canWorkOnTask(task: PrdTask): { canWork: boolean; reason?: string } {
-	if (task.done) {
-		return { canWork: false, reason: "Task is already completed" };
-	}
-
-	return { canWork: true };
+	return getPrdService().getTaskByIndex(prd, index);
 }
 
 export function getCurrentTaskIndex(prd: Prd): number {
-	return prd.tasks.findIndex((task) => !task.done);
+	return getPrdService().getCurrentTaskIndex(prd);
+}
+
+export function canWorkOnTask(task: PrdTask): CanWorkResult {
+	return getPrdService().canWorkOnTask(task);
 }
 
 export function createEmptyPrd(projectName: string): Prd {
-	return {
-		project: projectName,
-		tasks: [],
-	};
+	return getPrdService().createEmpty(projectName);
 }
 
 export function loadInstructions(): string | null {
-	if (!existsSync(INSTRUCTIONS_FILE_PATH)) {
-		return null;
-	}
-
-	return readFileSync(INSTRUCTIONS_FILE_PATH, "utf-8");
+	return getPrdService().loadInstructions();
 }
