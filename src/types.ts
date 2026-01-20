@@ -7,6 +7,7 @@ export type {
 	ConfigOutput,
 	ConfigValidationError,
 	ConfigValidationResult,
+	GuardrailsSubcommand,
 	IterationLog,
 	IterationLogAgent,
 	IterationLogError,

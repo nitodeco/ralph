@@ -157,7 +157,7 @@
 				"Add '/guardrail <instruction>' slash command in RunApp to quickly add a guardrail during a session when observing a failure pattern",
 				"Update SetupWizard to show default guardrails and allow user to customize during init"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement adaptive retry with failure context injection",

@@ -60,7 +60,7 @@ export function RunApp({
 
 	const dryRunState = useDryRun(dryRun, config, iterations);
 
-	const { handleSlashCommand, nextTaskMessage } = useSlashCommands({
+	const { handleSlashCommand, nextTaskMessage, guardrailMessage } = useSlashCommands({
 		startIterations,
 		resumeSession,
 		stopAgent,
@@ -151,6 +151,7 @@ export function RunApp({
 				iterationTotal={iterationTotal}
 				agentIsStreaming={agentIsStreaming}
 				nextTaskMessage={displayedMessage}
+				guardrailMessage={guardrailMessage}
 				onCommand={handleSlashCommand}
 			/>
 		</ViewRouter>

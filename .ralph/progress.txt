@@ -178,3 +178,30 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Implement dynamic prompt guardrail system
+Date: 2026-01-20
+
+Changes made:
+- Created PromptGuardrail interface in src/types/config.types.ts with fields: id, instruction, trigger, category, enabled, addedAt, addedAfterFailure
+- Added GUARDRAILS_FILE_PATH constant to src/lib/paths.ts pointing to .ralph/guardrails.json
+- Created src/lib/guardrails.ts with functions: loadGuardrails(), saveGuardrails(), addGuardrail(), removeGuardrail(), toggleGuardrail(), getActiveGuardrails(), formatGuardrailsForPrompt()
+- Added DEFAULT_GUARDRAILS to src/lib/defaults.ts with essential guardrails: verify before commit, read existing patterns, fix build before proceeding
+- Updated buildPrompt() in src/lib/prompt.ts to inject active guardrails under a "## Guardrails" section
+- Added 'ralph guardrails' CLI command with list, add, remove, and toggle subcommands
+- Created src/cli/commands/guardrails.ts with printGuardrails(), handleGuardrailsAdd(), handleGuardrailsRemove(), handleGuardrailsToggle()
+- Added GuardrailsSubcommand type to src/types/cli.types.ts
+- Updated parser.ts to handle guardrails subcommands
+- Added '/guardrail <instruction>' slash command for quick guardrail addition during sessions
+- Added '/guardrails' slash command to open the guardrails management view
+- Created GuardrailsView component in src/components/views/GuardrailsView.tsx for interactive guardrail management
+- Added 'guardrails' to ActiveView type
+- Updated ViewRouter to handle guardrails view
+- Updated useSlashCommands hook to handle guardrail and guardrails commands
+- Updated HelpView and help.ts to include guardrails documentation
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

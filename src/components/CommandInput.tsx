@@ -15,12 +15,15 @@ export type SlashCommand =
 	| "stop"
 	| "next"
 	| "status"
-	| "archive";
+	| "archive"
+	| "guardrail"
+	| "guardrails";
 
 export interface CommandArgs {
 	iterations?: number;
 	full?: boolean;
 	taskIdentifier?: string;
+	guardrailInstruction?: string;
 }
 
 const VALID_COMMANDS: SlashCommand[] = [
@@ -37,6 +40,8 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"next",
 	"status",
 	"archive",
+	"guardrail",
+	"guardrails",
 ];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
 
@@ -82,6 +87,11 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 	if (commandName === "next" && parts.length > 1) {
 		const taskIdentifier = parts.slice(1).join(" ");
 		return { command: commandName, args: { taskIdentifier } };
+	}
+
+	if (commandName === "guardrail" && parts.length > 1) {
+		const guardrailInstruction = parts.slice(1).join(" ");
+		return { command: commandName, args: { guardrailInstruction } };
 	}
 
 	return { command: commandName };

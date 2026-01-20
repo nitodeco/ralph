@@ -1,5 +1,7 @@
 import { DEFAULTS } from "@/lib/defaults.ts";
-import type { Command, ParsedArgs } from "@/types.ts";
+import type { Command, GuardrailsSubcommand, ParsedArgs } from "@/types.ts";
+
+const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "remove", "toggle"];
 
 export function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
@@ -54,5 +56,32 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	return { command, iterations, background, json, dryRun, verbose, task, maxRuntimeMs };
+	let guardrailsSubcommand: GuardrailsSubcommand | undefined;
+	let guardrailsArg: string | undefined;
+
+	if (command === "guardrails") {
+		const subcommand = filteredArgs[1] as GuardrailsSubcommand | undefined;
+		if (subcommand && VALID_GUARDRAILS_SUBCOMMANDS.includes(subcommand)) {
+			guardrailsSubcommand = subcommand;
+			guardrailsArg = filteredArgs.slice(2).join(" ");
+		} else if (subcommand && !subcommand.startsWith("-")) {
+			guardrailsSubcommand = "add";
+			guardrailsArg = filteredArgs.slice(1).join(" ");
+		} else {
+			guardrailsSubcommand = "list";
+		}
+	}
+
+	return {
+		command,
+		iterations,
+		background,
+		json,
+		dryRun,
+		verbose,
+		task,
+		maxRuntimeMs,
+		guardrailsSubcommand,
+		guardrailsArg,
+	};
 }

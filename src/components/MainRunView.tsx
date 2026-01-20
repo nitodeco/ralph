@@ -9,7 +9,7 @@ import { IterationProgress } from "./IterationProgress.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
 
-interface NextTaskMessage {
+interface SlashCommandMessage {
 	type: "success" | "error";
 	text: string;
 }
@@ -22,7 +22,8 @@ interface MainRunViewProps {
 	iterationCurrent: number;
 	iterationTotal: number;
 	agentIsStreaming: boolean;
-	nextTaskMessage: NextTaskMessage | null;
+	nextTaskMessage: SlashCommandMessage | null;
+	guardrailMessage: SlashCommandMessage | null;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 }
 
@@ -35,6 +36,7 @@ export function MainRunView({
 	iterationTotal,
 	agentIsStreaming,
 	nextTaskMessage,
+	guardrailMessage,
 	onCommand,
 }: MainRunViewProps): React.ReactElement {
 	return (
@@ -48,6 +50,14 @@ export function MainRunView({
 				<Box paddingX={1} marginY={1}>
 					<Message type={nextTaskMessage.type === "success" ? "success" : "error"}>
 						{nextTaskMessage.text}
+					</Message>
+				</Box>
+			)}
+
+			{guardrailMessage && (
+				<Box paddingX={1} marginY={1}>
+					<Message type={guardrailMessage.type === "success" ? "success" : "error"}>
+						{guardrailMessage.text}
 					</Message>
 				</Box>
 			)}

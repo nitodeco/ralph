@@ -3,10 +3,14 @@
 import { render } from "ink";
 import { useState } from "react";
 import {
+	handleGuardrailsAdd,
+	handleGuardrailsRemove,
+	handleGuardrailsToggle,
 	handleStopCommand,
 	parseArgs,
 	printArchive,
 	printConfig,
+	printGuardrails,
 	printHelp,
 	printList,
 	printStats,
@@ -105,9 +109,18 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-	const { command, iterations, background, json, dryRun, verbose, task, maxRuntimeMs } = parseArgs(
-		process.argv,
-	);
+	const {
+		command,
+		iterations,
+		background,
+		json,
+		dryRun,
+		verbose,
+		task,
+		maxRuntimeMs,
+		guardrailsSubcommand,
+		guardrailsArg,
+	} = parseArgs(process.argv);
 
 	setShutdownHandler({
 		onShutdown: () => {
@@ -204,6 +217,23 @@ function main(): void {
 
 		case "archive":
 			printArchive(VERSION);
+			break;
+
+		case "guardrails":
+			switch (guardrailsSubcommand) {
+				case "add":
+					handleGuardrailsAdd(guardrailsArg ?? "");
+					break;
+				case "remove":
+					handleGuardrailsRemove(guardrailsArg ?? "");
+					break;
+				case "toggle":
+					handleGuardrailsToggle(guardrailsArg ?? "");
+					break;
+				default:
+					printGuardrails(VERSION, json);
+					break;
+			}
 			break;
 
 		case "stop":

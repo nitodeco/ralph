@@ -43,3 +43,16 @@ export interface ConfigValidationResult {
 	errors: ConfigValidationError[];
 	warnings: ConfigValidationError[];
 }
+
+export type GuardrailTrigger = "always" | "on-error" | "on-task-type";
+export type GuardrailCategory = "safety" | "quality" | "style" | "process";
+
+export interface PromptGuardrail {
+	id: string;
+	instruction: string;
+	trigger: GuardrailTrigger;
+	category: GuardrailCategory;
+	enabled: boolean;
+	addedAt: string;
+	addedAfterFailure?: string;
+}

@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
+import { addGuardrail } from "@/lib/guardrails.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types/index.ts";
 
-interface NextTaskMessage {
+interface SlashCommandMessage {
 	type: "success" | "error";
 	text: string;
 }
@@ -20,7 +21,8 @@ interface UseSlashCommandsDependencies {
 
 interface UseSlashCommandsResult {
 	handleSlashCommand: (command: SlashCommand, args?: CommandArgs) => void;
-	nextTaskMessage: NextTaskMessage | null;
+	nextTaskMessage: SlashCommandMessage | null;
+	guardrailMessage: SlashCommandMessage | null;
 }
 
 export function useSlashCommands({
@@ -33,7 +35,8 @@ export function useSlashCommands({
 	setActiveView,
 	exit,
 }: UseSlashCommandsDependencies): UseSlashCommandsResult {
-	const [nextTaskMessage, setNextTaskMessage] = useState<NextTaskMessage | null>(null);
+	const [nextTaskMessage, setNextTaskMessage] = useState<SlashCommandMessage | null>(null);
+	const [guardrailMessage, setGuardrailMessage] = useState<SlashCommandMessage | null>(null);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -67,6 +70,34 @@ export function useSlashCommands({
 						setTimeout(() => setNextTaskMessage(null), 5000);
 					}
 					break;
+				case "guardrail":
+					if (args?.guardrailInstruction) {
+						try {
+							const guardrail = addGuardrail({ instruction: args.guardrailInstruction });
+							setGuardrailMessage({
+								type: "success",
+								text: `Added guardrail: "${guardrail.instruction}"`,
+							});
+						} catch {
+							setGuardrailMessage({
+								type: "error",
+								text: "Failed to add guardrail",
+							});
+						}
+						setTimeout(() => setGuardrailMessage(null), 5000);
+					} else {
+						setGuardrailMessage({
+							type: "error",
+							text: "Usage: /guardrail <instruction>",
+						});
+						setTimeout(() => setGuardrailMessage(null), 5000);
+					}
+					break;
+				case "guardrails":
+					agentStop();
+					iterationPause();
+					setActiveView("guardrails");
+					break;
 				case "init":
 				case "setup":
 				case "update":
@@ -96,5 +127,5 @@ export function useSlashCommands({
 		],
 	);
 
-	return { handleSlashCommand, nextTaskMessage };
+	return { handleSlashCommand, nextTaskMessage, guardrailMessage };
 }

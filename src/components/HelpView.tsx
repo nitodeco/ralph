@@ -146,6 +146,16 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Archive completed tasks and progress file</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/guardrail {"<text>"}</Text>
+							{"  "}
+							<Text>Add a new guardrail instruction</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/guardrails</Text>
+							{"       "}
+							<Text>View and manage guardrails</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/help</Text>
 							{"             "}
 							<Text>Show this help message</Text>

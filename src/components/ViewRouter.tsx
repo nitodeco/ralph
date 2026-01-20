@@ -15,6 +15,7 @@ import { UpdatePrompt } from "./UpdatePrompt.tsx";
 import {
 	ArchiveView,
 	DryRunView,
+	GuardrailsView,
 	NotInitializedView,
 	ResumePromptView,
 	StatusView,
@@ -77,6 +78,10 @@ export function ViewRouter({
 
 	if (activeView === "archive") {
 		return <ArchiveView version={version} onClose={onViewComplete} />;
+	}
+
+	if (activeView === "guardrails") {
+		return <GuardrailsView version={version} onClose={onHelpClose} />;
 	}
 
 	if (dryRun) {

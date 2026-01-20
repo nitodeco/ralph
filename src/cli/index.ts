@@ -1,7 +1,11 @@
 export {
+	handleGuardrailsAdd,
+	handleGuardrailsRemove,
+	handleGuardrailsToggle,
 	handleStopCommand,
 	printArchive,
 	printConfig,
+	printGuardrails,
 	printHelp,
 	printList,
 	printStats,

@@ -10,12 +10,15 @@ export type Command =
 	| "list"
 	| "config"
 	| "archive"
+	| "guardrails"
 	| "help"
 	| "version"
 	| "-v"
 	| "--version"
 	| "-h"
 	| "--help";
+
+export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle";
 
 export interface ParsedArgs {
 	command: Command;
@@ -26,6 +29,8 @@ export interface ParsedArgs {
 	verbose: boolean;
 	task?: string;
 	maxRuntimeMs?: number;
+	guardrailsSubcommand?: GuardrailsSubcommand;
+	guardrailsArg?: string;
 }
 
 export interface TaskListOutput {

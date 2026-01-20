@@ -1,14 +1,20 @@
+import { formatGuardrailsForPrompt, getActiveGuardrails } from "@/lib/guardrails.ts";
 import type { Prd, PrdFormat } from "@/types.ts";
 
 export interface BuildPromptOptions {
 	instructions?: string | null;
 	specificTask?: string | null;
+	includeGuardrails?: boolean;
 }
 
 export function buildPrompt(options: BuildPromptOptions = {}): string {
-	const { instructions, specificTask } = options;
+	const { instructions, specificTask, includeGuardrails = true } = options;
 
 	const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
+
+	const guardrailsSection = includeGuardrails
+		? formatGuardrailsForPrompt(getActiveGuardrails())
+		: "";
 
 	const taskSelectionInstruction = specificTask
 		? `2. Work on the SPECIFIED task: "${specificTask}"`
@@ -30,7 +36,7 @@ ${taskSelectionInstruction}
 - Always leave the codebase in a buildable state
 - If the build fails, fix it before committing
 - Ensure you are using the proper tools in this project
-${instructionsSection}
+${instructionsSection}${guardrailsSection ? `\n${guardrailsSection}` : ""}
 IMPORTANT:
 If all tasks in .ralph/prd.json are marked as done, output EXACTLY this: <promise>COMPLETE</promise>
 `;

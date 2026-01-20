@@ -23,6 +23,7 @@ export const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");
 export const PRD_YAML_PATH = join(RALPH_DIR, "prd.yaml");
 export const GLOBAL_CONFIG_PATH = join(GLOBAL_RALPH_DIR, "config.json");
 export const PROJECT_CONFIG_PATH = join(RALPH_DIR, "config.json");
+export const GUARDRAILS_FILE_PATH = join(RALPH_DIR, "guardrails.json");
 
 export const PATHS = {
 	ralphDir: RALPH_DIR,
@@ -37,6 +38,7 @@ export const PATHS = {
 	prdYaml: PRD_YAML_PATH,
 	globalConfig: GLOBAL_CONFIG_PATH,
 	projectConfig: PROJECT_CONFIG_PATH,
+	guardrails: GUARDRAILS_FILE_PATH,
 } as const;
 
 export function isDirectoryWritable(directory: string): boolean {

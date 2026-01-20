@@ -8,6 +8,7 @@ export type {
 export type {
 	Command,
 	ConfigOutput,
+	GuardrailsSubcommand,
 	ParsedArgs,
 	TaskListOutput,
 } from "./cli.types.ts";

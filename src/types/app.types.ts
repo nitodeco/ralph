@@ -16,7 +16,8 @@ export type ActiveView =
 	| "help"
 	| "add"
 	| "status"
-	| "archive";
+	| "archive"
+	| "guardrails";
 
 export interface ValidationWarning {
 	message: string;

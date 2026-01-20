@@ -16,6 +16,7 @@ Commands:
   list              Display all PRD tasks and their completion status
   config            View current configuration with validation
   archive           Archive completed tasks and progress file
+  guardrails        View and manage prompt guardrails
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
@@ -35,6 +36,8 @@ Slash Commands (in-app):
   /next <task>      Set next task to work on (by number or title)
   /init             Initialize a new PRD project
   /add              Add a new task to the PRD (AI-generated from description)
+  /guardrail <text> Add a new guardrail instruction
+  /guardrails       View and manage guardrails
   /setup            Configure global preferences
   /update           Check for updates
   /archive          Archive completed tasks and progress file
