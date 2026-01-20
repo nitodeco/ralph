@@ -61,3 +61,5 @@ jobs:
           files: |
             dist/ralph-darwin-arm64
             dist/ralph-darwin-x64
+            dist/ralph-linux-arm64
+            dist/ralph-linux-x64
