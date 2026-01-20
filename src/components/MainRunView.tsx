@@ -1,0 +1,90 @@
+import { Box, Text } from "ink";
+import type { Prd, RalphConfig } from "@/types/index.ts";
+import { AgentOutput } from "./AgentOutput.tsx";
+import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
+import { CommandInput } from "./CommandInput.tsx";
+import { Message } from "./common/Message.tsx";
+import { Header } from "./Header.tsx";
+import { IterationProgress } from "./IterationProgress.tsx";
+import { StatusBar } from "./StatusBar.tsx";
+import { TaskList } from "./TaskList.tsx";
+
+interface NextTaskMessage {
+	type: "success" | "error";
+	text: string;
+}
+
+interface MainRunViewProps {
+	version: string;
+	config: RalphConfig | null;
+	prd: Prd | null;
+	appState: string;
+	iterationCurrent: number;
+	iterationTotal: number;
+	agentIsStreaming: boolean;
+	nextTaskMessage: NextTaskMessage | null;
+	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
+}
+
+export function MainRunView({
+	version,
+	config,
+	prd,
+	appState,
+	iterationCurrent,
+	iterationTotal,
+	agentIsStreaming,
+	nextTaskMessage,
+	onCommand,
+}: MainRunViewProps): React.ReactElement {
+	return (
+		<Box flexDirection="column" minHeight={20}>
+			<Header version={version} agent={config?.agent} projectName={prd?.project} />
+			<TaskList />
+			<IterationProgress />
+			<AgentOutput />
+
+			{nextTaskMessage && (
+				<Box paddingX={1} marginY={1}>
+					<Message type={nextTaskMessage.type === "success" ? "success" : "error"}>
+						{nextTaskMessage.text}
+					</Message>
+				</Box>
+			)}
+
+			{appState === "idle" && (
+				<Box paddingX={1} marginY={1}>
+					<Text dimColor>
+						Type <Text color="cyan">/start</Text>, <Text color="cyan">/start [n]</Text>, or{" "}
+						<Text color="cyan">/start full</Text> to begin iterations
+					</Text>
+				</Box>
+			)}
+
+			{appState === "complete" && (
+				<Box paddingX={1} marginY={1}>
+					<Message type="success">All tasks completed!</Message>
+				</Box>
+			)}
+
+			{appState === "max_iterations" && (
+				<Box paddingX={1} marginY={1}>
+					<Message type="warning">
+						Completed {iterationTotal} iterations. PRD is not completed.
+					</Message>
+				</Box>
+			)}
+
+			{appState === "max_runtime" && (
+				<Box paddingX={1} marginY={1}>
+					<Message type="warning">
+						Max runtime limit reached. Stopped after {iterationCurrent} iterations.
+					</Message>
+				</Box>
+			)}
+
+			<CommandInput onCommand={onCommand} isRunning={agentIsStreaming} />
+			<StatusBar />
+		</Box>
+	);
+}

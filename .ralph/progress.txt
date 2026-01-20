@@ -141,3 +141,22 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Simplify RunApp component by extracting hooks and ViewRouter
+Date: 2026-01-20
+
+Changes made:
+- Created src/hooks/useSlashCommands.ts hook that encapsulates slash command handling logic with nextTaskMessage state
+- Created src/hooks/useSessionLifecycle.ts hook that encapsulates session-related effects (initial state loading, auto-resume, auto-start, elapsed time timer, fatal error handling, orchestrator cleanup)
+- Created src/components/ViewRouter.tsx component that handles view switching for all view types (init, setup, update, help, add, status, archive, dry run, not initialized, resume prompt)
+- Created src/components/MainRunView.tsx component for the main run view content (Header, TaskList, IterationProgress, AgentOutput, status messages, CommandInput, StatusBar)
+- Refactored RunApp.tsx from 310+ lines to ~150 lines by composing the extracted hooks and components
+- Updated src/hooks/index.ts to export useSlashCommands and useSessionLifecycle
+- Updated src/components/index.ts to export MainRunView and ViewRouter
+- Used canonical ActiveView type from @/types instead of defining a duplicate type
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

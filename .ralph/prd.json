@@ -126,7 +126,7 @@
 				"Update src/components/index.ts to export new components",
 				"Update src/hooks/index.ts to export new hooks"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add Codex agent support",
