@@ -1,15 +1,26 @@
+import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
 import { loadPrd } from "@/lib/prd.ts";
 import type { TaskListOutput } from "@/types.ts";
 
-export function printList(version: string, jsonOutput: boolean): void {
+export function printList(version: string, jsonOutput: boolean, verbose = false): void {
 	const prd = loadPrd();
 
 	if (!prd) {
 		if (jsonOutput) {
-			console.log(JSON.stringify({ error: "No PRD found" }));
+			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found");
+			console.log(
+				JSON.stringify({
+					error: error.message,
+					code: error.code,
+					suggestion: error.suggestion,
+				}),
+			);
 		} else {
-			console.log("No PRD found in .ralph/prd.json or .ralph/prd.yaml");
-			console.log("\nRun 'ralph init' to create a new PRD.");
+			const error = createError(
+				ErrorCode.PRD_NOT_FOUND,
+				"No PRD found in .ralph/prd.json or .ralph/prd.yaml",
+			);
+			console.error(formatError(error, verbose));
 		}
 		return;
 	}

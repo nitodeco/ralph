@@ -23,6 +23,7 @@ export interface ParsedArgs {
 	background: boolean;
 	json: boolean;
 	dryRun: boolean;
+	verbose: boolean;
 	task?: string;
 	maxRuntimeMs?: number;
 }

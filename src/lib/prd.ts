@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { LoadPrdResult, Prd, PrdTask } from "@/types.ts";
+import { createError, ErrorCode, formatError } from "./errors.ts";
 import { RALPH_DIR } from "./paths.ts";
 
 export type { LoadPrdResult } from "@/types.ts";
@@ -20,10 +21,13 @@ export function findPrdFile(): string | null {
 	return null;
 }
 
-export function loadPrd(): Prd | null {
+export function loadPrd(verbose = false): Prd | null {
 	const result = loadPrdWithValidation();
 	if (result.validationError) {
-		console.error(`PRD validation error: ${result.validationError}`);
+		const error = createError(ErrorCode.PRD_INVALID_FORMAT, result.validationError, {
+			path: findPrdFile(),
+		});
+		console.error(formatError(error, verbose));
 	}
 	return result.prd;
 }
@@ -34,16 +38,38 @@ export function loadPrdWithValidation(): LoadPrdResult {
 		return { prd: null };
 	}
 
-	const content = readFileSync(prdPath, "utf-8");
+	try {
+		const content = readFileSync(prdPath, "utf-8");
 
-	let prd: Prd;
-	if (prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")) {
-		prd = parseYaml(content) as Prd;
-	} else {
-		prd = JSON.parse(content) as Prd;
+		let prd: Prd;
+		if (prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")) {
+			prd = parseYaml(content) as Prd;
+		} else {
+			prd = JSON.parse(content) as Prd;
+		}
+
+		if (!prd.project) {
+			return {
+				prd: null,
+				validationError: "PRD is missing required 'project' field",
+			};
+		}
+
+		if (!Array.isArray(prd.tasks)) {
+			return {
+				prd: null,
+				validationError: "PRD is missing required 'tasks' array",
+			};
+		}
+
+		return { prd };
+	} catch (parseError) {
+		const errorMessage = parseError instanceof Error ? parseError.message : "Unknown parsing error";
+		return {
+			prd: null,
+			validationError: `Failed to parse PRD file: ${errorMessage}`,
+		};
 	}
-
-	return { prd };
 }
 
 export function savePrd(prd: Prd, format: "json" | "yaml" = "json"): void {

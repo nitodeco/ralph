@@ -105,7 +105,7 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-	const { command, iterations, background, json, dryRun, task, maxRuntimeMs } = parseArgs(
+	const { command, iterations, background, json, dryRun, verbose, task, maxRuntimeMs } = parseArgs(
 		process.argv,
 	);
 
@@ -187,7 +187,7 @@ function main(): void {
 			break;
 
 		case "status":
-			printStatus(VERSION);
+			printStatus(VERSION, verbose);
 			break;
 
 		case "stats":
@@ -195,11 +195,11 @@ function main(): void {
 			break;
 
 		case "list":
-			printList(VERSION, json);
+			printList(VERSION, json, verbose);
 			break;
 
 		case "config":
-			printConfig(VERSION, json);
+			printConfig(VERSION, json, verbose);
 			break;
 
 		case "archive":

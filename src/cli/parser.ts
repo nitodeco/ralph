@@ -6,6 +6,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	const background = relevantArgs.includes("--background") || relevantArgs.includes("-b");
 	const json = relevantArgs.includes("--json");
 	const dryRun = relevantArgs.includes("--dry-run");
+	const verbose = relevantArgs.includes("--verbose");
 
 	let task: string | undefined;
 	const taskIndex = relevantArgs.findIndex((arg) => arg === "--task" || arg === "-t");
@@ -32,6 +33,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 			arg !== "--daemon-child" &&
 			arg !== "--json" &&
 			arg !== "--dry-run" &&
+			arg !== "--verbose" &&
 			arg !== "--task" &&
 			arg !== "-t" &&
 			arg !== "--max-runtime" &&
@@ -52,5 +54,5 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	return { command, iterations, background, json, dryRun, task, maxRuntimeMs };
+	return { command, iterations, background, json, dryRun, verbose, task, maxRuntimeMs };
 }

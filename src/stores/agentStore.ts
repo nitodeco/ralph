@@ -3,6 +3,13 @@ import { create } from "zustand";
 import { getAgentCommand, loadConfig } from "@/lib/config.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
 import { DEFAULTS } from "@/lib/defaults.ts";
+import {
+	categorizeAgentError,
+	createError,
+	ErrorCode,
+	formatErrorCompact,
+	getErrorSuggestion,
+} from "@/lib/errors.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
@@ -73,43 +80,29 @@ function parseStreamJsonLine(line: string): string | null {
 	}
 }
 
-type ErrorCategory = "retryable" | "fatal";
-
 interface CategorizedError {
-	category: ErrorCategory;
+	category: "retryable" | "fatal";
 	message: string;
+	code: ErrorCode;
+	suggestion?: string;
 }
 
-const FATAL_ERROR_PATTERNS = [
-	/permission denied/i,
-	/command not found/i,
-	/ENOENT/i,
-	/invalid api key/i,
-	/authentication failed/i,
-	/unauthorized/i,
-	/access denied/i,
-];
-
 function categorizeError(error: string, exitCode: number | null): CategorizedError {
-	for (const pattern of FATAL_ERROR_PATTERNS) {
-		if (pattern.test(error)) {
-			return { category: "fatal", message: error };
-		}
-	}
+	const { code, isFatal } = categorizeAgentError(error, exitCode);
 
-	if (exitCode === 1) {
-		return { category: "retryable", message: error };
-	}
-
+	let message = error;
 	if (exitCode === 127) {
-		return { category: "fatal", message: "Agent command not found" };
+		message = "Agent command not found. Is the agent CLI installed?";
+	} else if (exitCode === 126) {
+		message = "Agent command not executable. Check file permissions.";
 	}
 
-	if (exitCode === 126) {
-		return { category: "fatal", message: "Agent command not executable" };
-	}
-
-	return { category: "retryable", message: error };
+	return {
+		category: isFatal ? "fatal" : "retryable",
+		message,
+		code,
+		suggestion: getErrorSuggestion(code),
+	};
 }
 
 function calculateRetryDelay(baseDelayMs: number, retryCount: number): number {
@@ -394,13 +387,18 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 				const categorizedError = categorizeError(result.error ?? "", result.exitCode);
 
 				if (categorizedError.category === "fatal") {
+					const errorWithSuggestion = categorizedError.suggestion
+						? `${categorizedError.message}\n\nSuggestion: ${categorizedError.suggestion}`
+						: categorizedError.message;
+
 					logger.error("Fatal error encountered, not retrying", {
 						error: categorizedError.message,
+						code: categorizedError.code,
 						exitCode: result.exitCode,
 					});
 					set({
 						isStreaming: false,
-						error: `Fatal error: ${categorizedError.message}`,
+						error: `Fatal error [${categorizedError.code}]: ${errorWithSuggestion}`,
 						exitCode: result.exitCode,
 						retryCount: retryCountRef,
 					});
@@ -427,14 +425,30 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						isRetrying: false,
 					});
 				} else {
+					const maxRetriesError = createError(
+						ErrorCode.AGENT_MAX_RETRIES,
+						`Max retries (${maxRetries}) exceeded`,
+						{
+							lastError: categorizedError.message,
+							exitCode: result.exitCode,
+							retryCount: retryCountRef,
+						},
+					);
+
 					logger.error("Max retries exceeded", {
 						maxRetries,
 						lastError: categorizedError.message,
+						code: maxRetriesError.code,
 						exitCode: result.exitCode,
 					});
+
+					const errorMessage = maxRetriesError.suggestion
+						? `${formatErrorCompact(maxRetriesError)}\nLast error: ${categorizedError.message}\n\nSuggestion: ${maxRetriesError.suggestion}`
+						: `${formatErrorCompact(maxRetriesError)}\nLast error: ${categorizedError.message}`;
+
 					set({
 						isStreaming: false,
-						error: `Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,
+						error: errorMessage,
 						exitCode: result.exitCode,
 						retryCount: retryCountRef,
 					});

@@ -2,18 +2,6 @@
 	"project": "Ralph CLI",
 	"tasks": [
 		{
-			"title": "Add max runtime limit configuration",
-			"description": "Allow users to set a maximum total runtime after which Ralph will stop gracefully. Useful for time-boxed overnight runs.",
-			"steps": [
-				"Add maxRuntimeMs to RalphConfig",
-				"Implement runtime tracking in useIteration",
-				"Check runtime limit before starting new iteration",
-				"Add --max-runtime CLI flag",
-				"Display time remaining in status bar when limit set"
-			],
-			"done": true
-		},
-		{
 			"title": "Improve error messages and user feedback",
 			"description": "Enhance error handling throughout the application with clear, actionable error messages.",
 			"steps": [
@@ -23,7 +11,7 @@
 				"Add --verbose flag for detailed error output",
 				"Include relevant context in error messages"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add comprehensive test suite",

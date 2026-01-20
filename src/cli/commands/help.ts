@@ -24,6 +24,7 @@ Options:
   -b, --background  Run Ralph in background/daemon mode (detached from terminal)
   --dry-run         Simulate agent execution without running agents (validates PRD/config)
   --json            Output in JSON format (for list and config commands)
+  --verbose         Show detailed error information with context and suggestions
   -t, --task <n>    Run specific task by number or title (single task mode)
   --max-runtime <s> Set maximum runtime in seconds (stops gracefully when reached)
 

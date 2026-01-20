@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/defaults.ts";
+import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { RALPH_DIR } from "@/lib/paths.ts";
@@ -237,7 +238,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (!loadedPrd) {
-			return { success: false, error: "No PRD loaded" };
+			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
+			return {
+				success: false,
+				error: error.suggestion ? `${error.message}. ${error.suggestion}` : error.message,
+			};
 		}
 
 		const taskIndex = Number.parseInt(taskIdentifier, 10);
@@ -250,7 +255,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		}
 
 		if (!task) {
-			return { success: false, error: `Task not found: ${taskIdentifier}` };
+			const availableTasks = loadedPrd.tasks
+				.filter((prdTask) => !prdTask.done)
+				.map((prdTask, index) => `  ${index + 1}. ${prdTask.title}`)
+				.join("\n");
+			return {
+				success: false,
+				error: `Task not found: "${taskIdentifier}"\n\nAvailable pending tasks:\n${availableTasks}`,
+			};
 		}
 
 		const canWork = canWorkOnTask(task);
@@ -420,7 +432,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		const prd = state.prd ?? loadPrd();
 
 		if (!prd) {
-			return { success: false, error: "No PRD loaded" };
+			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
+			return {
+				success: false,
+				error: error.suggestion ? `${error.message}. ${error.suggestion}` : error.message,
+			};
 		}
 
 		const taskIndex = Number.parseInt(taskIdentifier, 10);
@@ -429,9 +445,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			: getTaskByIndex(prd, taskIndex - 1);
 
 		if (!task) {
+			const availableTasks = prd.tasks
+				.map((prdTask, index) => `  ${index + 1}. ${prdTask.title}`)
+				.join("\n");
+			const suggestion = getErrorSuggestion(ErrorCode.PRD_TASK_NOT_FOUND);
 			return {
 				success: false,
-				error: `Task not found: "${taskIdentifier}"`,
+				error: `Task not found: "${taskIdentifier}"\n\nAvailable tasks:\n${availableTasks}\n\n${suggestion}`,
 			};
 		}
 

@@ -82,27 +82,11 @@ class SessionOrchestrator {
 				previousAgentState = current;
 			}),
 		);
-
-		this.unsubscribers.push(
-			useIterationStore.subscribe((state) => {
-				const agentState = useAgentStore.getState();
-				if (state.isRunning && state.current > 0 && !state.isDelaying && !agentState.isStreaming) {
-					this.startAgentForIteration();
-				}
-			}),
-		);
 	}
 
 	private handleAgentComplete(isProjectComplete: boolean): void {
 		const iterationStore = useIterationStore.getState();
 		iterationStore.markIterationComplete(isProjectComplete);
-	}
-
-	private startAgentForIteration(): void {
-		const agentStore = useAgentStore.getState();
-		if (!agentStore.isStreaming) {
-			agentStore.start();
-		}
 	}
 
 	getConfig(): RalphConfig | null {

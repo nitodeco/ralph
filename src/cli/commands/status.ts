@@ -1,10 +1,11 @@
 import { isBackgroundProcessRunning } from "@/lib/daemon.ts";
+import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
 import { getRecentLogEntries } from "@/lib/logger.ts";
 import { loadPrd } from "@/lib/prd.ts";
 import { loadSession } from "@/lib/session.ts";
 import { formatElapsedTime } from "../formatters.ts";
 
-export function printStatus(version: string): void {
+export function printStatus(version: string, verbose = false): void {
 	console.log(`◆ ralph v${version} - Status\n`);
 
 	const { running, pid } = isBackgroundProcessRunning();
@@ -22,8 +23,8 @@ export function printStatus(version: string): void {
 	console.log("");
 
 	if (!session) {
-		console.log("No session data found.");
-		console.log("\nRun 'ralph' or 'ralph -b' to start a new session.");
+		const error = createError(ErrorCode.SESSION_NOT_FOUND, "No session data found");
+		console.log(formatError(error, verbose));
 		return;
 	}
 
@@ -64,7 +65,11 @@ export function printStatus(version: string): void {
 			}
 		}
 	} else {
-		console.log("No PRD found in .ralph/prd.json or .ralph/prd.yaml");
+		const prdError = createError(
+			ErrorCode.PRD_NOT_FOUND,
+			"No PRD found in .ralph/prd.json or .ralph/prd.yaml",
+		);
+		console.log(formatError(prdError, verbose));
 	}
 
 	console.log("");

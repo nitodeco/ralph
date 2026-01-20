@@ -1,5 +1,6 @@
 import {
 	CONFIG_DEFAULTS,
+	formatValidationErrors,
 	getEffectiveConfig,
 	getGlobalConfigPath,
 	getProjectConfigPath,
@@ -8,7 +9,7 @@ import {
 import type { ConfigOutput } from "@/types.ts";
 import { formatBytes, formatDuration } from "../formatters.ts";
 
-export function printConfig(version: string, jsonOutput: boolean): void {
+export function printConfig(version: string, jsonOutput: boolean, verbose = false): void {
 	const { global: globalConfig, project: projectConfig, effective } = getEffectiveConfig();
 	const validation = validateConfig(effective);
 
@@ -94,26 +95,11 @@ export function printConfig(version: string, jsonOutput: boolean): void {
 
 	console.log(`\n${"─".repeat(60)}`);
 
-	if (!validation.valid) {
-		console.log("\nValidation Errors:");
-		for (const error of validation.errors) {
-			const valueInfo = error.value !== undefined ? ` (got: ${JSON.stringify(error.value)})` : "";
-			console.log(`  \x1b[31m✗\x1b[0m ${error.field}: ${error.message}${valueInfo}`);
-		}
-	}
-
-	if (validation.warnings.length > 0) {
-		console.log("\nWarnings:");
-		for (const warning of validation.warnings) {
-			const valueInfo =
-				warning.value !== undefined ? ` (value: ${JSON.stringify(warning.value)})` : "";
-			console.log(`  \x1b[33m!\x1b[0m ${warning.field}: ${warning.message}${valueInfo}`);
-		}
-	}
-
-	if (validation.valid && validation.warnings.length === 0) {
+	if (!validation.valid || validation.warnings.length > 0) {
+		console.log("");
+		console.log(formatValidationErrors(validation, verbose));
+	} else {
 		console.log("\n\x1b[32m✓\x1b[0m Configuration is valid");
+		console.log("\nRun 'ralph setup' to reconfigure settings.");
 	}
-
-	console.log("\nRun 'ralph setup' to reconfigure settings.");
 }

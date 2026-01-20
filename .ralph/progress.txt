@@ -1,15 +1,58 @@
-## Session Progress
+# Ralph CLI Progress
 
-### Task: Add max runtime limit configuration
-Status: COMPLETED
+## Completed Tasks
 
-Implementation details:
-- Added `maxRuntimeMs` to RalphConfig type (already existed)
-- Added `--max-runtime` CLI flag parsing (already existed)
-- Implemented runtime tracking in iterationStore with `setMaxRuntimeMs`, `setStartTime`, `getTimeRemaining`, and `isMaxRuntimeReached` methods
-- Added `onMaxRuntime` callback to iteration callbacks
-- Check runtime limit before starting new iteration in the `next()` function
-- Added "max_runtime" app state for when runtime limit is reached
-- Display time remaining in StatusBar when limit is set
-- Updated orchestrator to handle max runtime configuration and callback
-- Set start time when starting/resuming sessions to track runtime
+### Task 1: Improve error messages and user feedback
+**Status:** DONE
+**Completed:** 2026-01-20
+
+**Changes made:**
+- Created comprehensive error codes system in `src/lib/errors.ts` with error codes E001-E999
+- Added `--verbose` flag to CLI for detailed error output with suggestions
+- Improved config validation errors with field-specific hints and examples
+- Enhanced agent errors with actionable suggestions for common issues (auth, permissions, timeout, etc.)
+- Added better task lookup error messages showing available tasks
+- Updated PRD loading with proper error handling and validation
+- Updated CLI commands (list, status, config) to use new error system
+- Error codes are included in JSON output for programmatic handling
+
+**Files modified:**
+- src/lib/errors.ts (new)
+- src/types/cli.types.ts
+- src/cli/parser.ts
+- src/cli/commands/help.ts
+- src/cli/commands/list.ts
+- src/cli/commands/status.ts
+- src/cli/commands/config.ts
+- src/lib/config.ts
+- src/lib/prd.ts
+- src/stores/agentStore.ts
+- src/stores/appStore.ts
+- src/index.tsx
+
+## Pending Tasks
+
+- Add comprehensive test suite
+- Create troubleshooting documentation
+- Fix UI offset caused by agent output stream on iteration completion
+- Refactor: Centralize path constants
+- Refactor: Consolidate type exports to single canonical path
+- Refactor: Extract duplicated getCurrentTaskIndex utility
+- Refactor: Create ConfigService and PrdService to eliminate repeated disk reads
+- Refactor: Encapsulate module-level mutable state in service classes
+- Refactor: Introduce event bus to decouple stores
+- Refactor: Consolidate session lifecycle management in orchestrator
+- Refactor: Split config.ts into focused modules
+- Refactor: Simplify RunApp component by extracting hooks and ViewRouter
+- Add Codex agent support
+- Implement dynamic prompt guardrail system
+- Implement adaptive retry with failure context injection
+- Implement verification phase after each iteration
+- Implement codebase context gathering for prompts
+- Implement task decomposition request handling
+- Implement failure pattern learning and analysis
+- Implement session memory for cross-session learning
+- Implement cost and token tracking
+- Implement interactive pause mode for real-time tuning
+- Enhance dry-run mode with full prompt preview and token estimation
+- Add automatic update check on startup with non-intrusive UI notification

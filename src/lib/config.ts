@@ -318,7 +318,24 @@ export function validateConfig(config: unknown): ConfigValidationResult {
 	};
 }
 
-export function formatValidationErrors(result: ConfigValidationResult): string {
+const FIELD_SUGGESTIONS: Record<string, string> = {
+	agent: "Valid options: 'cursor' or 'claude'. Example: \"agent\": \"claude\"",
+	prdFormat: "Valid options: 'json' or 'yaml'. Example: \"prdFormat\": \"json\"",
+	maxRetries: 'Must be a non-negative integer. Recommended: 3-5. Example: "maxRetries": 3',
+	retryDelayMs:
+		'Must be a positive integer in milliseconds. Recommended: 5000-10000. Example: "retryDelayMs": 5000',
+	agentTimeoutMs:
+		'Must be a non-negative integer in milliseconds. Set to 0 to disable. Recommended: 600000 (10 min). Example: "agentTimeoutMs": 600000',
+	stuckThresholdMs:
+		'Must be a non-negative integer in milliseconds. Set to 0 to disable. Recommended: 180000 (3 min). Example: "stuckThresholdMs": 180000',
+	logFilePath: 'Must be a valid file path. Example: "logFilePath": ".ralph/ralph.log"',
+	"notifications.webhookUrl":
+		'Must be a valid HTTP or HTTPS URL. Example: "webhookUrl": "https://hooks.slack.com/..."',
+	"memory.maxOutputBufferBytes":
+		'Must be a positive integer. Recommended: 1048576 (1MB). Example: "maxOutputBufferBytes": 1048576',
+};
+
+export function formatValidationErrors(result: ConfigValidationResult, verbose = false): string {
 	const lines: string[] = [];
 
 	if (result.errors.length > 0) {
@@ -327,9 +344,19 @@ export function formatValidationErrors(result: ConfigValidationResult): string {
 		for (const error of result.errors) {
 			const valueInfo = error.value !== undefined ? ` (got: ${JSON.stringify(error.value)})` : "";
 			lines.push(`  ✗ ${error.field}: ${error.message}${valueInfo}`);
+
+			if (verbose) {
+				const suggestion = FIELD_SUGGESTIONS[error.field];
+				if (suggestion) {
+					lines.push(`    Hint: ${suggestion}`);
+				}
+			}
 		}
 		lines.push("");
-		lines.push("Fix these issues in your config file or run 'ralph setup' to reconfigure.");
+		lines.push("To fix: Edit your config file or run 'ralph setup' to reconfigure.");
+		lines.push("Config locations:");
+		lines.push(`  Global: ${GLOBAL_CONFIG_PATH}`);
+		lines.push(`  Project: ${PROJECT_CONFIG_PATH}`);
 	}
 
 	if (result.warnings.length > 0) {
@@ -342,6 +369,13 @@ export function formatValidationErrors(result: ConfigValidationResult): string {
 			const valueInfo =
 				warning.value !== undefined ? ` (current: ${JSON.stringify(warning.value)})` : "";
 			lines.push(`  ⚠ ${warning.field}: ${warning.message}${valueInfo}`);
+
+			if (verbose) {
+				const suggestion = FIELD_SUGGESTIONS[warning.field];
+				if (suggestion) {
+					lines.push(`    Hint: ${suggestion}`);
+				}
+			}
 		}
 	}
 
