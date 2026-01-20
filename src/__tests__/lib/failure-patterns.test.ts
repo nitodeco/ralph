@@ -42,7 +42,7 @@ describe("failure-patterns functions", () => {
 		});
 
 		test("loads existing history file", () => {
-			const _entry = recordFailure({
+			recordFailure({
 				error: "Build failed",
 				output: "Error output",
 				taskTitle: "Task 1",

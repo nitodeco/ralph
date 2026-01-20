@@ -1,26 +1,14 @@
 import { create } from "zustand";
-import { getAgentCommand, loadConfig } from "@/lib/config.ts";
+import { AgentRunner } from "@/lib/agent.ts";
+import { loadConfig } from "@/lib/config.ts";
+import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
-import { DEFAULTS } from "@/lib/defaults.ts";
-import {
-	categorizeAgentError,
-	createError,
-	ErrorCode,
-	formatErrorCompact,
-	getErrorSuggestion,
-} from "@/lib/errors.ts";
-import { eventBus } from "@/lib/events.ts";
-import {
-	analyzeFailure,
-	type FailureAnalysis,
-	generateRetryContext,
-} from "@/lib/failure-analyzer.ts";
+import { getErrorMessage } from "@/lib/errors.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
-import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
+import { buildPrompt } from "@/lib/prompt.ts";
 import { AgentProcessManager } from "@/lib/services/index.ts";
-import type { IterationLogRetryContext } from "@/types.ts";
 
 interface AgentState {
 	output: string;
@@ -52,327 +40,6 @@ const INITIAL_STATE: AgentState = {
 	isRetrying: false,
 };
 
-interface StreamJsonMessage {
-	type: string;
-	subtype?: string;
-	text?: string;
-	message?: {
-		role: string;
-		content: Array<{ type: string; text?: string }>;
-	};
-	result?: string;
-}
-
-function parseStreamJsonLine(line: string): string | null {
-	if (!line.trim()) {
-		return null;
-	}
-
-	try {
-		const parsed = JSON.parse(line) as StreamJsonMessage;
-
-		if (parsed.type === "assistant" && parsed.message?.content) {
-			const textContent = parsed.message.content.find((content) => content.type === "text");
-
-			if (textContent?.text) {
-				return textContent.text;
-			}
-		}
-
-		if (parsed.type === "result" && parsed.subtype === "success" && parsed.result) {
-			return parsed.result;
-		}
-
-		return null;
-	} catch {
-		return line;
-	}
-}
-
-interface CategorizedError {
-	category: "retryable" | "fatal";
-	message: string;
-	code: ErrorCode;
-	suggestion?: string;
-}
-
-function categorizeError(error: string, exitCode: number | null): CategorizedError {
-	const { code, isFatal } = categorizeAgentError(error, exitCode);
-
-	let message = error;
-
-	if (exitCode === 127) {
-		message = "Agent command not found. Is the agent CLI installed?";
-	} else if (exitCode === 126) {
-		message = "Agent command not executable. Check file permissions.";
-	}
-
-	return {
-		category: isFatal ? "fatal" : "retryable",
-		message,
-		code,
-		suggestion: getErrorSuggestion(code),
-	};
-}
-
-function calculateRetryDelay(baseDelayMs: number, retryCount: number): number {
-	return baseDelayMs * 2 ** retryCount;
-}
-
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function createThrottledFunction<T extends (arg: string) => void>(
-	func: T,
-	limitMs: number,
-): { throttled: T; flush: () => void } {
-	let lastRun = 0;
-	let pendingArg: string | null = null;
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-	const throttled = ((arg: string) => {
-		const now = Date.now();
-
-		if (now - lastRun >= limitMs) {
-			lastRun = now;
-			func(arg);
-		} else {
-			pendingArg = arg;
-
-			if (!timeoutId) {
-				timeoutId = setTimeout(
-					() => {
-						if (pendingArg !== null) {
-							lastRun = Date.now();
-							func(pendingArg);
-							pendingArg = null;
-						}
-
-						timeoutId = null;
-					},
-					limitMs - (now - lastRun),
-				);
-			}
-		}
-	}) as T;
-
-	const flush = () => {
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-			timeoutId = null;
-		}
-
-		if (pendingArg !== null) {
-			func(pendingArg);
-			pendingArg = null;
-		}
-	};
-
-	return { throttled, flush };
-}
-
-interface RunAgentOptions {
-	setOutput: (output: string) => void;
-	specificTask?: string | null;
-	additionalContext?: string | null;
-}
-
-async function runAgentInternal(options: RunAgentOptions): Promise<{
-	success: boolean;
-	exitCode: number | null;
-	output: string;
-	isComplete: boolean;
-	error?: string;
-}> {
-	const { setOutput, specificTask, additionalContext } = options;
-	const instructions = loadInstructions();
-	let prompt = buildPrompt({ instructions, specificTask });
-
-	if (additionalContext) {
-		prompt = `${prompt}\n\n${additionalContext}`;
-	}
-
-	const config = loadConfig();
-	const logger = getLogger({ logFilePath: config.logFilePath });
-	const baseCommand = getAgentCommand(config.agent);
-	const agentTimeoutMs = config.agentTimeoutMs ?? DEFAULTS.agentTimeoutMs;
-	const stuckThresholdMs = config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs;
-
-	const { throttled: throttledSetOutput, flush: flushOutput } = createThrottledFunction(
-		setOutput,
-		100,
-	);
-
-	logger.logAgentStart(config.agent, prompt);
-
-	const agentProcess = Bun.spawn([...baseCommand, prompt], {
-		stdin: null,
-		stdout: "pipe",
-		stderr: "pipe",
-	});
-
-	AgentProcessManager.setProcess(agentProcess);
-
-	const stdoutReader = agentProcess.stdout.getReader();
-	const stderrReader = agentProcess.stderr.getReader();
-	const decoder = new TextDecoder();
-	let rawOutput = "";
-	let parsedOutput = "";
-	let stderrOutput = "";
-	let lineBuffer = "";
-	let lastParsedText = "";
-
-	let lastActivityTime = Date.now();
-	let timeoutTriggered = false;
-	let stuckTriggered = false;
-
-	const updateLastActivity = () => {
-		lastActivityTime = Date.now();
-	};
-
-	const processStartTime = Date.now();
-
-	const timeoutTimer =
-		agentTimeoutMs > 0
-			? setTimeout(() => {
-					timeoutTriggered = true;
-					logger.warn("Agent timeout exceeded, killing process", {
-						timeoutMs: agentTimeoutMs,
-						elapsedMs: Date.now() - processStartTime,
-					});
-					const currentProcess = AgentProcessManager.getProcess();
-
-					if (currentProcess) {
-						currentProcess.kill();
-					}
-				}, agentTimeoutMs)
-			: null;
-
-	const stuckCheckInterval =
-		stuckThresholdMs > 0
-			? setInterval(
-					() => {
-						const timeSinceLastActivity = Date.now() - lastActivityTime;
-
-						if (timeSinceLastActivity >= stuckThresholdMs) {
-							stuckTriggered = true;
-							logger.warn("Agent appears stuck (no output), killing process", {
-								stuckThresholdMs,
-								timeSinceLastActivityMs: timeSinceLastActivity,
-							});
-							const currentProcess = AgentProcessManager.getProcess();
-
-							if (currentProcess) {
-								currentProcess.kill();
-							}
-						}
-					},
-					Math.min(stuckThresholdMs / 4, 30000),
-				)
-			: null;
-
-	const readStdout = async () => {
-		while (!AgentProcessManager.isAborted()) {
-			const { done, value } = await stdoutReader.read();
-
-			if (done) {
-				break;
-			}
-
-			updateLastActivity();
-			const text = decoder.decode(value);
-
-			rawOutput += text;
-			lineBuffer += text;
-
-			const lines = lineBuffer.split("\n");
-
-			lineBuffer = lines.pop() ?? "";
-
-			for (const line of lines) {
-				const parsedText = parseStreamJsonLine(line);
-
-				if (parsedText && parsedText !== lastParsedText) {
-					lastParsedText = parsedText;
-					parsedOutput = parsedText;
-					throttledSetOutput(parsedOutput);
-				}
-			}
-		}
-	};
-
-	const readStderr = async () => {
-		while (!AgentProcessManager.isAborted()) {
-			const { done, value } = await stderrReader.read();
-
-			if (done) {
-				break;
-			}
-
-			updateLastActivity();
-			stderrOutput += decoder.decode(value);
-		}
-	};
-
-	try {
-		await Promise.all([readStdout(), readStderr()]);
-	} finally {
-		if (timeoutTimer) {
-			clearTimeout(timeoutTimer);
-		}
-
-		if (stuckCheckInterval) {
-			clearInterval(stuckCheckInterval);
-		}
-
-		flushOutput();
-	}
-
-	const exitCode = await agentProcess.exited;
-	const isComplete = rawOutput.includes(COMPLETION_MARKER);
-
-	if (timeoutTriggered) {
-		const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1000 / 60)} minutes`;
-
-		logger.logAgentError(errorMessage, exitCode);
-
-		return {
-			success: false,
-			exitCode,
-			output: parsedOutput,
-			isComplete: false,
-			error: errorMessage,
-		};
-	}
-
-	if (stuckTriggered) {
-		const errorMessage = `Agent stuck (no output for ${Math.round(stuckThresholdMs / 1000 / 60)} minutes)`;
-
-		logger.logAgentError(errorMessage, exitCode);
-
-		return {
-			success: false,
-			exitCode,
-			output: parsedOutput,
-			isComplete: false,
-			error: errorMessage,
-		};
-	}
-
-	if (exitCode !== 0 && !isComplete) {
-		const errorMessage = stderrOutput || `Agent exited with code ${exitCode}`;
-
-		logger.logAgentError(errorMessage, exitCode);
-
-		return { success: false, exitCode, output: parsedOutput, isComplete, error: errorMessage };
-	}
-
-	logger.logAgentComplete(exitCode, isComplete);
-
-	return { success: true, exitCode, output: parsedOutput, isComplete };
-}
-
 export const useAgentStore = create<AgentStore>((set, get) => ({
 	...INITIAL_STATE,
 
@@ -385,9 +52,6 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 	},
 
 	start: async (specificTask?: string | null) => {
-		AgentProcessManager.setAborted(false);
-		AgentProcessManager.resetRetry();
-
 		setShutdownHandler({
 			onShutdown: () => {
 				AgentProcessManager.setAborted(true);
@@ -407,180 +71,66 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 		const config = loadConfig();
 		const logger = getLogger({ logFilePath: config.logFilePath });
-		const maxRetries = config.maxRetries ?? 3;
-		const retryDelayMs = config.retryDelayMs ?? 5000;
-		const retryWithContext = config.retryWithContext ?? DEFAULTS.retryWithContext;
+		const instructions = loadInstructions();
+		const prompt = buildPrompt({ instructions, specificTask });
+		const outputThrottleMs = 100;
 
-		const retryContexts: IterationLogRetryContext[] = [];
-		let currentRetryContext: string | null = null;
-
-		eventBus.emit("agent:start", { agentType: config.agent });
+		const agentRunner = new AgentRunner({
+			agentType: config.agent,
+			timeoutMs: config.agentTimeoutMs ?? DEFAULTS.agentTimeoutMs,
+			stuckThresholdMs: config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs,
+			maxRetries: config.maxRetries ?? DEFAULTS.maxRetries,
+			retryDelayMs: config.retryDelayMs ?? DEFAULTS.retryDelayMs,
+			retryWithContext: config.retryWithContext ?? DEFAULTS.retryWithContext,
+			outputThrottleMs,
+			logFilePath: config.logFilePath,
+			onOutput: get().setOutput,
+			onRetry: (count, max, delay) => {
+				logger.logAgentRetry(count, max, delay);
+				set({
+					isRetrying: true,
+					retryCount: count,
+					output: "",
+				});
+				setTimeout(() => {
+					set({ isRetrying: false });
+				}, delay);
+			},
+			emitEvents: true,
+		});
 
 		try {
-			while (
-				AgentProcessManager.getRetryCount() <= maxRetries &&
-				!AgentProcessManager.isAborted()
-			) {
-				const result = await runAgentInternal({
-					setOutput: get().setOutput,
-					specificTask,
-					additionalContext: currentRetryContext,
+			const result = await agentRunner.run(prompt);
+
+			if (AgentProcessManager.isAborted()) {
+				set({
+					isStreaming: false,
+					isComplete: result.isComplete,
+					exitCode: result.exitCode,
+					retryCount: result.retryCount,
+					isRetrying: false,
 				});
 
-				if (result.success || AgentProcessManager.isAborted()) {
-					set({
-						isStreaming: false,
-						isComplete: result.isComplete,
-						exitCode: result.exitCode,
-						retryCount: AgentProcessManager.getRetryCount(),
-					});
-
-					if (!AgentProcessManager.isAborted()) {
-						eventBus.emit("agent:complete", {
-							isComplete: result.isComplete,
-							exitCode: result.exitCode,
-							output: result.output,
-							retryCount: AgentProcessManager.getRetryCount(),
-							retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
-						});
-					}
-
-					break;
-				}
-
-				const categorizedError = categorizeError(result.error ?? "", result.exitCode);
-
-				if (categorizedError.category === "fatal") {
-					const errorWithSuggestion = categorizedError.suggestion
-						? `${categorizedError.message}\n\nSuggestion: ${categorizedError.suggestion}`
-						: categorizedError.message;
-
-					logger.error("Fatal error encountered, not retrying", {
-						error: categorizedError.message,
-						code: categorizedError.code,
-						exitCode: result.exitCode,
-					});
-
-					set({
-						isStreaming: false,
-						error: `Fatal error [${categorizedError.code}]: ${errorWithSuggestion}`,
-						exitCode: result.exitCode,
-						retryCount: AgentProcessManager.getRetryCount(),
-					});
-
-					eventBus.emit("agent:error", {
-						error: errorWithSuggestion,
-						exitCode: result.exitCode,
-						isFatal: true,
-						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
-					});
-
-					break;
-				}
-
-				if (AgentProcessManager.getRetryCount() < maxRetries) {
-					const currentRetryCount = AgentProcessManager.incrementRetry();
-					const delay = calculateRetryDelay(retryDelayMs, currentRetryCount - 1);
-
-					let failureAnalysis: FailureAnalysis | null = null;
-
-					if (retryWithContext) {
-						failureAnalysis = analyzeFailure(result.error ?? "", result.output, result.exitCode);
-
-						currentRetryContext = generateRetryContext(failureAnalysis, currentRetryCount);
-
-						const retryContextEntry: IterationLogRetryContext = {
-							attemptNumber: currentRetryCount,
-							failureCategory: failureAnalysis.category,
-							rootCause: failureAnalysis.rootCause,
-							contextInjected: currentRetryContext,
-						};
-
-						retryContexts.push(retryContextEntry);
-
-						logger.info("Failure analysis for retry", {
-							attemptNumber: currentRetryCount,
-							category: failureAnalysis.category,
-							rootCause: failureAnalysis.rootCause,
-							suggestedApproach: failureAnalysis.suggestedApproach,
-						});
-					}
-
-					logger.logAgentRetry(currentRetryCount, maxRetries, delay);
-
-					eventBus.emit("agent:retry", {
-						retryCount: currentRetryCount,
-						maxRetries,
-						delayMs: delay,
-						failureAnalysis: failureAnalysis ?? undefined,
-					});
-
-					set({
-						isRetrying: true,
-						retryCount: currentRetryCount,
-						output: "",
-					});
-
-					await sleep(delay);
-
-					if (AgentProcessManager.isAborted()) {
-						break;
-					}
-
-					set({
-						isRetrying: false,
-					});
-				} else {
-					const maxRetriesError = createError(
-						ErrorCode.AGENT_MAX_RETRIES,
-						`Max retries (${maxRetries}) exceeded`,
-						{
-							lastError: categorizedError.message,
-							exitCode: result.exitCode,
-							retryCount: AgentProcessManager.getRetryCount(),
-						},
-					);
-
-					logger.error("Max retries exceeded", {
-						maxRetries,
-						lastError: categorizedError.message,
-						code: maxRetriesError.code,
-						exitCode: result.exitCode,
-					});
-
-					const errorMessage = maxRetriesError.suggestion
-						? `${formatErrorCompact(maxRetriesError)}\nLast error: ${categorizedError.message}\n\nSuggestion: ${maxRetriesError.suggestion}`
-						: `${formatErrorCompact(maxRetriesError)}\nLast error: ${categorizedError.message}`;
-
-					set({
-						isStreaming: false,
-						error: errorMessage,
-						exitCode: result.exitCode,
-						retryCount: AgentProcessManager.getRetryCount(),
-					});
-					eventBus.emit("agent:error", {
-						error: errorMessage,
-						exitCode: result.exitCode,
-						isFatal: true,
-						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
-					});
-					break;
-				}
+				return;
 			}
+
+			set({
+				isStreaming: false,
+				isComplete: result.isComplete,
+				exitCode: result.exitCode,
+				retryCount: result.retryCount,
+				error: result.success ? null : (result.error ?? "Unknown error"),
+				isRetrying: false,
+			});
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = getErrorMessage(error);
 
 			logger.error("Unexpected error during agent execution", { error: errorMessage });
 			set({
 				isStreaming: false,
 				error: errorMessage,
 				retryCount: AgentProcessManager.getRetryCount(),
-			});
-			eventBus.emit("agent:error", {
-				error: errorMessage,
-				exitCode: null,
-				isFatal: true,
-				retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
+				isRetrying: false,
 			});
 		} finally {
 			AgentProcessManager.setProcess(null);

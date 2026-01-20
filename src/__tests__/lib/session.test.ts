@@ -87,7 +87,7 @@ describe("session functions", () => {
 			expect(loaded).toBeNull();
 		});
 
-		test("loadSession creates statistics if missing", () => {
+		test("loadSession returns null for session without statistics", () => {
 			const session = createSession(5, 0);
 
 			delete (session as Partial<Session>).statistics;
@@ -95,9 +95,7 @@ describe("session functions", () => {
 
 			const loaded = loadSession();
 
-			expect(loaded).not.toBeNull();
-			expect(loaded?.statistics).toBeDefined();
-			expect(loaded?.statistics.totalIterations).toBe(5);
+			expect(loaded).toBeNull();
 		});
 
 		test("loadSession handles corrupted JSON gracefully", () => {

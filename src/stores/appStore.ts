@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
-import { DEFAULTS } from "@/lib/defaults.ts";
+import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
 import { RALPH_DIR } from "@/lib/paths.ts";

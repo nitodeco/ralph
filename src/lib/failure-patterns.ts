@@ -1,8 +1,13 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { analyzeFailure } from "@/lib/failure-analyzer.ts";
 import { ensureRalphDirExists, FAILURE_HISTORY_FILE_PATH } from "@/lib/paths.ts";
-import type { PromptGuardrail } from "@/types/config.types.ts";
-import type { FailureHistory, FailureHistoryEntry, FailurePattern } from "@/types/session.types.ts";
+import { isFailureHistory } from "@/lib/type-guards.ts";
+import type {
+	FailureHistory,
+	FailureHistoryEntry,
+	FailurePattern,
+	PromptGuardrail,
+} from "@/types.ts";
 
 const MAX_FAILURE_HISTORY_ENTRIES = 100;
 const PATTERN_THRESHOLD = 3;
@@ -22,7 +27,11 @@ export function loadFailureHistory(): FailureHistory {
 
 	try {
 		const content = readFileSync(FAILURE_HISTORY_FILE_PATH, "utf-8");
-		const parsed = JSON.parse(content) as FailureHistory;
+		const parsed: unknown = JSON.parse(content);
+
+		if (!isFailureHistory(parsed)) {
+			return createEmptyFailureHistory();
+		}
 
 		return {
 			entries: parsed.entries ?? [],
@@ -100,7 +109,7 @@ function groupEntriesByPattern(entries: FailureHistoryEntry[]): Map<string, Fail
 			continue;
 		}
 
-		const entry = entries[entryIndex];
+		const entry = entries.at(entryIndex);
 
 		if (!entry) {
 			continue;
@@ -122,7 +131,7 @@ function groupEntriesByPattern(entries: FailureHistoryEntry[]): Map<string, Fail
 				continue;
 			}
 
-			const otherEntry = entries[comparisonIndex];
+			const otherEntry = entries.at(comparisonIndex);
 
 			if (!otherEntry) {
 				continue;

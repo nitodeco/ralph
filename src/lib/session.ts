@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import type { IterationTiming, Session, SessionStatistics, SessionStatus } from "@/types.ts";
 import { ensureRalphDirExists, SESSION_FILE_PATH } from "./paths.ts";
+import { isSession } from "./type-guards.ts";
 
 export { SESSION_FILE_PATH } from "./paths.ts";
 
@@ -11,14 +12,18 @@ export function loadSession(): Session | null {
 
 	try {
 		const content = readFileSync(SESSION_FILE_PATH, "utf-8");
-		const session = JSON.parse(content) as Session;
+		const parsed: unknown = JSON.parse(content);
 
-		if (!session.statistics) {
-			session.statistics = createInitialStatistics(session.totalIterations);
-			saveSession(session);
+		if (!isSession(parsed)) {
+			return null;
 		}
 
-		return session;
+		if (!parsed.statistics) {
+			parsed.statistics = createInitialStatistics(parsed.totalIterations);
+			saveSession(parsed);
+		}
+
+		return parsed;
 	} catch {
 		return null;
 	}

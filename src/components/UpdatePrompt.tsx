@@ -2,6 +2,7 @@ import { Box, Text, useApp } from "ink";
 import SelectInput from "ink-select-input";
 import { useCallback, useEffect, useState } from "react";
 import { loadConfig, saveConfig } from "@/lib/config.ts";
+import { getErrorMessage } from "@/lib/errors.ts";
 import {
 	compareVersions,
 	downloadBinary,
@@ -96,7 +97,7 @@ export function UpdatePrompt({
 					setState("update_available");
 				}
 			} catch (err) {
-				const errorMessage = err instanceof Error ? err.message : String(err);
+				const errorMessage = getErrorMessage(err);
 
 				setError(errorMessage);
 				setState("error");
@@ -162,7 +163,7 @@ export function UpdatePrompt({
 				setState("complete");
 			}
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : String(err);
+			const errorMessage = getErrorMessage(err);
 
 			setError(errorMessage);
 			setState("error");

@@ -1,6 +1,6 @@
 import type { ConfigValidationResult, RalphConfig } from "@/types.ts";
+import { CONFIG_DEFAULTS } from "../constants/config.ts";
 import { GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH } from "../paths.ts";
-import { CONFIG_DEFAULTS } from "./constants.ts";
 
 const FIELD_SUGGESTIONS: Record<string, string> = {
 	agent: "Valid options: 'cursor' or 'claude'. Example: \"agent\": \"claude\"",

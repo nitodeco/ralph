@@ -1,13 +1,12 @@
 import { loadConfig } from "@/lib/config.ts";
-import {
-	applyDecomposition,
-	formatDecompositionForProgress,
-	parseDecompositionRequest,
-} from "@/lib/decomposition.ts";
-import { DEFAULTS } from "@/lib/defaults.ts";
+import { parseDecompositionRequest } from "@/lib/decomposition.ts";
 import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
-import { analyzePatterns, recordFailure } from "@/lib/failure-patterns.ts";
+import {
+	DecompositionHandler,
+	LearningHandler,
+	VerificationHandler,
+} from "@/lib/handlers/index.ts";
 import {
 	appendIterationError,
 	completeIterationLog,
@@ -18,7 +17,7 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd, savePrd } from "@/lib/prd.ts";
+import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
@@ -29,18 +28,12 @@ import {
 	updateSessionIteration,
 	updateSessionStatus,
 } from "@/lib/session.ts";
-import {
-	addFailedApproach,
-	addLesson,
-	addSuccessPattern,
-	initializeSessionMemory,
-} from "@/lib/session-memory.ts";
+import { initializeSessionMemory } from "@/lib/session-memory.ts";
 import {
 	calculateStatisticsFromLogs,
 	displayStatisticsReport,
 	logStatisticsToProgress,
 } from "@/lib/statistics.ts";
-import { formatVerificationResult, runVerification } from "@/lib/verification.ts";
 import type {
 	DecompositionRequest,
 	DecompositionSubtask,
@@ -51,7 +44,6 @@ import type {
 	Prd,
 	RalphConfig,
 	Session,
-	VerificationResult,
 } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useAppStore } from "./appStore.ts";
@@ -82,10 +74,10 @@ class SessionOrchestrator {
 	private unsubscribers: (() => void)[] = [];
 	private initialized = false;
 	private lastRetryContexts: IterationLogRetryContext[] = [];
-	private lastVerificationResult: VerificationResult | null = null;
-	private isVerifying = false;
 	private lastDecomposition: DecompositionRequest | null = null;
-	private decompositionCountByTask: Map<string, number> = new Map();
+	private decompositionHandler: DecompositionHandler | null = null;
+	private verificationHandler: VerificationHandler | null = null;
+	private learningHandler: LearningHandler | null = null;
 
 	initialize(options: OrchestratorConfig): void {
 		if (this.initialized) {
@@ -98,10 +90,25 @@ class SessionOrchestrator {
 		this.skipVerification = options.skipVerification ?? false;
 		this.initialized = true;
 		this.lastRetryContexts = [];
-		this.lastVerificationResult = null;
-		this.isVerifying = false;
 		this.lastDecomposition = null;
-		this.decompositionCountByTask = new Map();
+		this.decompositionHandler = new DecompositionHandler({
+			config: options.config,
+			onPrdUpdate: (prd) => {
+				useAppStore.setState({ prd });
+			},
+			onRestartIteration: () => {
+				useIterationStore.getState().restartCurrentIteration();
+			},
+		});
+		this.verificationHandler = new VerificationHandler({
+			onStateChange: (isVerifying, result) => {
+				useAppStore.setState({ isVerifying, lastVerificationResult: result });
+			},
+		});
+		this.learningHandler = new LearningHandler({
+			enabled: options.config.learningEnabled !== false,
+			logFilePath: options.config.logFilePath,
+		});
 		this.setupSubscriptions();
 
 		const iterationStore = useIterationStore.getState();
@@ -110,7 +117,7 @@ class SessionOrchestrator {
 	}
 
 	getIsVerifying(): boolean {
-		return this.isVerifying;
+		return this.verificationHandler?.getIsRunning() ?? false;
 	}
 
 	private setupSubscriptions(): void {
@@ -142,35 +149,33 @@ class SessionOrchestrator {
 			this.logRetryContextsToProgress(event.retryContexts);
 		}
 
+		const currentPrd = reloadPrd();
 		const decompositionResult = parseDecompositionRequest(event.output);
 
-		if (decompositionResult.detected && decompositionResult.request) {
-			const handled = this.handleDecomposition(decompositionResult.request);
+		if (decompositionResult.detected && decompositionResult.request && this.decompositionHandler) {
+			const handled = this.decompositionHandler.handle(decompositionResult.request, currentPrd);
 
 			if (handled) {
+				this.lastDecomposition = decompositionResult.request;
+				useAppStore.setState({ lastDecomposition: decompositionResult.request });
+
 				return;
 			}
 		}
 
-		const currentPrd = reloadPrd();
 		const allTasksActuallyDone = currentPrd
 			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
 			: false;
 
-		const loadedConfig = loadConfig();
-		const verificationConfig = loadedConfig.verification;
+		const verificationConfig = this.config?.verification;
 
-		if (verificationConfig?.enabled && !this.skipVerification && !allTasksActuallyDone) {
-			this.isVerifying = true;
-			useAppStore.setState({ isVerifying: true });
-
-			const verificationResult = await runVerification(verificationConfig);
-
-			this.lastVerificationResult = verificationResult;
-			this.isVerifying = false;
-			useAppStore.setState({ isVerifying: false, lastVerificationResult: verificationResult });
-
-			this.logVerificationResultToProgress(verificationResult);
+		if (
+			verificationConfig?.enabled &&
+			!this.skipVerification &&
+			!allTasksActuallyDone &&
+			this.verificationHandler
+		) {
+			const verificationResult = await this.verificationHandler.run(verificationConfig);
 
 			if (!verificationResult.passed) {
 				const iterationStore = useIterationStore.getState();
@@ -180,77 +185,12 @@ class SessionOrchestrator {
 				return;
 			}
 		} else {
-			this.lastVerificationResult = null;
+			this.verificationHandler?.reset();
 		}
 
 		const iterationStore = useIterationStore.getState();
 
 		iterationStore.markIterationComplete(allTasksActuallyDone);
-	}
-
-	private handleDecomposition(request: DecompositionRequest): boolean {
-		const loadedConfig = loadConfig();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const maxDecompositions =
-			loadedConfig.maxDecompositionsPerTask ?? DEFAULTS.maxDecompositionsPerTask;
-
-		const taskKey = request.originalTaskTitle.toLowerCase();
-		const currentCount = this.decompositionCountByTask.get(taskKey) ?? 0;
-
-		if (currentCount >= maxDecompositions) {
-			logger.warn("Max decompositions reached for task, proceeding without decomposition", {
-				task: request.originalTaskTitle,
-				maxDecompositions,
-				currentCount,
-			});
-
-			return false;
-		}
-
-		const currentPrd = reloadPrd();
-
-		if (!currentPrd) {
-			logger.error("Cannot apply decomposition: PRD not found");
-
-			return false;
-		}
-
-		const result = applyDecomposition(currentPrd, request);
-
-		if (!result.success || !result.updatedPrd) {
-			logger.error("Failed to apply decomposition", { error: result.error });
-
-			return false;
-		}
-
-		savePrd(result.updatedPrd, loadedConfig.prdFormat ?? "json");
-		this.decompositionCountByTask.set(taskKey, currentCount + 1);
-		this.lastDecomposition = request;
-
-		logger.info("Task decomposed successfully", {
-			originalTask: request.originalTaskTitle,
-			subtasksCreated: result.subtasksCreated,
-			reason: request.reason,
-		});
-
-		appendProgress(formatDecompositionForProgress(request));
-
-		useAppStore.setState({
-			prd: result.updatedPrd,
-			lastDecomposition: request,
-		});
-
-		const iterationStore = useIterationStore.getState();
-
-		iterationStore.restartCurrentIteration();
-
-		return true;
-	}
-
-	private logVerificationResultToProgress(result: VerificationResult): void {
-		const formattedResult = formatVerificationResult(result);
-
-		appendProgress(formattedResult);
 	}
 
 	private logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {
@@ -347,8 +287,8 @@ class SessionOrchestrator {
 					useAppStore.setState({ currentSession: updatedSession });
 				}
 
-				const verificationFailed =
-					this.lastVerificationResult && !this.lastVerificationResult.passed;
+				const lastVerificationResult = this.verificationHandler?.getLastResult() ?? null;
+				const verificationFailed = lastVerificationResult ? !lastVerificationResult.passed : false;
 				const wasDecomposed = this.lastDecomposition !== null;
 
 				const iterationStatus: IterationLogStatus = agentStore.error
@@ -361,79 +301,44 @@ class SessionOrchestrator {
 								? "completed"
 								: "completed";
 
-				if ((agentStore.error || verificationFailed) && loadedConfig.learningEnabled !== false) {
-					const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
-					const errorMessage = agentStore.error || "Verification failed";
+				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
+				const taskTitle = taskWithIndex?.title ?? "Unknown task";
+				const wasSuccessful = !agentStore.error && agentStore.isComplete && !verificationFailed;
+				const failedChecks = lastVerificationResult ? lastVerificationResult.failedChecks : [];
 
-					recordFailure({
-						error: errorMessage,
-						output: agentStore.output,
-						taskTitle: taskWithIndex?.title ?? "Unknown task",
-						exitCode: agentStore.exitCode,
-						iteration: iterationNumber,
-					});
-
-					const patterns = analyzePatterns();
-					const significantPatterns = patterns.filter((pattern) => pattern.occurrences >= 3);
-
-					if (significantPatterns.length > 0) {
-						logger.info("Recurring failure patterns detected", {
-							patternCount: significantPatterns.length,
-							topPattern: significantPatterns[0]?.category,
-						});
-					}
-
-					if (verificationFailed && this.lastVerificationResult) {
-						const failedChecks = this.lastVerificationResult.failedChecks;
-
-						if (failedChecks.length > 0) {
-							addFailedApproach(`Verification failed: ${failedChecks.join(", ")}`);
-						}
-					}
-				}
-
-				if (loadedConfig.learningEnabled !== false) {
-					const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
-					const wasSuccessful = !agentStore.error && agentStore.isComplete && !verificationFailed;
-
-					if (wasSuccessful && agentStore.retryCount > 0 && this.lastRetryContexts.length > 0) {
-						const lastContext = this.lastRetryContexts[this.lastRetryContexts.length - 1];
-
-						if (lastContext) {
-							addLesson(
-								`Task "${taskWithIndex?.title ?? "Unknown"}" succeeded after retry: ${lastContext.rootCause} was resolved`,
-							);
-							addSuccessPattern(
-								`Recovered from ${lastContext.failureCategory} by addressing: ${lastContext.rootCause}`,
-							);
-						}
-					}
-
-					if (wasSuccessful && taskWithIndex) {
-						addSuccessPattern(`Completed task: ${taskWithIndex.title}`);
-					}
-				}
+				this.learningHandler?.recordIterationOutcome({
+					iteration: iterationNumber,
+					wasSuccessful,
+					agentError: agentStore.error,
+					output: agentStore.output,
+					exitCode: agentStore.exitCode,
+					taskTitle,
+					retryCount: agentStore.retryCount,
+					retryContexts: this.lastRetryContexts,
+					verificationFailed,
+					failedChecks,
+				});
 
 				const retryContextsForLog =
 					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
 
 				this.lastRetryContexts = [];
 
-				const verificationForLog: IterationLogVerification | undefined = this.lastVerificationResult
+				const verificationForLog: IterationLogVerification | undefined = lastVerificationResult
 					? {
 							ran: true,
-							passed: this.lastVerificationResult.passed,
-							checks: this.lastVerificationResult.checks.map((check) => ({
+							passed: lastVerificationResult.passed,
+							checks: lastVerificationResult.checks.map((check) => ({
 								name: check.name,
 								passed: check.passed,
 								durationMs: check.durationMs,
 							})),
-							failedChecks: this.lastVerificationResult.failedChecks,
-							totalDurationMs: this.lastVerificationResult.totalDurationMs,
+							failedChecks: lastVerificationResult.failedChecks,
+							totalDurationMs: lastVerificationResult.totalDurationMs,
 						}
 					: undefined;
 
-				this.lastVerificationResult = null;
+				this.verificationHandler?.reset();
 
 				const decompositionForLog: IterationLogDecomposition | undefined = this.lastDecomposition
 					? {
@@ -647,6 +552,11 @@ class SessionOrchestrator {
 
 		this.unsubscribers = [];
 		this.initialized = false;
+		this.decompositionHandler?.reset();
+		this.verificationHandler?.reset();
+		this.decompositionHandler = null;
+		this.verificationHandler = null;
+		this.learningHandler = null;
 		eventBus.removeAllListeners();
 	}
 }

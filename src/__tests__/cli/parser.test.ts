@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { parseArgs } from "@/cli/parser.ts";
-import { DEFAULTS } from "@/lib/defaults.ts";
+import { DEFAULTS } from "@/lib/constants/defaults.ts";
 
 describe("parseArgs", () => {
 	test("defaults to run command with default iterations", () => {

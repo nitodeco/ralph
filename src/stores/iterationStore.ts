@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { DEFAULTS } from "@/lib/defaults.ts";
+import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { eventBus } from "@/lib/events.ts";
 import { IterationTimer } from "@/lib/services/index.ts";
 

@@ -9,19 +9,9 @@ export {
 	DEFAULT_STUCK_THRESHOLD_MS,
 	VALID_AGENTS,
 	VALID_PRD_FORMATS,
-} from "./constants.ts";
+} from "../constants/config.ts";
 export {
-	formatBytes,
-	formatMs,
-	formatValidationErrors,
-	getConfigSummary,
-} from "./formatter.ts";
-export {
-	applyDefaults,
-	getAgentCommand,
 	getEffectiveConfig,
-	getGlobalConfigPath,
-	getProjectConfigPath,
 	globalConfigExists,
 	invalidateConfigCache,
 	loadConfig,
@@ -31,5 +21,17 @@ export {
 	loadProjectConfigRaw,
 	saveConfig,
 	saveGlobalConfig,
+} from "./facade.ts";
+export {
+	formatBytes,
+	formatMs,
+	formatValidationErrors,
+	getConfigSummary,
+} from "./formatter.ts";
+export {
+	applyDefaults,
+	getAgentCommand,
+	getGlobalConfigPath,
+	getProjectConfigPath,
 } from "./loader.ts";
 export { validateConfig } from "./validator.ts";

@@ -1,4 +1,4 @@
-import { DEFAULTS } from "@/lib/defaults.ts";
+import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import type {
 	AnalyzeSubcommand,
 	Command,

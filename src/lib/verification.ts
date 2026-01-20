@@ -1,4 +1,8 @@
 import { spawn } from "node:child_process";
+import {
+	VERIFICATION_CONTEXT_MAX_LENGTH,
+	VERIFICATION_OUTPUT_MAX_LENGTH,
+} from "@/lib/constants/ui.ts";
 import type { CheckResult, VerificationConfig, VerificationResult } from "@/types.ts";
 
 export async function runCheck(name: string, command: string): Promise<CheckResult> {
@@ -43,7 +47,7 @@ export async function runCheck(name: string, command: string): Promise<CheckResu
 			resolve({
 				name,
 				passed,
-				output: output.trim().slice(-2000),
+				output: output.trim().slice(-VERIFICATION_OUTPUT_MAX_LENGTH),
 				durationMs,
 			});
 		});
@@ -182,7 +186,7 @@ export function generateVerificationRetryContext(result: VerificationResult): st
 
 			if (check.output) {
 				lines.push("```");
-				lines.push(check.output.slice(0, 1000));
+				lines.push(check.output.slice(0, VERIFICATION_CONTEXT_MAX_LENGTH));
 				lines.push("```");
 				lines.push("");
 			}

@@ -3,8 +3,10 @@ import { useState } from "react";
 import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
+import { getErrorMessage } from "@/lib/errors.ts";
 import { findPrdFile, loadPrd, savePrd } from "@/lib/prd.ts";
 import { buildAddTaskPrompt, TASK_OUTPUT_END, TASK_OUTPUT_START } from "@/lib/prompt.ts";
+import { isPrdTask } from "@/lib/type-guards.ts";
 import type { Prd, PrdFormat, PrdTask } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
@@ -52,11 +54,13 @@ function parseTaskFromOutput(output: string, format: PrdFormat): PrdTask | null 
 	const taskContent = output.slice(startIndex + startMarker.length, endIndex).trim();
 
 	try {
-		if (format === "yaml") {
-			return parseYaml(taskContent) as PrdTask;
+		const parsed: unknown = format === "yaml" ? parseYaml(taskContent) : JSON.parse(taskContent);
+
+		if (!isPrdTask(parsed)) {
+			return null;
 		}
 
-		return JSON.parse(taskContent) as PrdTask;
+		return parsed;
 	} catch {
 		return null;
 	}
@@ -161,7 +165,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				step: "complete",
 			}));
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = getErrorMessage(error);
 
 			setState((prev) => ({
 				...prev,

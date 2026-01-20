@@ -71,9 +71,13 @@ export function compareVersions(current: string, latest: string): number {
 	const currentParts = normalizedCurrent.split(".").map(Number);
 	const latestParts = normalizedLatest.split(".").map(Number);
 
-	for (let index = 0; index < Math.max(currentParts.length, latestParts.length); index++) {
-		const currentPart = currentParts[index] || 0;
-		const latestPart = latestParts[index] || 0;
+	for (
+		let versionPartIndex = 0;
+		versionPartIndex < Math.max(currentParts.length, latestParts.length);
+		versionPartIndex++
+	) {
+		const currentPart = currentParts.at(versionPartIndex) ?? 0;
+		const latestPart = latestParts.at(versionPartIndex) ?? 0;
 
 		if (latestPart > currentPart) {
 			return 1;

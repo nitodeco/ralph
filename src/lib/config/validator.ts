@@ -5,7 +5,7 @@ import type {
 	NotificationConfig,
 	RalphConfig,
 } from "@/types.ts";
-import { VALID_AGENTS, VALID_PRD_FORMATS } from "./constants.ts";
+import { VALID_AGENTS, VALID_PRD_FORMATS } from "../constants/config.ts";
 
 function validatePositiveInteger(
 	value: unknown,

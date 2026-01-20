@@ -2,10 +2,11 @@ import { execSync } from "node:child_process";
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
+import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { addGuardrail } from "@/lib/guardrails.ts";
 import { deleteSession } from "@/lib/session.ts";
 import { addLesson, addTaskNote } from "@/lib/session-memory.ts";
-import type { ActiveView, SetManualTaskResult } from "@/types/index.ts";
+import type { ActiveView, SetManualTaskResult } from "@/types.ts";
 
 interface SlashCommandMessage {
 	type: "success" | "error";
@@ -91,10 +92,10 @@ export function useSlashCommands({
 							});
 						}
 
-						setTimeout(() => setNextTaskMessage(null), 5000);
+						setTimeout(() => setNextTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					} else {
 						setNextTaskMessage({ type: "error", text: "Usage: /next <task number or title>" });
-						setTimeout(() => setNextTaskMessage(null), 5000);
+						setTimeout(() => setNextTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 
 					break;
@@ -114,13 +115,13 @@ export function useSlashCommands({
 							});
 						}
 
-						setTimeout(() => setGuardrailMessage(null), 5000);
+						setTimeout(() => setGuardrailMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					} else {
 						setGuardrailMessage({
 							type: "error",
 							text: "Usage: /guardrail <instruction>",
 						});
-						setTimeout(() => setGuardrailMessage(null), 5000);
+						setTimeout(() => setGuardrailMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 
 					break;
@@ -144,13 +145,13 @@ export function useSlashCommands({
 							});
 						}
 
-						setTimeout(() => setMemoryMessage(null), 5000);
+						setTimeout(() => setMemoryMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					} else {
 						setMemoryMessage({
 							type: "error",
 							text: "Usage: /learn <lesson>",
 						});
-						setTimeout(() => setMemoryMessage(null), 5000);
+						setTimeout(() => setMemoryMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 
 					break;
@@ -178,13 +179,13 @@ export function useSlashCommands({
 							});
 						}
 
-						setTimeout(() => setMemoryMessage(null), 5000);
+						setTimeout(() => setMemoryMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					} else {
 						setMemoryMessage({
 							type: "error",
 							text: "Usage: /note <note>",
 						});
-						setTimeout(() => setMemoryMessage(null), 5000);
+						setTimeout(() => setMemoryMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 
 					break;
@@ -253,7 +254,7 @@ export function useSlashCommands({
 						});
 					}
 
-					setTimeout(() => setClearMessage(null), 5000);
+					setTimeout(() => setClearMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					break;
 				case "refresh":
 					if (refreshState) {
@@ -276,7 +277,7 @@ export function useSlashCommands({
 							});
 						}
 
-						setTimeout(() => setRefreshMessage(null), 5000);
+						setTimeout(() => setRefreshMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 
 					break;

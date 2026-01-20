@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
-import type { Prd, RalphConfig, Session } from "@/types.ts";
+import type { Session } from "@/types.ts";
 import { validateConfig } from "./config.ts";
+import { getErrorMessage } from "./errors.ts";
 import { RALPH_DIR } from "./paths.ts";
+import { isPrd, isSession } from "./type-guards.ts";
 
 const CONFIG_PATH = join(RALPH_DIR, "config.json");
 const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");
@@ -40,7 +42,7 @@ function validateConfigFile(issues: IntegrityIssue[]): void {
 
 	try {
 		const content = readFileSync(CONFIG_PATH, "utf-8");
-		const parsed = JSON.parse(content) as RalphConfig;
+		const parsed: unknown = JSON.parse(content);
 		const validationResult = validateConfig(parsed);
 
 		for (const error of validationResult.errors) {
@@ -59,7 +61,7 @@ function validateConfigFile(issues: IntegrityIssue[]): void {
 			});
 		}
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 
 		issues.push({
 			file: "config.json",
@@ -84,31 +86,20 @@ function validatePrdFile(issues: IntegrityIssue[]): void {
 
 	try {
 		const content = readFileSync(prdPath, "utf-8");
-		let prd: Prd;
+		const parsed: unknown =
+			prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")
+				? parseYaml(content)
+				: JSON.parse(content);
 
-		if (prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")) {
-			prd = parseYaml(content) as Prd;
-		} else {
-			prd = JSON.parse(content) as Prd;
-		}
-
-		if (typeof prd.project !== "string" || !prd.project) {
+		if (!isPrd(parsed)) {
 			issues.push({
 				file: fileName,
-				message: "Missing or invalid 'project' field",
-				severity: "error",
-			});
-		}
-
-		if (!Array.isArray(prd.tasks)) {
-			issues.push({
-				file: fileName,
-				message: "Missing or invalid 'tasks' array",
+				message: "Missing or invalid PRD structure",
 				severity: "error",
 			});
 		}
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 
 		issues.push({
 			file: fileName,
@@ -125,7 +116,19 @@ function validateSessionFile(issues: IntegrityIssue[]): void {
 
 	try {
 		const content = readFileSync(SESSION_PATH, "utf-8");
-		const session = JSON.parse(content) as Session;
+		const parsed: unknown = JSON.parse(content);
+
+		if (!isSession(parsed)) {
+			issues.push({
+				file: "session.json",
+				message: "Invalid session structure",
+				severity: "error",
+			});
+
+			return;
+		}
+
+		const session = parsed;
 
 		const requiredFields: (keyof Session)[] = [
 			"startTime",
@@ -147,7 +150,7 @@ function validateSessionFile(issues: IntegrityIssue[]): void {
 			}
 		}
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 
 		issues.push({
 			file: "session.json",

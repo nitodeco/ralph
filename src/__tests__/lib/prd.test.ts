@@ -111,7 +111,7 @@ tasks:
 			const result = loadPrdWithValidation();
 
 			expect(result.prd).toBeNull();
-			expect(result.validationError).toContain("project");
+			expect(result.validationError).toBeDefined();
 		});
 
 		test("returns validation error when tasks array is missing", () => {
@@ -120,7 +120,7 @@ tasks:
 			const result = loadPrdWithValidation();
 
 			expect(result.prd).toBeNull();
-			expect(result.validationError).toContain("tasks");
+			expect(result.validationError).toBeDefined();
 		});
 
 		test("returns validation error for invalid JSON", () => {

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { checkForUpdateOnStartup } from "@/lib/update.ts";
 import { orchestrator, setupIterationCallbacks, useAppStore } from "@/stores/index.ts";
-import type { ActiveView, AppState, Session, SetManualTaskResult } from "@/types/index.ts";
+import type { ActiveView, AppState, Session, SetManualTaskResult } from "@/types.ts";
 
 interface UseSessionLifecycleParams {
 	iterations: number;

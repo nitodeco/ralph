@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import type { Prd, RalphConfig } from "@/types/index.ts";
+import type { Prd, RalphConfig } from "@/types.ts";
 import { AgentOutput } from "./AgentOutput.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
 import { CommandInput } from "./CommandInput.tsx";

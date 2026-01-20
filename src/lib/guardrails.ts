@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { DEFAULT_GUARDRAILS } from "@/lib/defaults.ts";
+import { createDefaultGuardrails } from "@/lib/constants/defaults.ts";
 import { ensureRalphDirExists, GUARDRAILS_FILE_PATH } from "@/lib/paths.ts";
-import type { GuardrailCategory, GuardrailTrigger, PromptGuardrail } from "@/types/config.types.ts";
+import { isGuardrailsFile } from "@/lib/type-guards.ts";
+import type { GuardrailCategory, GuardrailTrigger, PromptGuardrail } from "@/types.ts";
 
 export interface GuardrailsFile {
 	guardrails: PromptGuardrail[];
@@ -13,16 +14,20 @@ function generateGuardrailId(): string {
 
 export function loadGuardrails(): PromptGuardrail[] {
 	if (!existsSync(GUARDRAILS_FILE_PATH)) {
-		return [...DEFAULT_GUARDRAILS];
+		return createDefaultGuardrails();
 	}
 
 	try {
 		const content = readFileSync(GUARDRAILS_FILE_PATH, "utf-8");
-		const parsed = JSON.parse(content) as GuardrailsFile;
+		const parsed: unknown = JSON.parse(content);
 
-		return parsed.guardrails ?? [...DEFAULT_GUARDRAILS];
+		if (!isGuardrailsFile(parsed)) {
+			return createDefaultGuardrails();
+		}
+
+		return parsed.guardrails ?? createDefaultGuardrails();
 	} catch {
-		return [...DEFAULT_GUARDRAILS];
+		return createDefaultGuardrails();
 	}
 }
 
@@ -39,7 +44,7 @@ export function guardrailsFileExists(): boolean {
 
 export function initializeGuardrails(): void {
 	if (!guardrailsFileExists()) {
-		saveGuardrails([...DEFAULT_GUARDRAILS]);
+		saveGuardrails(createDefaultGuardrails());
 	}
 }
 

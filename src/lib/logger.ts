@@ -70,7 +70,9 @@ class Logger {
 			ensureLogDirectoryExists(logFilePath);
 			checkAndRotateFile(logFilePath, this.config.maxFileSizeBytes, this.config.maxBackupFiles);
 			appendFileSync(logFilePath, `${formattedEntry}\n`);
-		} catch {}
+		} catch {
+			// Logging should not throw, silently ignore write failures
+		}
 	}
 
 	private log(level: LogLevel, message: string, context?: Record<string, unknown>): void {

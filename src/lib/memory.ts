@@ -139,7 +139,9 @@ export function cleanupTempFiles(): number {
 						unlinkSync(filePath);
 						cleanedCount++;
 					}
-				} catch {}
+				} catch {
+					// File may have been deleted by another process, ignore
+				}
 			}
 		}
 	} catch {

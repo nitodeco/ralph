@@ -19,10 +19,13 @@ export type {
 	CheckResult,
 	ConfigValidationError,
 	ConfigValidationResult,
+	GuardrailCategory,
+	GuardrailTrigger,
 	MemoryConfig,
 	NotificationConfig,
 	NotificationEvent,
 	PrdFormat,
+	PromptGuardrail,
 	RalphConfig,
 	VerificationConfig,
 	VerificationResult,
@@ -35,6 +38,9 @@ export type {
 	PrdTask,
 } from "./prd.types.ts";
 export type {
+	FailureHistory,
+	FailureHistoryEntry,
+	FailurePattern,
 	IterationLog,
 	IterationLogAgent,
 	IterationLogDecomposition,

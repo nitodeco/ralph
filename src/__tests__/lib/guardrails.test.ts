@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { DEFAULT_GUARDRAILS } from "@/lib/defaults.ts";
+import { createDefaultGuardrails } from "@/lib/constants/defaults.ts";
 import {
 	addGuardrail,
 	formatGuardrailsForPrompt,
@@ -14,10 +14,20 @@ import {
 	toggleGuardrail,
 } from "@/lib/guardrails.ts";
 import { ensureRalphDirExists, GUARDRAILS_FILE_PATH } from "@/lib/paths.ts";
-import type { PromptGuardrail } from "@/types/config.types.ts";
+import type { PromptGuardrail } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-guardrails";
 const RALPH_DIR = `${TEST_DIR}/.ralph`;
+
+type GuardrailWithoutTimestamp = Omit<PromptGuardrail, "addedAt">;
+
+function normalizeGuardrails(guardrails: PromptGuardrail[]): GuardrailWithoutTimestamp[] {
+	return guardrails.map((guardrail) => {
+		const { addedAt, ...rest } = guardrail;
+
+		return rest;
+	});
+}
 
 describe("guardrails functions", () => {
 	beforeEach(() => {
@@ -41,7 +51,9 @@ describe("guardrails functions", () => {
 			const guardrails = loadGuardrails();
 
 			expect(guardrails.length).toBeGreaterThan(0);
-			expect(guardrails).toEqual(DEFAULT_GUARDRAILS);
+			expect(normalizeGuardrails(guardrails)).toEqual(
+				normalizeGuardrails(createDefaultGuardrails()),
+			);
 		});
 
 		test("loads guardrails from file", () => {
@@ -68,14 +80,18 @@ describe("guardrails functions", () => {
 			writeFileSync(GUARDRAILS_FILE_PATH, "{ invalid json }");
 			const guardrails = loadGuardrails();
 
-			expect(guardrails).toEqual(DEFAULT_GUARDRAILS);
+			expect(normalizeGuardrails(guardrails)).toEqual(
+				normalizeGuardrails(createDefaultGuardrails()),
+			);
 		});
 
 		test("returns defaults when guardrails array is missing", () => {
 			writeFileSync(GUARDRAILS_FILE_PATH, JSON.stringify({}));
 			const guardrails = loadGuardrails();
 
-			expect(guardrails).toEqual(DEFAULT_GUARDRAILS);
+			expect(normalizeGuardrails(guardrails)).toEqual(
+				normalizeGuardrails(createDefaultGuardrails()),
+			);
 		});
 	});
 
@@ -127,7 +143,9 @@ describe("guardrails functions", () => {
 			expect(guardrailsFileExists()).toBe(true);
 			const guardrails = loadGuardrails();
 
-			expect(guardrails).toEqual(DEFAULT_GUARDRAILS);
+			expect(normalizeGuardrails(guardrails)).toEqual(
+				normalizeGuardrails(createDefaultGuardrails()),
+			);
 		});
 
 		test("does not overwrite existing guardrails file", () => {

@@ -4,7 +4,7 @@ import {
 	removeGuardrail,
 	toggleGuardrail,
 } from "@/lib/guardrails.ts";
-import type { PromptGuardrail } from "@/types/config.types.ts";
+import type { PromptGuardrail } from "@/types.ts";
 
 interface GuardrailsOutput {
 	guardrails: PromptGuardrail[];

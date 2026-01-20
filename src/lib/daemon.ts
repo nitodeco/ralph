@@ -1,5 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { DEFAULT_DAEMON_STOP_TIMEOUT_MS, FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
+import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
 import { loadSession, saveSession, updateSessionStatus } from "./session.ts";
@@ -39,7 +41,9 @@ export function deletePidFile(): void {
 	if (existsSync(PID_FILE_PATH)) {
 		try {
 			unlinkSync(PID_FILE_PATH);
-		} catch {}
+		} catch (error) {
+			console.error(`Failed to delete PID file: ${getErrorMessage(error)}`);
+		}
 	}
 }
 
@@ -120,7 +124,7 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 
 		return pid;
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 
 		logger.error("Failed to spawn daemon process", { error: errorMessage });
 
@@ -143,7 +147,9 @@ export interface StopResult {
 	wasKilled: boolean;
 }
 
-export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
+export async function stopDaemonProcess(
+	timeoutMs = DEFAULT_DAEMON_STOP_TIMEOUT_MS,
+): Promise<StopResult> {
 	const { running, pid } = isBackgroundProcessRunning();
 
 	if (!running || pid === null) {
@@ -161,7 +167,7 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 		process.kill(pid, "SIGTERM");
 		logger.info("Sent SIGTERM to daemon process", { pid });
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 
 		logger.error("Failed to send SIGTERM", { pid, error: errorMessage });
 		deletePidFile();
@@ -201,12 +207,12 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 		process.kill(pid, "SIGKILL");
 		logger.info("Sent SIGKILL to daemon process", { pid });
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+		const errorMessage = getErrorMessage(error);
 
 		logger.error("Failed to send SIGKILL", { pid, error: errorMessage });
 	}
 
-	await new Promise((resolve) => setTimeout(resolve, 500));
+	await new Promise((resolve) => setTimeout(resolve, FORCE_KILL_TIMEOUT_MS));
 
 	if (!isProcessRunning(pid)) {
 		deletePidFile();
@@ -260,7 +266,7 @@ function handleShutdownSignal(signal: ShutdownSignal): void {
 			shutdownHandlerRef.onShutdown();
 			logger.info("Agent process terminated", { signal });
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = getErrorMessage(error);
 
 			logger.error("Error during shutdown handler", { signal, error: errorMessage });
 		}

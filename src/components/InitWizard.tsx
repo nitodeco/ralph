@@ -5,10 +5,12 @@ import { useState } from "react";
 import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
+import { getErrorMessage } from "@/lib/errors.ts";
 import { ensureRalphDirExists, RALPH_DIR } from "@/lib/paths.ts";
 import { findPrdFile, savePrd } from "@/lib/prd.ts";
 import { PROGRESS_FILE_PATH } from "@/lib/progress.ts";
 import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
+import { isPrd } from "@/lib/type-guards.ts";
 import type { AgentType, Prd, PrdFormat, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
@@ -72,11 +74,13 @@ function parsePrdFromOutput(output: string, format: PrdFormat): Prd | null {
 	const prdContent = output.slice(startIndex + startMarker.length, endIndex).trim();
 
 	try {
-		if (format === "yaml") {
-			return parseYaml(prdContent) as Prd;
+		const parsed: unknown = format === "yaml" ? parseYaml(prdContent) : JSON.parse(prdContent);
+
+		if (!isPrd(parsed)) {
+			return null;
 		}
 
-		return JSON.parse(prdContent) as Prd;
+		return parsed;
 	} catch {
 		return null;
 	}
@@ -210,7 +214,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				step: "complete",
 			}));
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = getErrorMessage(error);
 
 			setState((prev) => ({
 				...prev,

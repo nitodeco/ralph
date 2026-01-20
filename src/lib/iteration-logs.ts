@@ -20,6 +20,7 @@ import type {
 } from "@/types.ts";
 import { formatTimestamp } from "./logging-utils.ts";
 import { ensureLogsDirExists, LOGS_DIR } from "./paths.ts";
+import { isIterationLog, isIterationLogsIndex } from "./type-guards.ts";
 
 const INDEX_FILE = "index.json";
 
@@ -65,8 +66,13 @@ export function loadIterationLogsIndex(): IterationLogsIndex | null {
 
 	try {
 		const content = readFileSync(indexPath, "utf-8");
+		const parsed: unknown = JSON.parse(content);
 
-		return JSON.parse(content) as IterationLogsIndex;
+		if (!isIterationLogsIndex(parsed)) {
+			return null;
+		}
+
+		return parsed;
 	} catch {
 		return null;
 	}
@@ -81,7 +87,7 @@ function updateLogsIndex(iteration: number, status: IterationLogStatus): void {
 
 	const existingEntryIndex = index.iterations.findIndex((entry) => entry.iteration === iteration);
 
-	const existingEntry = index.iterations[existingEntryIndex];
+	const existingEntry = index.iterations.at(existingEntryIndex);
 
 	if (existingEntryIndex >= 0 && existingEntry) {
 		existingEntry.status = status;
@@ -139,8 +145,13 @@ export function loadIterationLog(iteration: number): IterationLog | null {
 
 	try {
 		const content = readFileSync(filePath, "utf-8");
+		const parsed: unknown = JSON.parse(content);
 
-		return JSON.parse(content) as IterationLog;
+		if (!isIterationLog(parsed)) {
+			return null;
+		}
+
+		return parsed;
 	} catch {
 		return null;
 	}
@@ -276,7 +287,9 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 					unlinkSync(filePath);
 					deletedCount++;
 				}
-			} catch {}
+			} catch {
+				// File may have been deleted by another process, ignore
+			}
 		}
 
 		if (deletedCount > 0) {

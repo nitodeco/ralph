@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { ensureRalphDirExists, SESSION_MEMORY_FILE_PATH } from "@/lib/paths.ts";
-import type { SessionMemory } from "@/types/session.types.ts";
+import { isSessionMemory } from "@/lib/type-guards.ts";
+import type { SessionMemory } from "@/types.ts";
 
 const MAX_LESSONS = 50;
 const MAX_PATTERNS = 20;
@@ -24,7 +25,11 @@ export function loadSessionMemory(projectName?: string): SessionMemory {
 
 	try {
 		const content = readFileSync(SESSION_MEMORY_FILE_PATH, "utf-8");
-		const parsed = JSON.parse(content) as SessionMemory;
+		const parsed: unknown = JSON.parse(content);
+
+		if (!isSessionMemory(parsed)) {
+			return createEmptyMemory(projectName ?? "Unknown Project");
+		}
 
 		return parsed;
 	} catch {

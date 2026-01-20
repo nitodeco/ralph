@@ -123,6 +123,10 @@ export function formatErrorCompact(error: RalphError): string {
 	return `[${error.code}] ${error.message}`;
 }
 
+export function getErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
+
 export function getErrorSuggestion(code: ErrorCode): string | undefined {
 	return ERROR_SUGGESTIONS[code];
 }
@@ -161,6 +165,35 @@ export function categorizeAgentError(
 	}
 
 	return { code: ErrorCode.UNKNOWN, isFatal: false };
+}
+
+export interface CategorizedAgentError {
+	category: "retryable" | "fatal";
+	message: string;
+	code: ErrorCode;
+	suggestion?: string;
+}
+
+export function categorizeAgentErrorFull(
+	error: string,
+	exitCode: number | null,
+): CategorizedAgentError {
+	const { code, isFatal } = categorizeAgentError(error, exitCode);
+
+	let message = error;
+
+	if (exitCode === 127) {
+		message = "Agent command not found. Is the agent CLI installed?";
+	} else if (exitCode === 126) {
+		message = "Agent command not executable. Check file permissions.";
+	}
+
+	return {
+		category: isFatal ? "fatal" : "retryable",
+		message,
+		code,
+		suggestion: getErrorSuggestion(code),
+	};
 }
 
 export function printError(error: RalphError, verbose = false): void {

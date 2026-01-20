@@ -1,4 +1,5 @@
 import type { Subprocess } from "bun";
+import { FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 
 class AgentProcessManagerClass {
 	private process: Subprocess | null = null;
@@ -49,19 +50,23 @@ class AgentProcessManagerClass {
 
 			try {
 				processToKill.kill("SIGTERM");
-			} catch {}
+			} catch {
+				// Process may have already exited, ignore
+			}
 
 			this.forceKillTimeout = setTimeout(() => {
 				if (this.process === processToKill) {
 					try {
 						processToKill.kill("SIGKILL");
-					} catch {}
+					} catch {
+						// Process may have already exited, ignore
+					}
 
 					this.process = null;
 				}
 
 				this.forceKillTimeout = null;
-			}, 500);
+			}, FORCE_KILL_TIMEOUT_MS);
 
 			this.process = null;
 		}

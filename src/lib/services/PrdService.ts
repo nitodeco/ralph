@@ -3,6 +3,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { LoadPrdResult, Prd } from "@/types.ts";
 import { createError, ErrorCode, formatError } from "../errors.ts";
 import { PRD_JSON_PATH, PRD_YAML_PATH } from "../paths.ts";
+import { isPrd } from "../type-guards.ts";
 
 function findPrdFile(): string | null {
 	if (existsSync(PRD_JSON_PATH)) {
@@ -26,29 +27,19 @@ function loadPrdFromDisk(): LoadPrdResult {
 	try {
 		const content = readFileSync(prdPath, "utf-8");
 
-		let prd: Prd;
+		const parsed: unknown =
+			prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")
+				? parseYaml(content)
+				: JSON.parse(content);
 
-		if (prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")) {
-			prd = parseYaml(content) as Prd;
-		} else {
-			prd = JSON.parse(content) as Prd;
-		}
-
-		if (!prd.project) {
+		if (!isPrd(parsed)) {
 			return {
 				prd: null,
-				validationError: "PRD is missing required 'project' field",
+				validationError: "PRD is missing required fields or has invalid structure",
 			};
 		}
 
-		if (!Array.isArray(prd.tasks)) {
-			return {
-				prd: null,
-				validationError: "PRD is missing required 'tasks' array",
-			};
-		}
-
-		return { prd };
+		return { prd: parsed };
 	} catch (parseError) {
 		const errorMessage = parseError instanceof Error ? parseError.message : "Unknown parsing error";
 

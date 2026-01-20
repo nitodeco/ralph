@@ -46,7 +46,7 @@ export interface TaskWithIndex {
 
 export function getNextTaskWithIndex(prd: Prd): TaskWithIndex | null {
 	for (let taskIndex = 0; taskIndex < prd.tasks.length; taskIndex++) {
-		const task = prd.tasks[taskIndex];
+		const task = prd.tasks.at(taskIndex);
 
 		if (task && !task.done) {
 			return { title: task.title, index: taskIndex };
@@ -67,7 +67,7 @@ export function getTaskByIndex(prd: Prd, index: number): PrdTask | null {
 		return null;
 	}
 
-	return prd.tasks[index] ?? null;
+	return prd.tasks.at(index) ?? null;
 }
 
 export function canWorkOnTask(task: PrdTask): { canWork: boolean; reason?: string } {

@@ -1,72 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { ConfigValidationResult, RalphConfig } from "@/types.ts";
-import { DEFAULT_VERIFICATION, DEFAULTS } from "../defaults.ts";
+import { applyDefaults } from "../config/loader.ts";
+import { DEFAULT_CONFIG } from "../constants/config.ts";
 import {
 	ensureGlobalRalphDirExists,
 	ensureRalphDirExists,
 	GLOBAL_CONFIG_PATH,
 	PROJECT_CONFIG_PATH,
 } from "../paths.ts";
-
-const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
-	agent: DEFAULTS.agent,
-	prdFormat: DEFAULTS.prdFormat,
-	maxRetries: DEFAULTS.maxRetries,
-	retryDelayMs: DEFAULTS.retryDelayMs,
-	logFilePath: DEFAULTS.logFilePath,
-	agentTimeoutMs: DEFAULTS.agentTimeoutMs,
-	stuckThresholdMs: DEFAULTS.stuckThresholdMs,
-	notifications: {
-		systemNotification: false,
-		webhookUrl: undefined,
-		markerFilePath: undefined,
-	},
-	memory: {
-		maxOutputBufferBytes: DEFAULTS.maxOutputBufferBytes,
-		memoryWarningThresholdMb: DEFAULTS.memoryWarningThresholdMb,
-		enableGarbageCollectionHints: DEFAULTS.enableGcHints,
-	},
-	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
-	maxRuntimeMs: 0,
-	retryWithContext: DEFAULTS.retryWithContext,
-	verification: DEFAULT_VERIFICATION,
-	maxDecompositionsPerTask: DEFAULTS.maxDecompositionsPerTask,
-	learningEnabled: DEFAULTS.learningEnabled,
-};
-
-const DEFAULT_CONFIG: RalphConfig = {
-	agent: DEFAULTS.agent,
-	prdFormat: DEFAULTS.prdFormat,
-	maxRetries: DEFAULTS.maxRetries,
-	retryDelayMs: DEFAULTS.retryDelayMs,
-};
-
-function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
-	const defaults = CONFIG_DEFAULTS;
-
-	return {
-		agent: config.agent ?? defaults.agent,
-		prdFormat: config.prdFormat ?? defaults.prdFormat,
-		maxRetries: config.maxRetries ?? defaults.maxRetries,
-		retryDelayMs: config.retryDelayMs ?? defaults.retryDelayMs,
-		logFilePath: config.logFilePath ?? defaults.logFilePath,
-		agentTimeoutMs: config.agentTimeoutMs ?? defaults.agentTimeoutMs,
-		stuckThresholdMs: config.stuckThresholdMs ?? defaults.stuckThresholdMs,
-		lastUpdateCheck: config.lastUpdateCheck,
-		skipVersion: config.skipVersion,
-		notifications: config.notifications
-			? { ...defaults.notifications, ...config.notifications }
-			: defaults.notifications,
-		memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
-		maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
-		retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
-		verification: config.verification
-			? { ...defaults.verification, ...config.verification }
-			: defaults.verification,
-		maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
-		learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
-	};
-}
+import { isPartialRalphConfig } from "../type-guards.ts";
 
 class ConfigServiceImpl {
 	private cachedConfig: RalphConfig | null = null;
@@ -91,9 +33,15 @@ class ConfigServiceImpl {
 
 		try {
 			const projectContent = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
-			const projectConfig = JSON.parse(projectContent) as Partial<RalphConfig>;
+			const parsed: unknown = JSON.parse(projectContent);
 
-			this.cachedConfig = applyDefaults({ ...globalConfig, ...projectConfig });
+			if (!isPartialRalphConfig(parsed)) {
+				this.cachedConfig = globalConfig;
+
+				return globalConfig;
+			}
+
+			this.cachedConfig = applyDefaults({ ...globalConfig, ...parsed });
 
 			return this.cachedConfig;
 		} catch {
@@ -116,7 +64,13 @@ class ConfigServiceImpl {
 
 		try {
 			const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
-			const parsed = JSON.parse(content) as Partial<RalphConfig>;
+			const parsed: unknown = JSON.parse(content);
+
+			if (!isPartialRalphConfig(parsed)) {
+				this.cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
+
+				return this.cachedGlobalConfig;
+			}
 
 			this.cachedGlobalConfig = applyDefaults({ ...DEFAULT_CONFIG, ...parsed });
 
@@ -135,8 +89,13 @@ class ConfigServiceImpl {
 
 		try {
 			const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
+			const parsed: unknown = JSON.parse(content);
 
-			return JSON.parse(content) as Partial<RalphConfig>;
+			if (!isPartialRalphConfig(parsed)) {
+				return null;
+			}
+
+			return parsed;
 		} catch {
 			return null;
 		}
@@ -149,8 +108,13 @@ class ConfigServiceImpl {
 
 		try {
 			const content = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
+			const parsed: unknown = JSON.parse(content);
 
-			return JSON.parse(content) as Partial<RalphConfig>;
+			if (!isPartialRalphConfig(parsed)) {
+				return null;
+			}
+
+			return parsed;
 		} catch {
 			return null;
 		}

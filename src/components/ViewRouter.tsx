@@ -1,11 +1,5 @@
 import type { DryRunState } from "@/hooks/useDryRun.ts";
-import type {
-	ActiveView,
-	AppState,
-	RalphConfig,
-	Session,
-	ValidationWarning,
-} from "@/types/index.ts";
+import type { ActiveView, AppState, RalphConfig, Session, ValidationWarning } from "@/types.ts";
 import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
 import { HelpView } from "./HelpView.tsx";

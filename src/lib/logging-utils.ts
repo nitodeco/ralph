@@ -20,7 +20,9 @@ export function rotateFile(filePath: string, maxBackupFiles: number): void {
 
 			try {
 				renameSync(currentBackup, nextBackup);
-			} catch {}
+			} catch {
+				// File may have been modified by another process, ignore
+			}
 		}
 	}
 }
@@ -40,5 +42,7 @@ export function checkAndRotateFile(
 		if (stats.size >= maxFileSizeBytes) {
 			rotateFile(filePath, maxBackupFiles);
 		}
-	} catch {}
+	} catch {
+		// File may not exist or be inaccessible, ignore
+	}
 }

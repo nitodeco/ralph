@@ -199,7 +199,7 @@ describe("memory functions", () => {
 		test("does not remove non-temp files", () => {
 			writeFileSync(join(RALPH_DIR, "config.json"), "{}");
 			writeFileSync(join(RALPH_DIR, "prd.json"), "{}");
-			const _cleaned = cleanupTempFiles();
+			cleanupTempFiles();
 
 			expect(existsSync(join(RALPH_DIR, "config.json"))).toBe(true);
 			expect(existsSync(join(RALPH_DIR, "prd.json"))).toBe(true);

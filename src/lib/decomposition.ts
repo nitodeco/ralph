@@ -32,7 +32,7 @@ export function parseDecompositionRequest(output: string): DecompositionResult {
 		.trim();
 
 	try {
-		const parsed = JSON.parse(jsonContent) as unknown;
+		const parsed: unknown = JSON.parse(jsonContent);
 
 		if (!isValidDecompositionRequest(parsed)) {
 			return {
@@ -132,7 +132,7 @@ export function applyDecomposition(
 		};
 	}
 
-	const originalTask = prd.tasks[originalTaskIndex];
+	const originalTask = prd.tasks.at(originalTaskIndex);
 
 	if (originalTask?.done) {
 		return {
@@ -177,7 +177,7 @@ export function formatDecompositionForProgress(request: DecompositionRequest): s
 	];
 
 	for (let subtaskIndex = 0; subtaskIndex < request.suggestedSubtasks.length; subtaskIndex++) {
-		const subtask = request.suggestedSubtasks[subtaskIndex];
+		const subtask = request.suggestedSubtasks.at(subtaskIndex);
 
 		if (subtask) {
 			lines.push(`  ${subtaskIndex + 1}. ${subtask.title}`);
