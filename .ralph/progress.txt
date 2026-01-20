@@ -122,3 +122,22 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Split config.ts into focused modules
+Date: 2026-01-20
+
+Changes made:
+- Created src/lib/config/ directory for config submodules
+- Created src/lib/config/constants.ts with: CONFIG_DEFAULTS, DEFAULT_CONFIG, VALID_AGENTS, VALID_PRD_FORMATS, AGENT_COMMANDS, and default constant exports
+- Created src/lib/config/loader.ts with: applyDefaults(), loadConfig(), saveConfig(), loadGlobalConfig(), saveGlobalConfig(), loadGlobalConfigRaw(), loadProjectConfigRaw(), loadConfigWithValidation(), getEffectiveConfig(), globalConfigExists(), getGlobalConfigPath(), getProjectConfigPath(), getAgentCommand(), invalidateConfigCache()
+- Created src/lib/config/validator.ts with: validateConfig(), validatePositiveInteger(), validateString(), validateBoolean(), validateUrl(), validateNotificationConfig(), validateMemoryConfig()
+- Created src/lib/config/formatter.ts with: formatValidationErrors(), getConfigSummary(), formatMs(), formatBytes()
+- Created src/lib/config/index.ts to re-export everything from submodules for backward compatibility
+- Updated src/lib/config.ts to re-export from src/lib/config/index.ts for backward compatibility
+- All existing imports of '@/lib/config' continue to work unchanged
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

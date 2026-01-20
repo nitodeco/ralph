@@ -111,7 +111,7 @@
 				"Update src/lib/config.ts to simply re-export from src/lib/config/index.ts for backward compatibility",
 				"Verify all existing imports of '@/lib/config' still work"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Simplify RunApp component by extracting hooks and ViewRouter",

@@ -1,6 +1,5 @@
 export {
 	AGENT_COMMANDS,
-	applyDefaults,
 	CONFIG_DEFAULTS,
 	DEFAULT_AGENT_TIMEOUT_MS,
 	DEFAULT_CONFIG,
@@ -8,11 +7,18 @@ export {
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
 	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
 	DEFAULT_STUCK_THRESHOLD_MS,
+	VALID_AGENTS,
+	VALID_PRD_FORMATS,
+} from "./constants.ts";
+export {
 	formatBytes,
 	formatMs,
 	formatValidationErrors,
-	getAgentCommand,
 	getConfigSummary,
+} from "./formatter.ts";
+export {
+	applyDefaults,
+	getAgentCommand,
 	getEffectiveConfig,
 	getGlobalConfigPath,
 	getProjectConfigPath,
@@ -25,7 +31,5 @@ export {
 	loadProjectConfigRaw,
 	saveConfig,
 	saveGlobalConfig,
-	VALID_AGENTS,
-	VALID_PRD_FORMATS,
-	validateConfig,
-} from "./config/index.ts";
+} from "./loader.ts";
+export { validateConfig } from "./validator.ts";
