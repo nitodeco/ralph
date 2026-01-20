@@ -48,7 +48,7 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 						<Text>
 							<Text dimColor>init</Text>
 							{"              "}
-							<Text>Initialize a new PRD project</Text>
+							<Text>Initialize a new PRD project (AI-generated)</Text>
 						</Text>
 						<Text>
 							<Text dimColor>setup</Text>
@@ -72,9 +72,19 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 					<Text bold color="yellow">Slash Commands (in-app):</Text>
 					<Box flexDirection="column" paddingLeft={2}>
 						<Text>
+							<Text dimColor>/start [n]</Text>
+							{"        "}
+							<Text>Start the agent loop (default: 10 iterations)</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/init</Text>
 							{"             "}
-							<Text>Initialize a new PRD project</Text>
+							<Text>Initialize a new PRD project (AI-generated)</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/add</Text>
+							{"              "}
+							<Text>Add a new task to the PRD (AI-generated)</Text>
 						</Text>
 						<Text>
 							<Text dimColor>/setup</Text>

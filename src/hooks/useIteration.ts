@@ -22,6 +22,7 @@ interface UseIterationReturn extends UseIterationState {
 	resume: () => void;
 	stop: () => void;
 	next: () => void;
+	setTotal: (newTotal: number) => void;
 	markIterationComplete: (isProjectComplete: boolean) => void;
 }
 
@@ -92,6 +93,13 @@ export function useIteration(options: UseIterationOptions): UseIterationReturn {
 		}));
 	}, [clearDelayTimeout]);
 
+	const setTotal = useCallback((newTotal: number) => {
+		setState((prev) => ({
+			...prev,
+			total: newTotal,
+		}));
+	}, []);
+
 	const next = useCallback(() => {
 		setState((prev) => {
 			if (prev.current >= prev.total || projectCompleteRef.current) {
@@ -159,6 +167,7 @@ export function useIteration(options: UseIterationOptions): UseIterationReturn {
 		resume,
 		stop,
 		next,
+		setTotal,
 		markIterationComplete,
 	};
 }

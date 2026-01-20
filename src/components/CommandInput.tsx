@@ -2,27 +2,45 @@ import { Box, Text } from "ink";
 import TextInput from "ink-text-input";
 import { useState } from "react";
 
-export type SlashCommand = "init" | "setup" | "update" | "help" | "quit" | "exit";
+export type SlashCommand = "init" | "setup" | "update" | "help" | "quit" | "exit" | "add" | "start";
 
-const VALID_COMMANDS: SlashCommand[] = ["init", "setup", "update", "help", "quit", "exit"];
+export interface CommandArgs {
+	iterations?: number;
+}
+
+const VALID_COMMANDS: SlashCommand[] = ["init", "setup", "update", "help", "quit", "exit", "add", "start"];
 
 interface CommandInputProps {
-	onCommand: (command: SlashCommand) => void;
+	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	disabled?: boolean;
 }
 
-function parseSlashCommand(input: string): SlashCommand | null {
+interface ParsedCommand {
+	command: SlashCommand;
+	args?: CommandArgs;
+}
+
+function parseSlashCommand(input: string): ParsedCommand | null {
 	const trimmed = input.trim().toLowerCase();
 	if (!trimmed.startsWith("/")) {
 		return null;
 	}
 
-	const command = trimmed.slice(1) as SlashCommand;
-	if (VALID_COMMANDS.includes(command)) {
-		return command;
+	const parts = trimmed.slice(1).split(/\s+/);
+	const commandName = parts[0] as SlashCommand;
+
+	if (!VALID_COMMANDS.includes(commandName)) {
+		return null;
 	}
 
-	return null;
+	if (commandName === "start" && parts[1]) {
+		const iterations = Number.parseInt(parts[1], 10);
+		if (!Number.isNaN(iterations) && iterations > 0) {
+			return { command: commandName, args: { iterations } };
+		}
+	}
+
+	return { command: commandName };
 }
 
 export function CommandInput({ onCommand, disabled = false }: CommandInputProps): React.ReactElement {
@@ -34,11 +52,11 @@ export function CommandInput({ onCommand, disabled = false }: CommandInputProps)
 			return;
 		}
 
-		const command = parseSlashCommand(value);
-		if (command) {
+		const parsed = parseSlashCommand(value);
+		if (parsed) {
 			setError(null);
 			setInputValue("");
-			onCommand(command);
+			onCommand(parsed.command, parsed.args);
 		} else {
 			setError(`Unknown command: ${value}`);
 			setInputValue("");

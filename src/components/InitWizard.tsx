@@ -3,6 +3,8 @@ import TextInput from "ink-text-input";
 import SelectInput from "ink-select-input";
 import { existsSync, writeFileSync } from "node:fs";
 import { useState } from "react";
+import { parse as parseYaml } from "yaml";
+import { runAgentWithPrompt } from "../lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "../lib/config.ts";
 import {
 	ensureRalphDirExists,
@@ -11,9 +13,15 @@ import {
 	RALPH_DIR,
 	savePrd,
 } from "../lib/prd.ts";
-import type { AgentType, Prd, PrdTask, RalphConfig } from "../types.ts";
+import {
+	buildPrdGenerationPrompt,
+	PRD_OUTPUT_END,
+	PRD_OUTPUT_START,
+} from "../lib/prompt.ts";
+import type { AgentType, Prd, PrdFormat, RalphConfig } from "../types.ts";
 import { Header } from "./Header.tsx";
 import { Message } from "./common/Message.tsx";
+import { Spinner } from "./common/Spinner.tsx";
 
 interface InitWizardProps {
 	version: string;
@@ -23,25 +31,24 @@ interface InitWizardProps {
 type WizardStep =
 	| "check_existing_prd"
 	| "check_existing_progress"
-	| "project_name"
 	| "agent_type"
 	| "format"
-	| "task_title"
-	| "task_description"
-	| "task_steps"
-	| "add_more_tasks"
+	| "description"
+	| "generating"
 	| "complete"
+	| "error"
 	| "aborted";
 
 interface WizardState {
 	step: WizardStep;
-	projectName: string;
 	agentType: AgentType;
-	useYaml: boolean;
-	tasks: PrdTask[];
-	currentTask: Partial<PrdTask>;
+	prdFormat: PrdFormat;
+	description: string;
+	generatedPrd: Prd | null;
 	existingPrdPath: string | null;
 	existingProgressPath: boolean;
+	errorMessage: string | null;
+	agentOutput: string;
 }
 
 const AGENT_CHOICES = [
@@ -55,12 +62,31 @@ const YES_NO_CHOICES = [
 ];
 
 const FORMAT_CHOICES = [
-	{ label: "JSON", value: false },
-	{ label: "YAML", value: true },
+	{ label: "JSON", value: "json" as const },
+	{ label: "YAML", value: "yaml" as const },
 ];
 
-function getDefaultProjectName(): string {
-	return process.cwd().split("/").pop() ?? "my-project";
+function parsePrdFromOutput(output: string, format: PrdFormat): Prd | null {
+	const startMarker = PRD_OUTPUT_START;
+	const endMarker = PRD_OUTPUT_END;
+
+	const startIndex = output.indexOf(startMarker);
+	const endIndex = output.indexOf(endMarker);
+
+	if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+		return null;
+	}
+
+	const prdContent = output.slice(startIndex + startMarker.length, endIndex).trim();
+
+	try {
+		if (format === "yaml") {
+			return parseYaml(prdContent) as Prd;
+		}
+		return JSON.parse(prdContent) as Prd;
+	} catch {
+		return null;
+	}
 }
 
 export function InitWizard({ version, onComplete }: InitWizardProps): React.ReactElement {
@@ -81,23 +107,22 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	const getInitialStep = (): WizardStep => {
 		if (existingPrd) return "check_existing_prd";
 		if (existingProgress) return "check_existing_progress";
-		return "project_name";
+		return "agent_type";
 	};
 
 	const [state, setState] = useState<WizardState>({
 		step: getInitialStep(),
-		projectName: getDefaultProjectName(),
 		agentType: globalConfig.agent,
-		useYaml: globalConfig.prdFormat === "yaml",
-		tasks: [],
-		currentTask: {},
+		prdFormat: globalConfig.prdFormat ?? "json",
+		description: "",
+		generatedPrd: null,
 		existingPrdPath: existingPrd,
 		existingProgressPath: existingProgress,
+		errorMessage: null,
+		agentOutput: "",
 	});
 
-	const [inputValue, setInputValue] = useState(
-		state.step === "project_name" ? getDefaultProjectName() : "",
-	);
+	const [inputValue, setInputValue] = useState("");
 
 	const handleConfirmOverwritePrd = (item: { value: boolean }) => {
 		if (!item.value) {
@@ -107,7 +132,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 		if (state.existingProgressPath) {
 			setState((prev) => ({ ...prev, step: "check_existing_progress" }));
 		} else {
-			setState((prev) => ({ ...prev, step: "project_name" }));
+			setState((prev) => ({ ...prev, step: "agent_type" }));
 		}
 	};
 
@@ -116,95 +141,79 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			setState((prev) => ({ ...prev, step: "aborted" }));
 			return;
 		}
-		setState((prev) => ({ ...prev, step: "project_name" }));
-	};
-
-	const handleProjectNameSubmit = (value: string) => {
-		const name = value.trim() || getDefaultProjectName();
-		setState((prev) => ({ ...prev, projectName: name, step: "agent_type" }));
+		setState((prev) => ({ ...prev, step: "agent_type" }));
 	};
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
 		setState((prev) => ({ ...prev, agentType: item.value, step: "format" }));
 	};
 
-	const handleFormatSelect = (item: { value: boolean }) => {
-		setState((prev) => ({ ...prev, useYaml: item.value, step: "task_title" }));
+	const handleFormatSelect = (item: { value: PrdFormat }) => {
+		setState((prev) => ({ ...prev, prdFormat: item.value, step: "description" }));
 		setInputValue("");
 	};
 
-	const handleTaskTitleSubmit = (value: string) => {
-		const title = value.trim();
-		if (!title) {
-			finishWizard();
+	const handleDescriptionSubmit = async (value: string) => {
+		const description = value.trim();
+		if (!description) {
 			return;
 		}
-		setState((prev) => ({
-			...prev,
-			currentTask: { title, done: false },
-			step: "task_description",
-		}));
-		setInputValue("");
-	};
-
-	const handleTaskDescriptionSubmit = (value: string) => {
-		setState((prev) => ({
-			...prev,
-			currentTask: { ...prev.currentTask, description: value.trim() },
-			step: "task_steps",
-		}));
-		setInputValue("");
-	};
-
-	const handleTaskStepsSubmit = (value: string) => {
-		const steps = value
-			.split("\n")
-			.map((step) => step.trim())
-			.filter((step) => step.length > 0);
-
-		const newTask: PrdTask = {
-			title: state.currentTask.title ?? "",
-			description: state.currentTask.description ?? "",
-			steps,
-			done: false,
-		};
 
 		setState((prev) => ({
 			...prev,
-			tasks: [...prev.tasks, newTask],
-			currentTask: {},
-			step: "add_more_tasks",
+			description,
+			step: "generating",
+			agentOutput: "",
 		}));
-		setInputValue("");
-	};
 
-	const handleAddMoreTasks = (item: { value: boolean }) => {
-		if (item.value) {
-			setState((prev) => ({ ...prev, step: "task_title" }));
-			setInputValue("");
-		} else {
-			finishWizard();
+		try {
+			const prompt = buildPrdGenerationPrompt(description, state.prdFormat);
+			const output = await runAgentWithPrompt({
+				prompt,
+				agentType: state.agentType,
+				onOutput: (chunk) => {
+					setState((prev) => ({
+						...prev,
+						agentOutput: prev.agentOutput + chunk,
+					}));
+				},
+			});
+
+			const prd = parsePrdFromOutput(output, state.prdFormat);
+
+			if (!prd) {
+				setState((prev) => ({
+					...prev,
+					step: "error",
+					errorMessage: "Failed to parse PRD from agent output. The agent may not have followed the expected format.",
+				}));
+				return;
+			}
+
+			ensureRalphDirExists();
+			savePrd(prd, state.prdFormat);
+			writeFileSync(PROGRESS_FILE_PATH, "");
+
+			const config: RalphConfig = { agent: state.agentType };
+			saveConfig(config);
+
+			setState((prev) => ({
+				...prev,
+				generatedPrd: prd,
+				step: "complete",
+			}));
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			setState((prev) => ({
+				...prev,
+				step: "error",
+				errorMessage,
+			}));
 		}
-	};
-
-	const finishWizard = () => {
-		const prd: Prd = {
-			project: state.projectName,
-			tasks: state.tasks,
-		};
-
-		ensureRalphDirExists();
-		savePrd(prd, state.useYaml ? "yaml" : "json");
-		writeFileSync(PROGRESS_FILE_PATH, "");
-
-		const config: RalphConfig = { agent: state.agentType };
-		saveConfig(config);
-
-		setState((prev) => ({ ...prev, step: "complete" }));
 	};
 
 	useInput((_, key) => {
-		if (state.step === "complete" || state.step === "aborted") {
+		if (state.step === "complete" || state.step === "aborted" || state.step === "error") {
 			if (key.return || key.escape) {
 				handleExit();
 			}
@@ -233,22 +242,6 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 					</Box>
 				);
 
-			case "project_name":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Project name:</Text>
-						<Box>
-							<Text color="green">❯ </Text>
-							<TextInput
-								value={inputValue}
-								onChange={setInputValue}
-								onSubmit={handleProjectNameSubmit}
-								placeholder={getDefaultProjectName()}
-							/>
-						</Box>
-					</Box>
-				);
-
 			case "agent_type":
 				return (
 					<Box flexDirection="column" gap={1}>
@@ -267,72 +260,50 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 						<Text color="cyan">PRD format:</Text>
 						<SelectInput
 							items={FORMAT_CHOICES}
-							initialIndex={FORMAT_CHOICES.findIndex((choice) => choice.value === state.useYaml)}
+							initialIndex={FORMAT_CHOICES.findIndex((choice) => choice.value === state.prdFormat)}
 							onSelect={handleFormatSelect}
 						/>
 					</Box>
 				);
 
-			case "task_title":
+			case "description":
 				return (
 					<Box flexDirection="column" gap={1}>
-						{state.tasks.length === 0 && (
-							<Text dimColor>Let's add some tasks to your PRD.</Text>
+						<Text color="cyan">Describe what you want to build:</Text>
+						<Text dimColor>
+							Be as detailed as possible. The AI will break this down into tasks.
+						</Text>
+						<Box marginTop={1}>
+							<Text color="green">❯ </Text>
+							<TextInput
+								value={inputValue}
+								onChange={setInputValue}
+								onSubmit={handleDescriptionSubmit}
+								placeholder="I want to build a..."
+							/>
+						</Box>
+					</Box>
+				);
+
+			case "generating":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Spinner label="Generating PRD from your description..." />
+						{state.agentOutput && (
+							<Box marginTop={1} flexDirection="column">
+								<Text dimColor>Agent output:</Text>
+								<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
+									<Text dimColor>
+										{state.agentOutput.slice(-500)}
+									</Text>
+								</Box>
+							</Box>
 						)}
-						<Text color="cyan">Task title (leave empty to finish):</Text>
-						<Box>
-							<Text color="green">❯ </Text>
-							<TextInput
-								value={inputValue}
-								onChange={setInputValue}
-								onSubmit={handleTaskTitleSubmit}
-							/>
-						</Box>
-					</Box>
-				);
-
-			case "task_description":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Task description:</Text>
-						<Box>
-							<Text color="green">❯ </Text>
-							<TextInput
-								value={inputValue}
-								onChange={setInputValue}
-								onSubmit={handleTaskDescriptionSubmit}
-							/>
-						</Box>
-					</Box>
-				);
-
-			case "task_steps":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Enter steps (comma-separated):</Text>
-						<Box>
-							<Text color="green">❯ </Text>
-							<TextInput
-								value={inputValue}
-								onChange={setInputValue}
-								onSubmit={handleTaskStepsSubmit}
-							/>
-						</Box>
-						<Text dimColor>Example: Step 1, Step 2, Step 3</Text>
-					</Box>
-				);
-
-			case "add_more_tasks":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="success">Added task: "{state.tasks[state.tasks.length - 1]?.title}"</Message>
-						<Text color="cyan">Add another task?</Text>
-						<SelectInput items={YES_NO_CHOICES} onSelect={handleAddMoreTasks} />
 					</Box>
 				);
 
 			case "complete": {
-				const prdFileName = state.useYaml ? "prd.yaml" : "prd.json";
+				const prdFileName = state.prdFormat === "yaml" ? "prd.yaml" : "prd.json";
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 				return (
 					<Box flexDirection="column" gap={1}>
@@ -340,18 +311,39 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 							Created {RALPH_DIR}/{prdFileName} and {PROGRESS_FILE_PATH}
 						</Message>
 						<Text>
+							<Text dimColor>Project:</Text> <Text color="yellow">{state.generatedPrd?.project}</Text>
+						</Text>
+						<Text>
 							<Text dimColor>Agent:</Text> <Text color="yellow">{agentName}</Text>
 						</Text>
 						<Text>
-							<Text dimColor>Tasks:</Text> <Text>{state.tasks.length}</Text>
+							<Text dimColor>Tasks:</Text> <Text>{state.generatedPrd?.tasks.length ?? 0}</Text>
 						</Text>
+						{state.generatedPrd && state.generatedPrd.tasks.length > 0 && (
+							<Box flexDirection="column" marginTop={1}>
+								<Text dimColor>Generated tasks:</Text>
+								{state.generatedPrd.tasks.map((task, index) => (
+									<Text key={task.title}>
+										<Text dimColor>  {index + 1}.</Text> {task.title}
+									</Text>
+								))}
+							</Box>
+						)}
 						<Box marginTop={1}>
-							<Text dimColor>Run 'ralph run' to start working on your tasks.</Text>
+							<Text dimColor>Run 'ralph' to start working on your tasks.</Text>
 						</Box>
 						<Text dimColor>Press Enter to exit</Text>
 					</Box>
 				);
 			}
+
+			case "error":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Message type="error">Error: {state.errorMessage}</Message>
+						<Text dimColor>Press Enter to exit</Text>
+					</Box>
+				);
 
 			case "aborted":
 				return (
@@ -370,9 +362,9 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 		<Box flexDirection="column" padding={1}>
 			<Header version={version} />
 			<Box flexDirection="column" marginTop={1} paddingX={1}>
-			<Box marginBottom={1}>
-				<Text bold>Initialize new PRD project</Text>
-			</Box>
+				<Box marginBottom={1}>
+					<Text bold>Initialize new PRD project</Text>
+				</Box>
 				{renderStep()}
 			</Box>
 		</Box>

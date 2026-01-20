@@ -39,19 +39,27 @@ function printHelp(): void {
 A CLI tool for long-running PRD-driven development with AI coding agents
 
 Usage:
-  ralph [iterations]      Run the agent loop (default: 10 iterations)
+  ralph                   Open the Ralph UI (use /start to begin)
   ralph <command>
 
 Commands:
-  init              Initialize a new PRD project
+  init              Initialize a new PRD project (AI-generated from description)
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
+Slash Commands (in-app):
+  /start [n]        Start the agent loop (default: 10 iterations)
+  /init             Initialize a new PRD project
+  /add              Add a new task to the PRD (AI-generated from description)
+  /setup            Configure global preferences
+  /update           Check for updates
+  /help             Show help message
+  /quit             Exit the application
+
 Examples:
-  ralph             Run 10 iterations
-  ralph 5           Run 5 iterations
-  ralph init        Create a new PRD project
+  ralph             Open the Ralph UI
+  ralph init        Create a new PRD project from a description
   ralph update      Check for and install updates
 `);
 }

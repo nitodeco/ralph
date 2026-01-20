@@ -1,0 +1,269 @@
+{
+	"project": "Ralph CLI - Production Ready Release",
+	"tasks": [
+		{
+			"title": "Add retry logic and error recovery for agent failures",
+			"description": "Implement robust retry mechanism when agent processes fail or exit unexpectedly. This is critical for overnight runs where transient failures should not stop the entire workflow.",
+			"steps": [
+				"Add maxRetries and retryDelayMs to RalphConfig type",
+				"Implement exponential backoff retry logic in useAgent hook",
+				"Add error categorization to determine retryable vs fatal errors",
+				"Update RunApp to handle retry states and display retry count",
+				"Add configuration options in SetupWizard for retry settings"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement session persistence and resume capability",
+			"description": "Allow Ralph to save session state and resume after crashes, system restarts, or intentional pauses. Essential for overnight runs that may be interrupted.",
+			"steps": [
+				"Create session.json schema in .ralph directory with iteration count, start time, current task",
+				"Implement saveSession and loadSession functions in lib/session.ts",
+				"Add auto-save on each iteration completion",
+				"Add resume command to CLI that reads session state",
+				"Update RunApp to check for existing session on startup and prompt for resume"
+			],
+			"done": false
+		},
+		{
+			"title": "Add comprehensive logging system",
+			"description": "Implement file-based logging for debugging and audit trail of long-running sessions. Logs should persist across runs and include timestamps.",
+			"steps": [
+				"Create lib/logger.ts with log levels (debug, info, warn, error)",
+				"Implement log rotation to prevent unbounded file growth",
+				"Log all agent executions, outputs, and exit codes",
+				"Log iteration starts, completions, and failures",
+				"Add log file path configuration option"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement agent timeout and watchdog functionality",
+			"description": "Add configurable timeouts for agent execution and a watchdog to detect stuck agents. Prevents infinite hangs during overnight runs.",
+			"steps": [
+				"Add agentTimeoutMs to RalphConfig with sensible default (30 minutes)",
+				"Implement timeout wrapper around agent process in useAgent",
+				"Add heartbeat detection based on stdout activity",
+				"Add stuckThresholdMs config for no-output detection",
+				"Kill and retry agent if timeout or stuck threshold exceeded"
+			],
+			"done": false
+		},
+		{
+			"title": "Add notification system for completion and failures",
+			"description": "Implement optional notifications via system notifications, webhooks, or file markers so users can be alerted when overnight runs complete or fail.",
+			"steps": [
+				"Add notifications config section to RalphConfig",
+				"Implement macOS system notification using osascript",
+				"Add optional webhook URL support for HTTP POST notifications",
+				"Create completion marker file option for script integration",
+				"Send notifications on: all complete, max iterations, fatal error"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement background/daemon mode",
+			"description": "Allow Ralph to run detached from the terminal so it survives terminal closes and can run truly unattended overnight.",
+			"steps": [
+				"Add --background or -b flag to run command",
+				"Implement process daemonization using nohup/disown pattern",
+				"Write PID to .ralph/ralph.pid for process tracking",
+				"Redirect output to log file in background mode",
+				"Add 'ralph status' command to check background process"
+			],
+			"done": false
+		},
+		{
+			"title": "Add 'ralph status' command",
+			"description": "Create a status command that shows current session state, progress, and running process info without interrupting an active run.",
+			"steps": [
+				"Add status command to CLI argument parser",
+				"Read session.json and PID file to gather state",
+				"Display: current task, iteration count, elapsed time, process status",
+				"Show recent log entries if log file exists",
+				"Handle case where no session is active gracefully"
+			],
+			"done": false
+		},
+		{
+			"title": "Add 'ralph stop' command for graceful shutdown",
+			"description": "Implement a stop command that gracefully terminates a running Ralph session, saving state for potential resume.",
+			"steps": [
+				"Add stop command to CLI argument parser",
+				"Read PID from .ralph/ralph.pid",
+				"Send SIGTERM to process for graceful shutdown",
+				"Update session.json with stopped state",
+				"Add timeout and SIGKILL fallback if process doesn't exit"
+			],
+			"done": false
+		},
+		{
+			"title": "Add 'ralph list' command to display PRD tasks",
+			"description": "Create a command to view all tasks and their completion status without starting a run. Useful for checking progress of overnight runs.",
+			"steps": [
+				"Add list command to CLI argument parser",
+				"Load and parse PRD file",
+				"Display tasks with status indicators (done/pending/in-progress)",
+				"Show completion percentage and task count summary",
+				"Support --json flag for machine-readable output"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement progress file improvements",
+			"description": "Enhance progress.txt with structured data including timestamps, iteration history, and error logs for better tracking of long runs.",
+			"steps": [
+				"Add timestamp to each progress entry",
+				"Include iteration number with each update",
+				"Log errors and retries in progress file",
+				"Add session summary section at top of file",
+				"Implement progress file rotation to prevent unbounded growth"
+			],
+			"done": false
+		},
+		{
+			"title": "Add memory and resource management",
+			"description": "Implement safeguards against memory leaks and resource exhaustion during very long running sessions.",
+			"steps": [
+				"Clear agent output buffer after each iteration",
+				"Implement periodic garbage collection hints",
+				"Add memory usage monitoring and warnings",
+				"Limit stored output history to configurable amount",
+				"Clean up temporary files between iterations"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement task dependency and ordering",
+			"description": "Add support for task dependencies so tasks can specify prerequisites. Prevents out-of-order execution in complex PRDs.",
+			"steps": [
+				"Add optional 'dependsOn' field to PrdTask type",
+				"Implement dependency resolution in getNextTask",
+				"Validate no circular dependencies on PRD load",
+				"Update init wizard to support dependency specification",
+				"Display dependency tree in task list view"
+			],
+			"done": false
+		},
+		{
+			"title": "Add task priority and manual task selection",
+			"description": "Allow tasks to have priority levels and let users manually select which task to work on next.",
+			"steps": [
+				"Add optional 'priority' field to PrdTask type (high/medium/low)",
+				"Sort pending tasks by priority in getNextTask",
+				"Add /next command to manually advance to specific task",
+				"Update task list to show priority indicators",
+				"Add --task flag to run command for single task execution"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement configuration validation and defaults",
+			"description": "Add robust configuration validation with clear error messages and sensible defaults for all settings.",
+			"steps": [
+				"Create config schema with validation rules",
+				"Implement validateConfig function in lib/config.ts",
+				"Add default values for all optional config fields",
+				"Show clear error messages for invalid config",
+				"Add 'ralph config' command to view current configuration"
+			],
+			"done": false
+		},
+		{
+			"title": "Add Linux support to update system",
+			"description": "Extend the self-update system to support Linux platforms, not just macOS.",
+			"steps": [
+				"Update getOperatingSystem to support linux platform",
+				"Add linux binaries to build configuration",
+				"Update GitHub Actions workflow to build linux binaries",
+				"Test update flow on Linux environments",
+				"Update documentation with Linux support"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement signal handling for graceful shutdown",
+			"description": "Handle SIGTERM and SIGINT signals properly to ensure clean shutdown and state preservation when process is killed.",
+			"steps": [
+				"Add signal handlers for SIGTERM, SIGINT, SIGHUP",
+				"Save session state on signal receipt",
+				"Gracefully terminate running agent process",
+				"Clean up PID file on exit",
+				"Log shutdown reason to log file"
+			],
+			"done": false
+		},
+		{
+			"title": "Add dry-run mode for testing",
+			"description": "Implement a dry-run mode that simulates agent execution without actually running agents. Useful for testing PRDs and configuration.",
+			"steps": [
+				"Add --dry-run flag to run command",
+				"Mock agent execution with configurable delay",
+				"Log what would be executed without making changes",
+				"Validate PRD and config in dry-run mode",
+				"Display simulated iteration flow"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement iteration statistics and reporting",
+			"description": "Track and display statistics about the run including time per task, success rates, and total elapsed time.",
+			"steps": [
+				"Create stats tracking structure in session",
+				"Record start/end time for each iteration",
+				"Track success/failure counts",
+				"Calculate average iteration duration",
+				"Display summary report on completion"
+			],
+			"done": false
+		},
+		{
+			"title": "Add max runtime limit configuration",
+			"description": "Allow users to set a maximum total runtime after which Ralph will stop gracefully. Useful for time-boxed overnight runs.",
+			"steps": [
+				"Add maxRuntimeMs to RalphConfig",
+				"Implement runtime tracking in useIteration",
+				"Check runtime limit before starting new iteration",
+				"Add --max-runtime CLI flag",
+				"Display time remaining in status bar when limit set"
+			],
+			"done": false
+		},
+		{
+			"title": "Improve error messages and user feedback",
+			"description": "Enhance error handling throughout the application with clear, actionable error messages.",
+			"steps": [
+				"Audit all error paths and improve messages",
+				"Add suggestions for common errors",
+				"Implement error codes for programmatic handling",
+				"Add --verbose flag for detailed error output",
+				"Include relevant context in error messages"
+			],
+			"done": false
+		},
+		{
+			"title": "Add comprehensive test suite",
+			"description": "Implement unit and integration tests to ensure reliability for production use.",
+			"steps": [
+				"Set up bun test framework",
+				"Add unit tests for lib functions (config, prd, prompt, update)",
+				"Add tests for hooks (useAgent, useIteration)",
+				"Create integration tests for CLI commands",
+				"Add test coverage reporting"
+			],
+			"done": false
+		},
+		{
+			"title": "Create troubleshooting documentation",
+			"description": "Document common issues and their solutions for production deployments.",
+			"steps": [
+				"Document common error scenarios and fixes",
+				"Add FAQ section to README",
+				"Document configuration options with examples",
+				"Create example PRDs for different project types",
+				"Add performance tuning recommendations"
+			],
+			"done": false
+		}
+	]
+}

@@ -5,8 +5,9 @@ import { useIteration } from "../hooks/useIteration.ts";
 import { loadConfig } from "../lib/config.ts";
 import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
 import type { Prd, RalphConfig } from "../types.ts";
+import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import { AgentOutput } from "./AgentOutput.tsx";
-import { CommandInput, type SlashCommand } from "./CommandInput.tsx";
+import { CommandInput, type CommandArgs, type SlashCommand } from "./CommandInput.tsx";
 import { Message } from "./common/Message.tsx";
 import { Header } from "./Header.tsx";
 import { HelpView } from "./HelpView.tsx";
@@ -23,8 +24,8 @@ interface RunAppProps {
 	iterations: number;
 }
 
-type AppState = "validating" | "running" | "complete" | "error" | "max_iterations" | "not_initialized";
-type ActiveView = "run" | "init" | "setup" | "update" | "help";
+type AppState = "idle" | "running" | "complete" | "error" | "max_iterations" | "not_initialized";
+type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add";
 
 interface ValidationWarning {
 	message: string;
@@ -54,9 +55,11 @@ function getCurrentTaskIndex(prd: Prd): number {
 	return prd.tasks.findIndex((task) => !task.done);
 }
 
+const DEFAULT_ITERATIONS = 10;
+
 export function RunApp({ version, iterations }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
-	const [appState, setAppState] = useState<AppState>("validating");
+	const [appState, setAppState] = useState<AppState>("idle");
 	const [activeView, setActiveView] = useState<ActiveView>("run");
 	const [validationWarning, setValidationWarning] = useState<ValidationWarning | null>(null);
 	const [config, setConfig] = useState<RalphConfig | null>(null);
@@ -66,7 +69,7 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 	const agent = useAgent();
 
 	const iteration = useIteration({
-		total: iterations,
+		total: iterations || DEFAULT_ITERATIONS,
 		onIterationStart: () => {
 			agent.reset();
 			const currentPrd = loadPrd();
@@ -88,7 +91,7 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		}
 	}, [agent.isComplete, iteration]);
 
-	const revalidateAndRestart = useCallback(() => {
+	const revalidateAndGoIdle = useCallback(() => {
 		const warning = validateProject();
 		if (warning) {
 			setValidationWarning(warning);
@@ -102,14 +105,41 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		setConfig(loadedConfig);
 		setPrd(loadedPrd);
 		setValidationWarning(null);
+		setAppState("idle");
+		setElapsedTime(0);
+		agent.reset();
+	}, [agent]);
+
+	const startIterations = useCallback((iterationCount?: number) => {
+		const warning = validateProject();
+		if (warning) {
+			setValidationWarning(warning);
+			setAppState("not_initialized");
+			return;
+		}
+
+		const loadedConfig = loadConfig();
+		const loadedPrd = loadPrd();
+
+		setConfig(loadedConfig);
+		setPrd(loadedPrd);
+		setValidationWarning(null);
+
+		if (iterationCount) {
+			iteration.setTotal(iterationCount);
+		}
+
 		setAppState("running");
 		setElapsedTime(0);
 		agent.reset();
 		iteration.start();
 	}, [agent, iteration]);
 
-	const handleSlashCommand = useCallback((command: SlashCommand) => {
+	const handleSlashCommand = useCallback((command: SlashCommand, args?: CommandArgs) => {
 		switch (command) {
+			case "start":
+				startIterations(args?.iterations);
+				break;
 			case "init":
 				agent.stop();
 				iteration.pause();
@@ -130,17 +160,22 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 				iteration.pause();
 				setActiveView("help");
 				break;
+			case "add":
+				agent.stop();
+				iteration.pause();
+				setActiveView("add");
+				break;
 			case "quit":
 			case "exit":
 				exit();
 				break;
 		}
-	}, [agent, iteration, exit]);
+	}, [agent, iteration, exit, startIterations]);
 
 	const handleViewComplete = useCallback(() => {
 		setActiveView("run");
-		revalidateAndRestart();
-	}, [revalidateAndRestart]);
+		revalidateAndGoIdle();
+	}, [revalidateAndGoIdle]);
 
 	const handleHelpClose = useCallback(() => {
 		setActiveView("run");
@@ -162,8 +197,7 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 
 		setConfig(loadedConfig);
 		setPrd(loadedPrd);
-		setAppState("running");
-		iteration.start();
+		setAppState("idle");
 	}, []);
 
 	useEffect(() => {
@@ -179,12 +213,12 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 	}, [agent.isStreaming, agent.exitCode, handleAgentComplete]);
 
 	useEffect(() => {
-		if (iteration.current >= iterations && !agent.isStreaming && appState === "running") {
+		if (iteration.current >= iteration.total && !agent.isStreaming && appState === "running") {
 			if (!agent.isComplete) {
 				setAppState("max_iterations");
 			}
 		}
-	}, [iteration.current, iterations, agent.isStreaming, agent.isComplete, appState]);
+	}, [iteration.current, iteration.total, agent.isStreaming, agent.isComplete, appState]);
 
 	useEffect(() => {
 		if (appState !== "running" || activeView !== "run") return;
@@ -234,6 +268,10 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		return <HelpView version={version} onClose={handleHelpClose} />;
 	}
 
+	if (activeView === "add") {
+		return <AddTaskWizard version={version} onComplete={handleViewComplete} />;
+	}
+
 	if (appState === "not_initialized" && validationWarning) {
 		return (
 			<Box flexDirection="column" padding={1}>
@@ -276,6 +314,14 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 				error={agent.error}
 			/>
 
+			{appState === "idle" && (
+				<Box paddingX={1} marginY={1}>
+					<Text dimColor>
+						Type <Text color="cyan">/start</Text> or <Text color="cyan">/start [n]</Text> to begin iterations
+					</Text>
+				</Box>
+			)}
+
 			{appState === "complete" && (
 				<Box paddingX={1} marginY={1}>
 					<Message type="success">All tasks completed!</Message>
@@ -285,7 +331,7 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 			{appState === "max_iterations" && (
 				<Box paddingX={1} marginY={1}>
 					<Message type="warning">
-						Completed {iterations} iterations. PRD is not completed.
+						Completed {iteration.total} iterations. PRD is not completed.
 					</Message>
 				</Box>
 			)}

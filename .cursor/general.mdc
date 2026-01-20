@@ -4,7 +4,7 @@ alwaysApply: true
 
 # Guidelines
 
-- Use `bun` as package manager and runtime
+- Use `bun` as package manager and runtime, and use `bunx` insted of `npx`
 - Use typescript best practices
 - This is a CLI project
 - After every implementation, run `bun check` to ensure the code is correct

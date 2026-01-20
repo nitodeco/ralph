@@ -14,7 +14,7 @@ const DEFAULT_CONFIG: RalphConfig = {
 };
 
 export const AGENT_COMMANDS: Record<AgentType, string[]> = {
-	cursor: ["cursor", "-p", "--force"],
+	cursor: ["agent", "-p", "--force"],
 	claude: ["claude", "-p", "--dangerously-skip-permissions"],
 };
 

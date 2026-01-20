@@ -7,37 +7,6 @@ interface TaskListProps {
 	collapsed?: boolean;
 }
 
-interface TaskItemProps {
-	task: PrdTask;
-	isCurrent: boolean;
-	index: number;
-}
-
-function TaskItem({ task, isCurrent, index }: TaskItemProps): React.ReactElement {
-	const getStatusIndicator = (): { symbol: string; color: string } => {
-		if (task.done) {
-			return { symbol: "✔", color: "green" };
-		}
-		if (isCurrent) {
-			return { symbol: "▶", color: "yellow" };
-		}
-		return { symbol: "○", color: "gray" };
-	};
-
-	const status = getStatusIndicator();
-	const textColor = task.done ? "gray" : isCurrent ? "white" : "gray";
-
-	return (
-		<Box>
-			<Text color={status.color}>{status.symbol} </Text>
-			<Text dimColor>{index + 1}. </Text>
-			<Text color={textColor} strikethrough={task.done}>
-				{task.title}
-			</Text>
-		</Box>
-	);
-}
-
 export function TaskList({
 	tasks,
 	currentTaskIndex,
@@ -64,6 +33,12 @@ export function TaskList({
 		);
 	}
 
+	const currentTask = currentTaskIndex !== undefined && currentTaskIndex >= 0
+		? tasks[currentTaskIndex]
+		: null;
+
+	const allTasksComplete = completedCount === totalCount;
+
 	return (
 		<Box flexDirection="column" paddingX={1}>
 			<Box marginBottom={1}>
@@ -71,14 +46,22 @@ export function TaskList({
 					Tasks ({completedCount}/{totalCount})
 				</Text>
 			</Box>
-			{tasks.map((task, index) => (
-				<TaskItem
-					key={task.title}
-					task={task}
-					isCurrent={index === currentTaskIndex}
-					index={index}
-				/>
-			))}
+			{currentTask ? (
+				<Box>
+					<Text color="yellow">▶ </Text>
+					<Text dimColor>{currentTaskIndex! + 1}. </Text>
+					<Text color="white">{currentTask.title}</Text>
+				</Box>
+			) : allTasksComplete ? (
+				<Box>
+					<Text color="green">✔ </Text>
+					<Text color="gray">All tasks completed</Text>
+				</Box>
+			) : (
+				<Box>
+					<Text dimColor>No current task</Text>
+				</Box>
+			)}
 		</Box>
 	);
 }

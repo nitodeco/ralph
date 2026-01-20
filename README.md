@@ -77,7 +77,7 @@ tasks:
 
 One of the following AI coding agents must be installed:
 
-- [Cursor CLI](https://docs.cursor.com/cli) - available as `cursor` in your PATH
+- [Cursor CLI](https://docs.cursor.com/cli) - available as `agent` in your PATH
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) - available as `claude` in your PATH
 
 ## Development
