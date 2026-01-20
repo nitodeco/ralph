@@ -1,5 +1,13 @@
 # ralph
 
+## 0.6.2
+
+### Patch Changes
+
+- 576b862: Initialize .ralph with gitignore
+- cb86792: Check integrity on startup
+- 2faa2fe: Change install directory and add migration util
+
 ## 0.6.1
 
 ### Patch Changes
