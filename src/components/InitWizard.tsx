@@ -1,7 +1,6 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import TextInput from "ink-text-input";
 import { useState } from "react";
 import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
@@ -12,6 +11,7 @@ import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/li
 import type { AgentType, Prd, PrdFormat, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
+import { TextInput } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
 
 interface InitWizardProps {

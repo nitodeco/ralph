@@ -1,5 +1,4 @@
 import { Box, Text, useApp, useInput } from "ink";
-import TextInput from "ink-text-input";
 import { useState } from "react";
 import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
@@ -9,6 +8,7 @@ import { buildAddTaskPrompt, TASK_OUTPUT_END, TASK_OUTPUT_START } from "@/lib/pr
 import type { Prd, PrdFormat, PrdTask } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
+import { TextInput } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
 
 interface AddTaskWizardProps {

@@ -1,6 +1,5 @@
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import TextInput from "ink-text-input";
 import { useState } from "react";
 import {
 	DEFAULT_ENABLE_GC_HINTS,
@@ -17,6 +16,7 @@ import type {
 	RalphConfig,
 } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
+import { TextInput } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
 
 interface SetupWizardProps {

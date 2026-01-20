@@ -3,5 +3,17 @@
 	"prdFormat": "json",
 	"maxRetries": 3,
 	"retryDelayMs": 5000,
-	"lastUpdateCheck": 1768880165180
+	"logFilePath": ".ralph/ralph.log",
+	"agentTimeoutMs": 1800000,
+	"stuckThresholdMs": 300000,
+	"lastUpdateCheck": 1768911327590,
+	"notifications": {
+		"systemNotification": true
+	},
+	"memory": {
+		"maxOutputBufferBytes": 5242880,
+		"memoryWarningThresholdMb": 500,
+		"enableGarbageCollectionHints": true
+	},
+	"maxOutputHistoryBytes": 5242880
 }
