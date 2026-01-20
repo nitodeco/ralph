@@ -1,9 +1,9 @@
 {
 	"startTime": 1768918670930,
-	"lastUpdateTime": 1768918670930,
-	"currentIteration": 0,
+	"lastUpdateTime": 1768918804489,
+	"currentIteration": 1,
 	"totalIterations": 5,
-	"currentTaskIndex": 0,
+	"currentTaskIndex": 1,
 	"status": "running",
-	"elapsedTimeSeconds": 0
+	"elapsedTimeSeconds": 131
 }
