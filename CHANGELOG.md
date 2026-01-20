@@ -1,5 +1,11 @@
 # ralph
 
+## 0.2.2
+
+### Patch Changes
+
+- 3ab66db: Fix agent response streaming leading to timeouts
+
 ## 0.2.1
 
 ### Patch Changes
