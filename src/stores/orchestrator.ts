@@ -9,17 +9,8 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getNextTask, getNextTaskWithIndex, loadPrd } from "@/lib/prd.ts";
-import {
-	logError as logProgressError,
-	logIterationComplete as logProgressIterationComplete,
-	logIterationStart as logProgressIterationStart,
-	logMaxIterationsReached as logProgressMaxIterations,
-	logSessionComplete as logProgressSessionComplete,
-	logSessionResume as logProgressSessionResume,
-	logSessionStart as logProgressSessionStart,
-	logSessionStopped as logProgressSessionStopped,
-} from "@/lib/progress.ts";
+import { getNextTaskWithIndex, loadPrd } from "@/lib/prd.ts";
+import { initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
 	deleteSession,
@@ -116,9 +107,7 @@ class SessionOrchestrator {
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logIterationStart(iterationNumber, iterations);
 				const currentPrd = loadPrd();
-				const currentTask = currentPrd ? getNextTask(currentPrd) : null;
 				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
-				logProgressIterationStart(iterationNumber, iterations, currentTask ?? undefined);
 				useAgentStore.getState().reset();
 				if (currentPrd) {
 					appState.setPrd(currentPrd);
@@ -140,13 +129,6 @@ class SessionOrchestrator {
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
 				const currentPrd = loadPrd();
-				const taskTitle = currentPrd ? getNextTask(currentPrd) : undefined;
-				logProgressIterationComplete(
-					iterationNumber,
-					iterations,
-					agentStore.isComplete,
-					taskTitle ?? undefined,
-				);
 				if (appState.currentSession) {
 					const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
 					const updatedSession = updateSessionIteration(
@@ -190,13 +172,6 @@ class SessionOrchestrator {
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logSessionComplete();
 				const currentPrd = loadPrd();
-				const totalTasks = currentPrd?.tasks.length ?? 0;
-				logProgressSessionComplete(
-					currentPrd?.project ?? "Unknown Project",
-					iterations,
-					totalTasks,
-					appState.elapsedTime,
-				);
 				sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
 					totalIterations: iterations,
 				});
@@ -216,14 +191,6 @@ class SessionOrchestrator {
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logMaxIterationsReached(iterationState.total);
 				const currentPrd = loadPrd();
-				const totalTasks = currentPrd?.tasks.length ?? 0;
-				const completedTasks = currentPrd?.tasks.filter((task) => task.done).length ?? 0;
-				logProgressMaxIterations(
-					currentPrd?.project ?? "Unknown Project",
-					iterationState.total,
-					completedTasks,
-					totalTasks,
-				);
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
 					totalIterations: iterationState.total,
@@ -247,14 +214,7 @@ class SessionOrchestrator {
 		saveSession(newSession);
 
 		logger.logSessionStart(totalIterations, taskIndex);
-		const totalTasks = prd?.tasks.length ?? 0;
-		const completedTasks = prd?.tasks.filter((task) => task.done).length ?? 0;
-		logProgressSessionStart(
-			prd?.project ?? "Unknown Project",
-			totalIterations,
-			totalTasks,
-			completedTasks,
-		);
+		initializeProgressFile();
 
 		const sessionId = generateSessionId();
 		initializeLogsIndex(sessionId, prd?.project ?? "Unknown Project");
@@ -264,7 +224,7 @@ class SessionOrchestrator {
 
 	resumeSession(
 		pendingSession: Session,
-		prd: Prd | null,
+		_prd: Prd | null,
 	): { session: Session; remainingIterations: number } {
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
@@ -277,15 +237,6 @@ class SessionOrchestrator {
 			pendingSession.currentIteration,
 			pendingSession.totalIterations,
 			pendingSession.elapsedTimeSeconds,
-		);
-		const totalTasks = prd?.tasks.length ?? 0;
-		const completedTasks = prd?.tasks.filter((task) => task.done).length ?? 0;
-		logProgressSessionResume(
-			prd?.project ?? "Unknown Project",
-			pendingSession.currentIteration,
-			pendingSession.totalIterations,
-			totalTasks,
-			completedTasks,
 		);
 
 		return {
@@ -301,13 +252,6 @@ class SessionOrchestrator {
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		logger.error("Fatal error occurred", { error });
-		logProgressError(iterationState.current, iterationState.total, error, { fatal: true });
-		logProgressSessionStopped(
-			prd?.project ?? "Unknown Project",
-			iterationState.current,
-			iterationState.total,
-			`Fatal error: ${error}`,
-		);
 		sendNotifications(loadedConfig.notifications, "fatal_error", prd?.project, { error });
 
 		appendIterationError(iterationState.current, error, { fatal: true });

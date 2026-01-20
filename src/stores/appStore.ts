@@ -13,12 +13,7 @@ import {
 	getTaskByTitle,
 	loadPrd,
 } from "@/lib/prd.ts";
-import {
-	logError as logProgressError,
-	logSessionResume as logProgressSessionResume,
-	logSessionStart as logProgressSessionStart,
-	logSessionStopped as logProgressSessionStopped,
-} from "@/lib/progress.ts";
+import { initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
 	deleteSession,
@@ -204,14 +199,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		set({ currentSession: newSession });
 
 		logger.logSessionStart(totalIters, taskIndex);
-		const totalTasks = loadedPrd?.tasks.length ?? 0;
-		const completedTasks = loadedPrd?.tasks.filter((task) => task.done).length ?? 0;
-		logProgressSessionStart(
-			loadedPrd?.project ?? "Unknown Project",
-			totalIters,
-			totalTasks,
-			completedTasks,
-		);
+		initializeProgressFile();
 
 		set({
 			appState: "running",
@@ -283,9 +271,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		set({ currentSession: newSession });
 
 		logger.logSessionStart(1, currentTaskIndex);
-		const totalTasks = loadedPrd.tasks.length;
-		const completedTasks = loadedPrd.tasks.filter((prdTask) => prdTask.done).length;
-		logProgressSessionStart(loadedPrd.project, 1, totalTasks, completedTasks);
+		initializeProgressFile();
 
 		set({
 			appState: "running",
@@ -342,15 +328,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			state.pendingSession.currentIteration,
 			state.pendingSession.totalIterations,
 			state.pendingSession.elapsedTimeSeconds,
-		);
-		const totalTasks = loadedPrd?.tasks.length ?? 0;
-		const completedTasks = loadedPrd?.tasks.filter((task) => task.done).length ?? 0;
-		logProgressSessionResume(
-			loadedPrd?.project ?? "Unknown Project",
-			state.pendingSession.currentIteration,
-			state.pendingSession.totalIterations,
-			totalTasks,
-			completedTasks,
 		);
 
 		set({
@@ -411,17 +388,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	handleFatalError: (error: string) => {
 		const state = get();
-		const iterationState = useIterationStore.getState();
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		logger.error("Fatal error occurred", { error });
-		logProgressError(iterationState.current, iterationState.total, error, { fatal: true });
-		logProgressSessionStopped(
-			state.prd?.project ?? "Unknown Project",
-			iterationState.current,
-			iterationState.total,
-			`Fatal error: ${error}`,
-		);
 		sendNotifications(loadedConfig.notifications, "fatal_error", state.prd?.project, {
 			error,
 		});

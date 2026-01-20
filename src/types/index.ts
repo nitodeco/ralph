@@ -30,9 +30,6 @@ export type {
 	IterationLogsIndex,
 	IterationLogsIndexEntry,
 	IterationLogTask,
-	ProgressEntry,
-	ProgressEntryType,
 	Session,
 	SessionStatus,
-	SessionSummary,
 } from "./session.types.ts";
