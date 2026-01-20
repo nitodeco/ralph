@@ -86,9 +86,14 @@ class SessionOrchestrator {
 		);
 	}
 
-	private handleAgentComplete(isProjectComplete: boolean): void {
+	private handleAgentComplete(_agentClaimsComplete: boolean): void {
+		const currentPrd = loadPrd();
+		const allTasksActuallyDone = currentPrd
+			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
+			: false;
+
 		const iterationStore = useIterationStore.getState();
-		iterationStore.markIterationComplete(isProjectComplete);
+		iterationStore.markIterationComplete(allTasksActuallyDone);
 	}
 
 	getConfig(): RalphConfig | null {
