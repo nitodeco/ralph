@@ -228,35 +228,35 @@ export function useAgent(): UseAgentReturn {
 
 				const categorizedError = categorizeError(result.error ?? "", result.exitCode);
 
-			if (categorizedError.category === "fatal") {
-				logger.error("Fatal error encountered, not retrying", {
-					error: categorizedError.message,
-					exitCode: result.exitCode,
-				});
-				setState((prev) => ({
-					...prev,
-					isStreaming: false,
-					error: `Fatal error: ${categorizedError.message}`,
-					exitCode: result.exitCode,
-					retryCount: retryCountRef.current,
-				}));
-				break;
-			}
+				if (categorizedError.category === "fatal") {
+					logger.error("Fatal error encountered, not retrying", {
+						error: categorizedError.message,
+						exitCode: result.exitCode,
+					});
+					setState((prev) => ({
+						...prev,
+						isStreaming: false,
+						error: `Fatal error: ${categorizedError.message}`,
+						exitCode: result.exitCode,
+						retryCount: retryCountRef.current,
+					}));
+					break;
+				}
 
-			if (retryCountRef.current < maxRetries) {
-				retryCountRef.current += 1;
-				const delay = calculateRetryDelay(retryDelayMs, retryCountRef.current - 1);
+				if (retryCountRef.current < maxRetries) {
+					retryCountRef.current += 1;
+					const delay = calculateRetryDelay(retryDelayMs, retryCountRef.current - 1);
 
-				logger.logAgentRetry(retryCountRef.current, maxRetries, delay);
+					logger.logAgentRetry(retryCountRef.current, maxRetries, delay);
 
-				setState((prev) => ({
-					...prev,
-					isRetrying: true,
-					retryCount: retryCountRef.current,
-					output: "",
-				}));
+					setState((prev) => ({
+						...prev,
+						isRetrying: true,
+						retryCount: retryCountRef.current,
+						output: "",
+					}));
 
-				await sleep(delay);
+					await sleep(delay);
 
 					if (abortedRef.current) break;
 
@@ -264,21 +264,21 @@ export function useAgent(): UseAgentReturn {
 						...prev,
 						isRetrying: false,
 					}));
-			} else {
-				logger.error("Max retries exceeded", {
-					maxRetries,
-					lastError: categorizedError.message,
-					exitCode: result.exitCode,
-				});
-				setState((prev) => ({
-					...prev,
-					isStreaming: false,
-					error: `Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,
-					exitCode: result.exitCode,
-					retryCount: retryCountRef.current,
-				}));
-				break;
-			}
+				} else {
+					logger.error("Max retries exceeded", {
+						maxRetries,
+						lastError: categorizedError.message,
+						exitCode: result.exitCode,
+					});
+					setState((prev) => ({
+						...prev,
+						isStreaming: false,
+						error: `Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,
+						exitCode: result.exitCode,
+						retryCount: retryCountRef.current,
+					}));
+					break;
+				}
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);

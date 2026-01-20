@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync, appendFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { RALPH_DIR, ensureRalphDirExists } from "./prd.ts";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, statSync } from "node:fs";
+import { dirname } from "node:path";
+import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -59,8 +59,7 @@ function rotateLogFile(logFilePath: string, maxBackupFiles: number): void {
 			}
 			try {
 				renameSync(currentBackup, nextBackup);
-			} catch {
-			}
+			} catch {}
 		}
 	}
 }
@@ -72,7 +71,11 @@ function ensureLogDirectoryExists(logFilePath: string): void {
 	}
 }
 
-function checkAndRotate(logFilePath: string, maxFileSizeBytes: number, maxBackupFiles: number): void {
+function checkAndRotate(
+	logFilePath: string,
+	maxFileSizeBytes: number,
+	maxBackupFiles: number,
+): void {
 	if (!existsSync(logFilePath)) {
 		return;
 	}
@@ -82,8 +85,7 @@ function checkAndRotate(logFilePath: string, maxFileSizeBytes: number, maxBackup
 		if (stats.size >= maxFileSizeBytes) {
 			rotateLogFile(logFilePath, maxBackupFiles);
 		}
-	} catch {
-	}
+	} catch {}
 }
 
 class Logger {
@@ -106,9 +108,8 @@ class Logger {
 			ensureRalphDirExists();
 			ensureLogDirectoryExists(logFilePath);
 			checkAndRotate(logFilePath, this.config.maxFileSizeBytes, this.config.maxBackupFiles);
-			appendFileSync(logFilePath, formattedEntry + "\n");
-		} catch {
-		}
+			appendFileSync(logFilePath, `${formattedEntry}\n`);
+		} catch {}
 	}
 
 	private log(level: LogLevel, message: string, context?: Record<string, unknown>): void {
@@ -167,7 +168,11 @@ class Logger {
 		this.info("Iteration started", { iteration, totalIterations });
 	}
 
-	logIterationComplete(iteration: number, totalIterations: number, isProjectComplete: boolean): void {
+	logIterationComplete(
+		iteration: number,
+		totalIterations: number,
+		isProjectComplete: boolean,
+	): void {
 		this.info("Iteration completed", { iteration, totalIterations, isProjectComplete });
 	}
 
@@ -179,7 +184,11 @@ class Logger {
 		this.info("Session started", { totalIterations, taskIndex });
 	}
 
-	logSessionResume(currentIteration: number, totalIterations: number, elapsedTimeSeconds: number): void {
+	logSessionResume(
+		currentIteration: number,
+		totalIterations: number,
+		elapsedTimeSeconds: number,
+	): void {
 		this.info("Session resumed", { currentIteration, totalIterations, elapsedTimeSeconds });
 	}
 
