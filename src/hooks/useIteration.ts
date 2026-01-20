@@ -137,7 +137,7 @@ export function useIteration(options: UseIterationOptions): UseIterationReturn {
 				return;
 			}
 
-			if (state.current >= total) {
+			if (state.current >= state.total) {
 				stop();
 				return;
 			}
