@@ -3,7 +3,18 @@ import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
 import { useState } from "react";
 import { loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
-import type { AgentType, NotificationConfig, PrdFormat, RalphConfig } from "@/types.ts";
+import {
+	DEFAULT_ENABLE_GC_HINTS,
+	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
+	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
+} from "@/lib/memory.ts";
+import type {
+	AgentType,
+	MemoryConfig,
+	NotificationConfig,
+	PrdFormat,
+	RalphConfig,
+} from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Header } from "./Header.tsx";
 
@@ -19,6 +30,9 @@ type SetupStep =
 	| "retry_delay"
 	| "agent_timeout"
 	| "stuck_threshold"
+	| "memory_buffer_size"
+	| "memory_warning_threshold"
+	| "memory_gc_hints"
 	| "notification_system"
 	| "notification_webhook"
 	| "notification_marker"
@@ -32,6 +46,7 @@ interface SetupState {
 	retryDelayMs: number;
 	agentTimeoutMs: number;
 	stuckThresholdMs: number;
+	memory: MemoryConfig;
 	notifications: NotificationConfig;
 	webhookUrlInput: string;
 	markerFilePathInput: string;
@@ -84,6 +99,22 @@ const YES_NO_CHOICES = [
 	{ label: "No", value: false },
 ];
 
+const MEMORY_BUFFER_SIZE_CHOICES = [
+	{ label: "1 MB", value: 1 * 1024 * 1024 },
+	{ label: "5 MB (default)", value: 5 * 1024 * 1024 },
+	{ label: "10 MB", value: 10 * 1024 * 1024 },
+	{ label: "25 MB", value: 25 * 1024 * 1024 },
+	{ label: "50 MB", value: 50 * 1024 * 1024 },
+];
+
+const MEMORY_WARNING_THRESHOLD_CHOICES = [
+	{ label: "250 MB", value: 250 },
+	{ label: "500 MB (default)", value: 500 },
+	{ label: "1 GB", value: 1024 },
+	{ label: "2 GB", value: 2048 },
+	{ label: "Disabled", value: 0 },
+];
+
 export function SetupWizard({ version, onComplete }: SetupWizardProps): React.ReactElement {
 	const { exit } = useApp();
 	const existingConfig = loadGlobalConfig();
@@ -104,6 +135,11 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 		retryDelayMs: existingConfig.retryDelayMs ?? 5000,
 		agentTimeoutMs: existingConfig.agentTimeoutMs ?? 30 * 60 * 1000,
 		stuckThresholdMs: existingConfig.stuckThresholdMs ?? 5 * 60 * 1000,
+		memory: existingConfig.memory ?? {
+			maxOutputBufferBytes: DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
+			memoryWarningThresholdMb: DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
+			enableGarbageCollectionHints: DEFAULT_ENABLE_GC_HINTS,
+		},
 		notifications: existingConfig.notifications ?? {},
 		webhookUrlInput: existingConfig.notifications?.webhookUrl ?? "",
 		markerFilePathInput: existingConfig.notifications?.markerFilePath ?? "",
@@ -130,7 +166,34 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	};
 
 	const handleStuckThresholdSelect = (item: { value: number }) => {
-		setState((prev) => ({ ...prev, stuckThresholdMs: item.value, step: "notification_system" }));
+		setState((prev) => ({ ...prev, stuckThresholdMs: item.value, step: "memory_buffer_size" }));
+	};
+
+	const handleMemoryBufferSizeSelect = (item: { value: number }) => {
+		setState((prev) => ({
+			...prev,
+			memory: { ...prev.memory, maxOutputBufferBytes: item.value },
+			step: "memory_warning_threshold",
+		}));
+	};
+
+	const handleMemoryWarningThresholdSelect = (item: { value: number }) => {
+		setState((prev) => ({
+			...prev,
+			memory: {
+				...prev.memory,
+				memoryWarningThresholdMb: item.value === 0 ? undefined : item.value,
+			},
+			step: "memory_gc_hints",
+		}));
+	};
+
+	const handleMemoryGcHintsSelect = (item: { value: boolean }) => {
+		setState((prev) => ({
+			...prev,
+			memory: { ...prev.memory, enableGarbageCollectionHints: item.value },
+			step: "notification_system",
+		}));
 	};
 
 	const handleSystemNotificationSelect = (item: { value: boolean }) => {
@@ -163,6 +226,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 			retryDelayMs: state.retryDelayMs,
 			agentTimeoutMs: state.agentTimeoutMs,
 			stuckThresholdMs: state.stuckThresholdMs,
+			memory: state.memory,
 			notifications: finalNotifications,
 		};
 		saveGlobalConfig(newConfig);
@@ -266,6 +330,55 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					</Box>
 				);
 
+			case "memory_buffer_size":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Maximum size for agent output buffer?</Text>
+						<Text dimColor>(Larger values use more memory but preserve more output history)</Text>
+						<SelectInput
+							items={MEMORY_BUFFER_SIZE_CHOICES}
+							initialIndex={MEMORY_BUFFER_SIZE_CHOICES.findIndex(
+								(choice) =>
+									choice.value ===
+									(state.memory.maxOutputBufferBytes ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES),
+							)}
+							onSelect={handleMemoryBufferSizeSelect}
+						/>
+					</Box>
+				);
+
+			case "memory_warning_threshold":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Memory usage warning threshold?</Text>
+						<Text dimColor>(Log warnings when heap usage exceeds this value)</Text>
+						<SelectInput
+							items={MEMORY_WARNING_THRESHOLD_CHOICES}
+							initialIndex={MEMORY_WARNING_THRESHOLD_CHOICES.findIndex(
+								(choice) =>
+									choice.value ===
+									(state.memory.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB),
+							)}
+							onSelect={handleMemoryWarningThresholdSelect}
+						/>
+					</Box>
+				);
+
+			case "memory_gc_hints":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Enable garbage collection hints?</Text>
+						<Text dimColor>(Suggest GC between iterations to reduce memory usage)</Text>
+						<SelectInput
+							items={YES_NO_CHOICES}
+							initialIndex={
+								(state.memory.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS) ? 0 : 1
+							}
+							onSelect={handleMemoryGcHintsSelect}
+						/>
+					</Box>
+				);
+
 			case "notification_system":
 				return (
 					<Box flexDirection="column" gap={1}>
@@ -332,6 +445,22 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					(state.stuckThresholdMs === 0
 						? "No stuck detection"
 						: `${Math.round(state.stuckThresholdMs / 60000)} minutes`);
+				const memoryBufferSizeLabel =
+					MEMORY_BUFFER_SIZE_CHOICES.find(
+						(choice) =>
+							choice.value ===
+							(state.memory.maxOutputBufferBytes ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES),
+					)?.label ??
+					`${Math.round((state.memory.maxOutputBufferBytes ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES) / 1024 / 1024)} MB`;
+				const memoryWarningLabel =
+					MEMORY_WARNING_THRESHOLD_CHOICES.find(
+						(choice) =>
+							choice.value ===
+							(state.memory.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB),
+					)?.label ??
+					(state.memory.memoryWarningThresholdMb
+						? `${state.memory.memoryWarningThresholdMb} MB`
+						: "Disabled");
 				const hasNotifications =
 					state.notifications.systemNotification ||
 					state.notifications.webhookUrl ||
@@ -358,6 +487,20 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 							<Text>
 								<Text dimColor>Stuck Threshold:</Text>{" "}
 								<Text color="yellow">{stuckThresholdLabel}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Output Buffer:</Text>{" "}
+								<Text color="yellow">{memoryBufferSizeLabel}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Memory Warning:</Text>{" "}
+								<Text color="yellow">{memoryWarningLabel}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>GC Hints:</Text>{" "}
+								<Text color="yellow">
+									{state.memory.enableGarbageCollectionHints ? "Enabled" : "Disabled"}
+								</Text>
 							</Text>
 							<Text>
 								<Text dimColor>Notifications:</Text>{" "}

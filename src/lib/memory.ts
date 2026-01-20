@@ -3,8 +3,10 @@ import { join } from "node:path";
 import { getLogger } from "./logger.ts";
 import { RALPH_DIR } from "./prd.ts";
 
-const DEFAULT_MAX_OUTPUT_BYTES = 5 * 1024 * 1024;
-const MEMORY_WARNING_THRESHOLD_MB = 512;
+export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = 5 * 1024 * 1024;
+export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = 500;
+export const DEFAULT_ENABLE_GC_HINTS = true;
+
 const MEMORY_CRITICAL_THRESHOLD_MB = 1024;
 
 interface MemoryUsage {
@@ -15,7 +17,9 @@ interface MemoryUsage {
 }
 
 interface MemoryConfig {
-	maxOutputHistoryBytes?: number;
+	maxOutputBufferBytes?: number;
+	memoryWarningThresholdMb?: number;
+	enableGarbageCollectionHints?: boolean;
 	logFilePath?: string;
 }
 
@@ -35,6 +39,7 @@ export function checkMemoryUsage(config?: MemoryConfig): {
 } {
 	const usage = getMemoryUsage();
 	const logger = getLogger({ logFilePath: config?.logFilePath });
+	const warningThreshold = config?.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB;
 
 	if (usage.heapUsedMB >= MEMORY_CRITICAL_THRESHOLD_MB) {
 		logger.warn("Critical memory usage detected", {
@@ -44,10 +49,10 @@ export function checkMemoryUsage(config?: MemoryConfig): {
 		return { level: "critical", usage };
 	}
 
-	if (usage.heapUsedMB >= MEMORY_WARNING_THRESHOLD_MB) {
+	if (warningThreshold > 0 && usage.heapUsedMB >= warningThreshold) {
 		logger.warn("High memory usage detected", {
 			heapUsedMB: usage.heapUsedMB,
-			thresholdMB: MEMORY_WARNING_THRESHOLD_MB,
+			thresholdMB: warningThreshold,
 		});
 		return { level: "warning", usage };
 	}
@@ -55,7 +60,12 @@ export function checkMemoryUsage(config?: MemoryConfig): {
 	return { level: "ok", usage };
 }
 
-export function triggerGarbageCollection(): void {
+export function triggerGarbageCollection(config?: MemoryConfig): void {
+	const enableGcHints = config?.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS;
+	if (!enableGcHints) {
+		return;
+	}
+
 	if (typeof Bun !== "undefined" && typeof Bun.gc === "function") {
 		Bun.gc(true);
 	} else if (typeof global !== "undefined" && typeof global.gc === "function") {
@@ -64,13 +74,13 @@ export function triggerGarbageCollection(): void {
 }
 
 export function performMemoryCleanup(config?: MemoryConfig): void {
-	triggerGarbageCollection();
+	triggerGarbageCollection(config);
 	checkMemoryUsage(config);
 }
 
 export function truncateOutputBuffer(
 	output: string,
-	maxBytes: number = DEFAULT_MAX_OUTPUT_BYTES,
+	maxBytes: number = DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
 ): string {
 	const encoder = new TextEncoder();
 	const bytes = encoder.encode(output);
@@ -138,7 +148,7 @@ export function performIterationCleanup(config?: MemoryConfig): {
 } {
 	const tempFilesRemoved = cleanupTempFiles();
 
-	triggerGarbageCollection();
+	triggerGarbageCollection(config);
 
 	const { level: memoryStatus } = checkMemoryUsage(config);
 
@@ -149,5 +159,5 @@ export function performIterationCleanup(config?: MemoryConfig): {
 }
 
 export function getMaxOutputBytes(configValue?: number): number {
-	return configValue ?? DEFAULT_MAX_OUTPUT_BYTES;
+	return configValue ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES;
 }
