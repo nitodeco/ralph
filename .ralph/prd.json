@@ -1,5 +1,5 @@
 {
-	"project": "Ralph CLI - Production Ready Release",
+	"project": "Ralph CLI",
 	"tasks": [
 		{
 			"title": "Add retry logic and error recovery for agent failures",
@@ -415,6 +415,191 @@
 				"Add Codex option to AGENT_CHOICES array in src/components/SetupWizard.tsx",
 				"Update the agent name display logic in SetupWizard.tsx completion screen to handle 'codex' type",
 				"Test agent selection, configuration saving, and agent invocation with Codex"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement dynamic prompt guardrail system",
+			"description": "Create a tunable guardrail system that allows users to add 'signs' to the prompt based on observed failure patterns. This implements the core Ralph philosophy of tuning the agent like a guitar - when Ralph does something bad, you add a guardrail so it doesn't happen again. Guardrails are stored in .ralph/guardrails.json and automatically injected into every prompt.",
+			"steps": [
+				"Create PromptGuardrail interface in src/types/config.types.ts with fields: id (string), instruction (string), trigger ('always' | 'on-error' | 'on-task-type'), category ('safety' | 'quality' | 'style' | 'process'), enabled (boolean), addedAt (ISO timestamp), addedAfterFailure (optional string describing the failure that prompted this guardrail)",
+				"Create src/lib/guardrails.ts with functions: loadGuardrails(), saveGuardrails(), addGuardrail(), removeGuardrail(), toggleGuardrail(), getActiveGuardrails(trigger?: string)",
+				"Add GUARDRAILS_FILE_PATH constant to src/lib/paths.ts pointing to .ralph/guardrails.json",
+				"Create default guardrails in src/lib/defaults.ts: DEFAULT_GUARDRAILS array with essential guardrails like 'Verify changes work before committing', 'Read existing code patterns before writing new code', 'If build fails, fix it before proceeding'",
+				"Update buildPrompt() in src/lib/prompt.ts to inject active guardrails into the prompt under a '## Guardrails' section, formatting each as a numbered rule",
+				"Add 'ralph guardrails' CLI command to list all guardrails with their status (enabled/disabled)",
+				"Add 'ralph guardrails add <instruction>' CLI command to add a new guardrail interactively",
+				"Add 'ralph guardrails remove <id>' CLI command to remove a guardrail",
+				"Add '/guardrail <instruction>' slash command in RunApp to quickly add a guardrail during a session when observing a failure pattern",
+				"Update SetupWizard to show default guardrails and allow user to customize during init"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement adaptive retry with failure context injection",
+			"description": "Enhance the retry mechanism to analyze failures and inject contextual guidance into subsequent retry attempts. Instead of blindly retrying with the same prompt, the system analyzes the error and output to provide specific guidance for the next attempt. This implements the Ralph philosophy of self-healing loops.",
+			"steps": [
+				"Create src/lib/failure-analyzer.ts with analyzeFailure(error: string, output: string, exitCode: number): FailureAnalysis function that categorizes failures and generates recovery suggestions",
+				"Define FailureAnalysis interface with fields: category (string), rootCause (string), suggestedApproach (string), contextInjection (string), shouldRetry (boolean)",
+				"Implement failure pattern detection for common scenarios: build failures (suggest running build first), test failures (suggest running tests first), lint errors (suggest fixing lint issues), permission errors (suggest checking file permissions), timeout (suggest breaking task into smaller pieces)",
+				"Create generateRetryContext(analysis: FailureAnalysis, attemptNumber: number): string function that formats the context injection for the prompt",
+				"Update runAgentInternal() in src/stores/agentStore.ts to accept optional additionalContext parameter that gets appended to the prompt",
+				"Modify the retry loop in agentStore.start() to call analyzeFailure() on failure, generate retry context, and pass it to the next runAgentInternal() call",
+				"Add retryContext field to iteration logs to track what context was injected on retries",
+				"Log the failure analysis and retry context to both the log file and progress.txt for debugging",
+				"Add configuration option retryWithContext (boolean, default true) to enable/disable adaptive retry"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement verification phase after each iteration",
+			"description": "Add an automated verification phase that runs after the agent completes each iteration to ensure the codebase is in a valid state before marking the task as done. This prevents broken commits and ensures quality. Verification commands are configurable per-project.",
+			"steps": [
+				"Create VerificationConfig interface in src/types/config.types.ts with fields: enabled (boolean), buildCommand (optional string), testCommand (optional string), lintCommand (optional string), customChecks (optional string array), failOnWarning (boolean)",
+				"Add 'verification' section to RalphConfig type with VerificationConfig",
+				"Create src/lib/verification.ts with runVerification(config: VerificationConfig): Promise<VerificationResult> function",
+				"Define VerificationResult interface with fields: passed (boolean), checks (array of CheckResult with name, passed, output, duration), failedChecks (string array), totalDuration (number)",
+				"Implement runCheck(name: string, command: string): Promise<CheckResult> helper that executes a command and captures output, exit code, and duration",
+				"Update orchestrator onIterationComplete callback to run verification after agent completes but before marking iteration as done",
+				"If verification fails, set iteration status to 'verification_failed' instead of 'completed' and trigger a retry with context about what verification failed",
+				"Add verification results to iteration logs (IterationLog.verification field)",
+				"Log verification results to progress.txt with pass/fail status for each check",
+				"Add verification configuration to SetupWizard with auto-detection of common commands (npm test, bun test, npm run build, etc.)",
+				"Add --skip-verification flag to run command for cases where verification should be bypassed",
+				"Display verification status in the UI during the verification phase"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement codebase context gathering for prompts",
+			"description": "Automatically gather relevant context about the codebase and inject it into the agent prompt. This helps the agent understand project structure, conventions, dependencies, and recent changes without having to discover them each iteration. Context is cached and refreshed periodically.",
+			"steps": [
+				"Create CodebaseContext interface in src/types/prd.types.ts with fields: projectStructure (string), dependencies (object), recentCommits (string array), codePatterns (string), techStack (string array), generatedAt (ISO timestamp)",
+				"Create src/lib/context-gatherer.ts with gatherCodebaseContext(): Promise<CodebaseContext> function",
+				"Implement generateProjectStructure() that creates a tree-like representation of the project (respecting .gitignore, limiting depth to 4 levels)",
+				"Implement extractDependencies() that reads package.json/Cargo.toml/requirements.txt/go.mod and extracts key dependencies",
+				"Implement getRecentCommits(count: number) that runs 'git log --oneline -n' and returns recent commit messages",
+				"Implement detectTechStack() that identifies frameworks, languages, and tools used in the project",
+				"Implement sampleCodePatterns() that reads a few representative files to show coding conventions (e.g., first component file, first utility file)",
+				"Create formatContextForPrompt(context: CodebaseContext): string that formats the context as markdown sections",
+				"Add context caching in .ralph/context-cache.json with TTL (default 30 minutes) to avoid regenerating on every iteration",
+				"Update buildPrompt() in src/lib/prompt.ts to include codebase context section when available",
+				"Add 'ralph context' CLI command to view current cached context",
+				"Add 'ralph context refresh' CLI command to force regenerate context",
+				"Add contextGathering config option with fields: enabled (boolean), cacheTtlMinutes (number), includeGitHistory (boolean), maxTreeDepth (number)"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement task decomposition request handling",
+			"description": "Allow the agent to signal when a task is too large to complete in one iteration and request decomposition into subtasks. The orchestrator parses this request, updates the PRD with subtasks, and continues without counting the iteration as a failure. This enables handling of complex tasks that weren't properly broken down initially.",
+			"steps": [
+				"Define DECOMPOSITION_MARKER constant in src/lib/prompt.ts as '<request>DECOMPOSE_TASK</request>'",
+				"Create DecompositionRequest interface in src/types/prd.types.ts with fields: originalTaskTitle (string), reason (string), suggestedSubtasks (array of {title, description, steps})",
+				"Update the agent prompt in buildPrompt() to include instructions for requesting decomposition: 'If a task is too large to complete in one iteration, output the decomposition marker with a JSON payload containing originalTaskTitle, reason, and suggestedSubtasks'",
+				"Create src/lib/decomposition.ts with parseDecompositionRequest(output: string): DecompositionRequest | null function that extracts and validates the decomposition request from agent output",
+				"Implement applyDecomposition(prd: Prd, request: DecompositionRequest): Prd function that replaces the original task with subtasks, preserving dependencies and adding dependsOn relationships between subtasks",
+				"Update the agent completion handler in orchestrator to check for decomposition marker before marking iteration complete",
+				"If decomposition is detected: parse request, apply to PRD, save PRD, log the decomposition, do NOT increment iteration count, restart iteration with first subtask",
+				"Add decomposition events to iteration logs with original task, subtasks created, and reason",
+				"Log decomposition to progress.txt with clear indication that task was split",
+				"Add UI feedback in AgentOutput or status message when decomposition occurs",
+				"Add maxDecompositionsPerTask config option (default 2) to prevent infinite decomposition loops"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement failure pattern learning and analysis",
+			"description": "Track failure patterns across iterations and sessions to identify recurring issues. Provide analysis and suggestions for guardrails or PRD improvements. This implements the Ralph philosophy that failures are opportunities for tuning.",
+			"steps": [
+				"Create FailurePattern interface in src/types/session.types.ts with fields: pattern (string), category (string), occurrences (number), firstSeen (ISO timestamp), lastSeen (ISO timestamp), affectedTasks (string array), suggestedGuardrail (string | null), resolved (boolean)",
+				"Create src/lib/failure-patterns.ts with functions: recordFailure(error: string, taskTitle: string, context: object), analyzePatterns(): FailurePattern[], getSuggestedGuardrails(): PromptGuardrail[]",
+				"Store failure history in .ralph/failure-history.json with rolling window (keep last 100 failures)",
+				"Implement pattern detection using regex matching and string similarity for common failure types: repeated build errors, same test failing, similar error messages across iterations",
+				"Create generatePatternReport(): string function that summarizes patterns and their frequency",
+				"Add 'ralph analyze' CLI command that runs pattern analysis and displays: top failure patterns, suggested guardrails, tasks with highest failure rates, recommendations",
+				"Implement automatic pattern detection after each failed iteration in orchestrator",
+				"When a pattern reaches threshold (e.g., 3 occurrences), automatically suggest adding a guardrail via notification or UI prompt",
+				"Add pattern summary to session completion report",
+				"Create 'ralph analyze --export' option to export analysis as JSON for external processing",
+				"Add learningEnabled config option (boolean, default true) to enable/disable pattern learning"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement session memory for cross-session learning",
+			"description": "Persist lessons learned, successful patterns, and failed approaches across sessions so that resumed or new sessions benefit from past experience. This creates institutional memory for the project that improves Ralph's effectiveness over time.",
+			"steps": [
+				"Create SessionMemory interface in src/types/session.types.ts with fields: projectName (string), lessonsLearned (string array), successfulPatterns (string array), failedApproaches (string array), taskNotes (Record<taskTitle, string>), lastUpdated (ISO timestamp)",
+				"Create src/lib/session-memory.ts with functions: loadSessionMemory(), saveSessionMemory(), addLesson(lesson: string), addSuccessPattern(pattern: string), addFailedApproach(approach: string), addTaskNote(taskTitle: string, note: string), getMemoryForPrompt(): string",
+				"Store session memory in .ralph/session-memory.json (persists across sessions unlike session.json)",
+				"Update buildPrompt() to include session memory section when available: '## Lessons from Previous Sessions' with bullet points",
+				"Automatically record lessons when: a task completes after retry (what worked), a guardrail prevents a known issue, verification catches an error",
+				"Add '/learn <lesson>' slash command to manually add a lesson during a session",
+				"Add '/note <note>' slash command to add a note about the current task",
+				"Include session memory in the prompt for resumed sessions with clear indication these are learnings from past runs",
+				"Add 'ralph memory' CLI command to view current session memory",
+				"Add 'ralph memory clear' CLI command to reset session memory",
+				"Add 'ralph memory export' CLI command to export memory as markdown for documentation",
+				"Implement memory pruning to keep only the most relevant/recent entries (max 50 lessons, 20 patterns, 20 failed approaches)"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement cost and token tracking",
+			"description": "Track API costs and token usage across iterations and sessions to provide visibility into resource consumption. Essential for managing costs during long overnight runs. Parse token counts from agent output and calculate estimated costs based on model pricing.",
+			"steps": [
+				"Create TokenUsage interface in src/types/session.types.ts with fields: inputTokens (number), outputTokens (number), totalTokens (number), estimatedCostUsd (number), model (string | null)",
+				"Create src/lib/cost-tracker.ts with functions: parseTokenUsage(output: string, agentType: AgentType): TokenUsage | null, calculateCost(usage: TokenUsage, model: string): number, aggregateUsage(usages: TokenUsage[]): TokenUsage",
+				"Define MODEL_PRICING constant with per-token costs for known models (Claude Sonnet, Claude Opus, GPT-4, etc.)",
+				"Implement parseClaudeTokens(output: string) to extract token counts from Claude Code output format",
+				"Implement parseCursorTokens(output: string) to extract token counts from Cursor agent output format",
+				"Add tokenUsage field to IterationLog interface to track per-iteration costs",
+				"Update completeIterationLog() to include token usage when available",
+				"Create SessionCostSummary interface with: totalInputTokens, totalOutputTokens, totalCostUsd, averageCostPerIteration, costByTask (Record<taskTitle, number>)",
+				"Add cost summary to session completion report",
+				"Add 'ralph cost' CLI command that displays: current session cost, cost breakdown by iteration, cost breakdown by task, projected cost for remaining tasks",
+				"Add cost display to StatusBar component showing running total",
+				"Add costTracking config option with fields: enabled (boolean), budgetLimitUsd (number | null), warnAtPercentage (number)",
+				"Implement budget warning/stop when approaching or exceeding budget limit"
+			],
+			"done": false
+		},
+		{
+			"title": "Implement interactive pause mode for real-time tuning",
+			"description": "Add an interactive mode where Ralph pauses after each iteration for operator review and tuning. This implements the 'watch the loop' philosophy where the operator can intervene, add guardrails, adjust tasks, or provide guidance in real-time. Essential for learning how to tune Ralph effectively.",
+			"steps": [
+				"Add InteractivePauseConfig to RalphConfig with fields: enabled (boolean), pauseAfterEachIteration (boolean), pauseOnError (boolean), pauseBeforeCommit (boolean), pauseOnDecomposition (boolean)",
+				"Create PauseAction type union: 'continue' | 'skip-task' | 'retry' | 'add-guardrail' | 'edit-task' | 'add-context' | 'abort'",
+				"Create src/components/InteractivePauseView.tsx component that displays: iteration summary, agent output preview, available actions as selectable options",
+				"Implement action handlers for each PauseAction: continue (proceed to next iteration), skip-task (mark current task as skipped, move to next), retry (retry current iteration with optional additional context), add-guardrail (prompt for guardrail text, add to guardrails.json), edit-task (open task in editor or show edit prompt), add-context (prompt for additional context to inject into next iteration), abort (stop session gracefully)",
+				"Update orchestrator to check pause configuration after iteration completion and before starting next iteration",
+				"Add 'activeView: interactive-pause' state to handle pause view rendering",
+				"Implement timeout for interactive pause (configurable, default 5 minutes) after which it auto-continues",
+				"Add --interactive or -i flag to run command to enable interactive mode",
+				"Add '/pause' slash command to enable interactive mode mid-session",
+				"Add '/auto' slash command to disable interactive mode and return to automatic execution",
+				"Log all interactive decisions to iteration logs for audit trail",
+				"Add keyboard shortcuts for common actions in InteractivePauseView (c=continue, s=skip, r=retry, g=guardrail, a=abort)"
+			],
+			"done": false
+		},
+		{
+			"title": "Enhance dry-run mode with full prompt preview and token estimation",
+			"description": "Extend the dry-run mode to show exactly what would be sent to the agent, including all context, guardrails, and session memory. Provide token count estimation and cost projection. This allows users to test and refine their setup without incurring API costs.",
+			"steps": [
+				"Create DryRunReport interface with fields: prompt (full prompt string), promptTokenEstimate (number), contextIncluded (object with flags for what context was included), guardrailsActive (string array), sessionMemoryIncluded (boolean), estimatedCostPerIteration (number), projectedTotalCost (number for all iterations)",
+				"Create src/lib/dry-run.ts with generateDryRunReport(iterations: number): DryRunReport function",
+				"Implement estimateTokens(text: string): number using tiktoken or simple word-based estimation (words * 1.3)",
+				"Update DryRunView component to display: full prompt in scrollable code block, token breakdown (base prompt, context, guardrails, instructions), cost estimate per iteration and total, list of tasks that would be executed, warnings for potential issues (missing config, invalid PRD, etc.)",
+				"Add syntax highlighting for the prompt preview using a code component",
+				"Add 'ralph dry-run --show-prompt' CLI flag to output just the prompt to stdout (useful for piping)",
+				"Add 'ralph dry-run --export <file>' CLI flag to save the full report as JSON",
+				"Add 'ralph dry-run --iterations <n>' CLI flag to simulate specific number of iterations",
+				"Implement PRD validation in dry-run that checks: all dependencies exist, no circular dependencies, all required fields present",
+				"Implement config validation in dry-run that checks: agent command exists, all paths are valid, timeout values are sensible",
+				"Add comparison mode: 'ralph dry-run --compare' that shows diff between current prompt and last run's prompt",
+				"Display dry-run report in a formatted, readable way with sections and visual hierarchy"
 			],
 			"done": false
 		}

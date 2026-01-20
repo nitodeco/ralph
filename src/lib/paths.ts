@@ -89,14 +89,21 @@ export function ensureRalphDirExists(): void {
 		mkdirSync(RALPH_DIR, { recursive: true });
 	}
 	const gitignorePath = join(RALPH_DIR, ".gitignore");
-	const gitignoreContent = "ralph.log\nlogs/\n";
+	const gitignoreContent = "ralph.log\nlogs/\narchive/\n";
 
 	if (!existsSync(gitignorePath)) {
 		writeFileSync(gitignorePath, gitignoreContent, "utf-8");
 	} else {
 		const existingContent = readFileSync(gitignorePath, "utf-8");
+		let updatedContent = existingContent;
 		if (!existingContent.includes("logs/")) {
-			writeFileSync(gitignorePath, `${existingContent.trimEnd()}\nlogs/\n`, "utf-8");
+			updatedContent = `${updatedContent.trimEnd()}\nlogs/\n`;
+		}
+		if (!existingContent.includes("archive/")) {
+			updatedContent = `${updatedContent.trimEnd()}\narchive/\n`;
+		}
+		if (updatedContent !== existingContent) {
+			writeFileSync(gitignorePath, updatedContent, "utf-8");
 		}
 	}
 }

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { create } from "zustand";
+import { performSessionArchive } from "@/lib/archive.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/defaults.ts";
 import { getLogger } from "@/lib/logger.ts";
@@ -182,6 +183,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			return;
 		}
 
+		performSessionArchive();
+
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
@@ -238,6 +241,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			});
 			return { success: false, error: warning.message };
 		}
+
+		performSessionArchive();
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
@@ -316,6 +321,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			});
 			return;
 		}
+
+		performSessionArchive();
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
