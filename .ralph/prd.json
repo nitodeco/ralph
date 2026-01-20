@@ -59,7 +59,7 @@
 				"Create completion marker file option for script integration",
 				"Send notifications on: all complete, max iterations, fatal error"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement background/daemon mode",

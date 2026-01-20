@@ -47,3 +47,23 @@ Implementation:
 - Setting timeout or stuck threshold to 0 disables that feature
 - Added SetupWizard steps for configuring agent timeout and stuck threshold
 - Display timeout and stuck threshold settings in setup completion summary
+
+Task 5: Add notification system for completion and failures - COMPLETED
+
+Implementation:
+- Added NotificationConfig interface with systemNotification, webhookUrl, and markerFilePath options in src/types.ts
+- Added NotificationEvent type for 'complete', 'max_iterations', and 'fatal_error' events
+- Created src/lib/notifications.ts with notification functions:
+  - sendSystemNotification: Uses osascript to send macOS system notifications
+  - sendWebhookNotification: Sends HTTP POST request with JSON payload to configured webhook URL
+  - writeMarkerFile: Writes JSON marker file with event details for script integration
+  - sendNotifications: Orchestrates all configured notification methods
+- Added notification configuration steps to SetupWizard:
+  - System notification enable/disable option
+  - Webhook URL text input (optional)
+  - Marker file path text input (optional)
+  - Display notification settings in setup completion summary
+- Integrated notifications into RunApp:
+  - Send 'complete' notification when all tasks are finished
+  - Send 'max_iterations' notification when iteration limit is reached
+  - Send 'fatal_error' notification when an unrecoverable error occurs

@@ -1,8 +1,9 @@
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
+import TextInput from "ink-text-input";
 import { useState } from "react";
 import { loadGlobalConfig, saveGlobalConfig } from "../lib/config.ts";
-import type { AgentType, PrdFormat, RalphConfig } from "../types.ts";
+import type { AgentType, NotificationConfig, PrdFormat, RalphConfig } from "../types.ts";
 import { Message } from "./common/Message.tsx";
 import { Header } from "./Header.tsx";
 
@@ -18,6 +19,9 @@ type SetupStep =
 	| "retry_delay"
 	| "agent_timeout"
 	| "stuck_threshold"
+	| "notification_system"
+	| "notification_webhook"
+	| "notification_marker"
 	| "complete";
 
 interface SetupState {
@@ -28,6 +32,9 @@ interface SetupState {
 	retryDelayMs: number;
 	agentTimeoutMs: number;
 	stuckThresholdMs: number;
+	notifications: NotificationConfig;
+	webhookUrlInput: string;
+	markerFilePathInput: string;
 }
 
 const AGENT_CHOICES = [
@@ -72,6 +79,11 @@ const STUCK_THRESHOLD_CHOICES = [
 	{ label: "No stuck detection", value: 0 },
 ];
 
+const YES_NO_CHOICES = [
+	{ label: "Yes", value: true },
+	{ label: "No", value: false },
+];
+
 export function SetupWizard({ version, onComplete }: SetupWizardProps): React.ReactElement {
 	const { exit } = useApp();
 	const existingConfig = loadGlobalConfig();
@@ -92,6 +104,9 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 		retryDelayMs: existingConfig.retryDelayMs ?? 5000,
 		agentTimeoutMs: existingConfig.agentTimeoutMs ?? 30 * 60 * 1000,
 		stuckThresholdMs: existingConfig.stuckThresholdMs ?? 5 * 60 * 1000,
+		notifications: existingConfig.notifications ?? {},
+		webhookUrlInput: existingConfig.notifications?.webhookUrl ?? "",
+		markerFilePathInput: existingConfig.notifications?.markerFilePath ?? "",
 	});
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
@@ -115,16 +130,47 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	};
 
 	const handleStuckThresholdSelect = (item: { value: number }) => {
+		setState((prev) => ({ ...prev, stuckThresholdMs: item.value, step: "notification_system" }));
+	};
+
+	const handleSystemNotificationSelect = (item: { value: boolean }) => {
+		setState((prev) => ({
+			...prev,
+			notifications: { ...prev.notifications, systemNotification: item.value },
+			step: "notification_webhook",
+		}));
+	};
+
+	const handleWebhookUrlSubmit = () => {
+		const webhookUrl = state.webhookUrlInput.trim() || undefined;
+		setState((prev) => ({
+			...prev,
+			notifications: { ...prev.notifications, webhookUrl },
+			step: "notification_marker",
+		}));
+	};
+
+	const handleMarkerFilePathSubmit = () => {
+		const markerFilePath = state.markerFilePathInput.trim() || undefined;
+		const finalNotifications: NotificationConfig = {
+			...state.notifications,
+			markerFilePath,
+		};
 		const newConfig: RalphConfig = {
 			agent: state.agentType,
 			prdFormat: state.prdFormat,
 			maxRetries: state.maxRetries,
 			retryDelayMs: state.retryDelayMs,
 			agentTimeoutMs: state.agentTimeoutMs,
-			stuckThresholdMs: item.value,
+			stuckThresholdMs: state.stuckThresholdMs,
+			notifications: finalNotifications,
 		};
 		saveGlobalConfig(newConfig);
-		setState((prev) => ({ ...prev, stuckThresholdMs: item.value, step: "complete" }));
+		setState((prev) => ({
+			...prev,
+			notifications: finalNotifications,
+			step: "complete",
+		}));
 	};
 
 	useInput((_, key) => {
@@ -220,6 +266,55 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					</Box>
 				);
 
+			case "notification_system":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Enable macOS system notifications?</Text>
+						<Text dimColor>(Get notified when tasks complete, fail, or reach max iterations)</Text>
+						<SelectInput
+							items={YES_NO_CHOICES}
+							initialIndex={state.notifications.systemNotification ? 0 : 1}
+							onSelect={handleSystemNotificationSelect}
+						/>
+					</Box>
+				);
+
+			case "notification_webhook":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Webhook URL for notifications (optional):</Text>
+						<Text dimColor>(Leave empty to skip. POST requests will be sent on events)</Text>
+						<Box>
+							<Text color="gray">URL: </Text>
+							<TextInput
+								value={state.webhookUrlInput}
+								onChange={(value) => setState((prev) => ({ ...prev, webhookUrlInput: value }))}
+								onSubmit={handleWebhookUrlSubmit}
+								placeholder="https://example.com/webhook"
+							/>
+						</Box>
+						<Text dimColor>Press Enter to continue</Text>
+					</Box>
+				);
+
+			case "notification_marker":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Marker file path for notifications (optional):</Text>
+						<Text dimColor>(Leave empty to skip. A JSON file will be written on events)</Text>
+						<Box>
+							<Text color="gray">Path: </Text>
+							<TextInput
+								value={state.markerFilePathInput}
+								onChange={(value) => setState((prev) => ({ ...prev, markerFilePathInput: value }))}
+								onSubmit={handleMarkerFilePathSubmit}
+								placeholder="/path/to/marker.json"
+							/>
+						</Box>
+						<Text dimColor>Press Enter to continue</Text>
+					</Box>
+				);
+
 			case "complete": {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 				const formatName = state.prdFormat.toUpperCase();
@@ -237,6 +332,10 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					(state.stuckThresholdMs === 0
 						? "No stuck detection"
 						: `${Math.round(state.stuckThresholdMs / 60000)} minutes`);
+				const hasNotifications =
+					state.notifications.systemNotification ||
+					state.notifications.webhookUrl ||
+					state.notifications.markerFilePath;
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">Setup complete!</Message>
@@ -260,6 +359,27 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 								<Text dimColor>Stuck Threshold:</Text>{" "}
 								<Text color="yellow">{stuckThresholdLabel}</Text>
 							</Text>
+							<Text>
+								<Text dimColor>Notifications:</Text>{" "}
+								<Text color="yellow">{hasNotifications ? "Enabled" : "Disabled"}</Text>
+							</Text>
+							{state.notifications.systemNotification && (
+								<Text>
+									<Text dimColor> - System:</Text> <Text color="green">On</Text>
+								</Text>
+							)}
+							{state.notifications.webhookUrl && (
+								<Text>
+									<Text dimColor> - Webhook:</Text>{" "}
+									<Text color="green">{state.notifications.webhookUrl}</Text>
+								</Text>
+							)}
+							{state.notifications.markerFilePath && (
+								<Text>
+									<Text dimColor> - Marker File:</Text>{" "}
+									<Text color="green">{state.notifications.markerFilePath}</Text>
+								</Text>
+							)}
 						</Box>
 						<Box marginTop={1}>
 							<Text dimColor>Configuration saved to ~/.ralph/config.json</Text>

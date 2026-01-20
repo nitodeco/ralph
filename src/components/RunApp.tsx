@@ -5,6 +5,7 @@ import { useAgent } from "../hooks/useAgent.ts";
 import { useIteration } from "../hooks/useIteration.ts";
 import { loadConfig } from "../lib/config.ts";
 import { getLogger } from "../lib/logger.ts";
+import { sendNotifications } from "../lib/notifications.ts";
 import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
 import {
 	createSession,
@@ -129,6 +130,10 @@ export function RunApp({
 			const currentConfig = loadConfig();
 			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
 			logger.logSessionComplete();
+			const currentPrd = loadPrd();
+			sendNotifications(currentConfig.notifications, "complete", currentPrd?.project, {
+				totalIterations: iterations || DEFAULT_ITERATIONS,
+			});
 			setAppState("complete");
 			if (currentSession) {
 				deleteSession();
@@ -384,10 +389,21 @@ export function RunApp({
 				const currentConfig = loadConfig();
 				const logger = getLogger({ logFilePath: currentConfig.logFilePath });
 				logger.logMaxIterationsReached(iteration.total);
+				sendNotifications(currentConfig.notifications, "max_iterations", prd?.project, {
+					completedIterations: iteration.current,
+					totalIterations: iteration.total,
+				});
 				setAppState("max_iterations");
 			}
 		}
-	}, [iteration.current, iteration.total, agent.isStreaming, agent.isComplete, appState]);
+	}, [
+		iteration.current,
+		iteration.total,
+		agent.isStreaming,
+		agent.isComplete,
+		appState,
+		prd?.project,
+	]);
 
 	useEffect(() => {
 		if (appState !== "running" || activeView !== "run") return;
@@ -398,6 +414,18 @@ export function RunApp({
 
 		return () => clearInterval(timer);
 	}, [appState, activeView]);
+
+	useEffect(() => {
+		if (agent.error?.startsWith("Fatal error:") && appState === "running") {
+			const currentConfig = loadConfig();
+			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
+			logger.error("Fatal error occurred", { error: agent.error });
+			sendNotifications(currentConfig.notifications, "fatal_error", prd?.project, {
+				error: agent.error,
+			});
+			setAppState("error");
+		}
+	}, [agent.error, appState, prd?.project]);
 
 	useEffect(() => {
 		if (

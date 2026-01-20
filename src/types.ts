@@ -2,6 +2,14 @@ export type AgentType = "cursor" | "claude";
 
 export type PrdFormat = "json" | "yaml";
 
+export interface NotificationConfig {
+	systemNotification?: boolean;
+	webhookUrl?: string;
+	markerFilePath?: string;
+}
+
+export type NotificationEvent = "complete" | "max_iterations" | "fatal_error";
+
 export interface RalphConfig {
 	agent: AgentType;
 	prdFormat?: PrdFormat;
@@ -12,6 +20,7 @@ export interface RalphConfig {
 	logFilePath?: string;
 	agentTimeoutMs?: number;
 	stuckThresholdMs?: number;
+	notifications?: NotificationConfig;
 }
 
 export interface PrdTask {
