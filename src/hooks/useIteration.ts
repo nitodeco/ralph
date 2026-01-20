@@ -151,7 +151,7 @@ export function useIteration(options: UseIterationOptions): UseIterationReturn {
 				next();
 			}, delayMs);
 		},
-		[state.current, total, delayMs, onIterationComplete, onAllComplete, stop, next],
+		[state.current, delayMs, onIterationComplete, onAllComplete, stop, next, state.total],
 	);
 
 	useEffect(() => {
