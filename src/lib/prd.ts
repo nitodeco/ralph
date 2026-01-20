@@ -5,7 +5,6 @@ import type {
 	LoadPrdResult,
 	Prd,
 	PrdTask,
-	TaskPriority,
 } from "@/types.ts";
 import { RALPH_DIR } from "./paths.ts";
 
@@ -94,19 +93,6 @@ function areDependenciesSatisfied(task: PrdTask, prd: Prd): boolean {
 	return true;
 }
 
-const PRIORITY_WEIGHTS: Record<TaskPriority, number> = {
-	high: 0,
-	medium: 1,
-	low: 2,
-};
-
-function getPriorityWeight(priority?: TaskPriority): number {
-	if (!priority) {
-		return PRIORITY_WEIGHTS.medium;
-	}
-	return PRIORITY_WEIGHTS[priority];
-}
-
 export function getNextTask(prd: Prd): string | null {
 	const availableTasks = prd.tasks.filter(
 		(task) => !task.done && areDependenciesSatisfied(task, prd),
@@ -116,11 +102,7 @@ export function getNextTask(prd: Prd): string | null {
 		return null;
 	}
 
-	const sortedTasks = [...availableTasks].sort(
-		(taskA, taskB) => getPriorityWeight(taskA.priority) - getPriorityWeight(taskB.priority),
-	);
-
-	const nextTask = sortedTasks[0];
+	const nextTask = availableTasks[0];
 	return nextTask ? nextTask.title : null;
 }
 

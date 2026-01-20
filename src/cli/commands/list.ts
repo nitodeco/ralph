@@ -59,7 +59,6 @@ export function printList(version: string, jsonOutput: boolean): void {
 					title: task.title,
 					description: task.description,
 					status,
-					priority: task.priority,
 					steps: task.steps,
 					dependsOn: task.dependsOn,
 					blockedBy: unmetDeps.length > 0 ? unmetDeps : undefined,
@@ -90,17 +89,6 @@ export function printList(version: string, jsonOutput: boolean): void {
 	console.log("Tasks:");
 	console.log("─".repeat(70));
 
-	const priorityColors: Record<string, string> = {
-		high: "\x1b[31m",
-		medium: "\x1b[33m",
-		low: "\x1b[90m",
-	};
-	const priorityIcons: Record<string, string> = {
-		high: "↑",
-		medium: "→",
-		low: "↓",
-	};
-
 	for (const [taskIndex, task] of prd.tasks.entries()) {
 		const unmetDeps = getUnmetDependencies(task, prd);
 		const isBlocked = !task.done && unmetDeps.length > 0;
@@ -123,15 +111,8 @@ export function printList(version: string, jsonOutput: boolean): void {
 			statusLabel = "pending";
 		}
 
-		let priorityDisplay = "";
-		if (task.priority && !task.done) {
-			const priorityColor = priorityColors[task.priority] ?? "";
-			const priorityIcon = priorityIcons[task.priority] ?? "";
-			priorityDisplay = ` ${priorityColor}[${priorityIcon}${task.priority}]${resetStyle}`;
-		}
-
 		console.log(
-			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}${priorityDisplay}`,
+			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}`,
 		);
 
 		if (task.dependsOn && task.dependsOn.length > 0) {

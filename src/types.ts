@@ -25,6 +25,5 @@ export type {
 	SessionSummary,
 	SetManualTaskResult,
 	TaskListOutput,
-	TaskPriority,
 	ValidationWarning,
 } from "./types/index.ts";

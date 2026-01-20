@@ -1,25 +1,9 @@
 import { Box, Text } from "ink";
 import { useAgentStore, useAppStore } from "@/stores/index.ts";
-import type { Prd, TaskPriority } from "@/types.ts";
+import type { Prd } from "@/types.ts";
 
 function getCurrentTaskIndex(prd: Prd): number {
 	return prd.tasks.findIndex((task) => !task.done);
-}
-
-function getPriorityIndicator(priority?: TaskPriority): { icon: string; color: string } | null {
-	if (!priority) {
-		return null;
-	}
-	switch (priority) {
-		case "high":
-			return { icon: "↑", color: "red" };
-		case "medium":
-			return { icon: "→", color: "yellow" };
-		case "low":
-			return { icon: "↓", color: "gray" };
-		default:
-			return null;
-	}
 }
 
 export function TaskList(): React.ReactElement {
@@ -74,8 +58,6 @@ export function TaskList(): React.ReactElement {
 
 	const allTasksComplete = completedCount === totalCount;
 
-	const priorityIndicator = currentTask ? getPriorityIndicator(currentTask.priority) : null;
-
 	return (
 		<Box flexDirection="column" paddingX={1}>
 			<Box marginBottom={1}>
@@ -88,9 +70,6 @@ export function TaskList(): React.ReactElement {
 					<Text color="yellow">▶ </Text>
 					<Text dimColor>{displayTaskIndex + 1}. </Text>
 					<Text color="white">{currentTask.title}</Text>
-					{priorityIndicator && (
-						<Text color={priorityIndicator.color}> [{priorityIndicator.icon}]</Text>
-					)}
 					{manualTask && <Text color="cyan"> (manual)</Text>}
 				</Box>
 			) : allTasksComplete ? (

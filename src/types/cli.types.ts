@@ -31,7 +31,6 @@ export interface TaskListOutput {
 		title: string;
 		description: string;
 		status: "done" | "pending" | "blocked";
-		priority?: "high" | "medium" | "low";
 		steps: string[];
 		dependsOn?: string[];
 		blockedBy?: string[];

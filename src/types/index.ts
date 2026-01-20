@@ -26,7 +26,6 @@ export type {
 	LoadPrdResult,
 	Prd,
 	PrdTask,
-	TaskPriority,
 } from "./prd.types.ts";
 export type {
 	ProgressEntry,
