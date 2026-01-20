@@ -29,9 +29,12 @@ get_os() {
         Darwin)
             echo "darwin"
             ;;
+        Linux)
+            echo "linux"
+            ;;
         *)
             echo "Unsupported OS: $os" >&2
-            echo "Ralph currently only supports macOS." >&2
+            echo "Ralph currently only supports macOS and Linux." >&2
             exit 1
             ;;
     esac
