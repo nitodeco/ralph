@@ -95,6 +95,7 @@ type AppStore = AppStoreState & AppStoreActions;
 
 function validateProject(): ValidationWarning | null {
 	const prdFile = findPrdFile();
+
 	if (!prdFile) {
 		return {
 			message: `No prd.json or prd.yaml found in ${RALPH_DIR}/`,
@@ -155,11 +156,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	loadInitialState: (autoResume: boolean) => {
 		const warning = validateProject();
+
 		if (warning) {
 			set({
 				validationWarning: warning,
 				appState: "not_initialized",
 			});
+
 			return;
 		}
 
@@ -172,8 +175,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		});
 
 		const existingSession = loadSession();
+
 		if (isSessionResumable(existingSession)) {
 			set({ pendingSession: existingSession });
+
 			if (autoResume) {
 				set({ appState: "idle" });
 			} else {
@@ -187,11 +192,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	startIterations: (iterationCount?: number, full?: boolean) => {
 		const state = get();
 		const warning = validateProject();
+
 		if (warning) {
 			set({
 				validationWarning: warning,
 				appState: "not_initialized",
 			});
+
 			return;
 		}
 
@@ -210,16 +217,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		set({ pendingSession: null });
 
 		let totalIters = iterationCount || state.iterations || DEFAULTS.iterations;
+
 		if (full && loadedPrd) {
 			const incompleteTasks = loadedPrd.tasks.filter((task) => !task.done).length;
+
 			totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
 		}
 
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.setTotal(totalIters);
 		iterationStore.setStartTime(Date.now());
 
 		const { session: newSession } = orchestrator.startSession(loadedPrd, totalIters);
+
 		set({ currentSession: newSession });
 
 		set({
@@ -233,11 +244,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	startSingleTask: (taskIdentifier: string): SetManualTaskResult => {
 		const warning = validateProject();
+
 		if (warning) {
 			set({
 				validationWarning: warning,
 				appState: "not_initialized",
 			});
+
 			return { success: false, error: warning.message };
 		}
 
@@ -248,6 +261,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		if (!loadedPrd) {
 			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
+
 			return {
 				success: false,
 				error: error.suggestion ? `${error.message}. ${error.suggestion}` : error.message,
@@ -268,6 +282,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 				.filter((prdTask) => !prdTask.done)
 				.map((prdTask, index) => `  ${index + 1}. ${prdTask.title}`)
 				.join("\n");
+
 			return {
 				success: false,
 				error: `Task not found: "${taskIdentifier}"\n\nAvailable pending tasks:\n${availableTasks}`,
@@ -275,6 +290,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		}
 
 		const canWork = canWorkOnTask(task);
+
 		if (!canWork.canWork) {
 			return { success: false, error: canWork.reason };
 		}
@@ -291,10 +307,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		set({ pendingSession: null });
 
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.setTotal(1);
 		iterationStore.setStartTime(Date.now());
 
 		const { session: newSession } = orchestrator.startSession(loadedPrd, 1);
+
 		set({ currentSession: newSession });
 
 		set({
@@ -310,16 +328,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	resumeSession: () => {
 		const state = get();
+
 		if (!state.pendingSession) {
 			return;
 		}
 
 		const warning = validateProject();
+
 		if (warning) {
 			set({
 				validationWarning: warning,
 				appState: "not_initialized",
 			});
+
 			return;
 		}
 
@@ -340,9 +361,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		);
 
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.setTotal(remainingIterations);
 
 		const elapsedMs = state.pendingSession.elapsedTimeSeconds * 1000;
+
 		iterationStore.setStartTime(Date.now() - elapsedMs);
 
 		set({
@@ -367,11 +390,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		if (agentStore.isStreaming || iterationStore.isRunning) {
 			agentStore.stop();
 			iterationStore.stop();
+
 			if (state.currentSession) {
 				const stoppedSession = updateSessionStatus(state.currentSession, "stopped");
+
 				saveSession(stoppedSession);
 				set({ currentSession: stoppedSession });
 			}
+
 			eventBus.emit("session:stop", { reason: "user_stop" });
 			set({ appState: "idle" });
 		}
@@ -382,11 +408,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		invalidatePrdCache();
 
 		const warning = validateProject();
+
 		if (warning) {
 			set({
 				validationWarning: warning,
 				appState: "not_initialized",
 			});
+
 			return;
 		}
 
@@ -407,15 +435,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	handleAgentComplete: () => {
 		const agentStore = useAgentStore.getState();
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.markIterationComplete(agentStore.isComplete);
 	},
 
 	handleFatalError: (error: string) => {
 		const state = get();
 		const stoppedSession = orchestrator.handleFatalError(error, state.prd, state.currentSession);
+
 		if (stoppedSession) {
 			set({ currentSession: stoppedSession });
 		}
+
 		set({ appState: "error" });
 	},
 
@@ -425,6 +456,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		if (!prd) {
 			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
+
 			return {
 				success: false,
 				error: error.suggestion ? `${error.message}. ${error.suggestion}` : error.message,
@@ -441,6 +473,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 				.map((prdTask, index) => `  ${index + 1}. ${prdTask.title}`)
 				.join("\n");
 			const suggestion = getErrorSuggestion(ErrorCode.PRD_TASK_NOT_FOUND);
+
 			return {
 				success: false,
 				error: `Task not found: "${taskIdentifier}"\n\nAvailable tasks:\n${availableTasks}\n\n${suggestion}`,
@@ -448,6 +481,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		}
 
 		const canWork = canWorkOnTask(task);
+
 		if (!canWork.canWork) {
 			return {
 				success: false,
@@ -456,6 +490,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		}
 
 		set({ manualNextTask: task.title });
+
 		return { success: true, taskTitle: task.title };
 	},
 
@@ -465,27 +500,36 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	getEffectiveNextTask: (): string | null => {
 		const state = get();
+
 		if (state.manualNextTask) {
 			const prd = state.prd ?? loadPrd();
+
 			if (prd) {
 				const task = getTaskByTitle(prd, state.manualNextTask);
+
 				if (task && !task.done) {
 					return state.manualNextTask;
 				}
 			}
+
 			set({ manualNextTask: null });
 		}
+
 		const prd = state.prd ?? loadPrd();
+
 		return prd ? getNextTask(prd) : null;
 	},
 
 	getRemainingRuntimeMs: (): number | null => {
 		const state = get();
+
 		if (state.maxRuntimeMs === null) {
 			return null;
 		}
+
 		const elapsedMs = state.elapsedTime * 1000;
 		const remaining = state.maxRuntimeMs - elapsedMs;
+
 		return remaining > 0 ? remaining : 0;
 	},
 
@@ -548,6 +592,7 @@ export function setupIterationCallbacks(
 ) {
 	const loadedConfig = loadConfig();
 	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
+
 	orchestrator.initialize({
 		config: loadedConfig,
 		iterations,

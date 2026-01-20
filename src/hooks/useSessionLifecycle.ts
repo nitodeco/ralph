@@ -66,10 +66,12 @@ export function useSessionLifecycle(
 	useEffect(() => {
 		const checkUpdate = async () => {
 			const result = await checkForUpdateOnStartup(version);
+
 			if (result.updateAvailable && result.latestVersion) {
 				useAppStore.getState().setUpdateStatus(true, result.latestVersion);
 			}
 		};
+
 		checkUpdate();
 	}, [version]);
 
@@ -80,9 +82,13 @@ export function useSessionLifecycle(
 	}, [autoResume, pendingSession, appState, resumeSession]);
 
 	useEffect(() => {
-		if (dryRun) return;
+		if (dryRun) {
+			return;
+		}
+
 		if (initialTask && appState === "idle" && !pendingSession) {
 			const result = setManualNextTask(initialTask);
+
 			if (result.success) {
 				onTaskSet?.(result, initialTask);
 				startIterations(1);
@@ -105,9 +111,13 @@ export function useSessionLifecycle(
 	]);
 
 	useEffect(() => {
-		if (appState !== "running" || activeView !== "run") return;
+		if (appState !== "running" || activeView !== "run") {
+			return;
+		}
+
 		const incrementElapsedTime = useAppStore.getState().incrementElapsedTime;
 		const timer = setInterval(() => incrementElapsedTime(), 1000);
+
 		return () => clearInterval(timer);
 	}, [appState, activeView]);
 

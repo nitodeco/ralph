@@ -105,6 +105,7 @@ class SessionOrchestrator {
 		this.setupSubscriptions();
 
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.setMaxRuntimeMs(this.maxRuntimeMs);
 	}
 
@@ -124,8 +125,10 @@ class SessionOrchestrator {
 				if (event.retryContexts) {
 					this.lastRetryContexts = event.retryContexts;
 				}
+
 				if (event.isFatal) {
 					const appState = useAppStore.getState();
+
 					this.handleFatalError(event.error, appState.prd, appState.currentSession);
 					useAppStore.setState({ appState: "error" });
 				}
@@ -140,8 +143,10 @@ class SessionOrchestrator {
 		}
 
 		const decompositionResult = parseDecompositionRequest(event.output);
+
 		if (decompositionResult.detected && decompositionResult.request) {
 			const handled = this.handleDecomposition(decompositionResult.request);
+
 			if (handled) {
 				return;
 			}
@@ -160,6 +165,7 @@ class SessionOrchestrator {
 			useAppStore.setState({ isVerifying: true });
 
 			const verificationResult = await runVerification(verificationConfig);
+
 			this.lastVerificationResult = verificationResult;
 			this.isVerifying = false;
 			useAppStore.setState({ isVerifying: false, lastVerificationResult: verificationResult });
@@ -168,7 +174,9 @@ class SessionOrchestrator {
 
 			if (!verificationResult.passed) {
 				const iterationStore = useIterationStore.getState();
+
 				iterationStore.markIterationComplete(false);
+
 				return;
 			}
 		} else {
@@ -176,6 +184,7 @@ class SessionOrchestrator {
 		}
 
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.markIterationComplete(allTasksActuallyDone);
 	}
 
@@ -194,18 +203,23 @@ class SessionOrchestrator {
 				maxDecompositions,
 				currentCount,
 			});
+
 			return false;
 		}
 
 		const currentPrd = reloadPrd();
+
 		if (!currentPrd) {
 			logger.error("Cannot apply decomposition: PRD not found");
+
 			return false;
 		}
 
 		const result = applyDecomposition(currentPrd, request);
+
 		if (!result.success || !result.updatedPrd) {
 			logger.error("Failed to apply decomposition", { error: result.error });
+
 			return false;
 		}
 
@@ -227,6 +241,7 @@ class SessionOrchestrator {
 		});
 
 		const iterationStore = useIterationStore.getState();
+
 		iterationStore.restartCurrentIteration();
 
 		return true;
@@ -234,18 +249,23 @@ class SessionOrchestrator {
 
 	private logVerificationResultToProgress(result: VerificationResult): void {
 		const formattedResult = formatVerificationResult(result);
+
 		appendProgress(formattedResult);
 	}
 
 	private logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {
-		if (retryContexts.length === 0) return;
+		if (retryContexts.length === 0) {
+			return;
+		}
 
 		const lines: string[] = ["=== Retry Analysis ==="];
+
 		for (const context of retryContexts) {
 			lines.push(`Retry attempt ${context.attemptNumber}:`);
 			lines.push(`  Category: ${context.failureCategory}`);
 			lines.push(`  Root cause: ${context.rootCause}`);
 		}
+
 		lines.push("");
 
 		appendProgress(lines.join("\n"));
@@ -264,16 +284,20 @@ class SessionOrchestrator {
 				const appState = useAppStore.getState();
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
 				logger.logIterationStart(iterationNumber, iterations);
 				const currentPrd = reloadPrd();
 				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
+
 				useAgentStore.getState().reset();
+
 				if (currentPrd) {
 					appState.setPrd(currentPrd);
 				}
 
 				if (appState.currentSession) {
 					const updatedSession = recordIterationStart(appState.currentSession, iterationNumber);
+
 					saveSession(updatedSession);
 					useAppStore.setState({ currentSession: updatedSession });
 				}
@@ -288,9 +312,11 @@ class SessionOrchestrator {
 				});
 
 				const specificTask = appState.getEffectiveNextTask();
+
 				if (specificTask && appState.manualNextTask) {
 					appState.clearManualNextTask();
 				}
+
 				useAgentStore.getState().start(specificTask);
 			},
 			onIterationComplete: (iterationNumber: number) => {
@@ -298,8 +324,10 @@ class SessionOrchestrator {
 				const agentStore = useAgentStore.getState();
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
 				logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
 				const currentPrd = reloadPrd();
+
 				if (appState.currentSession) {
 					const wasSuccessful = !agentStore.error && agentStore.isComplete;
 					let updatedSession = recordIterationEnd(
@@ -308,6 +336,7 @@ class SessionOrchestrator {
 						wasSuccessful,
 					);
 					const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
+
 					updatedSession = updateSessionIteration(
 						updatedSession,
 						iterationNumber,
@@ -335,6 +364,7 @@ class SessionOrchestrator {
 				if ((agentStore.error || verificationFailed) && loadedConfig.learningEnabled !== false) {
 					const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
 					const errorMessage = agentStore.error || "Verification failed";
+
 					recordFailure({
 						error: errorMessage,
 						output: agentStore.output,
@@ -345,6 +375,7 @@ class SessionOrchestrator {
 
 					const patterns = analyzePatterns();
 					const significantPatterns = patterns.filter((pattern) => pattern.occurrences >= 3);
+
 					if (significantPatterns.length > 0) {
 						logger.info("Recurring failure patterns detected", {
 							patternCount: significantPatterns.length,
@@ -354,6 +385,7 @@ class SessionOrchestrator {
 
 					if (verificationFailed && this.lastVerificationResult) {
 						const failedChecks = this.lastVerificationResult.failedChecks;
+
 						if (failedChecks.length > 0) {
 							addFailedApproach(`Verification failed: ${failedChecks.join(", ")}`);
 						}
@@ -366,6 +398,7 @@ class SessionOrchestrator {
 
 					if (wasSuccessful && agentStore.retryCount > 0 && this.lastRetryContexts.length > 0) {
 						const lastContext = this.lastRetryContexts[this.lastRetryContexts.length - 1];
+
 						if (lastContext) {
 							addLesson(
 								`Task "${taskWithIndex?.title ?? "Unknown"}" succeeded after retry: ${lastContext.rootCause} was resolved`,
@@ -383,6 +416,7 @@ class SessionOrchestrator {
 
 				const retryContextsForLog =
 					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
+
 				this.lastRetryContexts = [];
 
 				const verificationForLog: IterationLogVerification | undefined = this.lastVerificationResult
@@ -398,6 +432,7 @@ class SessionOrchestrator {
 							totalDurationMs: this.lastVerificationResult.totalDurationMs,
 						}
 					: undefined;
+
 				this.lastVerificationResult = null;
 
 				const decompositionForLog: IterationLogDecomposition | undefined = this.lastDecomposition
@@ -409,6 +444,7 @@ class SessionOrchestrator {
 							),
 						}
 					: undefined;
+
 				this.lastDecomposition = null;
 				useAppStore.setState({ lastDecomposition: null });
 
@@ -426,6 +462,7 @@ class SessionOrchestrator {
 
 				agentStore.reset();
 				const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
+
 				if (cleanupResult.memoryStatus !== "ok") {
 					logger.warn("Memory cleanup completed with warnings", {
 						status: cleanupResult.memoryStatus,
@@ -435,67 +472,86 @@ class SessionOrchestrator {
 			},
 			onAllComplete: () => {
 				const appState = useAppStore.getState();
+
 				useAgentStore.getState().stop();
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
 				logger.logSessionComplete();
 				const currentPrd = reloadPrd();
+
 				sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
 					totalIterations: iterations,
 				});
+
 				if (appState.currentSession) {
 					const finalStatistics = calculateStatisticsFromLogs(appState.currentSession);
+
 					displayStatisticsReport(finalStatistics);
 					logStatisticsToProgress(finalStatistics);
 					const completedSession = updateSessionStatus(appState.currentSession, "completed");
+
 					saveSession(completedSession);
 					deleteSession();
 					useAppStore.setState({ currentSession: null });
 				}
+
 				eventBus.emit("session:complete", { totalIterations: iterations });
 				useAppStore.setState({ appState: "complete" });
 			},
 			onMaxIterations: () => {
 				const appState = useAppStore.getState();
 				const iterationState = useIterationStore.getState();
+
 				useAgentStore.getState().stop();
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
 				logger.logMaxIterationsReached(iterationState.total);
 				const currentPrd = reloadPrd();
+
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
 					totalIterations: iterationState.total,
 				});
+
 				if (appState.currentSession) {
 					const stoppedSession = updateSessionStatus(appState.currentSession, "stopped");
+
 					saveSession(stoppedSession);
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
+
 				eventBus.emit("session:stop", { reason: "max_iterations" });
 				useAppStore.setState({ appState: "max_iterations" });
 			},
 			onMaxRuntime: () => {
 				const appState = useAppStore.getState();
 				const iterationState = useIterationStore.getState();
+
 				useAgentStore.getState().stop();
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
 				logger.info("Max runtime limit reached", {
 					maxRuntimeMs: iterationState.maxRuntimeMs,
 					completedIterations: iterationState.current,
 				});
 				const currentPrd = reloadPrd();
+
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
 					totalIterations: iterationState.total,
 					reason: "max_runtime",
 				});
+
 				if (appState.currentSession) {
 					const stoppedSession = updateSessionStatus(appState.currentSession, "stopped");
+
 					saveSession(stoppedSession);
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
+
 				eventBus.emit("session:stop", { reason: "max_runtime" });
 				useAppStore.setState({ appState: "max_runtime" });
 			},
@@ -508,12 +564,14 @@ class SessionOrchestrator {
 
 		const taskIndex = prd ? getCurrentTaskIndex(prd) : 0;
 		const newSession = createSession(totalIterations, taskIndex);
+
 		saveSession(newSession);
 
 		logger.logSessionStart(totalIterations, taskIndex);
 		initializeProgressFile();
 
 		const sessionId = generateSessionId();
+
 		initializeLogsIndex(sessionId, prd?.project ?? "Unknown Project");
 
 		initializeSessionMemory(prd?.project ?? "Unknown Project");
@@ -529,6 +587,7 @@ class SessionOrchestrator {
 
 		const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
 		const resumedSession = updateSessionStatus(pendingSession, "running");
+
 		saveSession(resumedSession);
 
 		logger.logSessionResume(
@@ -572,9 +631,12 @@ class SessionOrchestrator {
 
 		if (currentSession) {
 			const stoppedSession = updateSessionStatus(currentSession, "stopped");
+
 			saveSession(stoppedSession);
+
 			return stoppedSession;
 		}
+
 		return null;
 	}
 
@@ -582,6 +644,7 @@ class SessionOrchestrator {
 		for (const unsubscribe of this.unsubscribers) {
 			unsubscribe();
 		}
+
 		this.unsubscribers = [];
 		this.initialized = false;
 		eventBus.removeAllListeners();

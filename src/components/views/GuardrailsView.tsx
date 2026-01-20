@@ -38,11 +38,13 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 				setViewMode("list");
 				setNewInstruction("");
 			}
+
 			return;
 		}
 
 		if (key.escape || input === "q") {
 			onClose();
+
 			return;
 		}
 
@@ -60,6 +62,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 
 		if (input === "t" && guardrails.length > 0) {
 			const guardrail = guardrails[selectedIndex];
+
 			if (guardrail) {
 				toggleGuardrail(guardrail.id);
 				refreshGuardrails();
@@ -69,12 +72,15 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 
 		if (input === "d" && guardrails.length > 0) {
 			const guardrail = guardrails[selectedIndex];
+
 			if (guardrail) {
 				removeGuardrail(guardrail.id);
 				refreshGuardrails();
+
 				if (selectedIndex >= guardrails.length - 1) {
 					setSelectedIndex(Math.max(0, guardrails.length - 2));
 				}
+
 				showMessage("success", "Guardrail removed");
 			}
 		}
@@ -86,6 +92,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 			refreshGuardrails();
 			showMessage("success", "Guardrail added");
 		}
+
 		setNewInstruction("");
 		setViewMode("list");
 	};

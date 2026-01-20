@@ -23,6 +23,7 @@ export function loadFailureHistory(): FailureHistory {
 	try {
 		const content = readFileSync(FAILURE_HISTORY_FILE_PATH, "utf-8");
 		const parsed = JSON.parse(content) as FailureHistory;
+
 		return {
 			entries: parsed.entries ?? [],
 			patterns: parsed.patterns ?? [],
@@ -67,6 +68,7 @@ export function recordFailure(options: RecordFailureOptions): FailureHistoryEntr
 	}
 
 	saveFailureHistory(history);
+
 	return entry;
 }
 
@@ -85,6 +87,7 @@ function calculateStringSimilarity(stringA: string, stringB: string): number {
 	const setB = new Set(stringB.split(" "));
 	const intersection = new Set([...setA].filter((word) => setB.has(word)));
 	const union = new Set([...setA, ...setB]);
+
 	return intersection.size / union.size;
 }
 
@@ -93,15 +96,21 @@ function groupEntriesByPattern(entries: FailureHistoryEntry[]): Map<string, Fail
 	const processedIndices = new Set<number>();
 
 	for (let entryIndex = 0; entryIndex < entries.length; entryIndex++) {
-		if (processedIndices.has(entryIndex)) continue;
+		if (processedIndices.has(entryIndex)) {
+			continue;
+		}
 
 		const entry = entries[entryIndex];
-		if (!entry) continue;
+
+		if (!entry) {
+			continue;
+		}
 
 		const normalizedError = normalizeErrorForPattern(entry.error);
 		const groupKey = `${entry.category}:${normalizedError}`;
 
 		const group: FailureHistoryEntry[] = [entry];
+
 		processedIndices.add(entryIndex);
 
 		for (
@@ -109,11 +118,19 @@ function groupEntriesByPattern(entries: FailureHistoryEntry[]): Map<string, Fail
 			comparisonIndex < entries.length;
 			comparisonIndex++
 		) {
-			if (processedIndices.has(comparisonIndex)) continue;
+			if (processedIndices.has(comparisonIndex)) {
+				continue;
+			}
 
 			const otherEntry = entries[comparisonIndex];
-			if (!otherEntry) continue;
-			if (otherEntry.category !== entry.category) continue;
+
+			if (!otherEntry) {
+				continue;
+			}
+
+			if (otherEntry.category !== entry.category) {
+				continue;
+			}
 
 			const otherNormalized = normalizeErrorForPattern(otherEntry.error);
 			const similarity = calculateStringSimilarity(normalizedError, otherNormalized);
@@ -145,11 +162,13 @@ function generateGuardrailSuggestion(category: string, entries: FailureHistoryEn
 	};
 
 	const suggestion = categoryGuardrails[category];
+
 	if (suggestion) {
 		return suggestion;
 	}
 
 	const commonErrors = entries.map((entry) => entry.rootCause).slice(0, 3);
+
 	return `Address common issue: ${commonErrors[0] || "unknown error"}`;
 }
 
@@ -159,11 +178,16 @@ export function analyzePatterns(): FailurePattern[] {
 	const patterns: FailurePattern[] = [];
 
 	for (const [_groupKey, entries] of groups) {
-		if (entries.length < 2) continue;
+		if (entries.length < 2) {
+			continue;
+		}
 
 		const firstEntry = entries[0];
 		const lastEntry = entries[entries.length - 1];
-		if (!firstEntry || !lastEntry) continue;
+
+		if (!firstEntry || !lastEntry) {
+			continue;
+		}
 
 		const affectedTasks = [...new Set(entries.map((entry) => entry.taskTitle))];
 
@@ -255,6 +279,7 @@ export function generatePatternReport(): PatternReport {
 	const recommendations: string[] = [];
 
 	const topCategory = categoryBreakdown[0];
+
 	if (topCategory && topCategory.percentage > 40) {
 		recommendations.push(
 			`${topCategory.category.replace(/_/g, " ")} accounts for ${topCategory.percentage}% of failures. Consider adding specific guardrails for this issue.`,
@@ -262,6 +287,7 @@ export function generatePatternReport(): PatternReport {
 	}
 
 	const topFailingTask = taskFailureRates[0];
+
 	if (topFailingTask && topFailingTask.failures >= 5) {
 		recommendations.push(
 			`Task "${topFailingTask.task}" has ${topFailingTask.failures} failures. Consider breaking it into smaller subtasks.`,
@@ -305,17 +331,21 @@ export function formatPatternReport(report: PatternReport): string {
 
 	if (report.categoryBreakdown.length > 0) {
 		lines.push("─── Category Breakdown ───");
+
 		for (const category of report.categoryBreakdown) {
 			const bar = "█".repeat(Math.ceil(category.percentage / 5));
+
 			lines.push(
 				`  ${category.category.padEnd(18)} ${bar} ${category.percentage}% (${category.count})`,
 			);
 		}
+
 		lines.push("");
 	}
 
 	if (report.topPatterns.length > 0) {
 		lines.push("─── Top Failure Patterns ───");
+
 		for (const [index, pattern] of report.topPatterns.slice(0, 5).entries()) {
 			lines.push(`  ${index + 1}. [${pattern.category}] ${pattern.occurrences} occurrences`);
 			lines.push(
@@ -324,26 +354,32 @@ export function formatPatternReport(report: PatternReport): string {
 			lines.push(
 				`     Tasks: ${pattern.affectedTasks.slice(0, 3).join(", ")}${pattern.affectedTasks.length > 3 ? "..." : ""}`,
 			);
+
 			if (pattern.suggestedGuardrail) {
 				lines.push(`     Suggested: ${pattern.suggestedGuardrail}`);
 			}
+
 			lines.push("");
 		}
 	}
 
 	if (report.taskFailureRates.length > 0) {
 		lines.push("─── Tasks with Most Failures ───");
+
 		for (const task of report.taskFailureRates.slice(0, 5)) {
 			lines.push(`  • ${task.task}: ${task.failures} failures`);
 		}
+
 		lines.push("");
 	}
 
 	if (report.recommendations.length > 0) {
 		lines.push("─── Recommendations ───");
+
 		for (const recommendation of report.recommendations) {
 			lines.push(`  → ${recommendation}`);
 		}
+
 		lines.push("");
 	}
 
@@ -362,6 +398,7 @@ export function getFailureHistoryStats(): {
 	const history = loadFailureHistory();
 	const firstEntry = history.entries[0];
 	const lastEntry = history.entries[history.entries.length - 1];
+
 	return {
 		totalEntries: history.entries.length,
 		oldestEntry: firstEntry?.timestamp ?? null,

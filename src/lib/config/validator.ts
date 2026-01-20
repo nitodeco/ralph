@@ -16,22 +16,27 @@ function validatePositiveInteger(
 	if (value === undefined || value === null) {
 		return;
 	}
+
 	if (typeof value !== "number") {
 		errors.push({
 			field: fieldName,
 			message: `must be a number`,
 			value,
 		});
+
 		return;
 	}
+
 	if (!Number.isInteger(value)) {
 		errors.push({
 			field: fieldName,
 			message: `must be an integer`,
 			value,
 		});
+
 		return;
 	}
+
 	if (allowZero ? value < 0 : value <= 0) {
 		errors.push({
 			field: fieldName,
@@ -50,14 +55,17 @@ function validateString(
 	if (value === undefined || value === null) {
 		return;
 	}
+
 	if (typeof value !== "string") {
 		errors.push({
 			field: fieldName,
 			message: `must be a string`,
 			value,
 		});
+
 		return;
 	}
+
 	if (allowedValues && !allowedValues.includes(value)) {
 		errors.push({
 			field: fieldName,
@@ -71,6 +79,7 @@ function validateBoolean(value: unknown, fieldName: string, errors: ConfigValida
 	if (value === undefined || value === null) {
 		return;
 	}
+
 	if (typeof value !== "boolean") {
 		errors.push({
 			field: fieldName,
@@ -84,16 +93,20 @@ function validateUrl(value: unknown, fieldName: string, errors: ConfigValidation
 	if (value === undefined || value === null || value === "") {
 		return;
 	}
+
 	if (typeof value !== "string") {
 		errors.push({
 			field: fieldName,
 			message: `must be a string`,
 			value,
 		});
+
 		return;
 	}
+
 	try {
 		const url = new URL(value);
+
 		if (!["http:", "https:"].includes(url.protocol)) {
 			errors.push({
 				field: fieldName,
@@ -114,15 +127,19 @@ function validateNotificationConfig(config: unknown, errors: ConfigValidationErr
 	if (config === undefined || config === null) {
 		return;
 	}
+
 	if (typeof config !== "object") {
 		errors.push({
 			field: "notifications",
 			message: "must be an object",
 			value: config,
 		});
+
 		return;
 	}
+
 	const notificationConfig = config as NotificationConfig;
+
 	validateBoolean(
 		notificationConfig.systemNotification,
 		"notifications.systemNotification",
@@ -136,15 +153,19 @@ function validateMemoryConfig(config: unknown, errors: ConfigValidationError[]):
 	if (config === undefined || config === null) {
 		return;
 	}
+
 	if (typeof config !== "object") {
 		errors.push({
 			field: "memory",
 			message: "must be an object",
 			value: config,
 		});
+
 		return;
 	}
+
 	const memoryConfig = config as MemoryConfig;
+
 	validatePositiveInteger(memoryConfig.maxOutputBufferBytes, "memory.maxOutputBufferBytes", errors);
 	validatePositiveInteger(
 		memoryConfig.memoryWarningThresholdMb,

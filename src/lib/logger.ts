@@ -33,6 +33,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 function formatLogEntry(entry: LogEntry): string {
 	const levelTag = `[${entry.level.toUpperCase()}]`.padEnd(7);
 	const contextStr = entry.context ? ` ${JSON.stringify(entry.context)}` : "";
+
 	return `${entry.timestamp} ${levelTag} ${entry.message}${contextStr}`;
 }
 
@@ -42,6 +43,7 @@ function shouldLog(logLevel: LogLevel, minLevel: LogLevel): boolean {
 
 function ensureLogDirectoryExists(logFilePath: string): void {
 	const logDir = dirname(logFilePath);
+
 	if (!existsSync(logDir)) {
 		mkdirSync(logDir, { recursive: true });
 	}
@@ -112,6 +114,7 @@ class Logger {
 
 	logAgentComplete(exitCode: number, isComplete: boolean): void {
 		const level = exitCode === 0 ? "info" : "warn";
+
 		this.log(level, "Agent execution completed", { exitCode, isComplete });
 	}
 
@@ -163,12 +166,15 @@ class Logger {
 		if (config.logFilePath !== undefined) {
 			this.config.logFilePath = config.logFilePath;
 		}
+
 		if (config.maxFileSizeBytes !== undefined) {
 			this.config.maxFileSizeBytes = config.maxFileSizeBytes;
 		}
+
 		if (config.maxBackupFiles !== undefined) {
 			this.config.maxBackupFiles = config.maxBackupFiles;
 		}
+
 		if (config.minLevel !== undefined) {
 			this.config.minLevel = config.minLevel;
 		}
@@ -187,6 +193,7 @@ export function getLogger(config?: LoggerConfig): Logger {
 	} else if (config) {
 		loggerInstance.updateConfig(config);
 	}
+
 	return loggerInstance;
 }
 
@@ -196,9 +203,11 @@ export function createLogger(config?: LoggerConfig): Logger {
 
 export function readLogFile(logFilePath?: string): string | null {
 	const filePath = logFilePath ?? DEFAULT_LOG_FILE;
+
 	if (!existsSync(filePath)) {
 		return null;
 	}
+
 	try {
 		return readFileSync(filePath, "utf-8");
 	} catch {
@@ -208,9 +217,12 @@ export function readLogFile(logFilePath?: string): string | null {
 
 export function getRecentLogEntries(count: number = 50, logFilePath?: string): string[] {
 	const content = readLogFile(logFilePath);
+
 	if (!content) {
 		return [];
 	}
+
 	const lines = content.trim().split("\n");
+
 	return lines.slice(-count);
 }

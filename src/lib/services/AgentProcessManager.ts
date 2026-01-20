@@ -28,6 +28,7 @@ class AgentProcessManagerClass {
 
 	incrementRetry(): number {
 		this.retryCount += 1;
+
 		return this.retryCount;
 	}
 
@@ -45,6 +46,7 @@ class AgentProcessManagerClass {
 
 		if (this.process) {
 			const processToKill = this.process;
+
 			try {
 				processToKill.kill("SIGTERM");
 			} catch {}
@@ -54,8 +56,10 @@ class AgentProcessManagerClass {
 					try {
 						processToKill.kill("SIGKILL");
 					} catch {}
+
 					this.process = null;
 				}
+
 				this.forceKillTimeout = null;
 			}, 500);
 

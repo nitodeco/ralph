@@ -8,8 +8,10 @@ export async function handleStopCommand(version: string): Promise<void> {
 
 	if (result.success && result.pid !== null) {
 		const session = loadSession();
+
 		if (session && (session.status === "running" || session.status === "paused")) {
 			const updatedSession = updateSessionStatus(session, "stopped");
+
 			saveSession(updatedSession);
 			console.log("Session state updated to 'stopped'");
 		}

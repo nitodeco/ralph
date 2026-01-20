@@ -58,6 +58,7 @@ export function isDirectoryWritable(directory: string): boolean {
 export function isDirectoryInPath(directory: string): boolean {
 	const pathEnv = process.env.PATH || "";
 	const paths = pathEnv.split(":");
+
 	return paths.includes(directory);
 }
 
@@ -77,6 +78,7 @@ export function getShellConfigPath(): string | null {
 			if (existsSync(join(home, ".bash_profile"))) {
 				return join(home, ".bash_profile");
 			}
+
 			return join(home, ".bashrc");
 		default:
 			return null;
@@ -85,6 +87,7 @@ export function getShellConfigPath(): string | null {
 
 export function prependToShellConfig(): string | null {
 	const configPath = getShellConfigPath();
+
 	if (!configPath) {
 		return null;
 	}
@@ -95,17 +98,20 @@ export function prependToShellConfig(): string | null {
 
 	if (existsSync(configPath)) {
 		const content = readFileSync(configPath, "utf-8");
+
 		if (content.includes(exportLine) || content.includes(markerComment)) {
 			return configPath;
 		}
 	}
 
 	appendFileSync(configPath, fullEntry, "utf-8");
+
 	return configPath;
 }
 
 export function getDefaultInstallDir(): string {
 	const envOverride = process.env.RALPH_INSTALL_DIR;
+
 	if (envOverride) {
 		return envOverride;
 	}
@@ -117,23 +123,27 @@ export function ensureRalphDirExists(): void {
 	if (!existsSync(RALPH_DIR)) {
 		mkdirSync(RALPH_DIR, { recursive: true });
 	}
+
 	const gitignorePath = join(RALPH_DIR, ".gitignore");
 	const gitignoreContent = "ralph.log\nlogs/\narchive/\n";
 
-	if (!existsSync(gitignorePath)) {
-		writeFileSync(gitignorePath, gitignoreContent, "utf-8");
-	} else {
+	if (existsSync(gitignorePath)) {
 		const existingContent = readFileSync(gitignorePath, "utf-8");
 		let updatedContent = existingContent;
+
 		if (!existingContent.includes("logs/")) {
 			updatedContent = `${updatedContent.trimEnd()}\nlogs/\n`;
 		}
+
 		if (!existingContent.includes("archive/")) {
 			updatedContent = `${updatedContent.trimEnd()}\narchive/\n`;
 		}
+
 		if (updatedContent !== existingContent) {
 			writeFileSync(gitignorePath, updatedContent, "utf-8");
 		}
+	} else {
+		writeFileSync(gitignorePath, gitignoreContent, "utf-8");
 	}
 }
 
@@ -145,6 +155,7 @@ export function ensureGlobalRalphDirExists(): void {
 
 export function ensureLogsDirExists(): void {
 	ensureRalphDirExists();
+
 	if (!existsSync(LOGS_DIR)) {
 		mkdirSync(LOGS_DIR, { recursive: true });
 	}

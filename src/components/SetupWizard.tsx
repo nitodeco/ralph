@@ -208,6 +208,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 
 	const handleWebhookUrlSubmit = () => {
 		const webhookUrl = state.webhookUrlInput.trim() || undefined;
+
 		setState((prev) => ({
 			...prev,
 			notifications: { ...prev.notifications, webhookUrl },
@@ -231,6 +232,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 			memory: state.memory,
 			notifications: finalNotifications,
 		};
+
 		saveGlobalConfig(newConfig);
 		setState((prev) => ({
 			...prev,
@@ -472,6 +474,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					state.notifications.systemNotification ||
 					state.notifications.webhookUrl ||
 					state.notifications.markerFilePath;
+
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">Setup complete!</Message>

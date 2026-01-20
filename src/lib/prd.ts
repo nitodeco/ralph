@@ -35,6 +35,7 @@ export function isPrdComplete(prd: Prd): boolean {
 
 export function getNextTask(prd: Prd): string | null {
 	const nextTask = prd.tasks.find((task) => !task.done);
+
 	return nextTask ? nextTask.title : null;
 }
 
@@ -46,15 +47,18 @@ export interface TaskWithIndex {
 export function getNextTaskWithIndex(prd: Prd): TaskWithIndex | null {
 	for (let taskIndex = 0; taskIndex < prd.tasks.length; taskIndex++) {
 		const task = prd.tasks[taskIndex];
+
 		if (task && !task.done) {
 			return { title: task.title, index: taskIndex };
 		}
 	}
+
 	return null;
 }
 
 export function getTaskByTitle(prd: Prd, title: string): PrdTask | null {
 	const normalizedTitle = title.toLowerCase();
+
 	return prd.tasks.find((task) => task.title.toLowerCase() === normalizedTitle) ?? null;
 }
 
@@ -62,6 +66,7 @@ export function getTaskByIndex(prd: Prd, index: number): PrdTask | null {
 	if (index < 0 || index >= prd.tasks.length) {
 		return null;
 	}
+
 	return prd.tasks[index] ?? null;
 }
 

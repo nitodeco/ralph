@@ -76,6 +76,7 @@ class ConfigServiceImpl {
 		if (this.cachedConfig !== null) {
 			return this.cachedConfig;
 		}
+
 		return this.load();
 	}
 
@@ -84,16 +85,20 @@ class ConfigServiceImpl {
 
 		if (!existsSync(PROJECT_CONFIG_PATH)) {
 			this.cachedConfig = globalConfig;
+
 			return globalConfig;
 		}
 
 		try {
 			const projectContent = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
 			const projectConfig = JSON.parse(projectContent) as Partial<RalphConfig>;
+
 			this.cachedConfig = applyDefaults({ ...globalConfig, ...projectConfig });
+
 			return this.cachedConfig;
 		} catch {
 			this.cachedConfig = globalConfig;
+
 			return globalConfig;
 		}
 	}
@@ -105,16 +110,20 @@ class ConfigServiceImpl {
 
 		if (!existsSync(GLOBAL_CONFIG_PATH)) {
 			this.cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
+
 			return this.cachedGlobalConfig;
 		}
 
 		try {
 			const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
 			const parsed = JSON.parse(content) as Partial<RalphConfig>;
+
 			this.cachedGlobalConfig = applyDefaults({ ...DEFAULT_CONFIG, ...parsed });
+
 			return this.cachedGlobalConfig;
 		} catch {
 			this.cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
+
 			return this.cachedGlobalConfig;
 		}
 	}
@@ -126,6 +135,7 @@ class ConfigServiceImpl {
 
 		try {
 			const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
+
 			return JSON.parse(content) as Partial<RalphConfig>;
 		} catch {
 			return null;
@@ -139,6 +149,7 @@ class ConfigServiceImpl {
 
 		try {
 			const content = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
+
 			return JSON.parse(content) as Partial<RalphConfig>;
 		} catch {
 			return null;
@@ -151,6 +162,7 @@ class ConfigServiceImpl {
 	} {
 		const config = this.get();
 		const validation = validateFn(config);
+
 		return { config, validation };
 	}
 

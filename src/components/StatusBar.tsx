@@ -14,9 +14,11 @@ const STATUS_INDICATORS: Record<AgentStatus, { color: string; label: string }> =
 function formatElapsedTime(seconds: number): string {
 	const minutes = Math.floor(seconds / 60);
 	const remainingSeconds = seconds % 60;
+
 	if (minutes > 0) {
 		return `${minutes}m ${remainingSeconds}s`;
 	}
+
 	return `${remainingSeconds}s`;
 }
 
@@ -29,9 +31,11 @@ function formatRemainingTime(milliseconds: number): string {
 	if (hours > 0) {
 		return `${hours}h ${minutes}m`;
 	}
+
 	if (minutes > 0) {
 		return `${minutes}m ${seconds}s`;
 	}
+
 	return `${seconds}s`;
 }
 
@@ -49,10 +53,22 @@ export function StatusBar(): React.ReactElement {
 	const maxRuntimeMs = useIterationStore((state) => state.maxRuntimeMs);
 
 	const getStatus = (): AgentStatus => {
-		if (appState === "error") return "error";
-		if (appState === "complete" || appState === "max_runtime") return "complete";
-		if (agentIsStreaming) return "running";
-		if (iterationIsDelaying) return "idle";
+		if (appState === "error") {
+			return "error";
+		}
+
+		if (appState === "complete" || appState === "max_runtime") {
+			return "complete";
+		}
+
+		if (agentIsStreaming) {
+			return "running";
+		}
+
+		if (iterationIsDelaying) {
+			return "idle";
+		}
+
 		return "idle";
 	};
 

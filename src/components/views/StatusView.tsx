@@ -47,14 +47,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 					</Box>
 				</Box>
 
-				{!session ? (
-					<Box flexDirection="column" marginTop={1}>
-						<Text>No session data found.</Text>
-						<Box marginTop={1}>
-							<Text dimColor>Run 'ralph' or 'ralph -b' to start a new session.</Text>
-						</Box>
-					</Box>
-				) : (
+				{session ? (
 					<>
 						<Box flexDirection="column" marginTop={1}>
 							<Text bold color="yellow">
@@ -98,6 +91,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 										const totalTasks = prd.tasks.length;
 										const progressPercent =
 											totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
 										return (
 											<Text>
 												Tasks:{" "}
@@ -109,6 +103,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 									})()}
 									{(() => {
 										const currentTask = prd.tasks[session.currentTaskIndex];
+
 										if (
 											session.currentTaskIndex >= 0 &&
 											session.currentTaskIndex < prd.tasks.length &&
@@ -121,6 +116,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 											);
 										} else {
 											const nextTask = prd.tasks.find((task) => !task.done);
+
 											if (nextTask) {
 												return (
 													<Text>
@@ -151,6 +147,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 							<Box flexDirection="column" paddingLeft={2}>
 								{(() => {
 									const recentLogs = getRecentLogEntries(10);
+
 									if (recentLogs.length > 0) {
 										return recentLogs.map((logEntry) => (
 											<Text key={logEntry} dimColor>
@@ -178,6 +175,13 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 							</Box>
 						)}
 					</>
+				) : (
+					<Box flexDirection="column" marginTop={1}>
+						<Text>No session data found.</Text>
+						<Box marginTop={1}>
+							<Text dimColor>Run 'ralph' or 'ralph -b' to start a new session.</Text>
+						</Box>
+					</Box>
 				)}
 
 				<Box marginTop={1}>

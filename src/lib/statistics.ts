@@ -10,9 +10,11 @@ function formatDuration(ms: number): string {
 	if (hours > 0) {
 		return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
 	}
+
 	if (minutes > 0) {
 		return `${minutes}m ${seconds % 60}s`;
 	}
+
 	return `${seconds}s`;
 }
 
@@ -42,11 +44,13 @@ export function generateStatisticsReport(statistics: SessionStatistics): string 
 
 	if (statistics.iterationTimings.length > 0) {
 		report.push("Iteration Timings:");
+
 		for (const timing of statistics.iterationTimings) {
 			if (timing.durationMs !== null) {
 				report.push(`  Iteration ${timing.iteration}: ${formatDuration(timing.durationMs)}`);
 			}
 		}
+
 		report.push("");
 	}
 
@@ -55,20 +59,25 @@ export function generateStatisticsReport(statistics: SessionStatistics): string 
 
 export function logStatisticsToProgress(statistics: SessionStatistics): void {
 	const report = generateStatisticsReport(statistics);
+
 	appendProgress(report);
 }
 
 export function displayStatisticsReport(statistics: SessionStatistics): void {
 	const report = generateStatisticsReport(statistics);
+
 	console.log(report);
 }
 
 export function printStatisticsReport(session: Session | null): void {
 	if (!session) {
 		console.log("No session data available.");
+
 		return;
 	}
+
 	const report = generateStatisticsReport(session.statistics);
+
 	console.log(report);
 }
 

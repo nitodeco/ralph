@@ -24,6 +24,7 @@ function getEventTitle(event: NotificationEvent): string {
 
 function getEventMessage(event: NotificationEvent, projectName?: string): string {
 	const projectPrefix = projectName ? `[${projectName}] ` : "";
+
 	switch (event) {
 		case "complete":
 			return `${projectPrefix}All tasks have been completed successfully!`;
@@ -51,7 +52,9 @@ export async function sendSystemNotification(
 		const escapedTitle = title.replace(/"/g, '\\"');
 		const escapedMessage = message.replace(/"/g, '\\"');
 		const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`;
+
 		execSync(`osascript -e '${script}'`, { stdio: "ignore" });
+
 		return true;
 	} catch {
 		return false;
@@ -80,6 +83,7 @@ export async function sendWebhookNotification(
 			},
 			body: JSON.stringify(payload),
 		});
+
 		return response.ok;
 	} catch {
 		return false;
@@ -102,6 +106,7 @@ export function writeMarkerFile(
 
 	try {
 		writeFileSync(markerFilePath, JSON.stringify(payload, null, 2));
+
 		return true;
 	} catch {
 		return false;

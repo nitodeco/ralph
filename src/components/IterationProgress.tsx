@@ -5,6 +5,7 @@ import { Spinner } from "./common/Spinner.tsx";
 function createProgressBar(current: number, total: number, width: number): string {
 	const filled = Math.round((current / total) * width);
 	const empty = width - filled;
+
 	return `${"█".repeat(filled)}${"░".repeat(empty)}`;
 }
 

@@ -25,17 +25,21 @@ export function formatValidationErrors(result: ConfigValidationResult, verbose =
 	if (result.errors.length > 0) {
 		lines.push("Configuration validation failed:");
 		lines.push("");
+
 		for (const error of result.errors) {
 			const valueInfo = error.value !== undefined ? ` (got: ${JSON.stringify(error.value)})` : "";
+
 			lines.push(`  ✗ ${error.field}: ${error.message}${valueInfo}`);
 
 			if (verbose) {
 				const suggestion = FIELD_SUGGESTIONS[error.field];
+
 				if (suggestion) {
 					lines.push(`    Hint: ${suggestion}`);
 				}
 			}
 		}
+
 		lines.push("");
 		lines.push("To fix: Edit your config file or run 'ralph setup' to reconfigure.");
 		lines.push("Config locations:");
@@ -47,15 +51,19 @@ export function formatValidationErrors(result: ConfigValidationResult, verbose =
 		if (lines.length > 0) {
 			lines.push("");
 		}
+
 		lines.push("Configuration warnings:");
 		lines.push("");
+
 		for (const warning of result.warnings) {
 			const valueInfo =
 				warning.value !== undefined ? ` (current: ${JSON.stringify(warning.value)})` : "";
+
 			lines.push(`  ⚠ ${warning.field}: ${warning.message}${valueInfo}`);
 
 			if (verbose) {
 				const suggestion = FIELD_SUGGESTIONS[warning.field];
+
 				if (suggestion) {
 					lines.push(`    Hint: ${suggestion}`);
 				}
@@ -70,11 +78,14 @@ export function formatMs(milliseconds: number): string {
 	if (milliseconds >= 60000) {
 		const minutes = Math.floor(milliseconds / 60000);
 		const seconds = Math.floor((milliseconds % 60000) / 1000);
+
 		return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
 	}
+
 	if (milliseconds >= 1000) {
 		return `${milliseconds / 1000}s`;
 	}
+
 	return `${milliseconds}ms`;
 }
 
@@ -82,12 +93,15 @@ export function formatBytes(bytes: number): string {
 	if (bytes >= 1024 * 1024 * 1024) {
 		return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 	}
+
 	if (bytes >= 1024 * 1024) {
 		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	}
+
 	if (bytes >= 1024) {
 		return `${(bytes / 1024).toFixed(1)} KB`;
 	}
+
 	return `${bytes} B`;
 }
 
@@ -121,6 +135,7 @@ export function getConfigSummary(config: RalphConfig): string {
 
 	lines.push("Notifications:");
 	const notifications = config.notifications ?? CONFIG_DEFAULTS.notifications;
+
 	lines.push(`  System Notify:      ${notifications.systemNotification ? "enabled" : "disabled"}`);
 	lines.push(`  Webhook URL:        ${notifications.webhookUrl ?? "not set"}`);
 	lines.push(`  Marker File:        ${notifications.markerFilePath ?? "not set"}`);
@@ -130,6 +145,7 @@ export function getConfigSummary(config: RalphConfig): string {
 	const memory = config.memory ?? CONFIG_DEFAULTS.memory;
 	const maxOutputBufferBytes =
 		memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
+
 	lines.push(`  Output Buffer:      ${formatBytes(maxOutputBufferBytes)}`);
 	lines.push(
 		`  Memory Warning:     ${memory.memoryWarningThresholdMb === 0 ? "disabled" : `${memory.memoryWarningThresholdMb ?? CONFIG_DEFAULTS.memory.memoryWarningThresholdMb} MB`}`,

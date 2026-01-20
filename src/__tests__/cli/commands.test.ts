@@ -7,9 +7,11 @@ const RALPH_DIR = `${TEST_DIR}/.ralph`;
 
 function getFirstCallArg(spy: ReturnType<typeof spyOn>): string {
 	const calls = spy.mock.calls;
+
 	if (calls.length === 0 || !calls[0]) {
 		throw new Error("Expected spy to have been called");
 	}
+
 	return calls[0][0] as string;
 }
 
@@ -20,9 +22,11 @@ function getAllCallArgs(spy: ReturnType<typeof spyOn>): string[] {
 describe("CLI commands", () => {
 	beforeEach(() => {
 		invalidatePrdCache();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
+
 		mkdirSync(RALPH_DIR, { recursive: true });
 		process.chdir(TEST_DIR);
 	});
@@ -42,6 +46,7 @@ describe("CLI commands", () => {
 
 			expect(consoleSpy).toHaveBeenCalled();
 			const output = getFirstCallArg(consoleSpy);
+
 			expect(output).toContain("ralph v1.0.0");
 			expect(output).toContain("Usage:");
 			expect(output).toContain("Commands:");
@@ -58,6 +63,7 @@ describe("CLI commands", () => {
 			printHelp("1.0.0");
 
 			const output = getFirstCallArg(consoleSpy);
+
 			expect(output).toContain("init");
 			expect(output).toContain("resume");
 			expect(output).toContain("status");
@@ -107,6 +113,7 @@ describe("CLI commands", () => {
 			expect(consoleSpy).toHaveBeenCalled();
 			const output = getFirstCallArg(consoleSpy);
 			const parsed = JSON.parse(output);
+
 			expect(parsed.error).toBeDefined();
 			expect(parsed.code).toBe("E010");
 
@@ -121,6 +128,7 @@ describe("CLI commands", () => {
 					{ title: "Task 2", description: "Second task", steps: ["Step 1"], done: false },
 				],
 			};
+
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify(prd));
 
 			const { printList } = await import("@/cli/commands/list.ts");
@@ -129,6 +137,7 @@ describe("CLI commands", () => {
 			printList("1.0.0", false, false);
 
 			const allOutput = getAllCallArgs(consoleSpy).join("\n");
+
 			expect(allOutput).toContain("Test Project");
 			expect(allOutput).toContain("Task 1");
 			expect(allOutput).toContain("Task 2");
@@ -145,6 +154,7 @@ describe("CLI commands", () => {
 					{ title: "Task 2", description: "Second task", steps: ["Step 1"], done: false },
 				],
 			};
+
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify(prd));
 
 			const { printList } = await import("@/cli/commands/list.ts");
@@ -154,6 +164,7 @@ describe("CLI commands", () => {
 
 			const output = getFirstCallArg(consoleSpy);
 			const parsed = JSON.parse(output);
+
 			expect(parsed.project).toBe("Test Project");
 			expect(parsed.tasks).toHaveLength(2);
 			expect(parsed.summary.total).toBe(2);

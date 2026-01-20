@@ -27,7 +27,9 @@ function ensureGitignoreExists(): boolean {
 	if (existsSync(GITIGNORE_PATH)) {
 		return false;
 	}
+
 	writeFileSync(GITIGNORE_PATH, "ralph.log\n", "utf-8");
+
 	return true;
 }
 
@@ -58,6 +60,7 @@ function validateConfigFile(issues: IntegrityIssue[]): void {
 		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+
 		issues.push({
 			file: "config.json",
 			message: `Failed to parse: ${errorMessage}`,
@@ -106,6 +109,7 @@ function validatePrdFile(issues: IntegrityIssue[]): void {
 		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+
 		issues.push({
 			file: fileName,
 			message: `Failed to parse: ${errorMessage}`,
@@ -144,6 +148,7 @@ function validateSessionFile(issues: IntegrityIssue[]): void {
 		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+
 		issues.push({
 			file: "session.json",
 			message: `Failed to parse: ${errorMessage}`,

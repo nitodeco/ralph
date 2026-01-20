@@ -38,13 +38,16 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({ version, onClose }) =>
 					previous > 0 ? previous - 1 : suggestedGuardrails.length - 1,
 				);
 			}
+
 			if (key.downArrow) {
 				setSelectedSuggestionIndex((previous) =>
 					previous < suggestedGuardrails.length - 1 ? previous + 1 : 0,
 				);
 			}
+
 			if (key.return && suggestedGuardrails[selectedSuggestionIndex]) {
 				const guardrail = suggestedGuardrails[selectedSuggestionIndex];
+
 				try {
 					addGuardrail({
 						instruction: guardrail.instruction,
@@ -55,6 +58,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({ version, onClose }) =>
 				} catch {
 					setMessage({ type: "error", text: "Failed to add guardrail" });
 				}
+
 				setTimeout(() => setMessage(null), 3000);
 			}
 		}

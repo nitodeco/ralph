@@ -17,6 +17,7 @@ export function rotateFile(filePath: string, maxBackupFiles: number): void {
 			if (backupIndex === maxBackupFiles - 1) {
 				continue;
 			}
+
 			try {
 				renameSync(currentBackup, nextBackup);
 			} catch {}
@@ -35,6 +36,7 @@ export function checkAndRotateFile(
 
 	try {
 		const stats = statSync(filePath);
+
 		if (stats.size >= maxFileSizeBytes) {
 			rotateFile(filePath, maxBackupFiles);
 		}

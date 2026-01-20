@@ -93,6 +93,7 @@ function RunWithSetup({
 
 function handleBackgroundMode(_command: Command, _iterations: number): void {
 	const { running, pid } = isBackgroundProcessRunning();
+
 	if (running && pid !== null) {
 		console.log(`Ralph is already running in background (PID: ${pid})`);
 		console.log("Use 'ralph stop' to stop the background process");
@@ -139,6 +140,7 @@ function main(): void {
 		onShutdown: () => {
 			orchestrator.cleanup();
 			const agentStore = useAgentStore.getState();
+
 			agentStore.stop();
 		},
 	});
@@ -152,6 +154,7 @@ function main(): void {
 		writePidFile(process.pid);
 	} else {
 		clearTerminal();
+
 		if (integrityWarnings) {
 			console.warn(integrityWarnings);
 		}
@@ -162,11 +165,14 @@ function main(): void {
 			console.error("Background mode is only supported for 'run' and 'resume' commands");
 			process.exit(1);
 		}
+
 		if (dryRun) {
 			console.error("Dry-run mode cannot be used with background mode");
 			process.exit(1);
 		}
+
 		handleBackgroundMode(command, iterations);
+
 		return;
 	}
 
@@ -253,6 +259,7 @@ function main(): void {
 					printGuardrails(VERSION, json);
 					break;
 			}
+
 			break;
 
 		case "analyze":
@@ -267,6 +274,7 @@ function main(): void {
 					printAnalyze(json);
 					break;
 			}
+
 			break;
 
 		case "memory":
@@ -281,6 +289,7 @@ function main(): void {
 					printMemory(json);
 					break;
 			}
+
 			break;
 
 		case "stop":
@@ -288,6 +297,7 @@ function main(): void {
 				console.error("Failed to stop:", error);
 				process.exit(1);
 			});
+
 			return;
 
 		case "version":

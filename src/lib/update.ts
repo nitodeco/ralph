@@ -28,6 +28,7 @@ export interface MigrationResult {
 
 export function getArchitecture(): string {
 	const arch = process.arch;
+
 	switch (arch) {
 		case "x64":
 			return "x64";
@@ -40,6 +41,7 @@ export function getArchitecture(): string {
 
 export function getOperatingSystem(): string {
 	const platform = process.platform;
+
 	switch (platform) {
 		case "darwin":
 			return "darwin";
@@ -52,10 +54,13 @@ export function getOperatingSystem(): string {
 
 export async function fetchLatestVersion(): Promise<string> {
 	const response = await fetch(GITHUB_API_URL);
+
 	if (!response.ok) {
 		throw new Error(`Failed to fetch latest version: ${response.statusText}`);
 	}
+
 	const data = (await response.json()) as GitHubRelease;
+
 	return data.tag_name;
 }
 
@@ -70,8 +75,13 @@ export function compareVersions(current: string, latest: string): number {
 		const currentPart = currentParts[index] || 0;
 		const latestPart = latestParts[index] || 0;
 
-		if (latestPart > currentPart) return 1;
-		if (latestPart < currentPart) return -1;
+		if (latestPart > currentPart) {
+			return 1;
+		}
+
+		if (latestPart < currentPart) {
+			return -1;
+		}
 	}
 
 	return 0;
@@ -79,10 +89,13 @@ export function compareVersions(current: string, latest: string): number {
 
 export function getBinaryPath(): string {
 	const binaryPath = process.execPath;
+
 	if (binaryPath.includes("bun")) {
 		const installDir = getDefaultInstallDir();
+
 		return `${installDir}/ralph`;
 	}
+
 	return binaryPath;
 }
 
@@ -118,6 +131,7 @@ export async function downloadBinary(
 	const downloadUrl = `https://github.com/${REPO}/releases/download/${version}/ralph-${operatingSystem}-${architecture}`;
 
 	const response = await fetch(downloadUrl);
+
 	if (!response.ok) {
 		throw new Error(`Failed to download binary: ${response.statusText}`);
 	}
@@ -147,6 +161,7 @@ export async function downloadBinary(
 
 	const result = new Uint8Array(downloadedBytes);
 	let offset = 0;
+
 	for (const chunk of chunks) {
 		result.set(chunk, offset);
 		offset += chunk.length;
@@ -161,6 +176,7 @@ export async function installBinary(binaryData: ArrayBuffer, targetPath: string)
 	await Bun.write(tempPath, binaryData);
 
 	const chmodProcess = Bun.spawn(["chmod", "+x", tempPath]);
+
 	await chmodProcess.exited;
 
 	const targetDirectory = targetPath.substring(0, targetPath.lastIndexOf("/"));
@@ -180,6 +196,7 @@ export async function installBinary(binaryData: ArrayBuffer, targetPath: string)
 	}
 
 	const mvProcess = Bun.spawn(["mv", tempPath, targetPath]);
+
 	await mvProcess.exited;
 }
 
@@ -220,6 +237,7 @@ export function shouldCheckForUpdates(): boolean {
 
 export function isVersionSkipped(version: string): boolean {
 	const config = loadConfig();
+
 	return config.skipVersion === version;
 }
 
@@ -238,6 +256,7 @@ export async function checkForUpdateOnStartup(currentVersion: string): Promise<U
 		const latestVersion = await fetchLatestVersion();
 
 		const config = loadConfig();
+
 		config.lastUpdateCheck = Date.now();
 		saveConfig(config);
 

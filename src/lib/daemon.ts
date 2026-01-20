@@ -28,6 +28,7 @@ export function readPidFile(): number | null {
 	try {
 		const content = readFileSync(PID_FILE_PATH, "utf-8").trim();
 		const pid = Number.parseInt(content, 10);
+
 		return Number.isNaN(pid) ? null : pid;
 	} catch {
 		return null;
@@ -45,6 +46,7 @@ export function deletePidFile(): void {
 export function isProcessRunning(pid: number): boolean {
 	try {
 		process.kill(pid, 0);
+
 		return true;
 	} catch {
 		return false;
@@ -53,11 +55,13 @@ export function isProcessRunning(pid: number): boolean {
 
 export function isBackgroundProcessRunning(): { running: boolean; pid: number | null } {
 	const pid = readPidFile();
+
 	if (pid === null) {
 		return { running: false, pid: null };
 	}
 
 	const running = isProcessRunning(pid);
+
 	if (!running) {
 		deletePidFile();
 	}
@@ -102,8 +106,10 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 		});
 
 		const pid = childProcess.pid;
+
 		if (pid === undefined) {
 			logger.error("Failed to spawn daemon process: no PID returned");
+
 			return null;
 		}
 
@@ -115,7 +121,9 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 		return pid;
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+
 		logger.error("Failed to spawn daemon process", { error: errorMessage });
+
 		return null;
 	}
 }
@@ -154,8 +162,10 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 		logger.info("Sent SIGTERM to daemon process", { pid });
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+
 		logger.error("Failed to send SIGTERM", { pid, error: errorMessage });
 		deletePidFile();
+
 		return {
 			success: false,
 			pid,
@@ -175,6 +185,7 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 		if (!isProcessRunning(pid)) {
 			logger.info("Daemon process stopped gracefully", { pid });
 			deletePidFile();
+
 			return {
 				success: true,
 				pid,
@@ -191,6 +202,7 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 		logger.info("Sent SIGKILL to daemon process", { pid });
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
+
 		logger.error("Failed to send SIGKILL", { pid, error: errorMessage });
 	}
 
@@ -198,6 +210,7 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 
 	if (!isProcessRunning(pid)) {
 		deletePidFile();
+
 		return {
 			success: true,
 			pid,
@@ -226,14 +239,18 @@ function handleShutdownSignal(signal: ShutdownSignal): void {
 	if (shutdownInProgress) {
 		return;
 	}
+
 	shutdownInProgress = true;
 
 	const logger = getLogger({});
+
 	logger.info("Shutdown signal received", { signal });
 
 	const session = loadSession();
+
 	if (session && (session.status === "running" || session.status === "paused")) {
 		const updatedSession = updateSessionStatus(session, "stopped");
+
 		saveSession(updatedSession);
 		logger.info("Session state saved as stopped", { signal });
 	}
@@ -244,6 +261,7 @@ function handleShutdownSignal(signal: ShutdownSignal): void {
 			logger.info("Agent process terminated", { signal });
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+
 			logger.error("Error during shutdown handler", { signal, error: errorMessage });
 		}
 	}
@@ -264,6 +282,7 @@ export function setupSignalHandlers(): void {
 	process.on("exit", () => {
 		if (!shutdownInProgress) {
 			const logger = getLogger({});
+
 			logger.info("Process exiting");
 			deletePidFile();
 		}

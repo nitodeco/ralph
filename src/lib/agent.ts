@@ -19,13 +19,16 @@ interface StreamJsonMessage {
 }
 
 function parseStreamJsonLine(line: string): string | null {
-	if (!line.trim()) return null;
+	if (!line.trim()) {
+		return null;
+	}
 
 	try {
 		const parsed = JSON.parse(line) as StreamJsonMessage;
 
 		if (parsed.type === "assistant" && parsed.message?.content) {
 			const textContent = parsed.message.content.find((content) => content.type === "text");
+
 			if (textContent?.text) {
 				return textContent.text;
 			}
@@ -61,18 +64,25 @@ export async function runAgentWithPrompt({
 
 	while (true) {
 		const { done, value } = await stdoutReader.read();
-		if (done) break;
+
+		if (done) {
+			break;
+		}
 
 		const text = decoder.decode(value);
+
 		lineBuffer += text;
 
 		const lines = lineBuffer.split("\n");
+
 		lineBuffer = lines.pop() ?? "";
 
 		for (const line of lines) {
 			const parsedText = parseStreamJsonLine(line);
+
 			if (parsedText) {
 				parsedOutputChunks.push(parsedText);
+
 				if (onOutput) {
 					onOutput(parsedText);
 				}
@@ -82,8 +92,10 @@ export async function runAgentWithPrompt({
 
 	if (lineBuffer) {
 		const parsedText = parseStreamJsonLine(lineBuffer);
+
 		if (parsedText) {
 			parsedOutputChunks.push(parsedText);
+
 			if (onOutput) {
 				onOutput(parsedText);
 			}
@@ -91,6 +103,7 @@ export async function runAgentWithPrompt({
 	}
 
 	await agentProcess.exited;
+
 	return parsedOutputChunks.join("");
 }
 

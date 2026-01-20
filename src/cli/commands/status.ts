@@ -24,7 +24,9 @@ export function printStatus(version: string, verbose = false): void {
 
 	if (!session) {
 		const error = createError(ErrorCode.SESSION_NOT_FOUND, "No session data found");
+
 		console.log(formatError(error, verbose));
+
 		return;
 	}
 
@@ -50,6 +52,7 @@ export function printStatus(version: string, verbose = false): void {
 		console.log(`  Tasks:            ${completedTasks} / ${totalTasks} (${progressPercent}%)`);
 
 		const currentTask = prd.tasks[session.currentTaskIndex];
+
 		if (
 			session.currentTaskIndex >= 0 &&
 			session.currentTaskIndex < prd.tasks.length &&
@@ -58,6 +61,7 @@ export function printStatus(version: string, verbose = false): void {
 			console.log(`  Current Task:     ${currentTask.title}`);
 		} else {
 			const nextTask = prd.tasks.find((task) => !task.done);
+
 			if (nextTask) {
 				console.log(`  Next Task:        ${nextTask.title}`);
 			} else {
@@ -69,14 +73,17 @@ export function printStatus(version: string, verbose = false): void {
 			ErrorCode.PRD_NOT_FOUND,
 			"No PRD found in .ralph/prd.json or .ralph/prd.yaml",
 		);
+
 		console.log(formatError(prdError, verbose));
 	}
 
 	console.log("");
 
 	const recentLogs = getRecentLogEntries(10);
+
 	if (recentLogs.length > 0) {
 		console.log("Recent Log Entries:");
+
 		for (const logEntry of recentLogs) {
 			console.log(`  ${logEntry}`);
 		}

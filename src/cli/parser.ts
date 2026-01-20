@@ -21,6 +21,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	let task: string | undefined;
 	const taskIndex = relevantArgs.findIndex((arg) => arg === "--task" || arg === "-t");
+
 	if (taskIndex !== -1 && taskIndex + 1 < relevantArgs.length) {
 		task = relevantArgs[taskIndex + 1];
 	}
@@ -30,8 +31,10 @@ export function parseArgs(args: string[]): ParsedArgs {
 		(arg) => arg === "--max-runtime" || arg === "--max-runtime-ms",
 	);
 	const maxRuntimeValue = relevantArgs[maxRuntimeIndex + 1];
+
 	if (maxRuntimeIndex !== -1 && maxRuntimeValue !== undefined) {
 		const parsed = Number.parseInt(maxRuntimeValue, 10);
+
 		if (!Number.isNaN(parsed) && parsed > 0) {
 			maxRuntimeMs = parsed * 1000;
 		}
@@ -56,10 +59,13 @@ export function parseArgs(args: string[]): ParsedArgs {
 	const command = (filteredArgs[0] ?? "run") as Command;
 
 	let iterations: number = DEFAULTS.iterations;
+
 	if (command === "run" || command === "resume") {
 		const iterArg = filteredArgs.find((arg) => !arg.startsWith("-") && arg !== command);
+
 		if (iterArg) {
 			const parsed = Number.parseInt(iterArg, 10);
+
 			if (!Number.isNaN(parsed) && parsed > 0) {
 				iterations = parsed;
 			}
@@ -71,6 +77,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	if (command === "guardrails") {
 		const subcommand = filteredArgs[1] as GuardrailsSubcommand | undefined;
+
 		if (subcommand && VALID_GUARDRAILS_SUBCOMMANDS.includes(subcommand)) {
 			guardrailsSubcommand = subcommand;
 			guardrailsArg = filteredArgs.slice(2).join(" ");
@@ -86,6 +93,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	if (command === "analyze") {
 		const subcommand = filteredArgs[1] as AnalyzeSubcommand | undefined;
+
 		if (subcommand && VALID_ANALYZE_SUBCOMMANDS.includes(subcommand)) {
 			analyzeSubcommand = subcommand;
 		} else {
@@ -97,6 +105,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	if (command === "memory") {
 		const subcommand = filteredArgs[1] as MemorySubcommand | undefined;
+
 		if (subcommand && VALID_MEMORY_SUBCOMMANDS.includes(subcommand)) {
 			memorySubcommand = subcommand;
 		} else {

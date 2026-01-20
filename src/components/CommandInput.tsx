@@ -73,15 +73,18 @@ interface ParsedCommand {
 
 function parseSlashCommand(input: string): ParsedCommand | null {
 	const trimmed = input.trim();
+
 	if (!trimmed.startsWith("/")) {
 		return null;
 	}
 
 	const parts = trimmed.slice(1).split(/\s+/);
 	const firstPart = parts[0];
+
 	if (!firstPart) {
 		return null;
 	}
+
 	const commandName = firstPart.toLowerCase() as SlashCommand;
 
 	if (!VALID_COMMANDS.includes(commandName)) {
@@ -102,21 +105,25 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 
 	if (commandName === "next" && parts.length > 1) {
 		const taskIdentifier = parts.slice(1).join(" ");
+
 		return { command: commandName, args: { taskIdentifier } };
 	}
 
 	if (commandName === "guardrail" && parts.length > 1) {
 		const guardrailInstruction = parts.slice(1).join(" ");
+
 		return { command: commandName, args: { guardrailInstruction } };
 	}
 
 	if (commandName === "learn" && parts.length > 1) {
 		const lesson = parts.slice(1).join(" ");
+
 		return { command: commandName, args: { lesson } };
 	}
 
 	if (commandName === "note" && parts.length > 1) {
 		const note = parts.slice(1).join(" ");
+
 		return { command: commandName, args: { note } };
 	}
 
@@ -136,14 +143,17 @@ export function CommandInput({
 		}
 
 		const parsed = parseSlashCommand(value);
+
 		if (parsed) {
 			if (isRunning && !RUNNING_COMMANDS.includes(parsed.command)) {
 				setError(
 					`Command /${parsed.command} not available while agent is running. Use /stop, /quit, or /help`,
 				);
 				setInputValue("");
+
 				return;
 			}
+
 			setError(null);
 			setInputValue("");
 			onCommand(parsed.command, parsed.args);

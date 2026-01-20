@@ -19,6 +19,7 @@ export function loadGuardrails(): PromptGuardrail[] {
 	try {
 		const content = readFileSync(GUARDRAILS_FILE_PATH, "utf-8");
 		const parsed = JSON.parse(content) as GuardrailsFile;
+
 		return parsed.guardrails ?? [...DEFAULT_GUARDRAILS];
 	} catch {
 		return [...DEFAULT_GUARDRAILS];
@@ -28,6 +29,7 @@ export function loadGuardrails(): PromptGuardrail[] {
 export function saveGuardrails(guardrails: PromptGuardrail[]): void {
 	ensureRalphDirExists();
 	const data: GuardrailsFile = { guardrails };
+
 	writeFileSync(GUARDRAILS_FILE_PATH, JSON.stringify(data, null, "\t"), "utf-8");
 }
 
@@ -78,6 +80,7 @@ export function removeGuardrail(guardrailId: string): boolean {
 	}
 
 	saveGuardrails(filtered);
+
 	return true;
 }
 
@@ -113,6 +116,7 @@ export function getActiveGuardrails(trigger?: GuardrailTrigger): PromptGuardrail
 
 export function getGuardrailById(guardrailId: string): PromptGuardrail | null {
 	const guardrails = loadGuardrails();
+
 	return guardrails.find((guardrail) => guardrail.id === guardrailId) ?? null;
 }
 

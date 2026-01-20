@@ -141,6 +141,7 @@ export function analyzeFailure(
 	}
 
 	const exitCodeAnalysis = analyzeExitCode(exitCode);
+
 	if (exitCodeAnalysis) {
 		return exitCodeAnalysis;
 	}
@@ -184,6 +185,7 @@ function analyzeExitCode(exitCode: number | null): FailureAnalysis | null {
 
 	if (exitCode >= 128) {
 		const signal = exitCode - 128;
+
 		return {
 			category: "unknown",
 			rootCause: `Process terminated by signal ${signal}`,

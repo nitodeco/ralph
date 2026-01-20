@@ -20,9 +20,11 @@ const RALPH_DIR = `${TEST_DIR}/.ralph`;
 describe("prd functions", () => {
 	beforeEach(() => {
 		invalidatePrdCache();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
+
 		mkdirSync(RALPH_DIR, { recursive: true });
 		process.chdir(TEST_DIR);
 	});
@@ -36,18 +38,21 @@ describe("prd functions", () => {
 	describe("findPrdFile", () => {
 		test("returns null when no PRD file exists", () => {
 			const result = findPrdFile();
+
 			expect(result).toBeNull();
 		});
 
 		test("finds JSON PRD file", () => {
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify({ project: "test", tasks: [] }));
 			const result = findPrdFile();
+
 			expect(result).toBe(".ralph/prd.json");
 		});
 
 		test("finds YAML PRD file", () => {
 			writeFileSync(`${RALPH_DIR}/prd.yaml`, "project: test\ntasks: []");
 			const result = findPrdFile();
+
 			expect(result).toBe(".ralph/prd.yaml");
 		});
 
@@ -55,6 +60,7 @@ describe("prd functions", () => {
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify({ project: "test", tasks: [] }));
 			writeFileSync(`${RALPH_DIR}/prd.yaml`, "project: test\ntasks: []");
 			const result = findPrdFile();
+
 			expect(result).toBe(".ralph/prd.json");
 		});
 	});
@@ -62,6 +68,7 @@ describe("prd functions", () => {
 	describe("loadPrdWithValidation", () => {
 		test("returns null prd when no file exists", () => {
 			const result = loadPrdWithValidation();
+
 			expect(result.prd).toBeNull();
 			expect(result.validationError).toBeUndefined();
 		});
@@ -71,9 +78,11 @@ describe("prd functions", () => {
 				project: "Test Project",
 				tasks: [{ title: "Task 1", description: "Description", steps: ["Step 1"], done: false }],
 			};
+
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify(prd));
 
 			const result = loadPrdWithValidation();
+
 			expect(result.prd).not.toBeNull();
 			expect(result.prd?.project).toBe("Test Project");
 			expect(result.prd?.tasks).toHaveLength(1);
@@ -87,9 +96,11 @@ tasks:
     steps:
       - Step 1
     done: false`;
+
 			writeFileSync(`${RALPH_DIR}/prd.yaml`, yamlContent);
 
 			const result = loadPrdWithValidation();
+
 			expect(result.prd).not.toBeNull();
 			expect(result.prd?.project).toBe("Test Project");
 		});
@@ -98,6 +109,7 @@ tasks:
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify({ tasks: [] }));
 
 			const result = loadPrdWithValidation();
+
 			expect(result.prd).toBeNull();
 			expect(result.validationError).toContain("project");
 		});
@@ -106,6 +118,7 @@ tasks:
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify({ project: "Test" }));
 
 			const result = loadPrdWithValidation();
+
 			expect(result.prd).toBeNull();
 			expect(result.validationError).toContain("tasks");
 		});
@@ -114,6 +127,7 @@ tasks:
 			writeFileSync(`${RALPH_DIR}/prd.json`, "{ invalid json }");
 
 			const result = loadPrdWithValidation();
+
 			expect(result.prd).toBeNull();
 			expect(result.validationError).toContain("Failed to parse");
 		});
@@ -129,6 +143,7 @@ describe("isPrdComplete", () => {
 				{ title: "Task 2", description: "", steps: [], done: true },
 			],
 		};
+
 		expect(isPrdComplete(prd)).toBe(true);
 	});
 
@@ -140,11 +155,13 @@ describe("isPrdComplete", () => {
 				{ title: "Task 2", description: "", steps: [], done: false },
 			],
 		};
+
 		expect(isPrdComplete(prd)).toBe(false);
 	});
 
 	test("returns true for empty tasks array", () => {
 		const prd: Prd = { project: "Test", tasks: [] };
+
 		expect(isPrdComplete(prd)).toBe(true);
 	});
 });
@@ -159,6 +176,7 @@ describe("getNextTask", () => {
 				{ title: "Task 3", description: "", steps: [], done: false },
 			],
 		};
+
 		expect(getNextTask(prd)).toBe("Task 2");
 	});
 
@@ -170,11 +188,13 @@ describe("getNextTask", () => {
 				{ title: "Task 2", description: "", steps: [], done: true },
 			],
 		};
+
 		expect(getNextTask(prd)).toBeNull();
 	});
 
 	test("returns null for empty tasks array", () => {
 		const prd: Prd = { project: "Test", tasks: [] };
+
 		expect(getNextTask(prd)).toBeNull();
 	});
 });
@@ -189,6 +209,7 @@ describe("getNextTaskWithIndex", () => {
 			],
 		};
 		const result = getNextTaskWithIndex(prd);
+
 		expect(result).not.toBeNull();
 		expect(result?.title).toBe("Task 2");
 		expect(result?.index).toBe(1);
@@ -199,6 +220,7 @@ describe("getNextTaskWithIndex", () => {
 			project: "Test",
 			tasks: [{ title: "Task 1", description: "", steps: [], done: true }],
 		};
+
 		expect(getNextTaskWithIndex(prd)).toBeNull();
 	});
 });
@@ -213,6 +235,7 @@ describe("getTaskByTitle", () => {
 			],
 		};
 		const result = getTaskByTitle(prd, "Task One");
+
 		expect(result).not.toBeNull();
 		expect(result?.description).toBe("First");
 	});
@@ -223,6 +246,7 @@ describe("getTaskByTitle", () => {
 			tasks: [{ title: "Task One", description: "First", steps: [], done: false }],
 		};
 		const result = getTaskByTitle(prd, "task one");
+
 		expect(result).not.toBeNull();
 		expect(result?.title).toBe("Task One");
 	});
@@ -232,6 +256,7 @@ describe("getTaskByTitle", () => {
 			project: "Test",
 			tasks: [{ title: "Task One", description: "", steps: [], done: false }],
 		};
+
 		expect(getTaskByTitle(prd, "Nonexistent")).toBeNull();
 	});
 });
@@ -246,6 +271,7 @@ describe("getTaskByIndex", () => {
 			],
 		};
 		const result = getTaskByIndex(prd, 1);
+
 		expect(result?.title).toBe("Task 2");
 	});
 
@@ -254,6 +280,7 @@ describe("getTaskByIndex", () => {
 			project: "Test",
 			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
 		};
+
 		expect(getTaskByIndex(prd, -1)).toBeNull();
 	});
 
@@ -262,6 +289,7 @@ describe("getTaskByIndex", () => {
 			project: "Test",
 			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
 		};
+
 		expect(getTaskByIndex(prd, 5)).toBeNull();
 	});
 });
@@ -270,6 +298,7 @@ describe("canWorkOnTask", () => {
 	test("returns canWork true for incomplete task", () => {
 		const task: PrdTask = { title: "Task", description: "", steps: [], done: false };
 		const result = canWorkOnTask(task);
+
 		expect(result.canWork).toBe(true);
 		expect(result.reason).toBeUndefined();
 	});
@@ -277,6 +306,7 @@ describe("canWorkOnTask", () => {
 	test("returns canWork false for completed task", () => {
 		const task: PrdTask = { title: "Task", description: "", steps: [], done: true };
 		const result = canWorkOnTask(task);
+
 		expect(result.canWork).toBe(false);
 		expect(result.reason).toContain("already completed");
 	});
@@ -285,6 +315,7 @@ describe("canWorkOnTask", () => {
 describe("createEmptyPrd", () => {
 	test("creates PRD with project name and empty tasks", () => {
 		const prd = createEmptyPrd("My Project");
+
 		expect(prd.project).toBe("My Project");
 		expect(prd.tasks).toEqual([]);
 	});

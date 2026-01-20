@@ -50,14 +50,17 @@ export function useDryRun(
 
 			if (config) {
 				const validation = validateConfig(config);
+
 				if (!validation.valid) {
 					for (const error of validation.errors) {
 						errors.push(`Config error: ${error.field} - ${error.message}`);
 					}
 				}
+
 				for (const warning of validation.warnings) {
 					warnings.push(`Config warning: ${warning.field} - ${warning.message}`);
 				}
+
 				logs.push(`Configuration validated (agent: ${config.agent})`);
 			} else {
 				errors.push("No configuration found. Run 'ralph setup' first.");
@@ -66,11 +69,13 @@ export function useDryRun(
 			await new Promise((resolve) => setTimeout(resolve, 300));
 
 			const currentPrd = loadPrd();
+
 			if (currentPrd) {
 				logs.push(`PRD loaded: "${currentPrd.project}"`);
 				logs.push(`Total tasks: ${currentPrd.tasks.length}`);
 				const completedCount = currentPrd.tasks.filter((task) => task.done).length;
 				const pendingCount = currentPrd.tasks.length - completedCount;
+
 				logs.push(`Completed: ${completedCount}, Pending: ${pendingCount}`);
 			} else {
 				errors.push("No PRD found. Run 'ralph init' first.");
@@ -85,14 +90,17 @@ export function useDryRun(
 
 			if (errors.length > 0) {
 				setState((prev) => ({ ...prev, status: "complete" }));
+
 				return;
 			}
 
 			setState((prev) => ({ ...prev, status: "simulating" }));
 
 			const prdForSimulation = currentPrd;
+
 			if (!prdForSimulation) {
 				setState((prev) => ({ ...prev, status: "complete" }));
+
 				return;
 			}
 
@@ -100,6 +108,7 @@ export function useDryRun(
 				iterations,
 				prdForSimulation.tasks.filter((task) => !task.done).length,
 			);
+
 			logs.push(`\nSimulating ${simulationIterations} iteration(s)...`);
 			logs.push("─".repeat(50));
 
@@ -113,6 +122,7 @@ export function useDryRun(
 				await new Promise((resolve) => setTimeout(resolve, 800));
 
 				const nextTask = getNextPendingTask(prdForSimulation);
+
 				if (nextTask) {
 					setState((prev) => ({
 						...prev,

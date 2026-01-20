@@ -38,6 +38,7 @@ function getIndexFilePath(): string {
 export function generateSessionId(): string {
 	const timestamp = Date.now().toString(36);
 	const random = Math.random().toString(36).substring(2, 8);
+
 	return `${timestamp}-${random}`;
 }
 
@@ -57,12 +58,14 @@ export function initializeLogsIndex(sessionId: string, projectName: string): voi
 
 export function loadIterationLogsIndex(): IterationLogsIndex | null {
 	const indexPath = getIndexFilePath();
+
 	if (!existsSync(indexPath)) {
 		return null;
 	}
 
 	try {
 		const content = readFileSync(indexPath, "utf-8");
+
 		return JSON.parse(content) as IterationLogsIndex;
 	} catch {
 		return null;
@@ -71,6 +74,7 @@ export function loadIterationLogsIndex(): IterationLogsIndex | null {
 
 function updateLogsIndex(iteration: number, status: IterationLogStatus): void {
 	const index = loadIterationLogsIndex();
+
 	if (!index) {
 		return;
 	}
@@ -78,6 +82,7 @@ function updateLogsIndex(iteration: number, status: IterationLogStatus): void {
 	const existingEntryIndex = index.iterations.findIndex((entry) => entry.iteration === iteration);
 
 	const existingEntry = index.iterations[existingEntryIndex];
+
 	if (existingEntryIndex >= 0 && existingEntry) {
 		existingEntry.status = status;
 	} else {
@@ -127,12 +132,14 @@ export function startIterationLog(options: StartIterationLogOptions): void {
 
 export function loadIterationLog(iteration: number): IterationLog | null {
 	const filePath = getIterationFilePath(iteration);
+
 	if (!existsSync(filePath)) {
 		return null;
 	}
 
 	try {
 		const content = readFileSync(filePath, "utf-8");
+
 		return JSON.parse(content) as IterationLog;
 	} catch {
 		return null;
@@ -165,6 +172,7 @@ export function completeIterationLog(options: CompleteIterationLogOptions): void
 	} = options;
 
 	const log = loadIterationLog(iteration);
+
 	if (!log) {
 		return;
 	}
@@ -206,6 +214,7 @@ export function appendIterationError(
 	context?: Record<string, unknown>,
 ): void {
 	const log = loadIterationLog(iteration);
+
 	if (!log) {
 		return;
 	}
@@ -225,6 +234,7 @@ export function updateIterationAgentInfo(
 	updates: Partial<{ retryCount: number; outputLength: number }>,
 ): void {
 	const log = loadIterationLog(iteration);
+
 	if (!log) {
 		return;
 	}
@@ -232,6 +242,7 @@ export function updateIterationAgentInfo(
 	if (updates.retryCount !== undefined) {
 		log.agent.retryCount = updates.retryCount;
 	}
+
 	if (updates.outputLength !== undefined) {
 		log.agent.outputLength = updates.outputLength;
 	}
@@ -257,8 +268,10 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 			}
 
 			const filePath = join(LOGS_DIR, file);
+
 			try {
 				const stats = statSync(filePath);
+
 				if (now - stats.mtimeMs > maxAgeMs) {
 					unlinkSync(filePath);
 					deletedCount++;
@@ -268,9 +281,11 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 
 		if (deletedCount > 0) {
 			const index = loadIterationLogsIndex();
+
 			if (index) {
 				index.iterations = index.iterations.filter((entry) => {
 					const filePath = join(LOGS_DIR, entry.filename);
+
 					return existsSync(filePath);
 				});
 				index.lastUpdatedAt = formatTimestamp();
@@ -286,13 +301,16 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 
 export function getAllIterationLogs(): IterationLog[] {
 	const index = loadIterationLogsIndex();
+
 	if (!index) {
 		return [];
 	}
 
 	const logs: IterationLog[] = [];
+
 	for (const entry of index.iterations) {
 		const log = loadIterationLog(entry.iteration);
+
 		if (log) {
 			logs.push(log);
 		}

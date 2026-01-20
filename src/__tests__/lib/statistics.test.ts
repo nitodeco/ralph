@@ -40,6 +40,7 @@ describe("generateStatisticsReport", () => {
 		};
 
 		const report = generateStatisticsReport(statistics);
+
 		expect(report).toContain("2h 1m 5s");
 	});
 
@@ -56,6 +57,7 @@ describe("generateStatisticsReport", () => {
 		};
 
 		const report = generateStatisticsReport(statistics);
+
 		expect(report).toContain("2m 5s");
 	});
 
@@ -72,6 +74,7 @@ describe("generateStatisticsReport", () => {
 		};
 
 		const report = generateStatisticsReport(statistics);
+
 		expect(report).toContain("45s");
 	});
 
@@ -92,6 +95,7 @@ describe("generateStatisticsReport", () => {
 		};
 
 		const report = generateStatisticsReport(statistics);
+
 		expect(report).toContain("Iteration Timings:");
 		expect(report).toContain("Iteration 1: 1m 0s");
 		expect(report).toContain("Iteration 2: 1m 0s");
@@ -111,6 +115,7 @@ describe("generateStatisticsReport", () => {
 		};
 
 		const report = generateStatisticsReport(statistics);
+
 		expect(report).toContain("Total Iterations: 0");
 		expect(report).toContain("Success Rate: 0.0%");
 		expect(report).toContain("Total Duration: 0s");
@@ -129,6 +134,7 @@ describe("generateStatisticsReport", () => {
 		};
 
 		const report = generateStatisticsReport(statistics);
+
 		expect(report).not.toContain("Iteration Timings:");
 	});
 });

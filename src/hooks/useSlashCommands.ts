@@ -78,6 +78,7 @@ export function useSlashCommands({
 				case "next":
 					if (args?.taskIdentifier) {
 						const result = setManualNextTask(args.taskIdentifier);
+
 						if (result.success) {
 							setNextTaskMessage({
 								type: "success",
@@ -89,16 +90,19 @@ export function useSlashCommands({
 								text: result.error ?? "Failed to set next task",
 							});
 						}
+
 						setTimeout(() => setNextTaskMessage(null), 5000);
 					} else {
 						setNextTaskMessage({ type: "error", text: "Usage: /next <task number or title>" });
 						setTimeout(() => setNextTaskMessage(null), 5000);
 					}
+
 					break;
 				case "guardrail":
 					if (args?.guardrailInstruction) {
 						try {
 							const guardrail = addGuardrail({ instruction: args.guardrailInstruction });
+
 							setGuardrailMessage({
 								type: "success",
 								text: `Added guardrail: "${guardrail.instruction}"`,
@@ -109,6 +113,7 @@ export function useSlashCommands({
 								text: "Failed to add guardrail",
 							});
 						}
+
 						setTimeout(() => setGuardrailMessage(null), 5000);
 					} else {
 						setGuardrailMessage({
@@ -117,6 +122,7 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setGuardrailMessage(null), 5000);
 					}
+
 					break;
 				case "guardrails":
 					agentStop();
@@ -137,6 +143,7 @@ export function useSlashCommands({
 								text: "Failed to add lesson",
 							});
 						}
+
 						setTimeout(() => setMemoryMessage(null), 5000);
 					} else {
 						setMemoryMessage({
@@ -145,10 +152,12 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setMemoryMessage(null), 5000);
 					}
+
 					break;
 				case "note":
 					if (args?.note) {
 						const taskTitle = getCurrentTaskTitle?.();
+
 						if (taskTitle) {
 							try {
 								addTaskNote(taskTitle, args.note);
@@ -168,6 +177,7 @@ export function useSlashCommands({
 								text: "No current task to add note to",
 							});
 						}
+
 						setTimeout(() => setMemoryMessage(null), 5000);
 					} else {
 						setMemoryMessage({
@@ -176,6 +186,7 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setMemoryMessage(null), 5000);
 					}
+
 					break;
 				case "memory":
 					agentStop();
@@ -200,27 +211,33 @@ export function useSlashCommands({
 				case "clear":
 					try {
 						const archiveResult = performSessionArchive();
+
 						deleteSession();
 						clearSession?.();
 
 						const messages: string[] = [];
+
 						if (archiveResult.tasksArchived > 0) {
 							messages.push(
 								`archived ${archiveResult.tasksArchived} task${archiveResult.tasksArchived === 1 ? "" : "s"}`,
 							);
 						}
+
 						if (archiveResult.progressArchived) {
 							messages.push("archived progress");
 						}
+
 						messages.push("session cleared");
 
 						if (refreshState) {
 							const refreshResult = refreshState();
+
 							if (refreshResult.success) {
 								const taskDisplay =
 									refreshResult.currentTaskIndex >= 0
 										? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
 										: `${refreshResult.taskCount} tasks (all done)`;
+
 								messages.push(`refreshed: ${taskDisplay}`);
 							}
 						}
@@ -235,16 +252,19 @@ export function useSlashCommands({
 							text: "Failed to clear session",
 						});
 					}
+
 					setTimeout(() => setClearMessage(null), 5000);
 					break;
 				case "refresh":
 					if (refreshState) {
 						const result = refreshState();
+
 						if (result.success) {
 							const taskDisplay =
 								result.currentTaskIndex >= 0
 									? `Task ${result.currentTaskIndex + 1}/${result.taskCount}`
 									: `${result.taskCount} tasks (all done)`;
+
 							setRefreshMessage({
 								type: "success",
 								text: `Refreshed: ${taskDisplay}`,
@@ -255,8 +275,10 @@ export function useSlashCommands({
 								text: result.error ?? "Failed to refresh state",
 							});
 						}
+
 						setTimeout(() => setRefreshMessage(null), 5000);
 					}
+
 					break;
 				case "quit":
 				case "exit":
@@ -265,6 +287,7 @@ export function useSlashCommands({
 					} catch {
 						// Ignore errors - still exit even if clear fails
 					}
+
 					exit();
 					break;
 			}

@@ -36,13 +36,16 @@ export function TextInput({
 			if (!focus || !showCursor) {
 				return previousState;
 			}
+
 			const newValue = originalValue || "";
+
 			if (previousState.cursorOffset > newValue.length - 1) {
 				return {
 					cursorOffset: newValue.length,
 					cursorWidth: 0,
 				};
 			}
+
 			return previousState;
 		});
 	}, [originalValue, focus, showCursor]);
@@ -59,6 +62,7 @@ export function TextInput({
 				: chalk.inverse(" ");
 		renderedValue = value.length > 0 ? "" : chalk.inverse(" ");
 		let index = 0;
+
 		for (const char of value) {
 			renderedValue +=
 				index >= cursorOffset - cursorActualWidth && index <= cursorOffset
@@ -66,6 +70,7 @@ export function TextInput({
 					: char;
 			index++;
 		}
+
 		if (value.length > 0 && cursorOffset === value.length) {
 			renderedValue += chalk.inverse(" ");
 		}
@@ -87,6 +92,7 @@ export function TextInput({
 				if (onSubmit) {
 					onSubmit(originalValue);
 				}
+
 				return;
 			}
 
@@ -115,6 +121,7 @@ export function TextInput({
 					input +
 					originalValue.slice(cursorOffset, originalValue.length);
 				nextCursorOffset += input.length;
+
 				if (input.length > 1) {
 					nextCursorWidth = input.length;
 				}
@@ -123,6 +130,7 @@ export function TextInput({
 			if (nextCursorOffset < 0) {
 				nextCursorOffset = 0;
 			}
+
 			if (nextCursorOffset > nextValue.length) {
 				nextCursorOffset = nextValue.length;
 			}

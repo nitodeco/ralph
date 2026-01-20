@@ -78,34 +78,40 @@ describe("formatBytes", () => {
 describe("formatConfigValue", () => {
 	test("formats null as not set", () => {
 		const result = formatConfigValue(null);
+
 		expect(result).toContain("not set");
 	});
 
 	test("formats undefined as not set", () => {
 		const result = formatConfigValue(undefined);
+
 		expect(result).toContain("not set");
 	});
 
 	test("formats boolean true with color", () => {
 		const result = formatConfigValue(true);
+
 		expect(result).toContain("true");
 		expect(result).toContain("\x1b[32m");
 	});
 
 	test("formats boolean false with color", () => {
 		const result = formatConfigValue(false);
+
 		expect(result).toContain("false");
 		expect(result).toContain("\x1b[31m");
 	});
 
 	test("formats numbers with color", () => {
 		const result = formatConfigValue(42);
+
 		expect(result).toContain("42");
 		expect(result).toContain("\x1b[33m");
 	});
 
 	test("formats strings with color", () => {
 		const result = formatConfigValue("cursor");
+
 		expect(result).toContain("cursor");
 		expect(result).toContain("\x1b[36m");
 	});

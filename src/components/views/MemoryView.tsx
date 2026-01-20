@@ -35,6 +35,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 
 		if (input === "c") {
 			const stats = getSessionMemoryStats();
+
 			if (
 				stats.lessonsCount === 0 &&
 				stats.patternsCount === 0 &&
@@ -46,18 +47,21 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				clearSessionMemory();
 				setMessage({ type: "success", text: "Session memory cleared" });
 			}
+
 			setTimeout(() => setMessage(null), 3000);
 		}
 
 		if (key.leftArrow) {
 			const currentIndex = tabs.findIndex((tab) => tab.key === activeTab);
 			const newIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
+
 			setActiveTab(tabs[newIndex]?.key ?? "lessons");
 		}
 
 		if (key.rightArrow) {
 			const currentIndex = tabs.findIndex((tab) => tab.key === activeTab);
 			const newIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
+
 			setActiveTab(tabs[newIndex]?.key ?? "lessons");
 		}
 	});
@@ -68,6 +72,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				if (memory.lessonsLearned.length === 0) {
 					return <Text dimColor>No lessons recorded yet. Use /learn to add lessons.</Text>;
 				}
+
 				return (
 					<Box flexDirection="column">
 						{memory.lessonsLearned.map((lesson, index) => (
@@ -80,6 +85,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				if (memory.successfulPatterns.length === 0) {
 					return <Text dimColor>No successful patterns recorded yet.</Text>;
 				}
+
 				return (
 					<Box flexDirection="column">
 						{memory.successfulPatterns.map((pattern, index) => (
@@ -92,6 +98,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				if (memory.failedApproaches.length === 0) {
 					return <Text dimColor>No failed approaches recorded yet.</Text>;
 				}
+
 				return (
 					<Box flexDirection="column">
 						{memory.failedApproaches.map((approach, index) => (
@@ -102,9 +109,11 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 
 			case "notes": {
 				const taskTitles = Object.keys(memory.taskNotes);
+
 				if (taskTitles.length === 0) {
 					return <Text dimColor>No task notes recorded yet. Use /note to add notes.</Text>;
 				}
+
 				return (
 					<Box flexDirection="column">
 						{taskTitles.map((taskTitle) => (

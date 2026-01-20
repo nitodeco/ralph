@@ -52,6 +52,7 @@ describe("compareVersions", () => {
 describe("getArchitecture", () => {
 	test("returns valid architecture string", () => {
 		const arch = getArchitecture();
+
 		expect(["x64", "arm64"]).toContain(arch);
 	});
 });
@@ -59,6 +60,7 @@ describe("getArchitecture", () => {
 describe("getOperatingSystem", () => {
 	test("returns valid OS string", () => {
 		const os = getOperatingSystem();
+
 		expect(["darwin", "linux"]).toContain(os);
 	});
 });
@@ -66,16 +68,19 @@ describe("getOperatingSystem", () => {
 describe("getRemoveOldBinaryCommand", () => {
 	test("returns sudo command for system bin directory", () => {
 		const command = getRemoveOldBinaryCommand("/usr/local/bin/ralph");
+
 		expect(command).toBe("sudo rm /usr/local/bin/ralph");
 	});
 
 	test("returns simple rm command for user directory", () => {
 		const command = getRemoveOldBinaryCommand("/home/user/.local/bin/ralph");
+
 		expect(command).toBe("rm /home/user/.local/bin/ralph");
 	});
 
 	test("returns simple rm command for tmp directory", () => {
 		const command = getRemoveOldBinaryCommand("/tmp/ralph");
+
 		expect(command).toBe("rm /tmp/ralph");
 	});
 });

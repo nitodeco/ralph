@@ -25,6 +25,7 @@ export function loadSessionMemory(projectName?: string): SessionMemory {
 	try {
 		const content = readFileSync(SESSION_MEMORY_FILE_PATH, "utf-8");
 		const parsed = JSON.parse(content) as SessionMemory;
+
 		return parsed;
 	} catch {
 		return createEmptyMemory(projectName ?? "Unknown Project");
@@ -47,7 +48,9 @@ export function initializeSessionMemory(projectName: string): SessionMemory {
 	}
 
 	const memory = createEmptyMemory(projectName);
+
 	saveSessionMemory(memory);
+
 	return memory;
 }
 
@@ -114,6 +117,7 @@ export function addTaskNote(taskTitle: string, note: string): void {
 
 export function getTaskNote(taskTitle: string): string | null {
 	const memory = loadSessionMemory();
+
 	return memory.taskNotes[taskTitle] ?? null;
 }
 
@@ -121,6 +125,7 @@ export function clearSessionMemory(): void {
 	if (existsSync(SESSION_MEMORY_FILE_PATH)) {
 		const memory = loadSessionMemory();
 		const clearedMemory = createEmptyMemory(memory.projectName);
+
 		saveSessionMemory(clearedMemory);
 	}
 }
@@ -132,11 +137,13 @@ export function getMemoryForPrompt(): string {
 
 	if (memory.lessonsLearned.length > 0) {
 		const lessonsSection = memory.lessonsLearned.map((lesson) => `- ${lesson}`).join("\n");
+
 		sections.push(`### Lessons Learned\n${lessonsSection}`);
 	}
 
 	if (memory.successfulPatterns.length > 0) {
 		const patternsSection = memory.successfulPatterns.map((pattern) => `- ${pattern}`).join("\n");
+
 		sections.push(`### Successful Patterns\n${patternsSection}`);
 	}
 
@@ -144,6 +151,7 @@ export function getMemoryForPrompt(): string {
 		const failedSection = memory.failedApproaches
 			.map((approach) => `- Avoid: ${approach}`)
 			.join("\n");
+
 		sections.push(`### Approaches to Avoid\n${failedSection}`);
 	}
 
@@ -156,6 +164,7 @@ export function getMemoryForPrompt(): string {
 
 export function getMemoryForTask(taskTitle: string): string {
 	const note = getTaskNote(taskTitle);
+
 	if (!note) {
 		return "";
 	}
@@ -176,34 +185,42 @@ export function exportMemoryAsMarkdown(): string {
 	if (memory.lessonsLearned.length > 0) {
 		lines.push("## Lessons Learned");
 		lines.push("");
+
 		for (const lesson of memory.lessonsLearned) {
 			lines.push(`- ${lesson}`);
 		}
+
 		lines.push("");
 	}
 
 	if (memory.successfulPatterns.length > 0) {
 		lines.push("## Successful Patterns");
 		lines.push("");
+
 		for (const pattern of memory.successfulPatterns) {
 			lines.push(`- ${pattern}`);
 		}
+
 		lines.push("");
 	}
 
 	if (memory.failedApproaches.length > 0) {
 		lines.push("## Failed Approaches");
 		lines.push("");
+
 		for (const approach of memory.failedApproaches) {
 			lines.push(`- ${approach}`);
 		}
+
 		lines.push("");
 	}
 
 	const taskTitles = Object.keys(memory.taskNotes);
+
 	if (taskTitles.length > 0) {
 		lines.push("## Task Notes");
 		lines.push("");
+
 		for (const taskTitle of taskTitles) {
 			lines.push(`### ${taskTitle}`);
 			lines.push("");
@@ -233,6 +250,7 @@ export function getSessionMemoryStats(): {
 	}
 
 	const memory = loadSessionMemory();
+
 	return {
 		lessonsCount: memory.lessonsLearned.length,
 		patternsCount: memory.successfulPatterns.length,

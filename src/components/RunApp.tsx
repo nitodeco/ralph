@@ -69,8 +69,12 @@ export function RunApp({
 	const dryRunState = useDryRun(dryRun, config, iterations);
 
 	const getCurrentTaskTitle = useCallback(() => {
-		if (!prd) return null;
+		if (!prd) {
+			return null;
+		}
+
 		const currentTask = prd.tasks.find((task) => !task.done);
+
 		return currentTask?.title ?? null;
 	}, [prd]);
 
@@ -138,6 +142,7 @@ export function RunApp({
 
 	const handleHelpClose = useCallback(() => {
 		setActiveView("run");
+
 		if (appState === "running" && iterationIsPaused) {
 			iterationResume();
 		}

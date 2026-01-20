@@ -64,13 +64,16 @@ interface StreamJsonMessage {
 }
 
 function parseStreamJsonLine(line: string): string | null {
-	if (!line.trim()) return null;
+	if (!line.trim()) {
+		return null;
+	}
 
 	try {
 		const parsed = JSON.parse(line) as StreamJsonMessage;
 
 		if (parsed.type === "assistant" && parsed.message?.content) {
 			const textContent = parsed.message.content.find((content) => content.type === "text");
+
 			if (textContent?.text) {
 				return textContent.text;
 			}
@@ -97,6 +100,7 @@ function categorizeError(error: string, exitCode: number | null): CategorizedErr
 	const { code, isFatal } = categorizeAgentError(error, exitCode);
 
 	let message = error;
+
 	if (exitCode === 127) {
 		message = "Agent command not found. Is the agent CLI installed?";
 	} else if (exitCode === 126) {
@@ -129,11 +133,13 @@ function createThrottledFunction<T extends (arg: string) => void>(
 
 	const throttled = ((arg: string) => {
 		const now = Date.now();
+
 		if (now - lastRun >= limitMs) {
 			lastRun = now;
 			func(arg);
 		} else {
 			pendingArg = arg;
+
 			if (!timeoutId) {
 				timeoutId = setTimeout(
 					() => {
@@ -142,6 +148,7 @@ function createThrottledFunction<T extends (arg: string) => void>(
 							func(pendingArg);
 							pendingArg = null;
 						}
+
 						timeoutId = null;
 					},
 					limitMs - (now - lastRun),
@@ -155,6 +162,7 @@ function createThrottledFunction<T extends (arg: string) => void>(
 			clearTimeout(timeoutId);
 			timeoutId = null;
 		}
+
 		if (pendingArg !== null) {
 			func(pendingArg);
 			pendingArg = null;
@@ -184,6 +192,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	if (additionalContext) {
 		prompt = `${prompt}\n\n${additionalContext}`;
 	}
+
 	const config = loadConfig();
 	const logger = getLogger({ logFilePath: config.logFilePath });
 	const baseCommand = getAgentCommand(config.agent);
@@ -233,6 +242,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 						elapsedMs: Date.now() - processStartTime,
 					});
 					const currentProcess = AgentProcessManager.getProcess();
+
 					if (currentProcess) {
 						currentProcess.kill();
 					}
@@ -244,6 +254,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 			? setInterval(
 					() => {
 						const timeSinceLastActivity = Date.now() - lastActivityTime;
+
 						if (timeSinceLastActivity >= stuckThresholdMs) {
 							stuckTriggered = true;
 							logger.warn("Agent appears stuck (no output), killing process", {
@@ -251,6 +262,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 								timeSinceLastActivityMs: timeSinceLastActivity,
 							});
 							const currentProcess = AgentProcessManager.getProcess();
+
 							if (currentProcess) {
 								currentProcess.kill();
 							}
@@ -263,18 +275,24 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	const readStdout = async () => {
 		while (!AgentProcessManager.isAborted()) {
 			const { done, value } = await stdoutReader.read();
-			if (done) break;
+
+			if (done) {
+				break;
+			}
 
 			updateLastActivity();
 			const text = decoder.decode(value);
+
 			rawOutput += text;
 			lineBuffer += text;
 
 			const lines = lineBuffer.split("\n");
+
 			lineBuffer = lines.pop() ?? "";
 
 			for (const line of lines) {
 				const parsedText = parseStreamJsonLine(line);
+
 				if (parsedText && parsedText !== lastParsedText) {
 					lastParsedText = parsedText;
 					parsedOutput = parsedText;
@@ -287,7 +305,11 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	const readStderr = async () => {
 		while (!AgentProcessManager.isAborted()) {
 			const { done, value } = await stderrReader.read();
-			if (done) break;
+
+			if (done) {
+				break;
+			}
+
 			updateLastActivity();
 			stderrOutput += decoder.decode(value);
 		}
@@ -296,8 +318,14 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	try {
 		await Promise.all([readStdout(), readStderr()]);
 	} finally {
-		if (timeoutTimer) clearTimeout(timeoutTimer);
-		if (stuckCheckInterval) clearInterval(stuckCheckInterval);
+		if (timeoutTimer) {
+			clearTimeout(timeoutTimer);
+		}
+
+		if (stuckCheckInterval) {
+			clearInterval(stuckCheckInterval);
+		}
+
 		flushOutput();
 	}
 
@@ -306,7 +334,9 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 
 	if (timeoutTriggered) {
 		const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1000 / 60)} minutes`;
+
 		logger.logAgentError(errorMessage, exitCode);
+
 		return {
 			success: false,
 			exitCode,
@@ -318,7 +348,9 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 
 	if (stuckTriggered) {
 		const errorMessage = `Agent stuck (no output for ${Math.round(stuckThresholdMs / 1000 / 60)} minutes)`;
+
 		logger.logAgentError(errorMessage, exitCode);
+
 		return {
 			success: false,
 			exitCode,
@@ -330,11 +362,14 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 
 	if (exitCode !== 0 && !isComplete) {
 		const errorMessage = stderrOutput || `Agent exited with code ${exitCode}`;
+
 		logger.logAgentError(errorMessage, exitCode);
+
 		return { success: false, exitCode, output: parsedOutput, isComplete, error: errorMessage };
 	}
 
 	logger.logAgentComplete(exitCode, isComplete);
+
 	return { success: true, exitCode, output: parsedOutput, isComplete };
 }
 
@@ -345,6 +380,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const config = loadConfig();
 		const maxBytes = getMaxOutputBytes(config.maxOutputHistoryBytes);
 		const truncatedOutput = truncateOutputBuffer(output, maxBytes);
+
 		set({ output: truncatedOutput });
 	},
 
@@ -356,6 +392,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			onShutdown: () => {
 				AgentProcessManager.setAborted(true);
 				const currentProcess = AgentProcessManager.getProcess();
+
 				if (currentProcess) {
 					currentProcess.kill();
 					AgentProcessManager.setProcess(null);
@@ -397,6 +434,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						exitCode: result.exitCode,
 						retryCount: AgentProcessManager.getRetryCount(),
 					});
+
 					if (!AgentProcessManager.isAborted()) {
 						eventBus.emit("agent:complete", {
 							isComplete: result.isComplete,
@@ -406,6 +444,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 							retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 						});
 					}
+
 					break;
 				}
 
@@ -421,18 +460,21 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						code: categorizedError.code,
 						exitCode: result.exitCode,
 					});
+
 					set({
 						isStreaming: false,
 						error: `Fatal error [${categorizedError.code}]: ${errorWithSuggestion}`,
 						exitCode: result.exitCode,
 						retryCount: AgentProcessManager.getRetryCount(),
 					});
+
 					eventBus.emit("agent:error", {
 						error: errorWithSuggestion,
 						exitCode: result.exitCode,
 						isFatal: true,
 						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 					});
+
 					break;
 				}
 
@@ -441,6 +483,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 					const delay = calculateRetryDelay(retryDelayMs, currentRetryCount - 1);
 
 					let failureAnalysis: FailureAnalysis | null = null;
+
 					if (retryWithContext) {
 						failureAnalysis = analyzeFailure(result.error ?? "", result.output, result.exitCode);
 
@@ -452,6 +495,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 							rootCause: failureAnalysis.rootCause,
 							contextInjected: currentRetryContext,
 						};
+
 						retryContexts.push(retryContextEntry);
 
 						logger.info("Failure analysis for retry", {
@@ -479,7 +523,9 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 					await sleep(delay);
 
-					if (AgentProcessManager.isAborted()) break;
+					if (AgentProcessManager.isAborted()) {
+						break;
+					}
 
 					set({
 						isRetrying: false,
@@ -523,6 +569,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+
 			logger.error("Unexpected error during agent execution", { error: errorMessage });
 			set({
 				isStreaming: false,

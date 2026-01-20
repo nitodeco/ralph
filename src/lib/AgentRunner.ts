@@ -17,13 +17,16 @@ interface StreamJsonMessage {
 }
 
 function parseStreamJsonLine(line: string): string | null {
-	if (!line.trim()) return null;
+	if (!line.trim()) {
+		return null;
+	}
 
 	try {
 		const parsed = JSON.parse(line) as StreamJsonMessage;
 
 		if (parsed.type === "assistant" && parsed.message?.content) {
 			const textContent = parsed.message.content.find((content) => content.type === "text");
+
 			if (textContent?.text) {
 				return textContent.text;
 			}
@@ -152,7 +155,9 @@ export class AgentRunner {
 
 				await sleep(delay);
 
-				if (this.aborted) break;
+				if (this.aborted) {
+					break;
+				}
 			} else {
 				return {
 					...result,
@@ -215,6 +220,7 @@ export class AgentRunner {
 							timeoutMs: agentTimeoutMs,
 							elapsedMs: Date.now() - processStartTime,
 						});
+
 						if (this.process) {
 							this.process.kill();
 						}
@@ -226,12 +232,14 @@ export class AgentRunner {
 				? setInterval(
 						() => {
 							const timeSinceLastActivity = Date.now() - lastActivityTime;
+
 							if (timeSinceLastActivity >= stuckThresholdMs) {
 								stuckTriggered = true;
 								logger.warn("Agent appears stuck (no output), killing process", {
 									stuckThresholdMs,
 									timeSinceLastActivityMs: timeSinceLastActivity,
 								});
+
 								if (this.process) {
 									this.process.kill();
 								}
@@ -244,18 +252,24 @@ export class AgentRunner {
 		const readStdout = async () => {
 			while (!this.aborted) {
 				const { done, value } = await stdoutReader.read();
-				if (done) break;
+
+				if (done) {
+					break;
+				}
 
 				updateLastActivity();
 				const text = decoder.decode(value);
+
 				rawOutput += text;
 				lineBuffer += text;
 
 				const lines = lineBuffer.split("\n");
+
 				lineBuffer = lines.pop() ?? "";
 
 				for (const line of lines) {
 					const parsedText = parseStreamJsonLine(line);
+
 					if (parsedText && parsedText !== lastParsedText) {
 						lastParsedText = parsedText;
 						parsedOutput = parsedText;
@@ -268,7 +282,11 @@ export class AgentRunner {
 		const readStderr = async () => {
 			while (!this.aborted) {
 				const { done, value } = await stderrReader.read();
-				if (done) break;
+
+				if (done) {
+					break;
+				}
+
 				updateLastActivity();
 				stderrOutput += decoder.decode(value);
 			}
@@ -277,8 +295,13 @@ export class AgentRunner {
 		try {
 			await Promise.all([readStdout(), readStderr()]);
 		} finally {
-			if (timeoutTimer) clearTimeout(timeoutTimer);
-			if (stuckCheckInterval) clearInterval(stuckCheckInterval);
+			if (timeoutTimer) {
+				clearTimeout(timeoutTimer);
+			}
+
+			if (stuckCheckInterval) {
+				clearInterval(stuckCheckInterval);
+			}
 		}
 
 		const exitCode = await agentProcess.exited;
@@ -286,7 +309,9 @@ export class AgentRunner {
 
 		if (timeoutTriggered) {
 			const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1000 / 60)} minutes`;
+
 			logger.logAgentError(errorMessage, exitCode);
+
 			return {
 				success: false,
 				exitCode,
@@ -298,7 +323,9 @@ export class AgentRunner {
 
 		if (stuckTriggered) {
 			const errorMessage = `Agent stuck (no output for ${Math.round(stuckThresholdMs / 1000 / 60)} minutes)`;
+
 			logger.logAgentError(errorMessage, exitCode);
+
 			return {
 				success: false,
 				exitCode,
@@ -310,16 +337,20 @@ export class AgentRunner {
 
 		if (exitCode !== 0 && !isComplete) {
 			const errorMessage = stderrOutput || `Agent exited with code ${exitCode}`;
+
 			logger.logAgentError(errorMessage, exitCode);
+
 			return { success: false, exitCode, output: parsedOutput, isComplete, error: errorMessage };
 		}
 
 		logger.logAgentComplete(exitCode, isComplete);
+
 		return { success: true, exitCode, output: parsedOutput, isComplete };
 	}
 
 	abort(): void {
 		this.aborted = true;
+
 		if (this.process) {
 			this.process.kill();
 			this.process = null;

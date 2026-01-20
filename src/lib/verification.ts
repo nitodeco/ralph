@@ -6,6 +6,7 @@ export async function runCheck(name: string, command: string): Promise<CheckResu
 
 	return new Promise((resolve) => {
 		const [cmd, ...args] = command.split(" ");
+
 		if (!cmd) {
 			resolve({
 				name,
@@ -13,6 +14,7 @@ export async function runCheck(name: string, command: string): Promise<CheckResu
 				output: "Invalid command: empty command string",
 				durationMs: Date.now() - startTime,
 			});
+
 			return;
 		}
 
@@ -73,7 +75,9 @@ export async function runVerification(config: VerificationConfig): Promise<Verif
 
 	if (config.buildCommand) {
 		const buildResult = await runCheck("build", config.buildCommand);
+
 		checks.push(buildResult);
+
 		if (!buildResult.passed) {
 			failedChecks.push("build");
 		}
@@ -81,7 +85,9 @@ export async function runVerification(config: VerificationConfig): Promise<Verif
 
 	if (config.lintCommand) {
 		const lintResult = await runCheck("lint", config.lintCommand);
+
 		checks.push(lintResult);
+
 		if (!lintResult.passed) {
 			failedChecks.push("lint");
 		}
@@ -89,7 +95,9 @@ export async function runVerification(config: VerificationConfig): Promise<Verif
 
 	if (config.testCommand) {
 		const testResult = await runCheck("test", config.testCommand);
+
 		checks.push(testResult);
+
 		if (!testResult.passed) {
 			failedChecks.push("test");
 		}
@@ -99,7 +107,9 @@ export async function runVerification(config: VerificationConfig): Promise<Verif
 		for (const [checkIndex, customCommand] of config.customChecks.entries()) {
 			const checkName = `custom-${checkIndex + 1}`;
 			const customResult = await runCheck(checkName, customCommand);
+
 			checks.push(customResult);
+
 			if (!customResult.passed) {
 				failedChecks.push(checkName);
 			}
@@ -122,18 +132,23 @@ export function formatVerificationResult(result: VerificationResult): string {
 
 	if (result.checks.length === 0) {
 		lines.push("No verification checks configured");
+
 		return lines.join("\n");
 	}
 
 	for (const check of result.checks) {
 		const status = check.passed ? "PASS" : "FAIL";
 		const duration = `${check.durationMs}ms`;
+
 		lines.push(`  ${status}: ${check.name} (${duration})`);
+
 		if (!check.passed && check.output) {
 			const outputLines = check.output.split("\n").slice(0, 5);
+
 			for (const outputLine of outputLines) {
 				lines.push(`    ${outputLine}`);
 			}
+
 			if (check.output.split("\n").length > 5) {
 				lines.push("    ...(truncated)");
 			}
@@ -164,6 +179,7 @@ export function generateVerificationRetryContext(result: VerificationResult): st
 		if (!check.passed) {
 			lines.push(`### ${check.name} check failed`);
 			lines.push("");
+
 			if (check.output) {
 				lines.push("```");
 				lines.push(check.output.slice(0, 1000));

@@ -77,20 +77,26 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	getTimeRemaining: () => {
 		const state = get();
+
 		if (!state.maxRuntimeMs || !state.startTime) {
 			return null;
 		}
+
 		const elapsed = Date.now() - state.startTime;
 		const remaining = state.maxRuntimeMs - elapsed;
+
 		return remaining > 0 ? remaining : 0;
 	},
 
 	isMaxRuntimeReached: () => {
 		const state = get();
+
 		if (!state.maxRuntimeMs || !state.startTime) {
 			return false;
 		}
+
 		const elapsed = Date.now() - state.startTime;
+
 		return elapsed >= state.maxRuntimeMs;
 	},
 
@@ -98,6 +104,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		IterationTimer.setProjectComplete(false);
 		const state = get();
 		const startTime = state.startTime ?? Date.now();
+
 		set({
 			current: 1,
 			isRunning: true,
@@ -138,25 +145,31 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	next: () => {
 		const state = get();
+
 		if (state.current >= state.total || IterationTimer.isProjectComplete()) {
 			state.callbacks.onAllComplete?.();
+
 			set({
 				isRunning: false,
 				isDelaying: false,
 			});
+
 			return;
 		}
 
 		if (state.isMaxRuntimeReached()) {
 			state.callbacks.onMaxRuntime?.();
+
 			set({
 				isRunning: false,
 				isDelaying: false,
 			});
+
 			return;
 		}
 
 		const nextIteration = state.current + 1;
+
 		eventBus.emit("iteration:start", { iteration: nextIteration, totalIterations: state.total });
 		state.callbacks.onIterationStart?.(nextIteration);
 
@@ -168,16 +181,19 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	markIterationComplete: (isProjectComplete: boolean) => {
 		const state = get();
+
 		IterationTimer.setProjectComplete(isProjectComplete);
 		eventBus.emit("iteration:complete", { iteration: state.current, isProjectComplete });
 		state.callbacks.onIterationComplete?.(state.current);
 
 		if (isProjectComplete) {
 			state.callbacks.onAllComplete?.();
+
 			set({
 				isRunning: false,
 				isDelaying: false,
 			});
+
 			return;
 		}
 
@@ -187,6 +203,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 				isRunning: false,
 				isDelaying: false,
 			});
+
 			return;
 		}
 
@@ -200,11 +217,13 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	restartCurrentIteration: () => {
 		const state = get();
+
 		set({ isDelaying: true });
 		eventBus.emit("iteration:delay", { iteration: state.current, delayMs: state.delayMs });
 
 		IterationTimer.scheduleNext(state.delayMs, () => {
 			const currentState = get();
+
 			eventBus.emit("iteration:start", {
 				iteration: currentState.current,
 				totalIterations: currentState.total,

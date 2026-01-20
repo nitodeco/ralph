@@ -133,6 +133,7 @@ export function applyDecomposition(
 	}
 
 	const originalTask = prd.tasks[originalTaskIndex];
+
 	if (originalTask?.done) {
 		return {
 			success: false,
@@ -177,11 +178,13 @@ export function formatDecompositionForProgress(request: DecompositionRequest): s
 
 	for (let subtaskIndex = 0; subtaskIndex < request.suggestedSubtasks.length; subtaskIndex++) {
 		const subtask = request.suggestedSubtasks[subtaskIndex];
+
 		if (subtask) {
 			lines.push(`  ${subtaskIndex + 1}. ${subtask.title}`);
 		}
 	}
 
 	lines.push("");
+
 	return lines.join("\n");
 }

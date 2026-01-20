@@ -54,6 +54,7 @@ function createInitialStatistics(totalIterations: number): SessionStatistics {
 
 export function createSession(totalIterations: number, currentTaskIndex: number): Session {
 	const now = Date.now();
+
 	return {
 		startTime: now,
 		lastUpdateTime: now,
@@ -73,6 +74,7 @@ export function recordIterationStart(session: Session, iteration: number): Sessi
 	);
 
 	let updatedTimings: IterationTiming[];
+
 	if (existingTiming) {
 		updatedTimings = session.statistics.iterationTimings.map((timing) =>
 			timing.iteration === iteration ? { ...timing, startTime: now } : timing,
@@ -181,7 +183,10 @@ export function updateSessionStatus(session: Session, status: SessionStatus): Se
 }
 
 export function isSessionResumable(session: Session | null): boolean {
-	if (!session) return false;
+	if (!session) {
+		return false;
+	}
+
 	return (
 		session.status === "running" || session.status === "paused" || session.status === "stopped"
 	);

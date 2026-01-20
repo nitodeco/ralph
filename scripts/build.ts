@@ -5,6 +5,7 @@ import { type BuildTarget, config } from "./build.config";
 
 async function cleanupTempFiles(): Promise<void> {
 	const tempFiles = readdirSync(".").filter((file) => file.endsWith(".bun-build"));
+
 	for (const tempFile of tempFiles) {
 		await unlink(tempFile);
 	}
@@ -33,10 +34,12 @@ async function compileTarget(buildTarget: BuildTarget): Promise<boolean> {
 
 	if (exitCode !== 0) {
 		console.error(`Failed to build for ${buildTarget.name}`);
+
 		return false;
 	}
 
 	console.log(`  -> ${outputPath}\n`);
+
 	return true;
 }
 
@@ -52,10 +55,12 @@ async function typecheck(): Promise<boolean> {
 
 	if (exitCode !== 0) {
 		console.error("\nTypeScript type check failed. Fix errors before building.\n");
+
 		return false;
 	}
 
 	console.log("Type check passed!\n");
+
 	return true;
 }
 
@@ -63,6 +68,7 @@ async function build(): Promise<void> {
 	console.log("Building Ralph CLI...\n");
 
 	const typecheckPassed = await typecheck();
+
 	if (!typecheckPassed) {
 		process.exit(1);
 	}
@@ -70,11 +76,13 @@ async function build(): Promise<void> {
 	if (existsSync(config.outDir)) {
 		await rm(config.outDir, { recursive: true });
 	}
+
 	await mkdir(config.outDir);
 
 	for (const buildTarget of config.targets) {
 		console.log(`Building for ${buildTarget.name}...`);
 		const success = await compileTarget(buildTarget);
+
 		if (!success) {
 			process.exit(1);
 		}

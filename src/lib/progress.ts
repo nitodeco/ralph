@@ -5,6 +5,7 @@ export { PROGRESS_FILE_PATH } from "./paths.ts";
 
 export function initializeProgressFile(): void {
 	ensureRalphDirExists();
+
 	if (!existsSync(PROGRESS_FILE_PATH)) {
 		writeFileSync(PROGRESS_FILE_PATH, "");
 	}
@@ -14,6 +15,7 @@ export function readProgressFile(): string | null {
 	if (!existsSync(PROGRESS_FILE_PATH)) {
 		return null;
 	}
+
 	try {
 		return readFileSync(PROGRESS_FILE_PATH, "utf-8");
 	} catch {

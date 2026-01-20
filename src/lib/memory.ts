@@ -25,6 +25,7 @@ interface MemoryConfig {
 
 export function getMemoryUsage(): MemoryUsage {
 	const memUsage = process.memoryUsage();
+
 	return {
 		heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
 		heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
@@ -46,6 +47,7 @@ export function checkMemoryUsage(config?: MemoryConfig): {
 			heapUsedMB: usage.heapUsedMB,
 			thresholdMB: MEMORY_CRITICAL_THRESHOLD_MB,
 		});
+
 		return { level: "critical", usage };
 	}
 
@@ -54,6 +56,7 @@ export function checkMemoryUsage(config?: MemoryConfig): {
 			heapUsedMB: usage.heapUsedMB,
 			thresholdMB: warningThreshold,
 		});
+
 		return { level: "warning", usage };
 	}
 
@@ -62,6 +65,7 @@ export function checkMemoryUsage(config?: MemoryConfig): {
 
 export function triggerGarbageCollection(config?: MemoryConfig): void {
 	const enableGcHints = config?.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS;
+
 	if (!enableGcHints) {
 		return;
 	}
@@ -124,10 +128,13 @@ export function cleanupTempFiles(): number {
 
 		for (const file of files) {
 			const isTempFile = TEMP_FILE_PATTERNS.some((pattern) => pattern.test(file));
+
 			if (isTempFile) {
 				const filePath = join(RALPH_DIR, file);
+
 				try {
 					const stats = statSync(filePath);
+
 					if (stats.isFile()) {
 						unlinkSync(filePath);
 						cleanedCount++;

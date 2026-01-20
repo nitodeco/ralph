@@ -10,6 +10,7 @@ export function printArchive(version: string): void {
 		console.log("\nCompleted tasks and progress files are archived when:");
 		console.log("  - Tasks are marked as done in the PRD");
 		console.log("  - A progress.txt file exists in .ralph/");
+
 		return;
 	}
 

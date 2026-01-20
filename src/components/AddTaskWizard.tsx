@@ -30,9 +30,11 @@ interface WizardState {
 
 function getPrdFormat(): PrdFormat {
 	const prdPath = findPrdFile();
+
 	if (prdPath?.endsWith(".yaml") || prdPath?.endsWith(".yml")) {
 		return "yaml";
 	}
+
 	return "json";
 }
 
@@ -53,6 +55,7 @@ function parseTaskFromOutput(output: string, format: PrdFormat): PrdTask | null 
 		if (format === "yaml") {
 			return parseYaml(taskContent) as PrdTask;
 		}
+
 		return JSON.parse(taskContent) as PrdTask;
 	} catch {
 		return null;
@@ -75,7 +78,10 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 	const config = loadConfig();
 
 	const getInitialStep = (): WizardStep => {
-		if (!existingPrd) return "check_prd";
+		if (!existingPrd) {
+			return "check_prd";
+		}
+
 		return "description";
 	};
 
@@ -93,6 +99,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 
 	const handleDescriptionSubmit = async (value: string) => {
 		const description = value.trim();
+
 		if (!description) {
 			return;
 		}
@@ -103,6 +110,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				step: "error",
 				errorMessage: "No PRD found. Run 'ralph init' first.",
 			}));
+
 			return;
 		}
 
@@ -135,6 +143,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 					errorMessage:
 						"Failed to parse task from agent output. The agent may not have followed the expected format.",
 				}));
+
 				return;
 			}
 
@@ -153,6 +162,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 			}));
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+
 			setState((prev) => ({
 				...prev,
 				step: "error",

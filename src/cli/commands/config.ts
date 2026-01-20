@@ -32,7 +32,9 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 				warnings: validation.warnings,
 			},
 		};
+
 		console.log(JSON.stringify(output, null, 2));
+
 		return;
 	}
 
@@ -67,6 +69,7 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 	console.log(`    logFilePath:      ${effective.logFilePath}`);
 
 	console.log("\n  Notifications:");
+
 	if (effective.notifications) {
 		console.log(
 			`    systemNotification: ${effective.notifications.systemNotification ? "enabled" : "disabled"}`,
@@ -78,11 +81,14 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 	}
 
 	console.log("\n  Memory Management:");
+
 	if (effective.memory) {
 		const bufferSize =
 			effective.memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
+
 		console.log(`    maxOutputBuffer:    ${formatBytes(bufferSize)}`);
 		const warningThreshold = effective.memory.memoryWarningThresholdMb;
+
 		console.log(
 			`    memoryWarning:      ${warningThreshold === 0 ? "disabled" : `${warningThreshold}MB`}`,
 		);

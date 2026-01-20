@@ -18,6 +18,7 @@ interface GuardrailsOutput {
 function formatGuardrailStatus(guardrail: PromptGuardrail): string {
 	const status = guardrail.enabled ? "\x1b[32m✓\x1b[0m" : "\x1b[90m○\x1b[0m";
 	const category = `\x1b[90m[${guardrail.category}]\x1b[0m`;
+
 	return `  ${status} ${guardrail.instruction} ${category}`;
 }
 
@@ -34,7 +35,9 @@ export function printGuardrails(version: string, jsonOutput: boolean): void {
 				disabled: guardrails.length - enabledCount,
 			},
 		};
+
 		console.log(JSON.stringify(output, null, 2));
+
 		return;
 	}
 
@@ -43,6 +46,7 @@ export function printGuardrails(version: string, jsonOutput: boolean): void {
 	if (guardrails.length === 0) {
 		console.log("No guardrails configured.");
 		console.log("\nAdd a guardrail with: ralph guardrails add <instruction>");
+
 		return;
 	}
 
@@ -67,6 +71,7 @@ export function handleGuardrailsAdd(instruction: string): void {
 	}
 
 	const guardrail = addGuardrail({ instruction: instruction.trim() });
+
 	console.log(`\x1b[32m✓\x1b[0m Added guardrail: "${guardrail.instruction}"`);
 	console.log(`  id: ${guardrail.id}`);
 }
@@ -78,6 +83,7 @@ export function handleGuardrailsRemove(guardrailId: string): void {
 	}
 
 	const removed = removeGuardrail(guardrailId.trim());
+
 	if (removed) {
 		console.log(`\x1b[32m✓\x1b[0m Removed guardrail: ${guardrailId}`);
 	} else {
@@ -93,8 +99,10 @@ export function handleGuardrailsToggle(guardrailId: string): void {
 	}
 
 	const guardrail = toggleGuardrail(guardrailId.trim());
+
 	if (guardrail) {
 		const status = guardrail.enabled ? "enabled" : "disabled";
+
 		console.log(`\x1b[32m✓\x1b[0m Guardrail ${status}: "${guardrail.instruction}"`);
 	} else {
 		console.error(`\x1b[31mError:\x1b[0m Guardrail not found: ${guardrailId}`);

@@ -28,9 +28,11 @@ export function buildPrompt(options: BuildPromptOptions = {}): string {
 		: "";
 
 	let memorySection = "";
+
 	if (includeMemory) {
 		const generalMemory = getMemoryForPrompt();
 		const taskMemory = specificTask ? getMemoryForTask(specificTask) : "";
+
 		if (generalMemory || taskMemory) {
 			memorySection = `${generalMemory}${taskMemory}`;
 		}

@@ -10,6 +10,7 @@ describe("DryRunState type", () => {
 			errors: [],
 			warnings: [],
 		};
+
 		expect(idleState.status).toBe("idle");
 
 		const validatingState: DryRunState = {
@@ -19,6 +20,7 @@ describe("DryRunState type", () => {
 			errors: [],
 			warnings: [],
 		};
+
 		expect(validatingState.status).toBe("validating");
 
 		const simulatingState: DryRunState = {
@@ -28,6 +30,7 @@ describe("DryRunState type", () => {
 			errors: [],
 			warnings: [],
 		};
+
 		expect(simulatingState.status).toBe("simulating");
 
 		const completeState: DryRunState = {
@@ -37,6 +40,7 @@ describe("DryRunState type", () => {
 			errors: [],
 			warnings: [],
 		};
+
 		expect(completeState.status).toBe("complete");
 	});
 

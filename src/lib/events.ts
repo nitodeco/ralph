@@ -86,6 +86,7 @@ class TypedEventEmitter {
 		if (!this.handlers.has(eventName)) {
 			this.handlers.set(eventName, new Set());
 		}
+
 		this.handlers.get(eventName)?.add(handler as EventHandler<unknown>);
 
 		return () => {
@@ -95,6 +96,7 @@ class TypedEventEmitter {
 
 	off<K extends EventName>(eventName: K, handler: EventHandler<EventMap[K]>): void {
 		const eventHandlers = this.handlers.get(eventName);
+
 		if (eventHandlers) {
 			eventHandlers.delete(handler as EventHandler<unknown>);
 		}
@@ -102,6 +104,7 @@ class TypedEventEmitter {
 
 	emit<K extends EventName>(eventName: K, event: EventMap[K]): void {
 		const eventHandlers = this.handlers.get(eventName);
+
 		if (eventHandlers) {
 			for (const handler of eventHandlers) {
 				handler(event);

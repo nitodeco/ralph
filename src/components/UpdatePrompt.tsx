@@ -44,6 +44,7 @@ const UPDATE_CHOICES = [
 
 function skipVersion(version: string): void {
 	const config = loadConfig();
+
 	config.skipVersion = version;
 	saveConfig(config);
 }
@@ -74,9 +75,11 @@ export function UpdatePrompt({
 		const checkForUpdates = async () => {
 			try {
 				const latest = await fetchLatestVersion();
+
 				setLatestVersion(latest);
 
 				const config = loadConfig();
+
 				config.lastUpdateCheck = Date.now();
 				saveConfig(config);
 
@@ -84,6 +87,7 @@ export function UpdatePrompt({
 
 				if (comparison <= 0) {
 					const currentConfig = loadConfig();
+
 					currentConfig.skipVersion = undefined;
 
 					saveConfig(currentConfig);
@@ -124,7 +128,9 @@ export function UpdatePrompt({
 	};
 
 	const performUpdate = async () => {
-		if (!latestVersion) return;
+		if (!latestVersion) {
+			return;
+		}
 
 		try {
 			setState("downloading");
@@ -145,6 +151,7 @@ export function UpdatePrompt({
 
 			setState("installing");
 			const result = await installWithMigration(binaryData);
+
 			setMigrationResult(result);
 
 			setUpdatePerformed(true);
@@ -156,6 +163,7 @@ export function UpdatePrompt({
 			}
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : String(err);
+
 			setError(errorMessage);
 			setState("error");
 		}

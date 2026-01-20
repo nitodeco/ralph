@@ -75,6 +75,7 @@ function parsePrdFromOutput(output: string, format: PrdFormat): Prd | null {
 		if (format === "yaml") {
 			return parseYaml(prdContent) as Prd;
 		}
+
 		return JSON.parse(prdContent) as Prd;
 	} catch {
 		return null;
@@ -97,8 +98,14 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	const globalConfig = loadGlobalConfig();
 
 	const getInitialStep = (): WizardStep => {
-		if (existingPrd) return "check_existing_prd";
-		if (existingProgress) return "check_existing_progress";
+		if (existingPrd) {
+			return "check_existing_prd";
+		}
+
+		if (existingProgress) {
+			return "check_existing_progress";
+		}
+
 		return "agent_type";
 	};
 
@@ -119,8 +126,10 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	const handleConfirmOverwritePrd = (item: { value: boolean }) => {
 		if (!item.value) {
 			setState((prev) => ({ ...prev, step: "aborted" }));
+
 			return;
 		}
+
 		if (state.existingProgressPath) {
 			setState((prev) => ({ ...prev, step: "check_existing_progress" }));
 		} else {
@@ -131,8 +140,10 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	const handleConfirmOverwriteProgress = (item: { value: boolean }) => {
 		if (!item.value) {
 			setState((prev) => ({ ...prev, step: "aborted" }));
+
 			return;
 		}
+
 		setState((prev) => ({ ...prev, step: "agent_type" }));
 	};
 
@@ -147,6 +158,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 
 	const handleDescriptionSubmit = async (value: string) => {
 		const description = value.trim();
+
 		if (!description) {
 			return;
 		}
@@ -180,6 +192,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 					errorMessage:
 						"Failed to parse PRD from agent output. The agent may not have followed the expected format.",
 				}));
+
 				return;
 			}
 
@@ -188,6 +201,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			writeFileSync(PROGRESS_FILE_PATH, "");
 
 			const config: RalphConfig = { agent: state.agentType };
+
 			saveConfig(config);
 
 			setState((prev) => ({
@@ -197,6 +211,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			}));
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
+
 			setState((prev) => ({
 				...prev,
 				step: "error",
@@ -294,6 +309,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			case "complete": {
 				const prdFileName = state.prdFormat === "yaml" ? "prd.yaml" : "prd.json";
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
+
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">

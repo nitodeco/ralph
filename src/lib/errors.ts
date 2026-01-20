@@ -110,6 +110,7 @@ export function formatError(error: RalphError, verbose = false): string {
 	if (verbose && error.details && Object.keys(error.details).length > 0) {
 		lines.push("");
 		lines.push("Details:");
+
 		for (const [key, value] of Object.entries(error.details)) {
 			lines.push(`  ${key}: ${JSON.stringify(value)}`);
 		}

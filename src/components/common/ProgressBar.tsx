@@ -9,15 +9,25 @@ interface ProgressBarProps {
 }
 
 function createProgressBar(current: number, total: number, width: number): string {
-	if (total === 0) return "░".repeat(width);
+	if (total === 0) {
+		return "░".repeat(width);
+	}
+
 	const filled = Math.round((current / total) * width);
 	const empty = width - filled;
+
 	return `${"█".repeat(filled)}${"░".repeat(empty)}`;
 }
 
 function formatBytes(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	if (bytes < 1024) {
+		return `${bytes} B`;
+	}
+
+	if (bytes < 1024 * 1024) {
+		return `${(bytes / 1024).toFixed(1)} KB`;
+	}
+
 	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 

@@ -8,6 +8,7 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 	if (!prd) {
 		if (jsonOutput) {
 			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found");
+
 			console.log(
 				JSON.stringify({
 					error: error.message,
@@ -20,8 +21,10 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 				ErrorCode.PRD_NOT_FOUND,
 				"No PRD found in .ralph/prd.json or .ralph/prd.yaml",
 			);
+
 			console.error(formatError(error, verbose));
 		}
+
 		return;
 	}
 
@@ -49,7 +52,9 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 				percentComplete,
 			},
 		};
+
 		console.log(JSON.stringify(output, null, 2));
+
 		return;
 	}
 
@@ -60,6 +65,7 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 	if (prd.tasks.length === 0) {
 		console.log("No tasks defined.");
 		console.log("\nRun 'ralph init' to add tasks or use '/add' in the UI.");
+
 		return;
 	}
 
@@ -89,13 +95,16 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 	console.log("─".repeat(70));
 
 	const summaryParts = [`${completedTasks} completed`];
+
 	if (pendingTasks > 0) {
 		summaryParts.push(`${pendingTasks} pending`);
 	}
+
 	console.log(`\nSummary: ${summaryParts.join(", ")}`);
 
 	if (pendingTasks > 0) {
 		const nextTask = prd.tasks.find((task) => !task.done);
+
 		if (nextTask) {
 			console.log(`\nNext task: ${nextTask.title}`);
 		}

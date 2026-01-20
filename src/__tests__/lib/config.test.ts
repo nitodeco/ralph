@@ -11,6 +11,7 @@ import type { RalphConfig } from "@/types.ts";
 describe("validateConfig", () => {
 	test("returns error when config is null", () => {
 		const result = validateConfig(null);
+
 		expect(result.valid).toBe(false);
 		expect(result.errors).toHaveLength(1);
 		expect(result.errors[0]?.field).toBe("config");
@@ -18,6 +19,7 @@ describe("validateConfig", () => {
 
 	test("returns error when config is undefined", () => {
 		const result = validateConfig(undefined);
+
 		expect(result.valid).toBe(false);
 		expect(result.errors).toHaveLength(1);
 		expect(result.errors[0]?.field).toBe("config");
@@ -25,79 +27,97 @@ describe("validateConfig", () => {
 
 	test("returns error when config is not an object", () => {
 		const result = validateConfig("invalid");
+
 		expect(result.valid).toBe(false);
 		expect(result.errors[0]?.message).toBe("Configuration must be an object");
 	});
 
 	test("returns error when agent is missing", () => {
 		const result = validateConfig({});
+
 		expect(result.valid).toBe(false);
 		expect(result.errors.some((error) => error.field === "agent")).toBe(true);
 	});
 
 	test("returns error when agent is invalid", () => {
 		const result = validateConfig({ agent: "invalid-agent" });
+
 		expect(result.valid).toBe(false);
 		expect(result.errors.some((error) => error.field === "agent")).toBe(true);
 	});
 
 	test("validates valid cursor agent config", () => {
 		const result = validateConfig({ agent: "cursor" });
+
 		expect(result.valid).toBe(true);
 		expect(result.errors).toHaveLength(0);
 	});
 
 	test("validates valid claude agent config", () => {
 		const result = validateConfig({ agent: "claude" });
+
 		expect(result.valid).toBe(true);
 		expect(result.errors).toHaveLength(0);
 	});
 
 	test("validates prdFormat field", () => {
 		const validJson = validateConfig({ agent: "cursor", prdFormat: "json" });
+
 		expect(validJson.valid).toBe(true);
 
 		const validYaml = validateConfig({ agent: "cursor", prdFormat: "yaml" });
+
 		expect(validYaml.valid).toBe(true);
 
 		const invalid = validateConfig({ agent: "cursor", prdFormat: "xml" });
+
 		expect(invalid.valid).toBe(false);
 		expect(invalid.errors.some((error) => error.field === "prdFormat")).toBe(true);
 	});
 
 	test("validates maxRetries as non-negative integer", () => {
 		const validZero = validateConfig({ agent: "cursor", maxRetries: 0 });
+
 		expect(validZero.valid).toBe(true);
 
 		const validPositive = validateConfig({ agent: "cursor", maxRetries: 5 });
+
 		expect(validPositive.valid).toBe(true);
 
 		const invalidNegative = validateConfig({ agent: "cursor", maxRetries: -1 });
+
 		expect(invalidNegative.valid).toBe(false);
 
 		const invalidFloat = validateConfig({ agent: "cursor", maxRetries: 3.5 });
+
 		expect(invalidFloat.valid).toBe(false);
 
 		const invalidString = validateConfig({ agent: "cursor", maxRetries: "3" });
+
 		expect(invalidString.valid).toBe(false);
 	});
 
 	test("validates retryDelayMs as positive integer", () => {
 		const valid = validateConfig({ agent: "cursor", retryDelayMs: 5000 });
+
 		expect(valid.valid).toBe(true);
 
 		const invalidZero = validateConfig({ agent: "cursor", retryDelayMs: 0 });
+
 		expect(invalidZero.valid).toBe(false);
 
 		const invalidNegative = validateConfig({ agent: "cursor", retryDelayMs: -1000 });
+
 		expect(invalidNegative.valid).toBe(false);
 	});
 
 	test("validates agentTimeoutMs allows zero (disabled)", () => {
 		const validZero = validateConfig({ agent: "cursor", agentTimeoutMs: 0 });
+
 		expect(validZero.valid).toBe(true);
 
 		const validPositive = validateConfig({ agent: "cursor", agentTimeoutMs: 60000 });
+
 		expect(validPositive.valid).toBe(true);
 	});
 
@@ -109,6 +129,7 @@ describe("validateConfig", () => {
 				webhookUrl: "https://example.com/webhook",
 			},
 		});
+
 		expect(validNotifications.valid).toBe(true);
 
 		const invalidWebhookUrl = validateConfig({
@@ -117,6 +138,7 @@ describe("validateConfig", () => {
 				webhookUrl: "not-a-url",
 			},
 		});
+
 		expect(invalidWebhookUrl.valid).toBe(false);
 
 		const invalidProtocol = validateConfig({
@@ -125,6 +147,7 @@ describe("validateConfig", () => {
 				webhookUrl: "ftp://example.com",
 			},
 		});
+
 		expect(invalidProtocol.valid).toBe(false);
 	});
 
@@ -137,6 +160,7 @@ describe("validateConfig", () => {
 				enableGarbageCollectionHints: true,
 			},
 		});
+
 		expect(validMemory.valid).toBe(true);
 
 		const invalidBuffer = validateConfig({
@@ -145,6 +169,7 @@ describe("validateConfig", () => {
 				maxOutputBufferBytes: -100,
 			},
 		});
+
 		expect(invalidBuffer.valid).toBe(false);
 	});
 
@@ -154,6 +179,7 @@ describe("validateConfig", () => {
 			stuckThresholdMs: 60000,
 			agentTimeoutMs: 30000,
 		});
+
 		expect(result.valid).toBe(true);
 		expect(result.warnings.some((warning) => warning.field === "stuckThresholdMs")).toBe(true);
 	});
@@ -163,6 +189,7 @@ describe("validateConfig", () => {
 			agent: "cursor",
 			maxRetries: 15,
 		});
+
 		expect(result.valid).toBe(true);
 		expect(result.warnings.some((warning) => warning.field === "maxRetries")).toBe(true);
 	});
@@ -172,6 +199,7 @@ describe("validateConfig", () => {
 			agent: "cursor",
 			retryDelayMs: 500,
 		});
+
 		expect(result.valid).toBe(true);
 		expect(result.warnings.some((warning) => warning.field === "retryDelayMs")).toBe(true);
 	});
@@ -181,6 +209,7 @@ describe("validateConfig", () => {
 			agent: "cursor",
 			agentTimeoutMs: 30000,
 		});
+
 		expect(result.valid).toBe(true);
 		expect(result.warnings.some((warning) => warning.field === "agentTimeoutMs")).toBe(true);
 	});
@@ -189,6 +218,7 @@ describe("validateConfig", () => {
 describe("applyDefaults", () => {
 	test("applies all defaults to empty config", () => {
 		const result = applyDefaults({});
+
 		expect(result.agent).toBe(CONFIG_DEFAULTS.agent);
 		expect(result.prdFormat).toBe(CONFIG_DEFAULTS.prdFormat);
 		expect(result.maxRetries).toBe(CONFIG_DEFAULTS.maxRetries);
@@ -203,6 +233,7 @@ describe("applyDefaults", () => {
 			agent: "claude",
 			maxRetries: 10,
 		});
+
 		expect(result.agent).toBe("claude");
 		expect(result.maxRetries).toBe(10);
 		expect(result.prdFormat).toBe(CONFIG_DEFAULTS.prdFormat);
@@ -214,6 +245,7 @@ describe("applyDefaults", () => {
 				systemNotification: true,
 			},
 		});
+
 		expect(result.notifications?.systemNotification).toBe(true);
 		expect(result.notifications?.webhookUrl).toBeUndefined();
 	});
@@ -224,6 +256,7 @@ describe("applyDefaults", () => {
 				maxOutputBufferBytes: 2000000,
 			},
 		});
+
 		expect(result.memory?.maxOutputBufferBytes).toBe(2000000);
 	});
 
@@ -232,6 +265,7 @@ describe("applyDefaults", () => {
 			lastUpdateCheck: 1234567890,
 			skipVersion: "1.0.0",
 		});
+
 		expect(result.lastUpdateCheck).toBe(1234567890);
 		expect(result.skipVersion).toBe("1.0.0");
 	});
@@ -247,6 +281,7 @@ describe("formatValidationErrors", () => {
 			],
 			warnings: [],
 		});
+
 		expect(result).toContain("Configuration validation failed");
 		expect(result).toContain("agent: is required");
 		expect(result).toContain('maxRetries: must be a number (got: "invalid")');
@@ -258,6 +293,7 @@ describe("formatValidationErrors", () => {
 			errors: [],
 			warnings: [{ field: "maxRetries", message: "is very high", value: 15 }],
 		});
+
 		expect(result).toContain("Configuration warnings");
 		expect(result).toContain("maxRetries: is very high");
 	});
@@ -271,6 +307,7 @@ describe("formatValidationErrors", () => {
 			},
 			true,
 		);
+
 		expect(result).toContain("Hint:");
 	});
 
@@ -280,6 +317,7 @@ describe("formatValidationErrors", () => {
 			errors: [],
 			warnings: [],
 		});
+
 		expect(result).toBe("");
 	});
 });
@@ -290,6 +328,7 @@ describe("getConfigSummary", () => {
 			agent: "cursor",
 		};
 		const summary = getConfigSummary(config);
+
 		expect(summary).toContain("Agent Settings:");
 		expect(summary).toContain("cursor");
 		expect(summary).toContain("Retry Settings:");
@@ -306,6 +345,7 @@ describe("getConfigSummary", () => {
 			stuckThresholdMs: 0,
 		};
 		const summary = getConfigSummary(config);
+
 		expect(summary).toContain("Agent Timeout:      disabled");
 		expect(summary).toContain("Stuck Threshold:    disabled");
 	});
@@ -317,6 +357,7 @@ describe("getConfigSummary", () => {
 			retryDelayMs: 5000,
 		};
 		const summary = getConfigSummary(config);
+
 		expect(summary).toContain("10m");
 		expect(summary).toContain("5s");
 	});

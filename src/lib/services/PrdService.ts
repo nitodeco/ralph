@@ -8,14 +8,17 @@ function findPrdFile(): string | null {
 	if (existsSync(PRD_JSON_PATH)) {
 		return PRD_JSON_PATH;
 	}
+
 	if (existsSync(PRD_YAML_PATH)) {
 		return PRD_YAML_PATH;
 	}
+
 	return null;
 }
 
 function loadPrdFromDisk(): LoadPrdResult {
 	const prdPath = findPrdFile();
+
 	if (!prdPath) {
 		return { prd: null };
 	}
@@ -24,6 +27,7 @@ function loadPrdFromDisk(): LoadPrdResult {
 		const content = readFileSync(prdPath, "utf-8");
 
 		let prd: Prd;
+
 		if (prdPath.endsWith(".yaml") || prdPath.endsWith(".yml")) {
 			prd = parseYaml(content) as Prd;
 		} else {
@@ -47,6 +51,7 @@ function loadPrdFromDisk(): LoadPrdResult {
 		return { prd };
 	} catch (parseError) {
 		const errorMessage = parseError instanceof Error ? parseError.message : "Unknown parsing error";
+
 		return {
 			prd: null,
 			validationError: `Failed to parse PRD file: ${errorMessage}`,
@@ -62,18 +67,23 @@ class PrdServiceImpl {
 		if (this.cachedPrd !== null) {
 			return this.cachedPrd;
 		}
+
 		return this.load(verbose);
 	}
 
 	load(verbose = false): Prd | null {
 		const result = this.loadWithValidation();
+
 		if (result.validationError) {
 			const error = createError(ErrorCode.PRD_INVALID_FORMAT, result.validationError, {
 				path: findPrdFile(),
 			});
+
 			console.error(formatError(error, verbose));
 		}
+
 		this.cachedPrd = result.prd;
+
 		return result.prd;
 	}
 
@@ -84,16 +94,19 @@ class PrdServiceImpl {
 
 		this.cachedLoadResult = loadPrdFromDisk();
 		this.cachedPrd = this.cachedLoadResult.prd;
+
 		return this.cachedLoadResult;
 	}
 
 	reload(verbose = false): Prd | null {
 		this.invalidate();
+
 		return this.load(verbose);
 	}
 
 	reloadWithValidation(): LoadPrdResult {
 		this.invalidate();
+
 		return this.loadWithValidation();
 	}
 
