@@ -39,14 +39,14 @@ jobs:
       - name: Get version from package.json
         if: steps.changesets.outputs.hasChangesets == 'false'
         id: version
-        run: echo "version=$(bun -e 'console.log(require(\"./package.json\").version)')" >> $GITHUB_OUTPUT
+        run: echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         if: steps.changesets.outputs.hasChangesets == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
           files: |
             dist/ralph-darwin-arm64
             dist/ralph-darwin-x64
