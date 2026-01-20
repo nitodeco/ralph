@@ -2,18 +2,40 @@ import { Box, Text } from "ink";
 import TextInput from "ink-text-input";
 import { useState } from "react";
 
-export type SlashCommand = "init" | "setup" | "update" | "help" | "quit" | "exit" | "add" | "start" | "resume";
+export type SlashCommand =
+	| "init"
+	| "setup"
+	| "update"
+	| "help"
+	| "quit"
+	| "exit"
+	| "add"
+	| "start"
+	| "resume"
+	| "stop";
 
 export interface CommandArgs {
 	iterations?: number;
 	full?: boolean;
 }
 
-const VALID_COMMANDS: SlashCommand[] = ["init", "setup", "update", "help", "quit", "exit", "add", "start", "resume"];
+const VALID_COMMANDS: SlashCommand[] = [
+	"init",
+	"setup",
+	"update",
+	"help",
+	"quit",
+	"exit",
+	"add",
+	"start",
+	"resume",
+	"stop",
+];
+const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help"];
 
 interface CommandInputProps {
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
-	disabled?: boolean;
+	isRunning?: boolean;
 }
 
 interface ParsedCommand {
@@ -40,7 +62,7 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 		}
 
 		const iterations = Number.parseInt(parts[1], 10);
-		
+
 		if (!Number.isNaN(iterations) && iterations > 0) {
 			return { command: commandName, args: { iterations } };
 		}
@@ -49,7 +71,10 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 	return { command: commandName };
 }
 
-export function CommandInput({ onCommand, disabled = false }: CommandInputProps): React.ReactElement {
+export function CommandInput({
+	onCommand,
+	isRunning = false,
+}: CommandInputProps): React.ReactElement {
 	const [inputValue, setInputValue] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +85,13 @@ export function CommandInput({ onCommand, disabled = false }: CommandInputProps)
 
 		const parsed = parseSlashCommand(value);
 		if (parsed) {
+			if (isRunning && !RUNNING_COMMANDS.includes(parsed.command)) {
+				setError(
+					`Command /${parsed.command} not available while agent is running. Use /stop, /quit, or /help`,
+				);
+				setInputValue("");
+				return;
+			}
 			setError(null);
 			setInputValue("");
 			onCommand(parsed.command, parsed.args);
@@ -69,24 +101,23 @@ export function CommandInput({ onCommand, disabled = false }: CommandInputProps)
 		}
 	};
 
-	if (disabled) {
-		return (
-			<Box borderStyle="round" borderColor="gray" paddingX={1}>
-				<Text dimColor>Type /help for available commands</Text>
-			</Box>
-		);
-	}
+	const borderColor = isRunning ? "yellow" : "cyan";
+	const promptColor = isRunning ? "yellow" : "cyan";
+	const placeholder = isRunning ? "/stop" : "/command";
+	const hintText = isRunning
+		? "Press Escape or type /stop to stop the agent"
+		: "Enter /help for a list of commands";
 
 	return (
 		<Box flexDirection="column">
-			<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+			<Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1}>
 				<Box gap={1}>
-					<Text color="cyan">❯</Text>
+					<Text color={promptColor}>❯</Text>
 					<TextInput
 						value={inputValue}
 						onChange={setInputValue}
 						onSubmit={handleSubmit}
-						placeholder="/command"
+						placeholder={placeholder}
 					/>
 				</Box>
 				{error && (
@@ -96,7 +127,7 @@ export function CommandInput({ onCommand, disabled = false }: CommandInputProps)
 				)}
 			</Box>
 			<Box paddingLeft={1}>
-				<Text dimColor>Enter /help for a list of commands</Text>
+				<Text dimColor>{hintText}</Text>
 			</Box>
 		</Box>
 	);

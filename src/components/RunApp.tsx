@@ -1,5 +1,5 @@
-import { Box, Text, useApp, useInput } from "ink";
 import { existsSync } from "node:fs";
+import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { useAgent } from "../hooks/useAgent.ts";
 import { useIteration } from "../hooks/useIteration.ts";
@@ -18,7 +18,7 @@ import {
 import type { Prd, RalphConfig, Session } from "../types.ts";
 import { AddTaskWizard } from "./AddTaskWizard.tsx";
 import { AgentOutput } from "./AgentOutput.tsx";
-import { CommandInput, type CommandArgs, type SlashCommand } from "./CommandInput.tsx";
+import { type CommandArgs, CommandInput, type SlashCommand } from "./CommandInput.tsx";
 import { Message } from "./common/Message.tsx";
 import { Header } from "./Header.tsx";
 import { HelpView } from "./HelpView.tsx";
@@ -35,7 +35,14 @@ interface RunAppProps {
 	autoResume?: boolean;
 }
 
-type AppState = "idle" | "running" | "complete" | "error" | "max_iterations" | "not_initialized" | "resume_prompt";
+type AppState =
+	| "idle"
+	| "running"
+	| "complete"
+	| "error"
+	| "max_iterations"
+	| "not_initialized"
+	| "resume_prompt";
 type ActiveView = "run" | "init" | "setup" | "update" | "help" | "add";
 
 interface ValidationWarning {
@@ -68,7 +75,11 @@ function getCurrentTaskIndex(prd: Prd): number {
 
 const DEFAULT_ITERATIONS = 10;
 
-export function RunApp({ version, iterations, autoResume = false }: RunAppProps): React.ReactElement {
+export function RunApp({
+	version,
+	iterations,
+	autoResume = false,
+}: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 	const [appState, setAppState] = useState<AppState>("idle");
 	const [activeView, setActiveView] = useState<ActiveView>("run");
@@ -96,7 +107,11 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		onIterationComplete: (iterationNumber) => {
 			const currentConfig = loadConfig();
 			const logger = getLogger({ logFilePath: currentConfig.logFilePath });
-			logger.logIterationComplete(iterationNumber, iterations || DEFAULT_ITERATIONS, agent.isComplete);
+			logger.logIterationComplete(
+				iterationNumber,
+				iterations || DEFAULT_ITERATIONS,
+				agent.isComplete,
+			);
 			if (currentSession) {
 				const currentPrd = loadPrd();
 				const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
@@ -104,7 +119,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 					currentSession,
 					iterationNumber,
 					taskIndex,
-					elapsedTime
+					elapsedTime,
 				);
 				saveSession(updatedSession);
 				setCurrentSession(updatedSession);
@@ -150,44 +165,47 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		agent.reset();
 	}, [agent]);
 
-	const startIterations = useCallback((iterationCount?: number, full?: boolean) => {
-		const warning = validateProject();
-		if (warning) {
-			setValidationWarning(warning);
-			setAppState("not_initialized");
-			return;
-		}
+	const startIterations = useCallback(
+		(iterationCount?: number, full?: boolean) => {
+			const warning = validateProject();
+			if (warning) {
+				setValidationWarning(warning);
+				setAppState("not_initialized");
+				return;
+			}
 
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+			const loadedConfig = loadConfig();
+			const loadedPrd = loadPrd();
+			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
-		setConfig(loadedConfig);
-		setPrd(loadedPrd);
-		setValidationWarning(null);
+			setConfig(loadedConfig);
+			setPrd(loadedPrd);
+			setValidationWarning(null);
 
-		deleteSession();
-		setPendingSession(null);
+			deleteSession();
+			setPendingSession(null);
 
-		let totalIters = iterationCount || iterations || DEFAULT_ITERATIONS;
-		if (full && loadedPrd) {
-			const incompleteTasks = loadedPrd.tasks.filter((task) => !task.done).length;
-			totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
-		}
-		iteration.setTotal(totalIters);
+			let totalIters = iterationCount || iterations || DEFAULT_ITERATIONS;
+			if (full && loadedPrd) {
+				const incompleteTasks = loadedPrd.tasks.filter((task) => !task.done).length;
+				totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
+			}
+			iteration.setTotal(totalIters);
 
-		const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
-		const newSession = createSession(totalIters, taskIndex);
-		saveSession(newSession);
-		setCurrentSession(newSession);
+			const taskIndex = loadedPrd ? getCurrentTaskIndex(loadedPrd) : 0;
+			const newSession = createSession(totalIters, taskIndex);
+			saveSession(newSession);
+			setCurrentSession(newSession);
 
-		logger.logSessionStart(totalIters, taskIndex);
+			logger.logSessionStart(totalIters, taskIndex);
 
-		setAppState("running");
-		setElapsedTime(0);
-		agent.reset();
-		iteration.start();
-	}, [agent, iteration, iterations]);
+			setAppState("running");
+			setElapsedTime(0);
+			agent.reset();
+			iteration.start();
+		},
+		[agent, iteration, iterations],
+	);
 
 	const resumeSession = useCallback(() => {
 		if (!pendingSession) {
@@ -220,7 +238,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		logger.logSessionResume(
 			pendingSession.currentIteration,
 			pendingSession.totalIterations,
-			pendingSession.elapsedTimeSeconds
+			pendingSession.elapsedTimeSeconds,
 		);
 
 		setAppState("running");
@@ -229,45 +247,59 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 		iteration.start();
 	}, [agent, iteration, pendingSession]);
 
-	const handleSlashCommand = useCallback((command: SlashCommand, args?: CommandArgs) => {
-		switch (command) {
-			case "start":
-				startIterations(args?.iterations, args?.full);
-				break;
-			case "resume":
-				resumeSession();
-				break;
-			case "init":
-				agent.stop();
-				iteration.pause();
-				setActiveView("init");
-				break;
-			case "setup":
-				agent.stop();
-				iteration.pause();
-				setActiveView("setup");
-				break;
-			case "update":
-				agent.stop();
-				iteration.pause();
-				setActiveView("update");
-				break;
-			case "help":
-				agent.stop();
-				iteration.pause();
-				setActiveView("help");
-				break;
-			case "add":
-				agent.stop();
-				iteration.pause();
-				setActiveView("add");
-				break;
-			case "quit":
-			case "exit":
-				exit();
-				break;
+	const stopAgent = useCallback(() => {
+		if (agent.isStreaming) {
+			agent.stop();
+			iteration.stop();
+			setAppState("idle");
 		}
-	}, [agent, iteration, exit, startIterations, resumeSession]);
+	}, [agent, iteration]);
+
+	const handleSlashCommand = useCallback(
+		(command: SlashCommand, args?: CommandArgs) => {
+			switch (command) {
+				case "start":
+					startIterations(args?.iterations, args?.full);
+					break;
+				case "resume":
+					resumeSession();
+					break;
+				case "stop":
+					stopAgent();
+					break;
+				case "init":
+					agent.stop();
+					iteration.pause();
+					setActiveView("init");
+					break;
+				case "setup":
+					agent.stop();
+					iteration.pause();
+					setActiveView("setup");
+					break;
+				case "update":
+					agent.stop();
+					iteration.pause();
+					setActiveView("update");
+					break;
+				case "help":
+					agent.stop();
+					iteration.pause();
+					setActiveView("help");
+					break;
+				case "add":
+					agent.stop();
+					iteration.pause();
+					setActiveView("add");
+					break;
+				case "quit":
+				case "exit":
+					exit();
+					break;
+			}
+		},
+		[agent, iteration, exit, startIterations, resumeSession, stopAgent],
+	);
 
 	const handleViewComplete = useCallback(() => {
 		setActiveView("run");
@@ -280,6 +312,15 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 			iteration.resume();
 		}
 	}, [appState, iteration]);
+
+	useInput(
+		(_input, key) => {
+			if (key.escape && agent.isStreaming && activeView === "run") {
+				stopAgent();
+			}
+		},
+		{ isActive: activeView === "run" },
+	);
 
 	useEffect(() => {
 		const warning = validateProject();
@@ -315,10 +356,21 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 	}, [autoResume, pendingSession, appState, resumeSession]);
 
 	useEffect(() => {
-		if (iteration.isRunning && iteration.current > 0 && !agent.isStreaming && !iteration.isDelaying) {
+		if (
+			iteration.isRunning &&
+			iteration.current > 0 &&
+			!agent.isStreaming &&
+			!iteration.isDelaying
+		) {
 			agent.start();
 		}
-	}, [iteration.isRunning, iteration.current, iteration.isDelaying]);
+	}, [
+		iteration.isRunning,
+		iteration.current,
+		iteration.isDelaying,
+		agent.isStreaming,
+		agent.start,
+	]);
 
 	useEffect(() => {
 		if (!agent.isStreaming && agent.exitCode !== null) {
@@ -348,7 +400,10 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 	}, [appState, activeView]);
 
 	useEffect(() => {
-		if ((appState === "complete" || appState === "max_iterations" || appState === "error") && activeView === "run") {
+		if (
+			(appState === "complete" || appState === "max_iterations" || appState === "error") &&
+			activeView === "run"
+		) {
 			const timeout = setTimeout(() => {
 				exit();
 			}, 100);
@@ -365,9 +420,10 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 	};
 
 	const currentTaskIndex = prd ? getCurrentTaskIndex(prd) : undefined;
-	const currentTask = prd && currentTaskIndex !== undefined && currentTaskIndex >= 0
-		? prd.tasks[currentTaskIndex]?.title
-		: undefined;
+	const currentTask =
+		prd && currentTaskIndex !== undefined && currentTaskIndex >= 0
+			? prd.tasks[currentTaskIndex]?.title
+			: undefined;
 
 	if (activeView === "init") {
 		return <InitWizard version={version} onComplete={handleViewComplete} />;
@@ -453,11 +509,7 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 
 	return (
 		<Box flexDirection="column" minHeight={20}>
-			<Header
-				version={version}
-				agent={config?.agent}
-				projectName={prd?.project}
-			/>
+			<Header version={version} agent={config?.agent} projectName={prd?.project} />
 
 			{prd && (
 				<TaskList
@@ -485,7 +537,8 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 			{appState === "idle" && (
 				<Box paddingX={1} marginY={1}>
 					<Text dimColor>
-						Type <Text color="cyan">/start</Text>, <Text color="cyan">/start [n]</Text>, or <Text color="cyan">/start full</Text> to begin iterations
+						Type <Text color="cyan">/start</Text>, <Text color="cyan">/start [n]</Text>, or{" "}
+						<Text color="cyan">/start full</Text> to begin iterations
 					</Text>
 				</Box>
 			)}
@@ -504,13 +557,9 @@ export function RunApp({ version, iterations, autoResume = false }: RunAppProps)
 				</Box>
 			)}
 
-			<CommandInput onCommand={handleSlashCommand} disabled={agent.isStreaming} />
+			<CommandInput onCommand={handleSlashCommand} isRunning={agent.isStreaming} />
 
-			<StatusBar
-				status={getStatus()}
-				elapsedTime={elapsedTime}
-				currentTask={currentTask}
-			/>
+			<StatusBar status={getStatus()} elapsedTime={elapsedTime} currentTask={currentTask} />
 		</Box>
 	);
 }

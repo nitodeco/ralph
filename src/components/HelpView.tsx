@@ -14,12 +14,7 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 
 	return (
 		<Box flexDirection="column" padding={1}>
-			<Box
-				flexDirection="column"
-				borderStyle="round"
-				borderColor="cyan"
-				paddingX={1}
-			>
+			<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
 				<Text bold color="cyan">
 					◆ ralph v{version}
 				</Text>
@@ -29,7 +24,9 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 				<Text>A CLI tool for long-running PRD-driven development with AI coding agents</Text>
 
 				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">CLI Usage:</Text>
+					<Text bold color="yellow">
+						CLI Usage:
+					</Text>
 					<Box flexDirection="column" paddingLeft={2}>
 						<Text>
 							<Text dimColor>ralph [iterations]</Text>
@@ -43,7 +40,9 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 				</Box>
 
 				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">CLI Commands:</Text>
+					<Text bold color="yellow">
+						CLI Commands:
+					</Text>
 					<Box flexDirection="column" paddingLeft={2}>
 						<Text>
 							<Text dimColor>init</Text>
@@ -74,12 +73,19 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 				</Box>
 
 				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">Slash Commands (in-app):</Text>
+					<Text bold color="yellow">
+						Slash Commands (in-app):
+					</Text>
 					<Box flexDirection="column" paddingLeft={2}>
 						<Text>
 							<Text dimColor>/start [n|full]</Text>
 							{"   "}
 							<Text>Start the agent loop (default: 10, full: all tasks)</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/stop</Text>
+							{"             "}
+							<Text>Stop the running agent</Text>
 						</Text>
 						<Text>
 							<Text dimColor>/resume</Text>
@@ -120,7 +126,9 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 				</Box>
 
 				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">Examples:</Text>
+					<Text bold color="yellow">
+						Examples:
+					</Text>
 					<Box flexDirection="column" paddingLeft={2}>
 						<Text>
 							<Text dimColor>ralph</Text>

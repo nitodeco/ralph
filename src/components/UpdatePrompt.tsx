@@ -1,6 +1,6 @@
 import { Box, Text, useApp } from "ink";
 import SelectInput from "ink-select-input";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadConfig, saveConfig } from "../lib/config.ts";
 import {
 	compareVersions,
@@ -11,10 +11,10 @@ import {
 	getOperatingSystem,
 	installBinary,
 } from "../lib/update.ts";
-import { Header } from "./Header.tsx";
 import { Message } from "./common/Message.tsx";
 import { ProgressBar } from "./common/ProgressBar.tsx";
 import { Spinner } from "./common/Spinner.tsx";
+import { Header } from "./Header.tsx";
 
 interface UpdatePromptProps {
 	version: string;
@@ -47,19 +47,19 @@ function skipVersion(version: string): void {
 
 export function UpdatePrompt({
 	version,
-	forceCheck = false,
+	forceCheck: _forceCheck = false,
 	onComplete,
 }: UpdatePromptProps): React.ReactElement {
 	const { exit } = useApp();
 	const [state, setState] = useState<UpdateState>("checking");
 
-	const handleExit = () => {
+	const handleExit = useCallback(() => {
 		if (onComplete) {
 			onComplete();
 		} else {
 			exit();
 		}
-	};
+	}, [onComplete, exit]);
 	const [latestVersion, setLatestVersion] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
@@ -93,7 +93,7 @@ export function UpdatePrompt({
 		};
 
 		checkForUpdates();
-	}, [version, forceCheck]);
+	}, [version]);
 
 	const handleUpdateAction = async (item: { value: UpdateAction }) => {
 		switch (item.value) {
@@ -151,7 +151,7 @@ export function UpdatePrompt({
 			}, 2000);
 			return () => clearTimeout(timeout);
 		}
-	}, [state]);
+	}, [state, handleExit]);
 
 	const renderContent = () => {
 		switch (state) {
@@ -204,13 +204,9 @@ export function UpdatePrompt({
 				return (
 					<Box flexDirection="column" gap={1}>
 						{latestVersion && state === "complete" ? (
-							<Message type="success">
-								Ralph updated successfully to {latestVersion}!
-							</Message>
+							<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
 						) : (
-							<Text dimColor>
-								You can update later by running 'ralph update'.
-							</Text>
+							<Text dimColor>You can update later by running 'ralph update'.</Text>
 						)}
 					</Box>
 				);

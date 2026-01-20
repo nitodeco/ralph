@@ -2,6 +2,7 @@ import type { Subprocess } from "bun";
 import { useCallback, useRef, useState } from "react";
 import { getAgentCommand, loadConfig } from "../lib/config.ts";
 import { getLogger } from "../lib/logger.ts";
+import { loadInstructions } from "../lib/prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "../lib/prompt.ts";
 
 interface UseAgentState {
@@ -124,7 +125,8 @@ export function useAgent(): UseAgentReturn {
 		isComplete: boolean;
 		error?: string;
 	}> => {
-		const prompt = buildPrompt();
+		const instructions = loadInstructions();
+		const prompt = buildPrompt({ instructions });
 		const config = loadConfig();
 		const logger = getLogger({ logFilePath: config.logFilePath });
 		const baseCommand = getAgentCommand(config.agent);

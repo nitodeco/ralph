@@ -1,7 +1,7 @@
-import { Box, Text, useApp, useInput } from "ink";
-import TextInput from "ink-text-input";
-import SelectInput from "ink-select-input";
 import { existsSync, writeFileSync } from "node:fs";
+import { Box, Text, useApp, useInput } from "ink";
+import SelectInput from "ink-select-input";
+import TextInput from "ink-text-input";
 import { useState } from "react";
 import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "../lib/agent.ts";
@@ -13,15 +13,11 @@ import {
 	RALPH_DIR,
 	savePrd,
 } from "../lib/prd.ts";
-import {
-	buildPrdGenerationPrompt,
-	PRD_OUTPUT_END,
-	PRD_OUTPUT_START,
-} from "../lib/prompt.ts";
+import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "../lib/prompt.ts";
 import type { AgentType, Prd, PrdFormat, RalphConfig } from "../types.ts";
-import { Header } from "./Header.tsx";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
+import { Header } from "./Header.tsx";
 
 interface InitWizardProps {
 	version: string;
@@ -185,7 +181,8 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				setState((prev) => ({
 					...prev,
 					step: "error",
-					errorMessage: "Failed to parse PRD from agent output. The agent may not have followed the expected format.",
+					errorMessage:
+						"Failed to parse PRD from agent output. The agent may not have followed the expected format.",
 				}));
 				return;
 			}
@@ -235,9 +232,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			case "check_existing_progress":
 				return (
 					<Box flexDirection="column" gap={1}>
-						<Text color="yellow">
-							{PROGRESS_FILE_PATH} already exists. Overwrite it?
-						</Text>
+						<Text color="yellow">{PROGRESS_FILE_PATH} already exists. Overwrite it?</Text>
 						<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwriteProgress} />
 					</Box>
 				);
@@ -293,9 +288,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 							<Box marginTop={1} flexDirection="column">
 								<Text dimColor>Agent output:</Text>
 								<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-									<Text dimColor>
-										{state.agentOutput.slice(-500)}
-									</Text>
+									<Text dimColor>{state.agentOutput.slice(-500)}</Text>
 								</Box>
 							</Box>
 						)}
@@ -311,7 +304,8 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 							Created {RALPH_DIR}/{prdFileName} and {PROGRESS_FILE_PATH}
 						</Message>
 						<Text>
-							<Text dimColor>Project:</Text> <Text color="yellow">{state.generatedPrd?.project}</Text>
+							<Text dimColor>Project:</Text>{" "}
+							<Text color="yellow">{state.generatedPrd?.project}</Text>
 						</Text>
 						<Text>
 							<Text dimColor>Agent:</Text> <Text color="yellow">{agentName}</Text>
@@ -324,7 +318,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 								<Text dimColor>Generated tasks:</Text>
 								{state.generatedPrd.tasks.map((task, index) => (
 									<Text key={task.title}>
-										<Text dimColor>  {index + 1}.</Text> {task.title}
+										<Text dimColor> {index + 1}.</Text> {task.title}
 									</Text>
 								))}
 							</Box>

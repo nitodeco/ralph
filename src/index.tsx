@@ -2,18 +2,29 @@
 
 import { render } from "ink";
 import { useState } from "react";
+import packageJson from "../package.json";
 import { InitWizard } from "./components/InitWizard.tsx";
 import { RunApp } from "./components/RunApp.tsx";
 import { SetupWizard } from "./components/SetupWizard.tsx";
 import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
 import { globalConfigExists } from "./lib/config.ts";
-import packageJson from "../package.json";
 
 declare const RALPH_VERSION: string | undefined;
 
 export const VERSION = typeof RALPH_VERSION !== "undefined" ? RALPH_VERSION : packageJson.version;
 
-type Command = "run" | "init" | "setup" | "update" | "resume" | "help" | "version" | "-v" | "--version" | "-h" | "--help";
+type Command =
+	| "run"
+	| "init"
+	| "setup"
+	| "update"
+	| "resume"
+	| "help"
+	| "version"
+	| "-v"
+	| "--version"
+	| "-h"
+	| "--help";
 
 interface ParsedArgs {
 	command: Command;
@@ -54,6 +65,7 @@ Commands:
 
 Slash Commands (in-app):
   /start [n|full]   Start the agent loop (default: 10 iterations, full: all tasks)
+  /stop             Stop the running agent
   /resume           Resume a previously interrupted session
   /init             Initialize a new PRD project
   /add              Add a new task to the PRD (AI-generated from description)
@@ -84,7 +96,11 @@ interface RunWithSetupProps {
 	autoResume?: boolean;
 }
 
-function RunWithSetup({ version, iterations, autoResume = false }: RunWithSetupProps): React.ReactElement {
+function RunWithSetup({
+	version,
+	iterations,
+	autoResume = false,
+}: RunWithSetupProps): React.ReactElement {
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
 
 	if (!setupComplete) {
@@ -124,10 +140,6 @@ function main(): void {
 		case "--version":
 			printVersion();
 			break;
-
-		case "help":
-		case "-h":
-		case "--help":
 		default:
 			printHelp();
 			break;

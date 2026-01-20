@@ -5,27 +5,18 @@ import { parse as parseYaml } from "yaml";
 import { runAgentWithPrompt } from "../lib/agent.ts";
 import { loadConfig } from "../lib/config.ts";
 import { findPrdFile, loadPrd, savePrd } from "../lib/prd.ts";
-import {
-	buildAddTaskPrompt,
-	TASK_OUTPUT_END,
-	TASK_OUTPUT_START,
-} from "../lib/prompt.ts";
+import { buildAddTaskPrompt, TASK_OUTPUT_END, TASK_OUTPUT_START } from "../lib/prompt.ts";
 import type { Prd, PrdFormat, PrdTask } from "../types.ts";
-import { Header } from "./Header.tsx";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
+import { Header } from "./Header.tsx";
 
 interface AddTaskWizardProps {
 	version: string;
 	onComplete?: () => void;
 }
 
-type WizardStep =
-	| "check_prd"
-	| "description"
-	| "generating"
-	| "complete"
-	| "error";
+type WizardStep = "check_prd" | "description" | "generating" | "complete" | "error";
 
 interface WizardState {
 	step: WizardStep;
@@ -141,7 +132,8 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				setState((prev) => ({
 					...prev,
 					step: "error",
-					errorMessage: "Failed to parse task from agent output. The agent may not have followed the expected format.",
+					errorMessage:
+						"Failed to parse task from agent output. The agent may not have followed the expected format.",
 				}));
 				return;
 			}
@@ -216,9 +208,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 							<Box marginTop={1} flexDirection="column">
 								<Text dimColor>Agent output:</Text>
 								<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-									<Text dimColor>
-										{state.agentOutput.slice(-500)}
-									</Text>
+									<Text dimColor>{state.agentOutput.slice(-500)}</Text>
 								</Box>
 							</Box>
 						)}
@@ -242,7 +232,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 										<Text dimColor>Steps:</Text>
 										{state.addedTask.steps.map((step, index) => (
 											<Text key={step}>
-												<Text dimColor>  {index + 1}.</Text> {step}
+												<Text dimColor> {index + 1}.</Text> {step}
 											</Text>
 										))}
 									</Box>

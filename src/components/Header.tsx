@@ -12,11 +12,7 @@ const AGENT_DISPLAY_NAMES: Record<AgentType, string> = {
 	claude: "Claude Code",
 };
 
-export function Header({
-	version,
-	agent,
-	projectName,
-}: HeaderProps): React.ReactElement {
+export function Header({ version, agent, projectName }: HeaderProps): React.ReactElement {
 	return (
 		<Box flexDirection="column" paddingX={1}>
 			<Box justifyContent="space-between" alignItems="flex-end">
@@ -35,8 +31,7 @@ export function Header({
 				<Box gap={2} marginTop={1}>
 					{agent && (
 						<Text>
-							<Text dimColor>agent:</Text>{" "}
-							<Text color="yellow">{AGENT_DISPLAY_NAMES[agent]}</Text>
+							<Text dimColor>agent:</Text> <Text color="yellow">{AGENT_DISPLAY_NAMES[agent]}</Text>
 						</Text>
 					)}
 					{projectName && (

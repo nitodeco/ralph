@@ -1,5 +1,5 @@
-import SelectInput from "ink-select-input";
 import { Box, Text } from "ink";
+import SelectInput from "ink-select-input";
 
 interface SelectItem<T> {
 	label: string;
@@ -12,11 +12,7 @@ interface SelectProps<T> {
 	onSelect: (item: SelectItem<T>) => void;
 }
 
-export function Select<T>({
-	label,
-	items,
-	onSelect,
-}: SelectProps<T>): React.ReactElement {
+export function Select<T>({ label, items, onSelect }: SelectProps<T>): React.ReactElement {
 	return (
 		<Box flexDirection="column">
 			<Text color="cyan">{label}</Text>

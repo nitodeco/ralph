@@ -33,9 +33,8 @@ export function TaskList({
 		);
 	}
 
-	const currentTask = currentTaskIndex !== undefined && currentTaskIndex >= 0
-		? tasks[currentTaskIndex]
-		: null;
+	const currentTask =
+		currentTaskIndex !== undefined && currentTaskIndex >= 0 ? tasks[currentTaskIndex] : null;
 
 	const allTasksComplete = completedCount === totalCount;
 
@@ -46,10 +45,10 @@ export function TaskList({
 					Tasks ({completedCount}/{totalCount})
 				</Text>
 			</Box>
-			{currentTask ? (
+			{currentTask && currentTaskIndex !== undefined ? (
 				<Box>
 					<Text color="yellow">▶ </Text>
-					<Text dimColor>{currentTaskIndex! + 1}. </Text>
+					<Text dimColor>{currentTaskIndex + 1}. </Text>
 					<Text color="white">{currentTask.title}</Text>
 				</Box>
 			) : allTasksComplete ? (

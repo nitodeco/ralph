@@ -1,5 +1,5 @@
-import InkSpinner from "ink-spinner";
 import { Text } from "ink";
+import InkSpinner from "ink-spinner";
 
 interface SpinnerProps {
 	label?: string;

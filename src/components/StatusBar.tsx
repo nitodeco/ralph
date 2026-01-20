@@ -8,13 +8,12 @@ interface StatusBarProps {
 	currentTask?: string;
 }
 
-const STATUS_INDICATORS: Record<AgentStatus, { color: string; label: string }> =
-	{
-		idle: { color: "gray", label: "Idle" },
-		running: { color: "yellow", label: "Running" },
-		complete: { color: "green", label: "Complete" },
-		error: { color: "red", label: "Error" },
-	};
+const STATUS_INDICATORS: Record<AgentStatus, { color: string; label: string }> = {
+	idle: { color: "gray", label: "Idle" },
+	running: { color: "yellow", label: "Running" },
+	complete: { color: "green", label: "Complete" },
+	error: { color: "red", label: "Error" },
+};
 
 function formatElapsedTime(seconds: number): string {
 	const minutes = Math.floor(seconds / 60);
@@ -33,16 +32,10 @@ export function StatusBar({
 	const indicator = STATUS_INDICATORS[status];
 
 	return (
-		<Box
-			borderStyle="single"
-			borderColor="gray"
-			paddingX={1}
-			justifyContent="space-between"
-		>
+		<Box borderStyle="single" borderColor="gray" paddingX={1} justifyContent="space-between">
 			<Box gap={2}>
 				<Text>
-					<Text dimColor>status:</Text>{" "}
-					<Text color={indicator.color}>{indicator.label}</Text>
+					<Text dimColor>status:</Text> <Text color={indicator.color}>{indicator.label}</Text>
 				</Text>
 				{currentTask && (
 					<Text>
@@ -51,9 +44,7 @@ export function StatusBar({
 				)}
 			</Box>
 			<Box gap={2}>
-				{elapsedTime !== undefined && (
-					<Text dimColor>{formatElapsedTime(elapsedTime)}</Text>
-				)}
+				{elapsedTime !== undefined && <Text dimColor>{formatElapsedTime(elapsedTime)}</Text>}
 				<Text dimColor>ctrl+c to exit</Text>
 			</Box>
 		</Box>

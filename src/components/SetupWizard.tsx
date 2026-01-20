@@ -3,8 +3,8 @@ import SelectInput from "ink-select-input";
 import { useState } from "react";
 import { loadGlobalConfig, saveGlobalConfig } from "../lib/config.ts";
 import type { AgentType, PrdFormat, RalphConfig } from "../types.ts";
-import { Header } from "./Header.tsx";
 import { Message } from "./common/Message.tsx";
+import { Header } from "./Header.tsx";
 
 interface SetupWizardProps {
 	version: string;
@@ -130,7 +130,9 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 						<Text color="cyan">How many times should Ralph retry on agent failures?</Text>
 						<SelectInput
 							items={MAX_RETRIES_CHOICES}
-							initialIndex={MAX_RETRIES_CHOICES.findIndex((choice) => choice.value === state.maxRetries)}
+							initialIndex={MAX_RETRIES_CHOICES.findIndex(
+								(choice) => choice.value === state.maxRetries,
+							)}
 							onSelect={handleMaxRetriesSelect}
 						/>
 					</Box>
@@ -143,7 +145,9 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 						<Text dimColor>(Uses exponential backoff - this is the base delay)</Text>
 						<SelectInput
 							items={RETRY_DELAY_CHOICES}
-							initialIndex={RETRY_DELAY_CHOICES.findIndex((choice) => choice.value === state.retryDelayMs)}
+							initialIndex={RETRY_DELAY_CHOICES.findIndex(
+								(choice) => choice.value === state.retryDelayMs,
+							)}
 							onSelect={handleRetryDelaySelect}
 						/>
 					</Box>
@@ -152,7 +156,9 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 			case "complete": {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 				const formatName = state.prdFormat.toUpperCase();
-				const retryDelayLabel = RETRY_DELAY_CHOICES.find((choice) => choice.value === state.retryDelayMs)?.label ?? `${state.retryDelayMs}ms`;
+				const retryDelayLabel =
+					RETRY_DELAY_CHOICES.find((choice) => choice.value === state.retryDelayMs)?.label ??
+					`${state.retryDelayMs}ms`;
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">Setup complete!</Message>
@@ -171,9 +177,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 							</Text>
 						</Box>
 						<Box marginTop={1}>
-							<Text dimColor>
-								Configuration saved to ~/.ralph/config.json
-							</Text>
+							<Text dimColor>Configuration saved to ~/.ralph/config.json</Text>
 						</Box>
 						{onComplete ? (
 							<Text dimColor>Press Enter to continue</Text>
