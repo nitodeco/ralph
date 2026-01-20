@@ -1,5 +1,38 @@
 # ralph
 
+## 0.9.0
+
+### Minor Changes
+
+- 742ca40: Add Codex agent support
+
+  - Added 'codex' to the AgentType union type
+  - Added Codex to VALID_AGENTS array
+  - Added Codex CLI command configuration: ['codex', '-q', '--approval-mode', 'full-auto']
+  - Added Codex option to SetupWizard agent selection
+  - Updated IterationLogAgent type to use AgentType instead of hardcoded union
+
+### Patch Changes
+
+- 3220643: Refactor: Simplify RunApp component by extracting hooks and ViewRouter
+
+  - Extract useSlashCommands hook for slash command handling logic
+  - Extract useSessionLifecycle hook for session-related effects
+  - Create ViewRouter component for view switching logic
+  - Create MainRunView component for the main run view content
+  - Reduce RunApp from 310+ lines to ~150 lines with better separation of concerns
+
+- ecf8ddb: Refactor: Split config.ts into focused modules
+
+  - Created src/lib/config/ directory with focused submodules:
+    - constants.ts: CONFIG_DEFAULTS, AGENT_COMMANDS, VALID_AGENTS, etc.
+    - loader.ts: loadConfig, saveConfig, loadGlobalConfig, etc.
+    - validator.ts: validateConfig and all validation helpers
+    - formatter.ts: formatValidationErrors, getConfigSummary, formatMs, formatBytes
+    - index.ts: re-exports everything for backward compatibility
+  - Updated src/lib/config.ts to re-export from config/index.ts
+  - All existing imports from @/lib/config continue to work unchanged
+
 ## 0.8.1
 
 ### Patch Changes
