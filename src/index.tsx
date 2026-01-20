@@ -9,6 +9,7 @@ import {
 	printConfig,
 	printHelp,
 	printList,
+	printStats,
 	printStatus,
 	printVersion,
 } from "@/cli/index.ts";
