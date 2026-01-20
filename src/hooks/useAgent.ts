@@ -5,6 +5,9 @@ import { getLogger } from "../lib/logger.ts";
 import { loadInstructions } from "../lib/prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "../lib/prompt.ts";
 
+const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
+const DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000;
+
 interface UseAgentState {
 	output: string;
 	isStreaming: boolean;
@@ -130,6 +133,8 @@ export function useAgent(): UseAgentReturn {
 		const config = loadConfig();
 		const logger = getLogger({ logFilePath: config.logFilePath });
 		const baseCommand = getAgentCommand(config.agent);
+		const agentTimeoutMs = config.agentTimeoutMs ?? DEFAULT_AGENT_TIMEOUT_MS;
+		const stuckThresholdMs = config.stuckThresholdMs ?? DEFAULT_STUCK_THRESHOLD_MS;
 
 		logger.logAgentStart(config.agent, prompt);
 
@@ -150,11 +155,56 @@ export function useAgent(): UseAgentReturn {
 		let lineBuffer = "";
 		let lastParsedText = "";
 
+		let lastActivityTime = Date.now();
+		let timeoutTriggered = false;
+		let stuckTriggered = false;
+
+		const updateLastActivity = () => {
+			lastActivityTime = Date.now();
+		};
+
+		const processStartTime = Date.now();
+
+		const timeoutTimer =
+			agentTimeoutMs > 0
+				? setTimeout(() => {
+						timeoutTriggered = true;
+						logger.warn("Agent timeout exceeded, killing process", {
+							timeoutMs: agentTimeoutMs,
+							elapsedMs: Date.now() - processStartTime,
+						});
+						if (processRef.current) {
+							processRef.current.kill();
+						}
+					}, agentTimeoutMs)
+				: null;
+
+		const stuckCheckInterval =
+			stuckThresholdMs > 0
+				? setInterval(
+						() => {
+							const timeSinceLastActivity = Date.now() - lastActivityTime;
+							if (timeSinceLastActivity >= stuckThresholdMs) {
+								stuckTriggered = true;
+								logger.warn("Agent appears stuck (no output), killing process", {
+									stuckThresholdMs,
+									timeSinceLastActivityMs: timeSinceLastActivity,
+								});
+								if (processRef.current) {
+									processRef.current.kill();
+								}
+							}
+						},
+						Math.min(stuckThresholdMs / 4, 30000),
+					)
+				: null;
+
 		const readStdout = async () => {
 			while (!abortedRef.current) {
 				const { done, value } = await stdoutReader.read();
 				if (done) break;
 
+				updateLastActivity();
 				const text = decoder.decode(value);
 				rawOutput += text;
 				lineBuffer += text;
@@ -180,14 +230,44 @@ export function useAgent(): UseAgentReturn {
 			while (!abortedRef.current) {
 				const { done, value } = await stderrReader.read();
 				if (done) break;
+				updateLastActivity();
 				stderrOutput += decoder.decode(value);
 			}
 		};
 
-		await Promise.all([readStdout(), readStderr()]);
+		try {
+			await Promise.all([readStdout(), readStderr()]);
+		} finally {
+			if (timeoutTimer) clearTimeout(timeoutTimer);
+			if (stuckCheckInterval) clearInterval(stuckCheckInterval);
+		}
 
 		const exitCode = await agentProcess.exited;
 		const isComplete = rawOutput.includes(COMPLETION_MARKER);
+
+		if (timeoutTriggered) {
+			const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1000 / 60)} minutes`;
+			logger.logAgentError(errorMessage, exitCode);
+			return {
+				success: false,
+				exitCode,
+				output: parsedOutput,
+				isComplete: false,
+				error: errorMessage,
+			};
+		}
+
+		if (stuckTriggered) {
+			const errorMessage = `Agent stuck (no output for ${Math.round(stuckThresholdMs / 1000 / 60)} minutes)`;
+			logger.logAgentError(errorMessage, exitCode);
+			return {
+				success: false,
+				exitCode,
+				output: parsedOutput,
+				isComplete: false,
+				error: errorMessage,
+			};
+		}
 
 		if (exitCode !== 0 && !isComplete) {
 			const errorMessage = stderrOutput || `Agent exited with code ${exitCode}`;

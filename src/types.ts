@@ -10,6 +10,8 @@ export interface RalphConfig {
 	maxRetries?: number;
 	retryDelayMs?: number;
 	logFilePath?: string;
+	agentTimeoutMs?: number;
+	stuckThresholdMs?: number;
 }
 
 export interface PrdTask {

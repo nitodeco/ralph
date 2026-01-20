@@ -47,7 +47,7 @@
 				"Add stuckThresholdMs config for no-output detection",
 				"Kill and retry agent if timeout or stuck threshold exceeded"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add notification system for completion and failures",

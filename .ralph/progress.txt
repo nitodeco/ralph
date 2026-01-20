@@ -32,3 +32,18 @@ Implementation:
 - Integrated logging in RunApp for iteration starts, completions, session starts, resumes, and max iterations
 - Each log entry includes ISO timestamp, log level, message, and optional context
 - Added helper functions: getLogger, createLogger, readLogFile, getRecentLogEntries
+
+Task 4: Implement agent timeout and watchdog functionality - COMPLETED
+
+Implementation:
+- Added agentTimeoutMs and stuckThresholdMs configuration options to RalphConfig in src/types.ts
+- Default timeout is 30 minutes (DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000)
+- Default stuck threshold is 5 minutes (DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000)
+- Implemented timeout wrapper in useAgent that kills agent process if it exceeds agentTimeoutMs
+- Added heartbeat detection that monitors stdout/stderr activity
+- Agent is killed and retried if no output for stuckThresholdMs duration
+- Stuck check runs at intervals of min(stuckThresholdMs/4, 30 seconds)
+- Both timeout and stuck errors are treated as retryable errors
+- Setting timeout or stuck threshold to 0 disables that feature
+- Added SetupWizard steps for configuring agent timeout and stuck threshold
+- Display timeout and stuck threshold settings in setup completion summary

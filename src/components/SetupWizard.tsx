@@ -11,7 +11,14 @@ interface SetupWizardProps {
 	onComplete?: () => void;
 }
 
-type SetupStep = "agent_type" | "prd_format" | "max_retries" | "retry_delay" | "complete";
+type SetupStep =
+	| "agent_type"
+	| "prd_format"
+	| "max_retries"
+	| "retry_delay"
+	| "agent_timeout"
+	| "stuck_threshold"
+	| "complete";
 
 interface SetupState {
 	step: SetupStep;
@@ -19,6 +26,8 @@ interface SetupState {
 	prdFormat: PrdFormat;
 	maxRetries: number;
 	retryDelayMs: number;
+	agentTimeoutMs: number;
+	stuckThresholdMs: number;
 }
 
 const AGENT_CHOICES = [
@@ -47,6 +56,22 @@ const RETRY_DELAY_CHOICES = [
 	{ label: "1 minute", value: 60000 },
 ];
 
+const AGENT_TIMEOUT_CHOICES = [
+	{ label: "10 minutes", value: 10 * 60 * 1000 },
+	{ label: "30 minutes (default)", value: 30 * 60 * 1000 },
+	{ label: "1 hour", value: 60 * 60 * 1000 },
+	{ label: "2 hours", value: 2 * 60 * 60 * 1000 },
+	{ label: "No timeout", value: 0 },
+];
+
+const STUCK_THRESHOLD_CHOICES = [
+	{ label: "2 minutes", value: 2 * 60 * 1000 },
+	{ label: "5 minutes (default)", value: 5 * 60 * 1000 },
+	{ label: "10 minutes", value: 10 * 60 * 1000 },
+	{ label: "30 minutes", value: 30 * 60 * 1000 },
+	{ label: "No stuck detection", value: 0 },
+];
+
 export function SetupWizard({ version, onComplete }: SetupWizardProps): React.ReactElement {
 	const { exit } = useApp();
 	const existingConfig = loadGlobalConfig();
@@ -65,6 +90,8 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 		prdFormat: existingConfig.prdFormat ?? "json",
 		maxRetries: existingConfig.maxRetries ?? 3,
 		retryDelayMs: existingConfig.retryDelayMs ?? 5000,
+		agentTimeoutMs: existingConfig.agentTimeoutMs ?? 30 * 60 * 1000,
+		stuckThresholdMs: existingConfig.stuckThresholdMs ?? 5 * 60 * 1000,
 	});
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
@@ -80,14 +107,24 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	};
 
 	const handleRetryDelaySelect = (item: { value: number }) => {
+		setState((prev) => ({ ...prev, retryDelayMs: item.value, step: "agent_timeout" }));
+	};
+
+	const handleAgentTimeoutSelect = (item: { value: number }) => {
+		setState((prev) => ({ ...prev, agentTimeoutMs: item.value, step: "stuck_threshold" }));
+	};
+
+	const handleStuckThresholdSelect = (item: { value: number }) => {
 		const newConfig: RalphConfig = {
 			agent: state.agentType,
 			prdFormat: state.prdFormat,
 			maxRetries: state.maxRetries,
-			retryDelayMs: item.value,
+			retryDelayMs: state.retryDelayMs,
+			agentTimeoutMs: state.agentTimeoutMs,
+			stuckThresholdMs: item.value,
 		};
 		saveGlobalConfig(newConfig);
-		setState((prev) => ({ ...prev, retryDelayMs: item.value, step: "complete" }));
+		setState((prev) => ({ ...prev, stuckThresholdMs: item.value, step: "complete" }));
 	};
 
 	useInput((_, key) => {
@@ -153,12 +190,53 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 					</Box>
 				);
 
+			case "agent_timeout":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">Maximum time for agent execution?</Text>
+						<Text dimColor>(Agent will be killed and retried if it exceeds this time)</Text>
+						<SelectInput
+							items={AGENT_TIMEOUT_CHOICES}
+							initialIndex={AGENT_TIMEOUT_CHOICES.findIndex(
+								(choice) => choice.value === state.agentTimeoutMs,
+							)}
+							onSelect={handleAgentTimeoutSelect}
+						/>
+					</Box>
+				);
+
+			case "stuck_threshold":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">How long to wait before considering agent stuck?</Text>
+						<Text dimColor>(Agent will be killed if no output for this duration)</Text>
+						<SelectInput
+							items={STUCK_THRESHOLD_CHOICES}
+							initialIndex={STUCK_THRESHOLD_CHOICES.findIndex(
+								(choice) => choice.value === state.stuckThresholdMs,
+							)}
+							onSelect={handleStuckThresholdSelect}
+						/>
+					</Box>
+				);
+
 			case "complete": {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 				const formatName = state.prdFormat.toUpperCase();
 				const retryDelayLabel =
 					RETRY_DELAY_CHOICES.find((choice) => choice.value === state.retryDelayMs)?.label ??
 					`${state.retryDelayMs}ms`;
+				const agentTimeoutLabel =
+					AGENT_TIMEOUT_CHOICES.find((choice) => choice.value === state.agentTimeoutMs)?.label ??
+					(state.agentTimeoutMs === 0
+						? "No timeout"
+						: `${Math.round(state.agentTimeoutMs / 60000)} minutes`);
+				const stuckThresholdLabel =
+					STUCK_THRESHOLD_CHOICES.find((choice) => choice.value === state.stuckThresholdMs)
+						?.label ??
+					(state.stuckThresholdMs === 0
+						? "No stuck detection"
+						: `${Math.round(state.stuckThresholdMs / 60000)} minutes`);
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">Setup complete!</Message>
@@ -174,6 +252,13 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 							</Text>
 							<Text>
 								<Text dimColor>Retry Delay:</Text> <Text color="yellow">{retryDelayLabel}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Agent Timeout:</Text> <Text color="yellow">{agentTimeoutLabel}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Stuck Threshold:</Text>{" "}
+								<Text color="yellow">{stuckThresholdLabel}</Text>
 							</Text>
 						</Box>
 						<Box marginTop={1}>
