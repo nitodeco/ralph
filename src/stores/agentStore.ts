@@ -9,12 +9,12 @@ import {
 	formatErrorCompact,
 	getErrorSuggestion,
 } from "@/lib/errors.ts";
+import { eventBus } from "@/lib/events.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
 import { AgentProcessManager } from "@/lib/services/index.ts";
-import { useAppStore } from "./appStore.ts";
 
 interface AgentState {
 	output: string;
@@ -27,7 +27,7 @@ interface AgentState {
 }
 
 interface AgentActions {
-	start: () => Promise<void>;
+	start: (specificTask?: string | null) => Promise<void>;
 	stop: () => void;
 	reset: () => void;
 	setOutput: (output: string) => void;
@@ -337,7 +337,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		set({ output: truncatedOutput });
 	},
 
-	start: async () => {
+	start: async (specificTask?: string | null) => {
 		AgentProcessManager.setAborted(false);
 		AgentProcessManager.resetRetry();
 
@@ -362,11 +362,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const maxRetries = config.maxRetries ?? 3;
 		const retryDelayMs = config.retryDelayMs ?? 5000;
 
-		const appStore = useAppStore.getState();
-		const specificTask = appStore.getEffectiveNextTask();
-		if (specificTask && appStore.manualNextTask) {
-			appStore.clearManualNextTask();
-		}
+		eventBus.emit("agent:start", { agentType: config.agent });
 
 		try {
 			while (
@@ -382,6 +378,14 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						exitCode: result.exitCode,
 						retryCount: AgentProcessManager.getRetryCount(),
 					});
+					if (!AgentProcessManager.isAborted()) {
+						eventBus.emit("agent:complete", {
+							isComplete: result.isComplete,
+							exitCode: result.exitCode,
+							output: result.output,
+							retryCount: AgentProcessManager.getRetryCount(),
+						});
+					}
 					break;
 				}
 
@@ -403,6 +407,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						exitCode: result.exitCode,
 						retryCount: AgentProcessManager.getRetryCount(),
 					});
+					eventBus.emit("agent:error", {
+						error: errorWithSuggestion,
+						exitCode: result.exitCode,
+						isFatal: true,
+					});
 					break;
 				}
 
@@ -411,6 +420,12 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 					const delay = calculateRetryDelay(retryDelayMs, currentRetryCount - 1);
 
 					logger.logAgentRetry(currentRetryCount, maxRetries, delay);
+
+					eventBus.emit("agent:retry", {
+						retryCount: currentRetryCount,
+						maxRetries,
+						delayMs: delay,
+					});
 
 					set({
 						isRetrying: true,
@@ -453,6 +468,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						exitCode: result.exitCode,
 						retryCount: AgentProcessManager.getRetryCount(),
 					});
+					eventBus.emit("agent:error", {
+						error: errorMessage,
+						exitCode: result.exitCode,
+						isFatal: true,
+					});
 					break;
 				}
 			}
@@ -463,6 +483,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 				isStreaming: false,
 				error: errorMessage,
 				retryCount: AgentProcessManager.getRetryCount(),
+			});
+			eventBus.emit("agent:error", {
+				error: errorMessage,
+				exitCode: null,
+				isFatal: true,
 			});
 		} finally {
 			AgentProcessManager.setProcess(null);

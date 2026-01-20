@@ -80,7 +80,7 @@
 				"Remove direct useXStore.getState() calls from agentStore and iterationStore (keep only in orchestrator)",
 				"Update src/stores/appStore.ts to emit events for session lifecycle instead of directly manipulating other stores"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Consolidate session lifecycle management in orchestrator",

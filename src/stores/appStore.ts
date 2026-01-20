@@ -3,6 +3,7 @@ import { performSessionArchive } from "@/lib/archive.ts";
 import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
+import { eventBus } from "@/lib/events.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { RALPH_DIR } from "@/lib/paths.ts";
@@ -207,6 +208,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		logger.logSessionStart(totalIters, taskIndex);
 		initializeProgressFile();
 
+		eventBus.emit("session:start", { totalIterations: totalIters, taskIndex });
+
 		set({
 			appState: "running",
 			elapsedTime: 0,
@@ -291,6 +294,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		logger.logSessionStart(1, currentTaskIndex);
 		initializeProgressFile();
 
+		eventBus.emit("session:start", { totalIterations: 1, taskIndex: currentTaskIndex });
+
 		set({
 			appState: "running",
 			elapsedTime: 0,
@@ -351,6 +356,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			state.pendingSession.elapsedTimeSeconds,
 		);
 
+		eventBus.emit("session:resume", {
+			currentIteration: state.pendingSession.currentIteration,
+			totalIterations: state.pendingSession.totalIterations,
+			elapsedTimeSeconds: state.pendingSession.elapsedTimeSeconds,
+		});
+
 		set({
 			appState: "running",
 			elapsedTime: state.pendingSession.elapsedTimeSeconds,
@@ -373,6 +384,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 				saveSession(stoppedSession);
 				set({ currentSession: stoppedSession });
 			}
+			eventBus.emit("session:stop", { reason: "user_stop" });
 			set({ appState: "idle" });
 		}
 	},
@@ -423,6 +435,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			saveSession(stoppedSession);
 			set({ currentSession: stoppedSession });
 		}
+		eventBus.emit("session:stop", { reason: "fatal_error" });
 		set({ appState: "error" });
 	},
 

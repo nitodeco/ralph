@@ -82,3 +82,25 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Introduce event bus to decouple stores
+Date: 2026-01-20
+
+Changes made:
+- Created src/lib/events.ts with typed EventEmitter class supporting events: agent:start, agent:complete, agent:error, agent:retry, iteration:start, iteration:complete, iteration:delay, session:start, session:resume, session:stop, session:complete
+- Defined event payload types for each event (AgentCompleteEvent, AgentErrorEvent, IterationStartEvent, etc.)
+- Exported singleton eventBus instance from events.ts
+- Updated src/stores/agentStore.ts to emit agent events (agent:start, agent:complete, agent:error, agent:retry) instead of directly calling useAppStore.getState()
+- Updated agentStore.start() to accept optional specificTask parameter instead of fetching from appStore
+- Updated src/stores/iterationStore.ts to emit iteration events (iteration:start, iteration:complete, iteration:delay)
+- Updated src/stores/orchestrator.ts to subscribe to event bus for agent:complete and agent:error events
+- Orchestrator now coordinates agent start by calling agentStore.start(specificTask) in onIterationStart callback
+- Updated src/stores/appStore.ts to emit session lifecycle events (session:start, session:resume, session:stop)
+- Removed direct useAppStore.getState() call from agentStore (now only orchestrator coordinates between stores)
+- Removed agent start useEffect from RunApp.tsx (orchestrator now handles agent lifecycle)
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

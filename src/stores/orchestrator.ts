@@ -1,4 +1,5 @@
 import { loadConfig } from "@/lib/config.ts";
+import { eventBus } from "@/lib/events.ts";
 import {
 	appendIterationError,
 	completeIterationLog,
@@ -59,24 +60,18 @@ class SessionOrchestrator {
 	}
 
 	private setupSubscriptions(): void {
-		let previousAgentState = {
-			isStreaming: useAgentStore.getState().isStreaming,
-			exitCode: useAgentStore.getState().exitCode,
-			isComplete: useAgentStore.getState().isComplete,
-		};
+		this.unsubscribers.push(
+			eventBus.on("agent:complete", (event) => {
+				this.handleAgentComplete(event.isComplete);
+			}),
+		);
 
 		this.unsubscribers.push(
-			useAgentStore.subscribe((state) => {
-				const current = {
-					isStreaming: state.isStreaming,
-					exitCode: state.exitCode,
-					isComplete: state.isComplete,
-				};
-				const shouldComplete =
-					previousAgentState.isStreaming && !current.isStreaming && current.exitCode !== null;
-				previousAgentState = current;
-				if (shouldComplete) {
-					this.handleAgentComplete(current.isComplete);
+			eventBus.on("agent:error", (event) => {
+				if (event.isFatal) {
+					const appState = useAppStore.getState();
+					this.handleFatalError(event.error, appState.prd, appState.currentSession);
+					useAppStore.setState({ appState: "error" });
 				}
 			}),
 		);
@@ -127,6 +122,12 @@ class SessionOrchestrator {
 						: null,
 					agentType: loadedConfig.agent,
 				});
+
+				const specificTask = appState.getEffectiveNextTask();
+				if (specificTask && appState.manualNextTask) {
+					appState.clearManualNextTask();
+				}
+				useAgentStore.getState().start(specificTask);
 			},
 			onIterationComplete: (iterationNumber: number) => {
 				const appState = useAppStore.getState();
@@ -196,6 +197,7 @@ class SessionOrchestrator {
 					deleteSession();
 					useAppStore.setState({ currentSession: null });
 				}
+				eventBus.emit("session:complete", { totalIterations: iterations });
 				useAppStore.setState({ appState: "complete" });
 			},
 			onMaxIterations: () => {
@@ -215,6 +217,7 @@ class SessionOrchestrator {
 					saveSession(stoppedSession);
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
+				eventBus.emit("session:stop", { reason: "max_iterations" });
 				useAppStore.setState({ appState: "max_iterations" });
 			},
 			onMaxRuntime: () => {
@@ -238,6 +241,7 @@ class SessionOrchestrator {
 					saveSession(stoppedSession);
 					useAppStore.setState({ currentSession: stoppedSession });
 				}
+				eventBus.emit("session:stop", { reason: "max_runtime" });
 				useAppStore.setState({ appState: "max_runtime" });
 			},
 		});
@@ -315,6 +319,7 @@ class SessionOrchestrator {
 		}
 		this.unsubscribers = [];
 		this.initialized = false;
+		eventBus.removeAllListeners();
 	}
 }
 

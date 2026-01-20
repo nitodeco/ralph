@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { DEFAULTS } from "@/lib/defaults.ts";
+import { eventBus } from "@/lib/events.ts";
 import { IterationTimer } from "@/lib/services/index.ts";
 
 interface IterationState {
@@ -103,6 +104,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 			isPaused: false,
 			startTime,
 		});
+		eventBus.emit("iteration:start", { iteration: 1, totalIterations: state.total });
 		get().callbacks.onIterationStart?.(1);
 	},
 
@@ -154,6 +156,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		}
 
 		const nextIteration = state.current + 1;
+		eventBus.emit("iteration:start", { iteration: nextIteration, totalIterations: state.total });
 		state.callbacks.onIterationStart?.(nextIteration);
 
 		set({
@@ -165,6 +168,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 	markIterationComplete: (isProjectComplete: boolean) => {
 		const state = get();
 		IterationTimer.setProjectComplete(isProjectComplete);
+		eventBus.emit("iteration:complete", { iteration: state.current, isProjectComplete });
 		state.callbacks.onIterationComplete?.(state.current);
 
 		if (isProjectComplete) {
@@ -186,6 +190,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		}
 
 		set({ isDelaying: true });
+		eventBus.emit("iteration:delay", { iteration: state.current, delayMs: state.delayMs });
 
 		IterationTimer.scheduleNext(state.delayMs, () => {
 			get().next();
