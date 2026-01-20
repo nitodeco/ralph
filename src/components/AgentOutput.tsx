@@ -52,26 +52,25 @@ export function AgentOutput({
 				</Box>
 			)}
 
-			<Static items={completedLines}>
-				{(line) => (
-					<Text key={line.id} wrap="wrap">
-						{line.content}
-					</Text>
-				)}
-			</Static>
-
-			{currentLine && (
-				<Text wrap="wrap">
-					{currentLine.content}
-					{isStreaming && <Text color="cyan">▌</Text>}
+		<Static items={completedLines}>
+			{(line) => (
+				<Text key={line.id} wrap="wrap" dimColor={isStreaming}>
+					{line.content}
 				</Text>
 			)}
+		</Static>
 
-			{isStreaming && !output && !isRetrying && (
-				<Box>
-					<Spinner label="Starting agent..." />
-				</Box>
-			)}
+		{currentLine && (
+			<Text wrap="wrap" dimColor>
+				{currentLine.content}
+			</Text>
+		)}
+
+		{isStreaming && !output && !isRetrying && (
+			<Box>
+				<Text dimColor>Starting agent...</Text>
+			</Box>
+		)}
 		</Box>
 	);
 }

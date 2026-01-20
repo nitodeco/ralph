@@ -120,6 +120,7 @@ export function useAgent(): UseAgentReturn {
 		success: boolean;
 		exitCode: number | null;
 		output: string;
+		isComplete: boolean;
 		error?: string;
 	}> => {
 		const prompt = buildPrompt();
@@ -184,10 +185,10 @@ export function useAgent(): UseAgentReturn {
 
 		if (exitCode !== 0 && !isComplete) {
 			const errorMessage = stderrOutput || `Agent exited with code ${exitCode}`;
-			return { success: false, exitCode, output: parsedOutput, error: errorMessage };
+			return { success: false, exitCode, output: parsedOutput, isComplete, error: errorMessage };
 		}
 
-		return { success: true, exitCode, output: parsedOutput };
+		return { success: true, exitCode, output: parsedOutput, isComplete };
 	}, []);
 
 	const start = useCallback(async () => {
@@ -207,17 +208,16 @@ export function useAgent(): UseAgentReturn {
 			while (retryCountRef.current <= maxRetries && !abortedRef.current) {
 				const result = await runAgent();
 
-				if (result.success || abortedRef.current) {
-					const isComplete = result.output.includes(COMPLETION_MARKER);
-					setState((prev) => ({
-						...prev,
-						isStreaming: false,
-						isComplete,
-						exitCode: result.exitCode,
-						retryCount: retryCountRef.current,
-					}));
-					break;
-				}
+			if (result.success || abortedRef.current) {
+				setState((prev) => ({
+					...prev,
+					isStreaming: false,
+					isComplete: result.isComplete,
+					exitCode: result.exitCode,
+					retryCount: retryCountRef.current,
+				}));
+				break;
+			}
 
 				const categorizedError = categorizeError(result.error ?? "", result.exitCode);
 

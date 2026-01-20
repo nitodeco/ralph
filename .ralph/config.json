@@ -1,5 +1,7 @@
 {
 	"agent": "cursor",
 	"prdFormat": "json",
-	"lastUpdateCheck": 1768871160836
+	"maxRetries": 3,
+	"retryDelayMs": 5000,
+	"lastUpdateCheck": 1768872777026
 }
