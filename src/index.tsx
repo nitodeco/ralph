@@ -17,7 +17,7 @@ interface ParsedArgs {
 
 function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
-	const command = (relevantArgs[0] ?? "help") as Command;
+	const command = (relevantArgs[0] ?? "run") as Command;
 
 	let iterations = 10;
 	if (command === "run" && relevantArgs[1]) {
@@ -37,19 +37,19 @@ function printHelp(): void {
 A CLI tool for long-running PRD-driven development with AI coding agents
 
 Usage:
-  ralph <command> [options]
+  ralph [iterations]      Run the agent loop (default: 10 iterations)
+  ralph <command>
 
 Commands:
-  run [iterations]  Run the agent loop (default: 10 iterations)
   init              Initialize a new PRD project
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
 Examples:
+  ralph             Run 10 iterations
+  ralph 5           Run 5 iterations
   ralph init        Create a new PRD project
-  ralph run         Run 10 iterations
-  ralph run 5       Run 5 iterations
   ralph update      Check for and install updates
 `);
 }
