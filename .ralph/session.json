@@ -1,19 +1,26 @@
 {
-	"startTime": 1768918670930,
-	"lastUpdateTime": 1768920233515,
+	"startTime": 1768921188115,
+	"lastUpdateTime": 1768921494841,
 	"currentIteration": 1,
-	"totalIterations": 5,
+	"totalIterations": 2,
 	"currentTaskIndex": 1,
 	"status": "running",
-	"elapsedTimeSeconds": 379,
+	"elapsedTimeSeconds": 301,
 	"statistics": {
-		"totalIterations": 5,
-		"completedIterations": 0,
-		"failedIterations": 0,
-		"successfulIterations": 0,
-		"totalDurationMs": 0,
-		"averageDurationMs": 0,
-		"successRate": 0,
-		"iterationTimings": []
+		"totalIterations": 2,
+		"completedIterations": 9838,
+		"failedIterations": 5065,
+		"successfulIterations": 4773,
+		"totalDurationMs": 3002742661,
+		"averageDurationMs": 305218.8108355357,
+		"successRate": 48.515958528156126,
+		"iterationTimings": [
+			{
+				"iteration": 1,
+				"startTime": 1768921188119,
+				"endTime": 1768921494841,
+				"durationMs": 306722
+			}
+		]
 	}
 }

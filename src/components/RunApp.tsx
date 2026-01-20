@@ -68,13 +68,10 @@ export function RunApp({
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
-	const agentStart = useAgentStore((state) => state.start);
 	const agentStop = useAgentStore((state) => state.stop);
 
 	const iterationCurrent = useIterationStore((state) => state.current);
 	const iterationTotal = useIterationStore((state) => state.total);
-	const iterationIsRunning = useIterationStore((state) => state.isRunning);
-	const iterationIsDelaying = useIterationStore((state) => state.isDelaying);
 	const iterationIsPaused = useIterationStore((state) => state.isPaused);
 	const iterationPause = useIterationStore((state) => state.pause);
 	const iterationResume = useIterationStore((state) => state.resume);
@@ -206,12 +203,6 @@ export function RunApp({
 		setManualNextTask,
 		dryRun,
 	]);
-
-	useEffect(() => {
-		if (iterationIsRunning && iterationCurrent > 0 && !agentIsStreaming && !iterationIsDelaying) {
-			agentStart();
-		}
-	}, [iterationIsRunning, iterationCurrent, iterationIsDelaying, agentIsStreaming, agentStart]);
 
 	useEffect(() => {
 		if (appState !== "running" || activeView !== "run") return;
