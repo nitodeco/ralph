@@ -1,4 +1,4 @@
-export type AgentType = "cursor" | "claude";
+export type AgentType = "cursor" | "claude" | "codex";
 
 export type PrdFormat = "json" | "yaml";
 

@@ -140,7 +140,7 @@
 				"Update the agent name display logic in SetupWizard.tsx completion screen to handle 'codex' type",
 				"Test agent selection, configuration saving, and agent invocation with Codex"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement dynamic prompt guardrail system",

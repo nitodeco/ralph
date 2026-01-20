@@ -160,3 +160,21 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Add Codex agent support
+Date: 2026-01-20
+
+Changes made:
+- Added 'codex' to the AgentType union type in src/types/config.types.ts
+- Added 'codex' to VALID_AGENTS array in src/lib/config/constants.ts
+- Added Codex CLI command configuration to AGENT_COMMANDS: ['codex', '-q', '--approval-mode', 'full-auto']
+- Added Codex option to AGENT_CHOICES in src/components/SetupWizard.tsx
+- Updated agent name display logic in SetupWizard.tsx completion screen to use a Record<AgentType, string> map
+- Updated AGENT_DISPLAY_NAMES in src/components/Header.tsx to include 'codex'
+- Fixed IterationLogAgent type in src/types/session.types.ts to use AgentType instead of hardcoded union
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

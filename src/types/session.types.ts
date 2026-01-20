@@ -1,3 +1,5 @@
+import type { AgentType } from "./config.types.ts";
+
 export type SessionStatus = "running" | "paused" | "stopped" | "completed";
 
 export interface IterationTiming {
@@ -38,7 +40,7 @@ export interface IterationLogTask {
 }
 
 export interface IterationLogAgent {
-	type: "cursor" | "claude";
+	type: AgentType;
 	exitCode: number | null;
 	retryCount: number;
 	outputLength: number;

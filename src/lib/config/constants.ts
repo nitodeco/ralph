@@ -30,7 +30,7 @@ export const DEFAULT_CONFIG: RalphConfig = {
 	retryDelayMs: DEFAULTS.retryDelayMs,
 };
 
-export const VALID_AGENTS: AgentType[] = ["cursor", "claude"];
+export const VALID_AGENTS: AgentType[] = ["cursor", "claude", "codex"];
 export const VALID_PRD_FORMATS: PrdFormat[] = ["json", "yaml"];
 
 export const DEFAULT_AGENT_TIMEOUT_MS = DEFAULTS.agentTimeoutMs;
@@ -42,4 +42,5 @@ export const DEFAULT_ENABLE_GC_HINTS = DEFAULTS.enableGcHints;
 export const AGENT_COMMANDS: Record<AgentType, string[]> = {
 	cursor: ["agent", "-p", "--force", "--output-format", "stream-json", "--stream-partial-output"],
 	claude: ["claude", "-p", "--dangerously-skip-permissions"],
+	codex: ["codex", "-q", "--approval-mode", "full-auto"],
 };

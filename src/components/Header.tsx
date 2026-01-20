@@ -10,6 +10,7 @@ interface HeaderProps {
 const AGENT_DISPLAY_NAMES: Record<AgentType, string> = {
 	cursor: "Cursor",
 	claude: "Claude Code",
+	codex: "Codex",
 };
 
 export function Header({ version, agent, projectName }: HeaderProps): React.ReactElement {
