@@ -2,6 +2,7 @@ import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { useDryRun } from "@/hooks/index.ts";
 import {
+	orchestrator,
 	setupIterationCallbacks,
 	useAgentStore,
 	useAppStore,
@@ -223,6 +224,12 @@ export function RunApp({
 			handleFatalError(agentError);
 		}
 	}, [agentError, appState, handleFatalError]);
+
+	useEffect(() => {
+		return () => {
+			orchestrator.cleanup();
+		};
+	}, []);
 
 	if (activeView === "init")
 		return <InitWizard version={version} onComplete={handleViewComplete} />;

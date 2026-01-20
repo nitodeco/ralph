@@ -122,9 +122,55 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function createThrottledFunction<T extends (arg: string) => void>(
+	func: T,
+	limitMs: number,
+): { throttled: T; flush: () => void } {
+	let lastRun = 0;
+	let pendingArg: string | null = null;
+	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+	const throttled = ((arg: string) => {
+		const now = Date.now();
+		if (now - lastRun >= limitMs) {
+			lastRun = now;
+			func(arg);
+		} else {
+			pendingArg = arg;
+			if (!timeoutId) {
+				timeoutId = setTimeout(
+					() => {
+						if (pendingArg !== null) {
+							lastRun = Date.now();
+							func(pendingArg);
+							pendingArg = null;
+						}
+						timeoutId = null;
+					},
+					limitMs - (now - lastRun),
+				);
+			}
+		}
+	}) as T;
+
+	const flush = () => {
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+			timeoutId = null;
+		}
+		if (pendingArg !== null) {
+			func(pendingArg);
+			pendingArg = null;
+		}
+	};
+
+	return { throttled, flush };
+}
+
 let processRef: Subprocess | null = null;
 let abortedRef = false;
 let retryCountRef = 0;
+let forceKillTimeoutRef: ReturnType<typeof setTimeout> | null = null;
 
 interface RunAgentOptions {
 	setOutput: (output: string) => void;
@@ -146,6 +192,11 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	const baseCommand = getAgentCommand(config.agent);
 	const agentTimeoutMs = config.agentTimeoutMs ?? DEFAULTS.agentTimeoutMs;
 	const stuckThresholdMs = config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs;
+
+	const { throttled: throttledSetOutput, flush: flushOutput } = createThrottledFunction(
+		setOutput,
+		100,
+	);
 
 	logger.logAgentStart(config.agent, prompt);
 
@@ -228,7 +279,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 				if (parsedText && parsedText !== lastParsedText) {
 					lastParsedText = parsedText;
 					parsedOutput = parsedText;
-					setOutput(parsedOutput);
+					throttledSetOutput(parsedOutput);
 				}
 			}
 		}
@@ -248,6 +299,7 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	} finally {
 		if (timeoutTimer) clearTimeout(timeoutTimer);
 		if (stuckCheckInterval) clearInterval(stuckCheckInterval);
+		flushOutput();
 	}
 
 	const exitCode = await agentProcess.exited;
@@ -430,8 +482,24 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 	stop: () => {
 		abortedRef = true;
+		if (forceKillTimeoutRef) {
+			clearTimeout(forceKillTimeoutRef);
+			forceKillTimeoutRef = null;
+		}
 		if (processRef) {
-			processRef.kill();
+			const processToKill = processRef;
+			try {
+				processToKill.kill("SIGTERM");
+			} catch {}
+			forceKillTimeoutRef = setTimeout(() => {
+				if (processRef === processToKill) {
+					try {
+						processToKill.kill("SIGKILL");
+					} catch {}
+					processRef = null;
+				}
+				forceKillTimeoutRef = null;
+			}, 500);
 			processRef = null;
 		}
 		set({

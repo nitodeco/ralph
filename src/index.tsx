@@ -25,7 +25,7 @@ import {
 	writePidFile,
 } from "@/lib/daemon.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
-import { useAgentStore } from "@/stores/agentStore.ts";
+import { orchestrator, useAgentStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
 
@@ -104,6 +104,7 @@ function main(): void {
 
 	setShutdownHandler({
 		onShutdown: () => {
+			orchestrator.cleanup();
 			const agentStore = useAgentStore.getState();
 			agentStore.stop();
 		},
