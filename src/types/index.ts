@@ -27,6 +27,7 @@ export type {
 	IterationLog,
 	IterationLogAgent,
 	IterationLogError,
+	IterationLogRetryContext,
 	IterationLogStatus,
 	IterationLogsIndex,
 	IterationLogsIndexEntry,

@@ -30,6 +30,7 @@ export interface RalphConfig {
 	memory?: MemoryConfig;
 	maxOutputHistoryBytes?: number;
 	maxRuntimeMs?: number;
+	retryWithContext?: boolean;
 }
 
 export interface ConfigValidationError {

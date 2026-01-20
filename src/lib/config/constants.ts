@@ -21,6 +21,7 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 	},
 	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
 	maxRuntimeMs: 0,
+	retryWithContext: DEFAULTS.retryWithContext,
 };
 
 export const DEFAULT_CONFIG: RalphConfig = {

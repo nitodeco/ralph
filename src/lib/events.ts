@@ -1,3 +1,6 @@
+import type { IterationLogRetryContext } from "@/types.ts";
+import type { FailureAnalysis } from "./failure-analyzer.ts";
+
 export interface AgentStartEvent {
 	agentType: string;
 }
@@ -7,18 +10,21 @@ export interface AgentCompleteEvent {
 	exitCode: number | null;
 	output: string;
 	retryCount: number;
+	retryContexts?: IterationLogRetryContext[];
 }
 
 export interface AgentErrorEvent {
 	error: string;
 	exitCode: number | null;
 	isFatal: boolean;
+	retryContexts?: IterationLogRetryContext[];
 }
 
 export interface AgentRetryEvent {
 	retryCount: number;
 	maxRetries: number;
 	delayMs: number;
+	failureAnalysis?: FailureAnalysis;
 }
 
 export interface IterationStartEvent {

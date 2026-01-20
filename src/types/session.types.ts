@@ -39,11 +39,19 @@ export interface IterationLogTask {
 	wasCompleted: boolean;
 }
 
+export interface IterationLogRetryContext {
+	attemptNumber: number;
+	failureCategory: string;
+	rootCause: string;
+	contextInjected: string;
+}
+
 export interface IterationLogAgent {
 	type: AgentType;
 	exitCode: number | null;
 	retryCount: number;
 	outputLength: number;
+	retryContexts?: IterationLogRetryContext[];
 }
 
 export interface IterationLogError {

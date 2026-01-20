@@ -10,11 +10,17 @@ import {
 	getErrorSuggestion,
 } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
+import {
+	analyzeFailure,
+	type FailureAnalysis,
+	generateRetryContext,
+} from "@/lib/failure-analyzer.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
 import { AgentProcessManager } from "@/lib/services/index.ts";
+import type { IterationLogRetryContext } from "@/types.ts";
 
 interface AgentState {
 	output: string;
@@ -161,6 +167,7 @@ function createThrottledFunction<T extends (arg: string) => void>(
 interface RunAgentOptions {
 	setOutput: (output: string) => void;
 	specificTask?: string | null;
+	additionalContext?: string | null;
 }
 
 async function runAgentInternal(options: RunAgentOptions): Promise<{
@@ -170,9 +177,13 @@ async function runAgentInternal(options: RunAgentOptions): Promise<{
 	isComplete: boolean;
 	error?: string;
 }> {
-	const { setOutput, specificTask } = options;
+	const { setOutput, specificTask, additionalContext } = options;
 	const instructions = loadInstructions();
-	const prompt = buildPrompt({ instructions, specificTask });
+	let prompt = buildPrompt({ instructions, specificTask });
+
+	if (additionalContext) {
+		prompt = `${prompt}\n\n${additionalContext}`;
+	}
 	const config = loadConfig();
 	const logger = getLogger({ logFilePath: config.logFilePath });
 	const baseCommand = getAgentCommand(config.agent);
@@ -361,6 +372,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const logger = getLogger({ logFilePath: config.logFilePath });
 		const maxRetries = config.maxRetries ?? 3;
 		const retryDelayMs = config.retryDelayMs ?? 5000;
+		const retryWithContext = config.retryWithContext ?? DEFAULTS.retryWithContext;
+
+		const retryContexts: IterationLogRetryContext[] = [];
+		let currentRetryContext: string | null = null;
 
 		eventBus.emit("agent:start", { agentType: config.agent });
 
@@ -369,7 +384,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 				AgentProcessManager.getRetryCount() <= maxRetries &&
 				!AgentProcessManager.isAborted()
 			) {
-				const result = await runAgentInternal({ setOutput: get().setOutput, specificTask });
+				const result = await runAgentInternal({
+					setOutput: get().setOutput,
+					specificTask,
+					additionalContext: currentRetryContext,
+				});
 
 				if (result.success || AgentProcessManager.isAborted()) {
 					set({
@@ -384,6 +403,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 							exitCode: result.exitCode,
 							output: result.output,
 							retryCount: AgentProcessManager.getRetryCount(),
+							retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 						});
 					}
 					break;
@@ -411,6 +431,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						error: errorWithSuggestion,
 						exitCode: result.exitCode,
 						isFatal: true,
+						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 					});
 					break;
 				}
@@ -419,12 +440,35 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 					const currentRetryCount = AgentProcessManager.incrementRetry();
 					const delay = calculateRetryDelay(retryDelayMs, currentRetryCount - 1);
 
+					let failureAnalysis: FailureAnalysis | null = null;
+					if (retryWithContext) {
+						failureAnalysis = analyzeFailure(result.error ?? "", result.output, result.exitCode);
+
+						currentRetryContext = generateRetryContext(failureAnalysis, currentRetryCount);
+
+						const retryContextEntry: IterationLogRetryContext = {
+							attemptNumber: currentRetryCount,
+							failureCategory: failureAnalysis.category,
+							rootCause: failureAnalysis.rootCause,
+							contextInjected: currentRetryContext,
+						};
+						retryContexts.push(retryContextEntry);
+
+						logger.info("Failure analysis for retry", {
+							attemptNumber: currentRetryCount,
+							category: failureAnalysis.category,
+							rootCause: failureAnalysis.rootCause,
+							suggestedApproach: failureAnalysis.suggestedApproach,
+						});
+					}
+
 					logger.logAgentRetry(currentRetryCount, maxRetries, delay);
 
 					eventBus.emit("agent:retry", {
 						retryCount: currentRetryCount,
 						maxRetries,
 						delayMs: delay,
+						failureAnalysis: failureAnalysis ?? undefined,
 					});
 
 					set({
@@ -472,6 +516,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						error: errorMessage,
 						exitCode: result.exitCode,
 						isFatal: true,
+						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 					});
 					break;
 				}
@@ -488,6 +533,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 				error: errorMessage,
 				exitCode: null,
 				isFatal: true,
+				retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 			});
 		} finally {
 			AgentProcessManager.setProcess(null);

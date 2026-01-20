@@ -11,6 +11,7 @@ import type {
 	AgentType,
 	IterationLog,
 	IterationLogError,
+	IterationLogRetryContext,
 	IterationLogStatus,
 	IterationLogsIndex,
 	IterationLogTask,
@@ -143,10 +144,12 @@ export interface CompleteIterationLogOptions {
 	retryCount: number;
 	outputLength: number;
 	taskWasCompleted: boolean;
+	retryContexts?: IterationLogRetryContext[];
 }
 
 export function completeIterationLog(options: CompleteIterationLogOptions): void {
-	const { iteration, status, exitCode, retryCount, outputLength, taskWasCompleted } = options;
+	const { iteration, status, exitCode, retryCount, outputLength, taskWasCompleted, retryContexts } =
+		options;
 
 	const log = loadIterationLog(iteration);
 	if (!log) {
@@ -163,6 +166,10 @@ export function completeIterationLog(options: CompleteIterationLogOptions): void
 	log.agent.exitCode = exitCode;
 	log.agent.retryCount = retryCount;
 	log.agent.outputLength = outputLength;
+
+	if (retryContexts && retryContexts.length > 0) {
+		log.agent.retryContexts = retryContexts;
+	}
 
 	if (log.task) {
 		log.task.wasCompleted = taskWasCompleted;

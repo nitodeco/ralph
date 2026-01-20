@@ -205,3 +205,27 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Implement adaptive retry with failure context injection
+Date: 2026-01-20
+
+Changes made:
+- Created src/lib/failure-analyzer.ts with FailureAnalysis interface and analyzeFailure() function that categorizes failures and generates recovery suggestions
+- Implemented failure pattern detection for: build_failure, test_failure, lint_error, permission_error, timeout, stuck, network_error, syntax_error, dependency_error, unknown
+- Created generateRetryContext() function that formats context injection for the prompt with attempt number, failure category, root cause, and suggested approach
+- Updated runAgentInternal() in src/stores/agentStore.ts to accept optional additionalContext parameter that gets appended to the prompt
+- Modified retry loop in agentStore.start() to call analyzeFailure() on failure, generate retry context, and pass it to subsequent runAgentInternal() calls
+- Added IterationLogRetryContext interface to src/types/session.types.ts with fields: attemptNumber, failureCategory, rootCause, contextInjected
+- Added retryContexts field to IterationLogAgent interface to track retry context history
+- Updated AgentCompleteEvent, AgentErrorEvent, and AgentRetryEvent in src/lib/events.ts to include retry context information
+- Updated completeIterationLog() in src/lib/iteration-logs.ts to accept and store retryContexts
+- Updated orchestrator to capture retry contexts from agent events and pass them to iteration logs
+- Added logRetryContextsToProgress() in orchestrator to log retry analysis to progress.txt
+- Added retryWithContext config option (boolean, default true) to RalphConfig to enable/disable adaptive retry
+- Updated CONFIG_DEFAULTS in constants.ts, ConfigService.ts, and loader.ts to include retryWithContext
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

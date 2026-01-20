@@ -13,6 +13,7 @@ export const DEFAULTS = {
 	logFilePath: ".ralph/ralph.log",
 	iterationDelayMs: 2000,
 	iterations: 10,
+	retryWithContext: true,
 } as const;
 
 export const DEFAULT_GUARDRAILS: PromptGuardrail[] = [

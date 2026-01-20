@@ -28,6 +28,7 @@ const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersi
 	},
 	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
 	maxRuntimeMs: 0,
+	retryWithContext: DEFAULTS.retryWithContext,
 };
 
 const DEFAULT_CONFIG: RalphConfig = {
@@ -55,6 +56,7 @@ function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 			: defaults.notifications,
 		memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
 		maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
+		retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
 	};
 }
 

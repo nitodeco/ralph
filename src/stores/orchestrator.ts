@@ -1,4 +1,5 @@
 import { loadConfig } from "@/lib/config.ts";
+import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
 import {
 	appendIterationError,
@@ -11,7 +12,7 @@ import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
-import { initializeProgressFile } from "@/lib/progress.ts";
+import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
 	deleteSession,
@@ -26,7 +27,13 @@ import {
 	displayStatisticsReport,
 	logStatisticsToProgress,
 } from "@/lib/statistics.ts";
-import type { IterationLogStatus, Prd, RalphConfig, Session } from "@/types.ts";
+import type {
+	IterationLogRetryContext,
+	IterationLogStatus,
+	Prd,
+	RalphConfig,
+	Session,
+} from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
@@ -53,6 +60,7 @@ class SessionOrchestrator {
 	private maxRuntimeMs: number | undefined = undefined;
 	private unsubscribers: (() => void)[] = [];
 	private initialized = false;
+	private lastRetryContexts: IterationLogRetryContext[] = [];
 
 	initialize(options: OrchestratorConfig): void {
 		if (this.initialized) {
@@ -63,6 +71,7 @@ class SessionOrchestrator {
 		this.iterations = options.iterations;
 		this.maxRuntimeMs = options.maxRuntimeMs;
 		this.initialized = true;
+		this.lastRetryContexts = [];
 		this.setupSubscriptions();
 
 		const iterationStore = useIterationStore.getState();
@@ -72,12 +81,15 @@ class SessionOrchestrator {
 	private setupSubscriptions(): void {
 		this.unsubscribers.push(
 			eventBus.on("agent:complete", (event) => {
-				this.handleAgentComplete(event.isComplete);
+				this.handleAgentComplete(event);
 			}),
 		);
 
 		this.unsubscribers.push(
 			eventBus.on("agent:error", (event) => {
+				if (event.retryContexts) {
+					this.lastRetryContexts = event.retryContexts;
+				}
 				if (event.isFatal) {
 					const appState = useAppStore.getState();
 					this.handleFatalError(event.error, appState.prd, appState.currentSession);
@@ -87,7 +99,12 @@ class SessionOrchestrator {
 		);
 	}
 
-	private handleAgentComplete(_agentClaimsComplete: boolean): void {
+	private handleAgentComplete(event: AgentCompleteEvent): void {
+		if (event.retryContexts) {
+			this.lastRetryContexts = event.retryContexts;
+			this.logRetryContextsToProgress(event.retryContexts);
+		}
+
 		const currentPrd = reloadPrd();
 		const allTasksActuallyDone = currentPrd
 			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
@@ -95,6 +112,20 @@ class SessionOrchestrator {
 
 		const iterationStore = useIterationStore.getState();
 		iterationStore.markIterationComplete(allTasksActuallyDone);
+	}
+
+	private logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {
+		if (retryContexts.length === 0) return;
+
+		const lines: string[] = ["=== Retry Analysis ==="];
+		for (const context of retryContexts) {
+			lines.push(`Retry attempt ${context.attemptNumber}:`);
+			lines.push(`  Category: ${context.failureCategory}`);
+			lines.push(`  Root cause: ${context.rootCause}`);
+		}
+		lines.push("");
+
+		appendProgress(lines.join("\n"));
 	}
 
 	getConfig(): RalphConfig | null {
@@ -170,6 +201,10 @@ class SessionOrchestrator {
 						? "completed"
 						: "completed";
 
+				const retryContextsForLog =
+					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
+				this.lastRetryContexts = [];
+
 				completeIterationLog({
 					iteration: iterationNumber,
 					status: iterationStatus,
@@ -177,6 +212,7 @@ class SessionOrchestrator {
 					retryCount: agentStore.retryCount,
 					outputLength: agentStore.output.length,
 					taskWasCompleted: agentStore.isComplete,
+					retryContexts: retryContextsForLog,
 				});
 
 				agentStore.reset();
