@@ -5,5 +5,15 @@
 	"totalIterations": 5,
 	"currentTaskIndex": 1,
 	"status": "running",
-	"elapsedTimeSeconds": 379
+	"elapsedTimeSeconds": 379,
+	"statistics": {
+		"totalIterations": 5,
+		"completedIterations": 0,
+		"failedIterations": 0,
+		"successfulIterations": 0,
+		"totalDurationMs": 0,
+		"averageDurationMs": 0,
+		"successRate": 0,
+		"iterationTimings": []
+	}
 }

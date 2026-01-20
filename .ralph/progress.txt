@@ -1,0 +1,34 @@
+# Ralph CLI Development Progress
+
+## Completed Tasks
+
+### Implement iteration statistics and reporting
+**Status:** ✅ Complete
+
+**Implementation Summary:**
+- Created SessionStatistics interface in session.types.ts to track statistics
+- Implemented recordIterationStart() and recordIterationEnd() functions in session.ts to track iteration timing
+- Added success/failure count tracking (successfulIterations, failedIterations)
+- Implemented average iteration duration calculation (averageDurationMs)
+- Created statistics.ts module with:
+  - generateStatisticsReport() - formats statistics for display
+  - calculateStatisticsFromLogs() - calculates statistics from iteration logs
+  - displayStatisticsReport() - displays statistics to console
+  - logStatisticsToProgress() - logs statistics to progress.txt
+- Statistics are automatically displayed on session completion in orchestrator.ts
+- Added `ralph stats` CLI command to view statistics at any time
+
+**Files Modified:**
+- src/types/session.types.ts - Added SessionStatistics and IterationTiming interfaces
+- src/lib/session.ts - Added statistics tracking functions
+- src/lib/statistics.ts - New file with statistics calculation and reporting
+- src/cli/commands/stats.ts - CLI command for viewing statistics
+- src/stores/orchestrator.ts - Integrated statistics display on completion
+
+**Features:**
+- Tracks total, completed, successful, and failed iterations
+- Calculates success rate percentage
+- Tracks total duration and average iteration duration
+- Records individual iteration timings
+- Displays formatted statistics report on session completion
+- Logs statistics to progress.txt for historical tracking
