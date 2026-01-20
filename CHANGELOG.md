@@ -1,5 +1,13 @@
 # ralph
 
+## 0.3.2
+
+### Patch Changes
+
+- be1d52c: Fix commands not being possible during agent loop and custom instructions not loading correctly
+- f7fa7ea: Add logging
+- b23adb1: Fix iteration count not being displayed correctly
+
 ## 0.3.1
 
 ### Patch Changes
