@@ -7,9 +7,10 @@ import {
 	downloadBinary,
 	fetchLatestVersion,
 	getArchitecture,
-	getBinaryPath,
 	getOperatingSystem,
-	installBinary,
+	getRemoveOldBinaryCommand,
+	installWithMigration,
+	type MigrationResult,
 	restartApplication,
 } from "@/lib/update.ts";
 import { Message } from "./common/Message.tsx";
@@ -30,6 +31,7 @@ type UpdateState =
 	| "downloading"
 	| "installing"
 	| "complete"
+	| "migrated"
 	| "error";
 
 type UpdateAction = "update" | "remind" | "skip";
@@ -66,6 +68,7 @@ export function UpdatePrompt({
 	const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
 	const [totalBytes, setTotalBytes] = useState<number>(0);
 	const [updatePerformed, setUpdatePerformed] = useState<boolean>(false);
+	const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
 
 	useEffect(() => {
 		const checkForUpdates = async () => {
@@ -82,6 +85,7 @@ export function UpdatePrompt({
 				if (comparison <= 0) {
 					const currentConfig = loadConfig();
 					currentConfig.skipVersion = undefined;
+
 					saveConfig(currentConfig);
 					setState("up_to_date");
 				} else {
@@ -89,6 +93,7 @@ export function UpdatePrompt({
 				}
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : String(err);
+
 				setError(errorMessage);
 				setState("error");
 			}
@@ -101,15 +106,19 @@ export function UpdatePrompt({
 		switch (item.value) {
 			case "update":
 				await performUpdate();
+
 				break;
 			case "skip":
 				if (latestVersion) {
 					skipVersion(latestVersion);
 				}
+
 				setState("complete");
+
 				break;
 			case "remind":
 				setState("complete");
+
 				break;
 		}
 	};
@@ -135,11 +144,16 @@ export function UpdatePrompt({
 			);
 
 			setState("installing");
-			const targetPath = getBinaryPath();
-			await installBinary(binaryData, targetPath);
+			const result = await installWithMigration(binaryData);
+			setMigrationResult(result);
 
 			setUpdatePerformed(true);
-			setState("complete");
+
+			if (result.migrated) {
+				setState("migrated");
+			} else {
+				setState("complete");
+			}
 		} catch (err) {
 			const errorMessage = err instanceof Error ? err.message : String(err);
 			setError(errorMessage);
@@ -150,15 +164,18 @@ export function UpdatePrompt({
 	useEffect(() => {
 		if (state === "complete" || state === "up_to_date" || state === "error") {
 			const timeout = setTimeout(() => {
-				if (state === "complete" && updatePerformed) {
+				if (state === "complete" && updatePerformed && migrationResult) {
+					restartApplication(migrationResult.newPath);
+				} else if (state === "complete" && updatePerformed) {
 					restartApplication();
 				} else {
 					handleExit();
 				}
 			}, 2000);
+
 			return () => clearTimeout(timeout);
 		}
-	}, [state, handleExit, updatePerformed]);
+	}, [state, handleExit, updatePerformed, migrationResult]);
 
 	const renderContent = () => {
 		switch (state) {
@@ -206,6 +223,40 @@ export function UpdatePrompt({
 
 			case "installing":
 				return <Spinner label="Installing..." />;
+
+			case "migrated":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
+						<Box flexDirection="column" marginTop={1}>
+							<Text color="yellow" bold>
+								Installation location has changed
+							</Text>
+							<Text>Ralph has been moved to: {migrationResult?.newPath}</Text>
+						</Box>
+						{migrationResult?.shellConfigPath && (
+							<Box flexDirection="column" marginTop={1}>
+								<Text>PATH has been updated in: {migrationResult.shellConfigPath}</Text>
+								<Text dimColor>
+									Restart your terminal or run: source {migrationResult.shellConfigPath}
+								</Text>
+							</Box>
+						)}
+						{migrationResult?.oldPath && (
+							<Box flexDirection="column" marginTop={1}>
+								<Text color="yellow">Please remove the old installation:</Text>
+								<Box marginTop={1}>
+									<Text color="cyan" bold>
+										{getRemoveOldBinaryCommand(migrationResult.oldPath)}
+									</Text>
+								</Box>
+							</Box>
+						)}
+						<Box marginTop={1}>
+							<Text dimColor>Press Ctrl+C to exit, then restart your terminal.</Text>
+						</Box>
+					</Box>
+				);
 
 			case "complete":
 				return (

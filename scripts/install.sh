@@ -2,8 +2,8 @@
 set -e
 
 REPO="nitodeco/ralph"
-INSTALL_DIR="/usr/local/bin"
 BINARY_NAME="ralph"
+INSTALL_DIR="${RALPH_INSTALL_DIR:-${HOME}/.local/bin}"
 
 get_arch() {
     local arch
@@ -44,6 +44,60 @@ get_latest_version() {
     curl -sL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
 }
 
+get_shell_config_path() {
+    local shell_name
+    shell_name=$(basename "$SHELL")
+
+    case "$shell_name" in
+        zsh)
+            echo "${HOME}/.zshrc"
+            ;;
+        bash)
+            if [ -f "${HOME}/.bash_profile" ]; then
+                echo "${HOME}/.bash_profile"
+            else
+                echo "${HOME}/.bashrc"
+            fi
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+configure_path() {
+    local install_dir="$1"
+    local config_path
+    config_path=$(get_shell_config_path)
+
+    if [ -z "$config_path" ]; then
+        echo ""
+        echo "Could not detect shell configuration file."
+        echo "Please add the following to your shell configuration manually:"
+        echo ""
+        echo "  export PATH=\"${install_dir}:\$PATH\""
+        echo ""
+        return
+    fi
+
+    local export_line="export PATH=\"${install_dir}:\$PATH\""
+    local marker_comment="# Added by Ralph CLI"
+
+    if [ -f "$config_path" ]; then
+        if grep -q "$marker_comment" "$config_path" || grep -q "$export_line" "$config_path"; then
+            return
+        fi
+    fi
+
+    echo "" >> "$config_path"
+    echo "$marker_comment" >> "$config_path"
+    echo "$export_line" >> "$config_path"
+
+    echo ""
+    echo "PATH configured in ${config_path}"
+    echo "Run 'source ${config_path}' or restart your terminal to apply changes."
+}
+
 main() {
     echo "Installing Ralph CLI..."
     echo ""
@@ -62,6 +116,7 @@ main() {
     echo "  OS: $os"
     echo "  Architecture: $arch"
     echo "  Version: $version"
+    echo "  Install directory: $INSTALL_DIR"
     echo ""
 
     download_url="https://github.com/${REPO}/releases/download/${version}/ralph-${os}-${arch}"
@@ -74,20 +129,15 @@ main() {
 
     chmod +x "$binary_path"
 
-    echo "Installing to ${INSTALL_DIR}/${BINARY_NAME}..."
-
-    if [ -w "$INSTALL_DIR" ]; then
-        mv "$binary_path" "${INSTALL_DIR}/${BINARY_NAME}"
-    else
-        echo "Requesting sudo access to install to ${INSTALL_DIR}..."
-        sudo mv "$binary_path" "${INSTALL_DIR}/${BINARY_NAME}"
-    fi
+    mkdir -p "$INSTALL_DIR"
+    mv "$binary_path" "${INSTALL_DIR}/${BINARY_NAME}"
 
     rm -rf "$tmp_dir"
 
     echo ""
     echo "Ralph CLI installed successfully!"
-    echo ""
+
+    configure_path "$INSTALL_DIR"
 
     "${INSTALL_DIR}/${BINARY_NAME}" setup
 }

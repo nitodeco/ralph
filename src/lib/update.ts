@@ -1,6 +1,15 @@
 import { spawn } from "node:child_process";
-import { accessSync, constants, existsSync, unlinkSync } from "node:fs";
+import { existsSync, mkdirSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
 import { loadConfig } from "./config.ts";
+import {
+	getDefaultInstallDir,
+	isDirectoryWritable,
+	LOCAL_BIN_DIR,
+	needsMigration,
+	prependToShellConfig,
+	SYSTEM_BIN_DIR,
+} from "./paths.ts";
 
 const REPO = "nitodeco/ralph";
 const GITHUB_API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -8,6 +17,13 @@ const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 interface GitHubRelease {
 	tag_name: string;
+}
+
+export interface MigrationResult {
+	migrated: boolean;
+	oldPath: string | null;
+	newPath: string;
+	shellConfigPath: string | null;
 }
 
 export function getArchitecture(): string {
@@ -62,19 +78,33 @@ export function compareVersions(current: string, latest: string): number {
 export function getBinaryPath(): string {
 	const binaryPath = process.execPath;
 	if (binaryPath.includes("bun")) {
-		return "/usr/local/bin/ralph";
+		const installDir = getDefaultInstallDir();
+		return `${installDir}/ralph`;
 	}
 	return binaryPath;
 }
 
-export function hasWriteAccess(path: string): boolean {
-	try {
-		const directory = path.substring(0, path.lastIndexOf("/"));
-		accessSync(directory, constants.W_OK);
-		return true;
-	} catch {
-		return false;
+export function getTargetInstallPath(): {
+	targetPath: string;
+	requiresMigration: boolean;
+	currentPath: string;
+} {
+	const currentPath = getBinaryPath();
+	const requiresMigration = needsMigration(currentPath);
+
+	if (requiresMigration) {
+		return {
+			targetPath: join(LOCAL_BIN_DIR, "ralph"),
+			requiresMigration: true,
+			currentPath,
+		};
 	}
+
+	return {
+		targetPath: currentPath,
+		requiresMigration: false,
+		currentPath,
+	};
 }
 
 export async function downloadBinary(
@@ -131,23 +161,51 @@ export async function installBinary(binaryData: ArrayBuffer, targetPath: string)
 	const chmodProcess = Bun.spawn(["chmod", "+x", tempPath]);
 	await chmodProcess.exited;
 
-	if (hasWriteAccess(targetPath)) {
-		if (existsSync(targetPath)) {
-			unlinkSync(targetPath);
-		}
-		const mvProcess = Bun.spawn(["mv", tempPath, targetPath]);
-		await mvProcess.exited;
-	} else {
-		const sudoProcess = Bun.spawn(["sudo", "mv", tempPath, targetPath], {
-			stdin: "inherit",
-			stdout: "inherit",
-			stderr: "inherit",
-		});
-		const exitCode = await sudoProcess.exited;
-		if (exitCode !== 0) {
-			throw new Error("Failed to install binary with sudo");
-		}
+	const targetDirectory = targetPath.substring(0, targetPath.lastIndexOf("/"));
+
+	if (!existsSync(targetDirectory)) {
+		mkdirSync(targetDirectory, { recursive: true });
 	}
+
+	if (!isDirectoryWritable(targetDirectory)) {
+		throw new Error(
+			`Cannot write to ${targetDirectory}. Please set RALPH_INSTALL_DIR to a writable directory or ensure ~/.local/bin exists.`,
+		);
+	}
+
+	if (existsSync(targetPath)) {
+		unlinkSync(targetPath);
+	}
+
+	const mvProcess = Bun.spawn(["mv", tempPath, targetPath]);
+	await mvProcess.exited;
+}
+
+export async function installWithMigration(binaryData: ArrayBuffer): Promise<MigrationResult> {
+	const { targetPath, requiresMigration, currentPath } = getTargetInstallPath();
+
+	await installBinary(binaryData, targetPath);
+
+	let shellConfigPath: string | null = null;
+
+	if (requiresMigration) {
+		shellConfigPath = prependToShellConfig();
+	}
+
+	return {
+		migrated: requiresMigration,
+		oldPath: requiresMigration ? currentPath : null,
+		newPath: targetPath,
+		shellConfigPath,
+	};
+}
+
+export function getRemoveOldBinaryCommand(oldPath: string): string {
+	if (oldPath.startsWith(SYSTEM_BIN_DIR)) {
+		return `sudo rm ${oldPath}`;
+	}
+
+	return `rm ${oldPath}`;
 }
 
 export function shouldCheckForUpdates(): boolean {
@@ -163,8 +221,8 @@ export function isVersionSkipped(version: string): boolean {
 	return config.skipVersion === version;
 }
 
-export function restartApplication(): void {
-	const binaryPath = getBinaryPath();
+export function restartApplication(newBinaryPath?: string): void {
+	const binaryPath = newBinaryPath || getBinaryPath();
 	const args = process.argv.slice(2).filter((arg) => arg !== "update");
 
 	spawn(binaryPath, args, {
