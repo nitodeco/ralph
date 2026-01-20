@@ -80,6 +80,7 @@ export async function downloadBinary(
 	version: string,
 	operatingSystem: string,
 	architecture: string,
+	onProgress?: (downloaded: number, total: number) => void,
 ): Promise<ArrayBuffer> {
 	const downloadUrl = `https://github.com/${REPO}/releases/download/${version}/ralph-${operatingSystem}-${architecture}`;
 
@@ -88,7 +89,37 @@ export async function downloadBinary(
 		throw new Error(`Failed to download binary: ${response.statusText}`);
 	}
 
-	return response.arrayBuffer();
+	const contentLength = response.headers.get("Content-Length");
+	const totalBytes = contentLength ? Number.parseInt(contentLength, 10) : 0;
+
+	if (!response.body || !totalBytes || !onProgress) {
+		return response.arrayBuffer();
+	}
+
+	const reader = response.body.getReader();
+	const chunks: Uint8Array[] = [];
+	let downloadedBytes = 0;
+
+	while (true) {
+		const { done, value } = await reader.read();
+
+		if (done) {
+			break;
+		}
+
+		chunks.push(value);
+		downloadedBytes += value.length;
+		onProgress(downloadedBytes, totalBytes);
+	}
+
+	const result = new Uint8Array(downloadedBytes);
+	let offset = 0;
+	for (const chunk of chunks) {
+		result.set(chunk, offset);
+		offset += chunk.length;
+	}
+
+	return result.buffer;
 }
 
 export async function installBinary(binaryData: ArrayBuffer, targetPath: string): Promise<void> {

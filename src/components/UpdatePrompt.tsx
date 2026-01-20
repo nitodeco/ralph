@@ -13,6 +13,7 @@ import {
 } from "../lib/update.ts";
 import { Header } from "./Header.tsx";
 import { Message } from "./common/Message.tsx";
+import { ProgressBar } from "./common/ProgressBar.tsx";
 import { Spinner } from "./common/Spinner.tsx";
 
 interface UpdatePromptProps {
@@ -61,7 +62,8 @@ export function UpdatePrompt({
 	};
 	const [latestVersion, setLatestVersion] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [downloadProgress, setDownloadProgress] = useState<string>("");
+	const [downloadedBytes, setDownloadedBytes] = useState<number>(0);
+	const [totalBytes, setTotalBytes] = useState<number>(0);
 
 	useEffect(() => {
 		const checkForUpdates = async () => {
@@ -118,8 +120,17 @@ export function UpdatePrompt({
 			const operatingSystem = getOperatingSystem();
 			const architecture = getArchitecture();
 
-			setDownloadProgress(`Downloading ralph-${operatingSystem}-${architecture}...`);
-			const binaryData = await downloadBinary(latestVersion, operatingSystem, architecture);
+			const handleProgress = (downloaded: number, total: number) => {
+				setDownloadedBytes(downloaded);
+				setTotalBytes(total);
+			};
+
+			const binaryData = await downloadBinary(
+				latestVersion,
+				operatingSystem,
+				architecture,
+				handleProgress,
+			);
 
 			setState("installing");
 			const targetPath = getBinaryPath();
@@ -177,8 +188,12 @@ export function UpdatePrompt({
 			case "downloading":
 				return (
 					<Box flexDirection="column" gap={1}>
-						<Spinner label={`Updating to ${latestVersion}...`} />
-						{downloadProgress && <Text dimColor>{downloadProgress}</Text>}
+						<Spinner label={`Downloading ${latestVersion}...`} />
+						<ProgressBar
+							current={downloadedBytes}
+							total={totalBytes}
+							label={`ralph-${getOperatingSystem()}-${getArchitecture()}`}
+						/>
 					</Box>
 				);
 
