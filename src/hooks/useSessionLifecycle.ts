@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { checkForUpdateOnStartup } from "@/lib/update.ts";
 import { orchestrator, setupIterationCallbacks, useAppStore } from "@/stores/index.ts";
 import type { ActiveView, AppState, Session, SetManualTaskResult } from "@/types/index.ts";
 
@@ -10,6 +11,7 @@ interface UseSessionLifecycleParams {
 	initialTask?: string;
 	maxRuntimeMs?: number;
 	skipVerification?: boolean;
+	version: string;
 }
 
 interface UseSessionLifecycleDependencies {
@@ -30,8 +32,16 @@ export function useSessionLifecycle(
 	params: UseSessionLifecycleParams,
 	dependencies: UseSessionLifecycleDependencies,
 ): void {
-	const { iterations, autoResume, autoStart, dryRun, initialTask, maxRuntimeMs, skipVerification } =
-		params;
+	const {
+		iterations,
+		autoResume,
+		autoStart,
+		dryRun,
+		initialTask,
+		maxRuntimeMs,
+		skipVerification,
+		version,
+	} = params;
 
 	const {
 		loadInitialState,
@@ -52,6 +62,16 @@ export function useSessionLifecycle(
 		setupIterationCallbacks(iterations, maxRuntimeMs, skipVerification);
 		loadInitialState(autoResume);
 	}, [autoResume, iterations, loadInitialState, setIterations, maxRuntimeMs, skipVerification]);
+
+	useEffect(() => {
+		const checkUpdate = async () => {
+			const result = await checkForUpdateOnStartup(version);
+			if (result.updateAvailable && result.latestVersion) {
+				useAppStore.getState().setUpdateStatus(true, result.latestVersion);
+			}
+		};
+		checkUpdate();
+	}, [version]);
 
 	useEffect(() => {
 		if (autoResume && pendingSession && appState === "idle") {

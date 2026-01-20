@@ -345,3 +345,26 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Add automatic update check on startup with non-intrusive UI notification
+Date: 2026-01-20
+
+Changes made:
+- Created checkForUpdateOnStartup() async function in src/lib/update.ts that fetches latest version and returns { updateAvailable, latestVersion, error }
+- Added updateAvailable, latestVersion, and updateBannerDismissed fields to appStore state
+- Added setUpdateStatus() and dismissUpdateBanner() actions to appStore
+- Created UpdateBanner component in src/components/UpdateBanner.tsx that displays a single-line notification
+- Added 'dismiss-update' to SlashCommand type and VALID_COMMANDS array in CommandInput.tsx
+- Updated useSlashCommands hook to accept dismissUpdateBanner dependency and handle dismiss-update command
+- Updated useSessionLifecycle hook to call checkForUpdateOnStartup() on startup and update appStore
+- Updated MainRunView to accept update-related props and render UpdateBanner when update is available
+- Updated RunApp to pass update state and dismissUpdateBanner to child components
+- Exported UpdateBanner from src/components/index.ts
+- Updated HelpView to document the /dismiss-update command
+- Created changeset for the feature
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

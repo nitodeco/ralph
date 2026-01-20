@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { loadConfig } from "./config.ts";
+import { loadConfig, saveConfig } from "./config.ts";
 import {
 	getDefaultInstallDir,
 	isDirectoryWritable,
@@ -221,6 +221,45 @@ export function shouldCheckForUpdates(): boolean {
 export function isVersionSkipped(version: string): boolean {
 	const config = loadConfig();
 	return config.skipVersion === version;
+}
+
+export interface UpdateCheckResult {
+	updateAvailable: boolean;
+	latestVersion: string | null;
+	error: string | null;
+}
+
+export async function checkForUpdateOnStartup(currentVersion: string): Promise<UpdateCheckResult> {
+	if (!shouldCheckForUpdates()) {
+		return { updateAvailable: false, latestVersion: null, error: null };
+	}
+
+	try {
+		const latestVersion = await fetchLatestVersion();
+
+		const config = loadConfig();
+		config.lastUpdateCheck = Date.now();
+		saveConfig(config);
+
+		if (isVersionSkipped(latestVersion)) {
+			return { updateAvailable: false, latestVersion: null, error: null };
+		}
+
+		const comparison = compareVersions(currentVersion, latestVersion);
+		const updateAvailable = comparison > 0;
+
+		return {
+			updateAvailable,
+			latestVersion: updateAvailable ? latestVersion : null,
+			error: null,
+		};
+	} catch (_error) {
+		return {
+			updateAvailable: false,
+			latestVersion: null,
+			error: null,
+		};
+	}
 }
 
 export function restartApplication(newBinaryPath?: string): void {

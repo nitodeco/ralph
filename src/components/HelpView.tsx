@@ -176,6 +176,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>View and manage session memory</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/dismiss-update</Text>
+							{"   "}
+							<Text>Dismiss the update notification banner</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/help</Text>
 							{"             "}
 							<Text>Show this help message</Text>

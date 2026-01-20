@@ -19,6 +19,7 @@ interface UseSlashCommandsDependencies {
 	setActiveView: (view: ActiveView) => void;
 	exit: () => void;
 	getCurrentTaskTitle?: () => string | null;
+	dismissUpdateBanner?: () => void;
 }
 
 interface UseSlashCommandsResult {
@@ -38,6 +39,7 @@ export function useSlashCommands({
 	setActiveView,
 	exit,
 	getCurrentTaskTitle,
+	dismissUpdateBanner,
 }: UseSlashCommandsDependencies): UseSlashCommandsResult {
 	const [nextTaskMessage, setNextTaskMessage] = useState<SlashCommandMessage | null>(null);
 	const [guardrailMessage, setGuardrailMessage] = useState<SlashCommandMessage | null>(null);
@@ -174,6 +176,9 @@ export function useSlashCommands({
 					iterationPause();
 					setActiveView(command === "add" ? "add" : command);
 					break;
+				case "dismiss-update":
+					dismissUpdateBanner?.();
+					break;
 				case "quit":
 				case "exit":
 					exit();
@@ -190,6 +195,7 @@ export function useSlashCommands({
 			setActiveView,
 			setManualNextTask,
 			getCurrentTaskTitle,
+			dismissUpdateBanner,
 		],
 	);
 

@@ -264,7 +264,7 @@
 				"Handle network errors gracefully - don't show error banner, just silently skip the update check",
 				"Add /dismiss-update slash command or keyboard shortcut to hide the banner for the current session"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add /refresh slash command to reload PRD and update UI state",

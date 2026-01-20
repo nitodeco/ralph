@@ -53,6 +53,9 @@ interface AppStoreState {
 	isVerifying: boolean;
 	lastVerificationResult: VerificationResult | null;
 	lastDecomposition: DecompositionRequest | null;
+	updateAvailable: boolean;
+	latestVersion: string | null;
+	updateBannerDismissed: boolean;
 }
 
 interface AppStoreActions {
@@ -75,6 +78,8 @@ interface AppStoreActions {
 	clearManualNextTask: () => void;
 	getEffectiveNextTask: () => string | null;
 	getRemainingRuntimeMs: () => number | null;
+	setUpdateStatus: (updateAvailable: boolean, latestVersion: string | null) => void;
+	dismissUpdateBanner: () => void;
 }
 
 type AppStore = AppStoreState & AppStoreActions;
@@ -107,6 +112,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	isVerifying: false,
 	lastVerificationResult: null,
 	lastDecomposition: null,
+	updateAvailable: false,
+	latestVersion: null,
+	updateBannerDismissed: false,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });
@@ -470,6 +478,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		const elapsedMs = state.elapsedTime * 1000;
 		const remaining = state.maxRuntimeMs - elapsedMs;
 		return remaining > 0 ? remaining : 0;
+	},
+
+	setUpdateStatus: (updateAvailable: boolean, latestVersion: string | null) => {
+		set({ updateAvailable, latestVersion });
+	},
+
+	dismissUpdateBanner: () => {
+		set({ updateBannerDismissed: true });
 	},
 }));
 

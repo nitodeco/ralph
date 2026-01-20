@@ -44,6 +44,10 @@ export function RunApp({
 	const handleFatalError = useAppStore((state) => state.handleFatalError);
 	const setIterations = useAppStore((state) => state.setIterations);
 	const setManualNextTask = useAppStore((state) => state.setManualNextTask);
+	const updateAvailable = useAppStore((state) => state.updateAvailable);
+	const latestVersion = useAppStore((state) => state.latestVersion);
+	const updateBannerDismissed = useAppStore((state) => state.updateBannerDismissed);
+	const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
@@ -79,6 +83,7 @@ export function RunApp({
 			setActiveView,
 			exit,
 			getCurrentTaskTitle,
+			dismissUpdateBanner,
 		},
 	);
 
@@ -91,6 +96,7 @@ export function RunApp({
 			initialTask,
 			maxRuntimeMs,
 			skipVerification,
+			version,
 		},
 		{
 			loadInitialState,
@@ -166,6 +172,9 @@ export function RunApp({
 				guardrailMessage={guardrailMessage}
 				memoryMessage={memoryMessage}
 				onCommand={handleSlashCommand}
+				updateAvailable={updateAvailable}
+				latestVersion={latestVersion}
+				updateBannerDismissed={updateBannerDismissed}
 			/>
 		</ViewRouter>
 	);

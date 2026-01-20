@@ -8,6 +8,7 @@ import { Header } from "./Header.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
+import { UpdateBanner } from "./UpdateBanner.tsx";
 
 interface SlashCommandMessage {
 	type: "success" | "error";
@@ -26,6 +27,9 @@ interface MainRunViewProps {
 	guardrailMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
+	updateAvailable: boolean;
+	latestVersion: string | null;
+	updateBannerDismissed: boolean;
 }
 
 export function MainRunView({
@@ -40,10 +44,16 @@ export function MainRunView({
 	guardrailMessage,
 	memoryMessage,
 	onCommand,
+	updateAvailable,
+	latestVersion,
+	updateBannerDismissed,
 }: MainRunViewProps): React.ReactElement {
+	const showUpdateBanner = updateAvailable && latestVersion && !updateBannerDismissed;
+
 	return (
 		<Box flexDirection="column" minHeight={20}>
 			<Header version={version} agent={config?.agent} projectName={prd?.project} />
+			{showUpdateBanner && <UpdateBanner currentVersion={version} latestVersion={latestVersion} />}
 			<TaskList />
 			<IterationProgress />
 			<AgentOutput />
