@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type { ConfigValidationResult, RalphConfig } from "@/types.ts";
-import { DEFAULTS } from "../defaults.ts";
+import { DEFAULT_VERIFICATION, DEFAULTS } from "../defaults.ts";
 import {
 	ensureGlobalRalphDirExists,
 	ensureRalphDirExists,
@@ -29,6 +29,7 @@ const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersi
 	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
 	maxRuntimeMs: 0,
 	retryWithContext: DEFAULTS.retryWithContext,
+	verification: DEFAULT_VERIFICATION,
 };
 
 const DEFAULT_CONFIG: RalphConfig = {
@@ -57,6 +58,9 @@ function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 		memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
 		maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
 		retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
+		verification: config.verification
+			? { ...defaults.verification, ...config.verification }
+			: defaults.verification,
 	};
 }
 

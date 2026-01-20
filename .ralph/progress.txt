@@ -229,3 +229,31 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Implement verification phase after each iteration
+Date: 2026-01-20
+
+Changes made:
+- Created VerificationConfig interface in src/types/config.types.ts with fields: enabled, buildCommand, testCommand, lintCommand, customChecks, failOnWarning
+- Created CheckResult and VerificationResult interfaces for verification results
+- Added 'verification' section to RalphConfig type
+- Created src/lib/verification.ts with runVerification(), runCheck(), formatVerificationResult(), and generateVerificationRetryContext() functions
+- Updated orchestrator handleAgentComplete() to run verification after agent completes (before marking iteration as done)
+- If verification fails, iteration status is set to 'verification_failed' and triggers retry
+- Added IterationLogVerification interface to src/types/session.types.ts
+- Added 'verification_failed' to IterationLogStatus type
+- Updated completeIterationLog() in src/lib/iteration-logs.ts to accept verification results
+- Added verification results logging to progress.txt via logVerificationResultToProgress()
+- Added --skip-verification CLI flag to parser.ts and passed through to RunApp
+- Added skipVerification parameter to setupIterationCallbacks() and orchestrator.initialize()
+- Updated IterationProgress component to show verification status (isVerifying spinner and failed checks)
+- Added isVerifying and lastVerificationResult fields to appStore state
+- Added DEFAULT_VERIFICATION to src/lib/defaults.ts
+- Updated CONFIG_DEFAULTS in constants.ts, ConfigService.ts, and loader.ts to include verification
+- Updated help.ts to document --skip-verification flag
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

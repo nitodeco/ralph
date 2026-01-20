@@ -9,6 +9,7 @@ interface UseSessionLifecycleParams {
 	dryRun: boolean;
 	initialTask?: string;
 	maxRuntimeMs?: number;
+	skipVerification?: boolean;
 }
 
 interface UseSessionLifecycleDependencies {
@@ -29,7 +30,8 @@ export function useSessionLifecycle(
 	params: UseSessionLifecycleParams,
 	dependencies: UseSessionLifecycleDependencies,
 ): void {
-	const { iterations, autoResume, autoStart, dryRun, initialTask, maxRuntimeMs } = params;
+	const { iterations, autoResume, autoStart, dryRun, initialTask, maxRuntimeMs, skipVerification } =
+		params;
 
 	const {
 		loadInitialState,
@@ -47,9 +49,9 @@ export function useSessionLifecycle(
 
 	useEffect(() => {
 		setIterations(iterations);
-		setupIterationCallbacks(iterations, maxRuntimeMs);
+		setupIterationCallbacks(iterations, maxRuntimeMs, skipVerification);
 		loadInitialState(autoResume);
-	}, [autoResume, iterations, loadInitialState, setIterations, maxRuntimeMs]);
+	}, [autoResume, iterations, loadInitialState, setIterations, maxRuntimeMs, skipVerification]);
 
 	useEffect(() => {
 		if (autoResume && pendingSession && appState === "idle") {

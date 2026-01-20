@@ -27,12 +27,15 @@ import {
 	displayStatisticsReport,
 	logStatisticsToProgress,
 } from "@/lib/statistics.ts";
+import { formatVerificationResult, runVerification } from "@/lib/verification.ts";
 import type {
 	IterationLogRetryContext,
 	IterationLogStatus,
+	IterationLogVerification,
 	Prd,
 	RalphConfig,
 	Session,
+	VerificationResult,
 } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useAppStore } from "./appStore.ts";
@@ -52,15 +55,19 @@ interface OrchestratorConfig {
 	config: RalphConfig;
 	iterations: number;
 	maxRuntimeMs?: number;
+	skipVerification?: boolean;
 }
 
 class SessionOrchestrator {
 	private config: RalphConfig | null = null;
 	private iterations = 0;
 	private maxRuntimeMs: number | undefined = undefined;
+	private skipVerification = false;
 	private unsubscribers: (() => void)[] = [];
 	private initialized = false;
 	private lastRetryContexts: IterationLogRetryContext[] = [];
+	private lastVerificationResult: VerificationResult | null = null;
+	private isVerifying = false;
 
 	initialize(options: OrchestratorConfig): void {
 		if (this.initialized) {
@@ -70,12 +77,19 @@ class SessionOrchestrator {
 		this.config = options.config;
 		this.iterations = options.iterations;
 		this.maxRuntimeMs = options.maxRuntimeMs;
+		this.skipVerification = options.skipVerification ?? false;
 		this.initialized = true;
 		this.lastRetryContexts = [];
+		this.lastVerificationResult = null;
+		this.isVerifying = false;
 		this.setupSubscriptions();
 
 		const iterationStore = useIterationStore.getState();
 		iterationStore.setMaxRuntimeMs(this.maxRuntimeMs);
+	}
+
+	getIsVerifying(): boolean {
+		return this.isVerifying;
 	}
 
 	private setupSubscriptions(): void {
@@ -99,7 +113,7 @@ class SessionOrchestrator {
 		);
 	}
 
-	private handleAgentComplete(event: AgentCompleteEvent): void {
+	private async handleAgentComplete(event: AgentCompleteEvent): Promise<void> {
 		if (event.retryContexts) {
 			this.lastRetryContexts = event.retryContexts;
 			this.logRetryContextsToProgress(event.retryContexts);
@@ -110,8 +124,36 @@ class SessionOrchestrator {
 			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
 			: false;
 
+		const loadedConfig = loadConfig();
+		const verificationConfig = loadedConfig.verification;
+
+		if (verificationConfig?.enabled && !this.skipVerification && !allTasksActuallyDone) {
+			this.isVerifying = true;
+			useAppStore.setState({ isVerifying: true });
+
+			const verificationResult = await runVerification(verificationConfig);
+			this.lastVerificationResult = verificationResult;
+			this.isVerifying = false;
+			useAppStore.setState({ isVerifying: false, lastVerificationResult: verificationResult });
+
+			this.logVerificationResultToProgress(verificationResult);
+
+			if (!verificationResult.passed) {
+				const iterationStore = useIterationStore.getState();
+				iterationStore.markIterationComplete(false);
+				return;
+			}
+		} else {
+			this.lastVerificationResult = null;
+		}
+
 		const iterationStore = useIterationStore.getState();
 		iterationStore.markIterationComplete(allTasksActuallyDone);
+	}
+
+	private logVerificationResultToProgress(result: VerificationResult): void {
+		const formattedResult = formatVerificationResult(result);
+		appendProgress(formattedResult);
 	}
 
 	private logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {
@@ -195,15 +237,35 @@ class SessionOrchestrator {
 					useAppStore.setState({ currentSession: updatedSession });
 				}
 
+				const verificationFailed =
+					this.lastVerificationResult && !this.lastVerificationResult.passed;
+
 				const iterationStatus: IterationLogStatus = agentStore.error
 					? "failed"
-					: agentStore.isComplete
-						? "completed"
-						: "completed";
+					: verificationFailed
+						? "verification_failed"
+						: agentStore.isComplete
+							? "completed"
+							: "completed";
 
 				const retryContextsForLog =
 					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
 				this.lastRetryContexts = [];
+
+				const verificationForLog: IterationLogVerification | undefined = this.lastVerificationResult
+					? {
+							ran: true,
+							passed: this.lastVerificationResult.passed,
+							checks: this.lastVerificationResult.checks.map((check) => ({
+								name: check.name,
+								passed: check.passed,
+								durationMs: check.durationMs,
+							})),
+							failedChecks: this.lastVerificationResult.failedChecks,
+							totalDurationMs: this.lastVerificationResult.totalDurationMs,
+						}
+					: undefined;
+				this.lastVerificationResult = null;
 
 				completeIterationLog({
 					iteration: iterationNumber,
@@ -213,6 +275,7 @@ class SessionOrchestrator {
 					outputLength: agentStore.output.length,
 					taskWasCompleted: agentStore.isComplete,
 					retryContexts: retryContextsForLog,
+					verification: verificationForLog,
 				});
 
 				agentStore.reset();

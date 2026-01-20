@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useIterationStore } from "@/stores/index.ts";
+import { useAppStore, useIterationStore } from "@/stores/index.ts";
 import { Spinner } from "./common/Spinner.tsx";
 
 function createProgressBar(current: number, total: number, width: number): string {
@@ -13,6 +13,8 @@ export function IterationProgress(): React.ReactElement {
 	const total = useIterationStore((state) => state.total);
 	const isRunning = useIterationStore((state) => state.isRunning);
 	const isDelaying = useIterationStore((state) => state.isDelaying);
+	const isVerifying = useAppStore((state) => state.isVerifying);
+	const lastVerificationResult = useAppStore((state) => state.lastVerificationResult);
 
 	const progressBar = createProgressBar(current, total, 20);
 	const percentage = Math.round((current / total) * 100);
@@ -23,8 +25,9 @@ export function IterationProgress(): React.ReactElement {
 				<Text bold color="cyan">
 					Iteration {current}/{total}
 				</Text>
-				{isRunning && !isDelaying && <Spinner />}
-				{isDelaying && (
+				{isVerifying && <Spinner label="Verifying..." />}
+				{isRunning && !isDelaying && !isVerifying && <Spinner />}
+				{isDelaying && !isVerifying && (
 					<Text dimColor>
 						<Spinner label="Next iteration..." />
 					</Text>
@@ -34,6 +37,13 @@ export function IterationProgress(): React.ReactElement {
 				<Text color="cyan">{progressBar}</Text>
 				<Text dimColor>{percentage}%</Text>
 			</Box>
+			{lastVerificationResult && !lastVerificationResult.passed && (
+				<Box marginTop={1}>
+					<Text color="red">
+						Verification failed: {lastVerificationResult.failedChecks.join(", ")}
+					</Text>
+				</Box>
+			)}
 		</Box>
 	);
 }

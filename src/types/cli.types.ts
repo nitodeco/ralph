@@ -29,6 +29,7 @@ export interface ParsedArgs {
 	verbose: boolean;
 	task?: string;
 	maxRuntimeMs?: number;
+	skipVerification: boolean;
 	guardrailsSubcommand?: GuardrailsSubcommand;
 	guardrailsArg?: string;
 }

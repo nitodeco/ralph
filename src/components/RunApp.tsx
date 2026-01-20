@@ -13,6 +13,7 @@ interface RunAppProps {
 	dryRun?: boolean;
 	initialTask?: string;
 	maxRuntimeMs?: number;
+	skipVerification?: boolean;
 }
 
 export function RunApp({
@@ -23,6 +24,7 @@ export function RunApp({
 	dryRun = false,
 	initialTask,
 	maxRuntimeMs,
+	skipVerification = false,
 }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 
@@ -79,6 +81,7 @@ export function RunApp({
 			dryRun,
 			initialTask,
 			maxRuntimeMs,
+			skipVerification,
 		},
 		{
 			loadInitialState,

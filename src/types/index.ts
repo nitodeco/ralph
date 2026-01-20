@@ -14,6 +14,7 @@ export type {
 } from "./cli.types.ts";
 export type {
 	AgentType,
+	CheckResult,
 	ConfigValidationError,
 	ConfigValidationResult,
 	MemoryConfig,
@@ -21,6 +22,8 @@ export type {
 	NotificationEvent,
 	PrdFormat,
 	RalphConfig,
+	VerificationConfig,
+	VerificationResult,
 } from "./config.types.ts";
 export type { LoadPrdResult, Prd, PrdTask } from "./prd.types.ts";
 export type {
@@ -32,6 +35,7 @@ export type {
 	IterationLogsIndex,
 	IterationLogsIndexEntry,
 	IterationLogTask,
+	IterationLogVerification,
 	IterationTiming,
 	Session,
 	SessionStatistics,

@@ -31,7 +31,12 @@ export interface Session {
 	statistics: SessionStatistics;
 }
 
-export type IterationLogStatus = "running" | "completed" | "failed" | "stopped";
+export type IterationLogStatus =
+	| "running"
+	| "completed"
+	| "failed"
+	| "stopped"
+	| "verification_failed";
 
 export interface IterationLogTask {
 	title: string;
@@ -60,6 +65,18 @@ export interface IterationLogError {
 	context?: Record<string, unknown>;
 }
 
+export interface IterationLogVerification {
+	ran: boolean;
+	passed: boolean;
+	checks: Array<{
+		name: string;
+		passed: boolean;
+		durationMs: number;
+	}>;
+	failedChecks: string[];
+	totalDurationMs: number;
+}
+
 export interface IterationLog {
 	iteration: number;
 	totalIterations: number;
@@ -70,6 +87,7 @@ export interface IterationLog {
 	task: IterationLogTask | null;
 	agent: IterationLogAgent;
 	errors: IterationLogError[];
+	verification?: IterationLogVerification;
 }
 
 export interface IterationLogsIndexEntry {

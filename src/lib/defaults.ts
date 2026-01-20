@@ -1,4 +1,4 @@
-import type { PromptGuardrail } from "@/types/config.types.ts";
+import type { PromptGuardrail, VerificationConfig } from "@/types/config.types.ts";
 
 export const DEFAULTS = {
 	agent: "cursor" as const,
@@ -15,6 +15,11 @@ export const DEFAULTS = {
 	iterations: 10,
 	retryWithContext: true,
 } as const;
+
+export const DEFAULT_VERIFICATION: VerificationConfig = {
+	enabled: false,
+	failOnWarning: false,
+};
 
 export const DEFAULT_GUARDRAILS: PromptGuardrail[] = [
 	{

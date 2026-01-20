@@ -3,6 +3,7 @@ export type {
 	AgentResult,
 	AgentType,
 	AppState,
+	CheckResult,
 	Command,
 	ConfigOutput,
 	ConfigValidationError,
@@ -16,6 +17,7 @@ export type {
 	IterationLogsIndex,
 	IterationLogsIndexEntry,
 	IterationLogTask,
+	IterationLogVerification,
 	IterationTiming,
 	LoadPrdResult,
 	MemoryConfig,
@@ -33,4 +35,6 @@ export type {
 	SetManualTaskResult,
 	TaskListOutput,
 	ValidationWarning,
+	VerificationConfig,
+	VerificationResult,
 } from "./types/index.ts";

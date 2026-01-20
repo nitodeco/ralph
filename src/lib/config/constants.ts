@@ -1,5 +1,5 @@
 import type { AgentType, PrdFormat, RalphConfig } from "@/types.ts";
-import { DEFAULTS } from "../defaults.ts";
+import { DEFAULT_VERIFICATION, DEFAULTS } from "../defaults.ts";
 
 export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
 	agent: DEFAULTS.agent,
@@ -22,6 +22,7 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
 	maxRuntimeMs: 0,
 	retryWithContext: DEFAULTS.retryWithContext,
+	verification: DEFAULT_VERIFICATION,
 };
 
 export const DEFAULT_CONFIG: RalphConfig = {

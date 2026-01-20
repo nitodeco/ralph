@@ -31,6 +31,7 @@ export interface RalphConfig {
 	maxOutputHistoryBytes?: number;
 	maxRuntimeMs?: number;
 	retryWithContext?: boolean;
+	verification?: VerificationConfig;
 }
 
 export interface ConfigValidationError {
@@ -56,4 +57,27 @@ export interface PromptGuardrail {
 	enabled: boolean;
 	addedAt: string;
 	addedAfterFailure?: string;
+}
+
+export interface VerificationConfig {
+	enabled: boolean;
+	buildCommand?: string;
+	testCommand?: string;
+	lintCommand?: string;
+	customChecks?: string[];
+	failOnWarning: boolean;
+}
+
+export interface CheckResult {
+	name: string;
+	passed: boolean;
+	output: string;
+	durationMs: number;
+}
+
+export interface VerificationResult {
+	passed: boolean;
+	checks: CheckResult[];
+	failedChecks: string[];
+	totalDurationMs: number;
 }

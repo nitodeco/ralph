@@ -30,6 +30,7 @@ import type {
 	Session,
 	SetManualTaskResult,
 	ValidationWarning,
+	VerificationResult,
 } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
@@ -48,6 +49,8 @@ interface AppStoreState {
 	manualNextTask: string | null;
 	singleTaskMode: boolean;
 	maxRuntimeMs: number | null;
+	isVerifying: boolean;
+	lastVerificationResult: VerificationResult | null;
 }
 
 interface AppStoreActions {
@@ -99,6 +102,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	singleTaskMode: false,
 	manualNextTask: null,
 	maxRuntimeMs: null,
+	isVerifying: false,
+	lastVerificationResult: null,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });
@@ -465,13 +470,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 }));
 
-export function setupIterationCallbacks(iterations: number, maxRuntimeMs?: number) {
+export function setupIterationCallbacks(
+	iterations: number,
+	maxRuntimeMs?: number,
+	skipVerification?: boolean,
+) {
 	const loadedConfig = loadConfig();
 	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
 	orchestrator.initialize({
 		config: loadedConfig,
 		iterations,
 		maxRuntimeMs: effectiveMaxRuntimeMs,
+		skipVerification,
 	});
 	orchestrator.setupIterationCallbacks();
 }

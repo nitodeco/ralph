@@ -15,6 +15,7 @@ import type {
 	IterationLogStatus,
 	IterationLogsIndex,
 	IterationLogTask,
+	IterationLogVerification,
 } from "@/types.ts";
 import { formatTimestamp } from "./logging-utils.ts";
 import { ensureLogsDirExists, LOGS_DIR } from "./paths.ts";
@@ -145,11 +146,20 @@ export interface CompleteIterationLogOptions {
 	outputLength: number;
 	taskWasCompleted: boolean;
 	retryContexts?: IterationLogRetryContext[];
+	verification?: IterationLogVerification;
 }
 
 export function completeIterationLog(options: CompleteIterationLogOptions): void {
-	const { iteration, status, exitCode, retryCount, outputLength, taskWasCompleted, retryContexts } =
-		options;
+	const {
+		iteration,
+		status,
+		exitCode,
+		retryCount,
+		outputLength,
+		taskWasCompleted,
+		retryContexts,
+		verification,
+	} = options;
 
 	const log = loadIterationLog(iteration);
 	if (!log) {
@@ -169,6 +179,10 @@ export function completeIterationLog(options: CompleteIterationLogOptions): void
 
 	if (retryContexts && retryContexts.length > 0) {
 		log.agent.retryContexts = retryContexts;
+	}
+
+	if (verification) {
+		log.verification = verification;
 	}
 
 	if (log.task) {

@@ -51,6 +51,7 @@ interface RunWithSetupProps {
 	dryRun?: boolean;
 	initialTask?: string;
 	maxRuntimeMs?: number;
+	skipVerification?: boolean;
 }
 
 function RunWithSetup({
@@ -61,6 +62,7 @@ function RunWithSetup({
 	dryRun = false,
 	initialTask,
 	maxRuntimeMs,
+	skipVerification = false,
 }: RunWithSetupProps): React.ReactElement {
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
 
@@ -77,6 +79,7 @@ function RunWithSetup({
 			dryRun={dryRun}
 			initialTask={initialTask}
 			maxRuntimeMs={maxRuntimeMs}
+			skipVerification={skipVerification}
 		/>
 	);
 }
@@ -118,6 +121,7 @@ function main(): void {
 		verbose,
 		task,
 		maxRuntimeMs,
+		skipVerification,
 		guardrailsSubcommand,
 		guardrailsArg,
 	} = parseArgs(process.argv);
@@ -169,6 +173,7 @@ function main(): void {
 					dryRun={dryRun}
 					initialTask={task}
 					maxRuntimeMs={maxRuntimeMs}
+					skipVerification={skipVerification}
 				/>,
 			);
 			break;
@@ -183,6 +188,7 @@ function main(): void {
 					dryRun={dryRun}
 					initialTask={task}
 					maxRuntimeMs={maxRuntimeMs}
+					skipVerification={skipVerification}
 				/>,
 			);
 			break;

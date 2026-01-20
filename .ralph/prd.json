@@ -192,7 +192,7 @@
 				"Add --skip-verification flag to run command for cases where verification should be bypassed",
 				"Display verification status in the UI during the verification phase"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement task decomposition request handling",

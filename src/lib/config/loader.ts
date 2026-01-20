@@ -23,6 +23,9 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 		memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
 		maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
 		retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
+		verification: config.verification
+			? { ...defaults.verification, ...config.verification }
+			: defaults.verification,
 	};
 }
 
