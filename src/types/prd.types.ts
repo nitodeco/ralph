@@ -14,3 +14,15 @@ export interface LoadPrdResult {
 	prd: Prd | null;
 	validationError?: string;
 }
+
+export interface DecompositionSubtask {
+	title: string;
+	description: string;
+	steps: string[];
+}
+
+export interface DecompositionRequest {
+	originalTaskTitle: string;
+	reason: string;
+	suggestedSubtasks: DecompositionSubtask[];
+}

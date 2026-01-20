@@ -10,6 +10,7 @@ import { join } from "node:path";
 import type {
 	AgentType,
 	IterationLog,
+	IterationLogDecomposition,
 	IterationLogError,
 	IterationLogRetryContext,
 	IterationLogStatus,
@@ -147,6 +148,7 @@ export interface CompleteIterationLogOptions {
 	taskWasCompleted: boolean;
 	retryContexts?: IterationLogRetryContext[];
 	verification?: IterationLogVerification;
+	decomposition?: IterationLogDecomposition;
 }
 
 export function completeIterationLog(options: CompleteIterationLogOptions): void {
@@ -159,6 +161,7 @@ export function completeIterationLog(options: CompleteIterationLogOptions): void
 		taskWasCompleted,
 		retryContexts,
 		verification,
+		decomposition,
 	} = options;
 
 	const log = loadIterationLog(iteration);
@@ -183,6 +186,10 @@ export function completeIterationLog(options: CompleteIterationLogOptions): void
 
 	if (verification) {
 		log.verification = verification;
+	}
+
+	if (decomposition) {
+		log.decomposition = decomposition;
 	}
 
 	if (log.task) {

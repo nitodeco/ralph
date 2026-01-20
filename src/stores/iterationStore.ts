@@ -27,6 +27,7 @@ interface IterationActions {
 	next: () => void;
 	setTotal: (newTotal: number) => void;
 	markIterationComplete: (isProjectComplete: boolean) => void;
+	restartCurrentIteration: () => void;
 	setCallbacks: (callbacks: IterationCallbacks) => void;
 	setDelayMs: (delayMs: number) => void;
 	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => void;
@@ -194,6 +195,22 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 		IterationTimer.scheduleNext(state.delayMs, () => {
 			get().next();
+		});
+	},
+
+	restartCurrentIteration: () => {
+		const state = get();
+		set({ isDelaying: true });
+		eventBus.emit("iteration:delay", { iteration: state.current, delayMs: state.delayMs });
+
+		IterationTimer.scheduleNext(state.delayMs, () => {
+			const currentState = get();
+			eventBus.emit("iteration:start", {
+				iteration: currentState.current,
+				totalIterations: currentState.total,
+			});
+			currentState.callbacks.onIterationStart?.(currentState.current);
+			set({ isDelaying: false });
 		});
 	},
 }));

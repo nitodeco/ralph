@@ -257,3 +257,32 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Implement task decomposition request handling
+Date: 2026-01-20
+
+Changes made:
+- Added DECOMPOSITION_MARKER constant ('<request>DECOMPOSE_TASK</request>') and DECOMPOSITION_OUTPUT_START/END markers to src/lib/prompt.ts
+- Created DecompositionRequest and DecompositionSubtask interfaces in src/types/prd.types.ts
+- Updated buildPrompt() to include decomposition instructions with example JSON format
+- Created src/lib/decomposition.ts with parseDecompositionRequest() and applyDecomposition() functions
+- Added formatDecompositionForProgress() for logging decomposition events
+- Added maxDecompositionsPerTask config option (default: 2) to RalphConfig, DEFAULTS, CONFIG_DEFAULTS, and applyDefaults()
+- Updated orchestrator to detect decomposition marker in agent output and handle it:
+  - Parse decomposition request from output
+  - Apply decomposition to PRD (replace original task with subtasks)
+  - Save updated PRD
+  - Log decomposition to progress.txt
+  - Restart current iteration without incrementing counter
+  - Track decomposition count per task to prevent infinite loops
+- Added restartCurrentIteration() method to iteration store
+- Added IterationLogDecomposition interface and 'decomposed' status to session.types.ts
+- Updated completeIterationLog() to accept decomposition data
+- Added lastDecomposition state to appStore
+- Updated IterationProgress component to display decomposition feedback
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

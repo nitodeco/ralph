@@ -1,6 +1,15 @@
 import { formatGuardrailsForPrompt, getActiveGuardrails } from "@/lib/guardrails.ts";
 import type { Prd, PrdFormat } from "@/types.ts";
 
+export const COMPLETION_MARKER = "<promise>COMPLETE</promise>";
+export const DECOMPOSITION_MARKER = "<request>DECOMPOSE_TASK</request>";
+export const PRD_OUTPUT_START = "<prd_output>";
+export const PRD_OUTPUT_END = "</prd_output>";
+export const TASK_OUTPUT_START = "<task_output>";
+export const TASK_OUTPUT_END = "</task_output>";
+export const DECOMPOSITION_OUTPUT_START = "<decomposition_output>";
+export const DECOMPOSITION_OUTPUT_END = "</decomposition_output>";
+
 export interface BuildPromptOptions {
 	instructions?: string | null;
 	specificTask?: string | null;
@@ -20,6 +29,28 @@ export function buildPrompt(options: BuildPromptOptions = {}): string {
 		? `2. Work on the SPECIFIED task: "${specificTask}"`
 		: "2. Find the next most important task to work on";
 
+	const decompositionInstructions = `
+## Task Decomposition
+If a task is too large or complex to complete in one iteration, you may request decomposition:
+1. Output the marker: ${DECOMPOSITION_MARKER}
+2. Immediately after, output a JSON payload wrapped in ${DECOMPOSITION_OUTPUT_START} and ${DECOMPOSITION_OUTPUT_END} tags
+3. The JSON must contain: originalTaskTitle (string), reason (string), suggestedSubtasks (array of {title, description, steps})
+4. Each subtask should be small enough to complete in one iteration
+5. Do NOT mark the original task as done - the system will replace it with subtasks
+
+Example:
+${DECOMPOSITION_MARKER}
+${DECOMPOSITION_OUTPUT_START}
+{
+  "originalTaskTitle": "Implement user authentication system",
+  "reason": "This task involves multiple complex subsystems that should be implemented separately",
+  "suggestedSubtasks": [
+    {"title": "Add user model and database schema", "description": "Create the user entity", "steps": ["Create user model", "Add migration"]},
+    {"title": "Implement login endpoint", "description": "Create login API", "steps": ["Add route", "Add validation"]}
+  ]
+}
+${DECOMPOSITION_OUTPUT_END}`;
+
 	return `@.ralph/prd.json @.ralph/progress.txt
 
 You are a coding agent working on a long running project.
@@ -36,17 +67,12 @@ ${taskSelectionInstruction}
 - Always leave the codebase in a buildable state
 - If the build fails, fix it before committing
 - Ensure you are using the proper tools in this project
-${instructionsSection}${guardrailsSection ? `\n${guardrailsSection}` : ""}
+${instructionsSection}${guardrailsSection ? `\n${guardrailsSection}` : ""}${decompositionInstructions}
+
 IMPORTANT:
 If all tasks in .ralph/prd.json are marked as done, output EXACTLY this: <promise>COMPLETE</promise>
 `;
 }
-
-export const COMPLETION_MARKER = "<promise>COMPLETE</promise>";
-export const PRD_OUTPUT_START = "<prd_output>";
-export const PRD_OUTPUT_END = "</prd_output>";
-export const TASK_OUTPUT_START = "<task_output>";
-export const TASK_OUTPUT_END = "</task_output>";
 
 export function buildPrdGenerationPrompt(description: string, format: PrdFormat): string {
 	const formatExample =

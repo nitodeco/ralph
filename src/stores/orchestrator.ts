@@ -1,4 +1,10 @@
 import { loadConfig } from "@/lib/config.ts";
+import {
+	applyDecomposition,
+	formatDecompositionForProgress,
+	parseDecompositionRequest,
+} from "@/lib/decomposition.ts";
+import { DEFAULTS } from "@/lib/defaults.ts";
 import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
 import {
@@ -11,7 +17,7 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
+import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd, savePrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
@@ -29,6 +35,9 @@ import {
 } from "@/lib/statistics.ts";
 import { formatVerificationResult, runVerification } from "@/lib/verification.ts";
 import type {
+	DecompositionRequest,
+	DecompositionSubtask,
+	IterationLogDecomposition,
 	IterationLogRetryContext,
 	IterationLogStatus,
 	IterationLogVerification,
@@ -68,6 +77,8 @@ class SessionOrchestrator {
 	private lastRetryContexts: IterationLogRetryContext[] = [];
 	private lastVerificationResult: VerificationResult | null = null;
 	private isVerifying = false;
+	private lastDecomposition: DecompositionRequest | null = null;
+	private decompositionCountByTask: Map<string, number> = new Map();
 
 	initialize(options: OrchestratorConfig): void {
 		if (this.initialized) {
@@ -82,6 +93,8 @@ class SessionOrchestrator {
 		this.lastRetryContexts = [];
 		this.lastVerificationResult = null;
 		this.isVerifying = false;
+		this.lastDecomposition = null;
+		this.decompositionCountByTask = new Map();
 		this.setupSubscriptions();
 
 		const iterationStore = useIterationStore.getState();
@@ -119,6 +132,14 @@ class SessionOrchestrator {
 			this.logRetryContextsToProgress(event.retryContexts);
 		}
 
+		const decompositionResult = parseDecompositionRequest(event.output);
+		if (decompositionResult.detected && decompositionResult.request) {
+			const handled = this.handleDecomposition(decompositionResult.request);
+			if (handled) {
+				return;
+			}
+		}
+
 		const currentPrd = reloadPrd();
 		const allTasksActuallyDone = currentPrd
 			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
@@ -149,6 +170,59 @@ class SessionOrchestrator {
 
 		const iterationStore = useIterationStore.getState();
 		iterationStore.markIterationComplete(allTasksActuallyDone);
+	}
+
+	private handleDecomposition(request: DecompositionRequest): boolean {
+		const loadedConfig = loadConfig();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const maxDecompositions =
+			loadedConfig.maxDecompositionsPerTask ?? DEFAULTS.maxDecompositionsPerTask;
+
+		const taskKey = request.originalTaskTitle.toLowerCase();
+		const currentCount = this.decompositionCountByTask.get(taskKey) ?? 0;
+
+		if (currentCount >= maxDecompositions) {
+			logger.warn("Max decompositions reached for task, proceeding without decomposition", {
+				task: request.originalTaskTitle,
+				maxDecompositions,
+				currentCount,
+			});
+			return false;
+		}
+
+		const currentPrd = reloadPrd();
+		if (!currentPrd) {
+			logger.error("Cannot apply decomposition: PRD not found");
+			return false;
+		}
+
+		const result = applyDecomposition(currentPrd, request);
+		if (!result.success || !result.updatedPrd) {
+			logger.error("Failed to apply decomposition", { error: result.error });
+			return false;
+		}
+
+		savePrd(result.updatedPrd, loadedConfig.prdFormat ?? "json");
+		this.decompositionCountByTask.set(taskKey, currentCount + 1);
+		this.lastDecomposition = request;
+
+		logger.info("Task decomposed successfully", {
+			originalTask: request.originalTaskTitle,
+			subtasksCreated: result.subtasksCreated,
+			reason: request.reason,
+		});
+
+		appendProgress(formatDecompositionForProgress(request));
+
+		useAppStore.setState({
+			prd: result.updatedPrd,
+			lastDecomposition: request,
+		});
+
+		const iterationStore = useIterationStore.getState();
+		iterationStore.restartCurrentIteration();
+
+		return true;
 	}
 
 	private logVerificationResultToProgress(result: VerificationResult): void {
@@ -239,14 +313,17 @@ class SessionOrchestrator {
 
 				const verificationFailed =
 					this.lastVerificationResult && !this.lastVerificationResult.passed;
+				const wasDecomposed = this.lastDecomposition !== null;
 
 				const iterationStatus: IterationLogStatus = agentStore.error
 					? "failed"
-					: verificationFailed
-						? "verification_failed"
-						: agentStore.isComplete
-							? "completed"
-							: "completed";
+					: wasDecomposed
+						? "decomposed"
+						: verificationFailed
+							? "verification_failed"
+							: agentStore.isComplete
+								? "completed"
+								: "completed";
 
 				const retryContextsForLog =
 					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
@@ -267,6 +344,18 @@ class SessionOrchestrator {
 					: undefined;
 				this.lastVerificationResult = null;
 
+				const decompositionForLog: IterationLogDecomposition | undefined = this.lastDecomposition
+					? {
+							originalTaskTitle: this.lastDecomposition.originalTaskTitle,
+							reason: this.lastDecomposition.reason,
+							subtasksCreated: this.lastDecomposition.suggestedSubtasks.map(
+								(subtask: DecompositionSubtask) => subtask.title,
+							),
+						}
+					: undefined;
+				this.lastDecomposition = null;
+				useAppStore.setState({ lastDecomposition: null });
+
 				completeIterationLog({
 					iteration: iterationNumber,
 					status: iterationStatus,
@@ -276,6 +365,7 @@ class SessionOrchestrator {
 					taskWasCompleted: agentStore.isComplete,
 					retryContexts: retryContextsForLog,
 					verification: verificationForLog,
+					decomposition: decompositionForLog,
 				});
 
 				agentStore.reset();

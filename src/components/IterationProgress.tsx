@@ -15,6 +15,7 @@ export function IterationProgress(): React.ReactElement {
 	const isDelaying = useIterationStore((state) => state.isDelaying);
 	const isVerifying = useAppStore((state) => state.isVerifying);
 	const lastVerificationResult = useAppStore((state) => state.lastVerificationResult);
+	const lastDecomposition = useAppStore((state) => state.lastDecomposition);
 
 	const progressBar = createProgressBar(current, total, 20);
 	const percentage = Math.round((current / total) * 100);
@@ -42,6 +43,15 @@ export function IterationProgress(): React.ReactElement {
 					<Text color="red">
 						Verification failed: {lastVerificationResult.failedChecks.join(", ")}
 					</Text>
+				</Box>
+			)}
+			{lastDecomposition && (
+				<Box marginTop={1} flexDirection="column">
+					<Text color="yellow">
+						Task decomposed: "{lastDecomposition.originalTaskTitle}" split into{" "}
+						{lastDecomposition.suggestedSubtasks.length} subtasks
+					</Text>
+					<Text dimColor>Reason: {lastDecomposition.reason}</Text>
 				</Box>
 			)}
 		</Box>

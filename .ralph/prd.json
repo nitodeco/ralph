@@ -210,7 +210,7 @@
 				"Add UI feedback in AgentOutput or status message when decomposition occurs",
 				"Add maxDecompositionsPerTask config option (default 2) to prevent infinite decomposition loops"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement failure pattern learning and analysis",

@@ -24,6 +24,7 @@ import {
 import type {
 	ActiveView,
 	AppState,
+	DecompositionRequest,
 	Prd,
 	PrdTask,
 	RalphConfig,
@@ -51,6 +52,7 @@ interface AppStoreState {
 	maxRuntimeMs: number | null;
 	isVerifying: boolean;
 	lastVerificationResult: VerificationResult | null;
+	lastDecomposition: DecompositionRequest | null;
 }
 
 interface AppStoreActions {
@@ -104,6 +106,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	maxRuntimeMs: null,
 	isVerifying: false,
 	lastVerificationResult: null,
+	lastDecomposition: null,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });

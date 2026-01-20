@@ -25,10 +25,17 @@ export type {
 	VerificationConfig,
 	VerificationResult,
 } from "./config.types.ts";
-export type { LoadPrdResult, Prd, PrdTask } from "./prd.types.ts";
+export type {
+	DecompositionRequest,
+	DecompositionSubtask,
+	LoadPrdResult,
+	Prd,
+	PrdTask,
+} from "./prd.types.ts";
 export type {
 	IterationLog,
 	IterationLogAgent,
+	IterationLogDecomposition,
 	IterationLogError,
 	IterationLogRetryContext,
 	IterationLogStatus,

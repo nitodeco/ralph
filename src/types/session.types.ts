@@ -36,7 +36,8 @@ export type IterationLogStatus =
 	| "completed"
 	| "failed"
 	| "stopped"
-	| "verification_failed";
+	| "verification_failed"
+	| "decomposed";
 
 export interface IterationLogTask {
 	title: string;
@@ -77,6 +78,12 @@ export interface IterationLogVerification {
 	totalDurationMs: number;
 }
 
+export interface IterationLogDecomposition {
+	originalTaskTitle: string;
+	reason: string;
+	subtasksCreated: string[];
+}
+
 export interface IterationLog {
 	iteration: number;
 	totalIterations: number;
@@ -88,6 +95,7 @@ export interface IterationLog {
 	agent: IterationLogAgent;
 	errors: IterationLogError[];
 	verification?: IterationLogVerification;
+	decomposition?: IterationLogDecomposition;
 }
 
 export interface IterationLogsIndexEntry {

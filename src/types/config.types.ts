@@ -32,6 +32,7 @@ export interface RalphConfig {
 	maxRuntimeMs?: number;
 	retryWithContext?: boolean;
 	verification?: VerificationConfig;
+	maxDecompositionsPerTask?: number;
 }
 
 export interface ConfigValidationError {
