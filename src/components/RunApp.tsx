@@ -31,6 +31,7 @@ import { existsSync } from "node:fs";
 interface RunAppProps {
 	version: string;
 	iterations: number;
+	autoResume?: boolean;
 }
 
 type AppState = "idle" | "running" | "complete" | "error" | "max_iterations" | "not_initialized" | "resume_prompt";
@@ -66,7 +67,7 @@ function getCurrentTaskIndex(prd: Prd): number {
 
 const DEFAULT_ITERATIONS = 10;
 
-export function RunApp({ version, iterations }: RunAppProps): React.ReactElement {
+export function RunApp({ version, iterations, autoResume = false }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 	const [appState, setAppState] = useState<AppState>("idle");
 	const [activeView, setActiveView] = useState<ActiveView>("run");
@@ -211,6 +212,9 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 			case "start":
 				startIterations(args?.iterations);
 				break;
+			case "resume":
+				resumeSession();
+				break;
 			case "init":
 				agent.stop();
 				iteration.pause();
@@ -241,7 +245,7 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 				exit();
 				break;
 		}
-	}, [agent, iteration, exit, startIterations]);
+	}, [agent, iteration, exit, startIterations, resumeSession]);
 
 	const handleViewComplete = useCallback(() => {
 		setActiveView("run");
@@ -272,11 +276,21 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		const existingSession = loadSession();
 		if (isSessionResumable(existingSession)) {
 			setPendingSession(existingSession);
-			setAppState("resume_prompt");
+			if (autoResume) {
+				setAppState("idle");
+			} else {
+				setAppState("resume_prompt");
+			}
 		} else {
 			setAppState("idle");
 		}
-	}, []);
+	}, [autoResume]);
+
+	useEffect(() => {
+		if (autoResume && pendingSession && appState === "idle") {
+			resumeSession();
+		}
+	}, [autoResume, pendingSession, appState, resumeSession]);
 
 	useEffect(() => {
 		if (iteration.isRunning && iteration.current > 0 && !agent.isStreaming && !iteration.isDelaying) {
@@ -357,6 +371,55 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 				<Box flexDirection="column" marginY={1} paddingX={1}>
 					<Message type="warning">{validationWarning.message}</Message>
 					<Text dimColor>{validationWarning.hint}</Text>
+				</Box>
+				<CommandInput onCommand={handleSlashCommand} />
+			</Box>
+		);
+	}
+
+	if (appState === "resume_prompt" && pendingSession) {
+		const formatElapsedTime = (seconds: number) => {
+			const hours = Math.floor(seconds / 3600);
+			const minutes = Math.floor((seconds % 3600) / 60);
+			const secs = seconds % 60;
+			if (hours > 0) {
+				return `${hours}h ${minutes}m ${secs}s`;
+			}
+			if (minutes > 0) {
+				return `${minutes}m ${secs}s`;
+			}
+			return `${secs}s`;
+		};
+
+		const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
+
+		return (
+			<Box flexDirection="column" padding={1}>
+				<Header version={version} agent={config?.agent} projectName={prd?.project} />
+				<Box flexDirection="column" marginY={1} paddingX={1} gap={1}>
+					<Message type="info">Found an existing session</Message>
+					<Box flexDirection="column" paddingLeft={2}>
+						<Text>
+							<Text dimColor>Iterations completed:</Text>{" "}
+							<Text color="cyan">{pendingSession.currentIteration}</Text>
+							<Text dimColor> / </Text>
+							<Text>{pendingSession.totalIterations}</Text>
+						</Text>
+						<Text>
+							<Text dimColor>Elapsed time:</Text>{" "}
+							<Text color="cyan">{formatElapsedTime(pendingSession.elapsedTimeSeconds)}</Text>
+						</Text>
+						<Text>
+							<Text dimColor>Remaining iterations:</Text>{" "}
+							<Text color="cyan">{remainingIterations > 0 ? remainingIterations : 0}</Text>
+						</Text>
+					</Box>
+					<Box marginTop={1}>
+						<Text>
+							Type <Text color="cyan">/resume</Text> to continue or{" "}
+							<Text color="yellow">/start</Text> to start fresh
+						</Text>
+					</Box>
 				</Box>
 				<CommandInput onCommand={handleSlashCommand} />
 			</Box>

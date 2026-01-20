@@ -13,7 +13,7 @@ declare const RALPH_VERSION: string | undefined;
 
 export const VERSION = typeof RALPH_VERSION !== "undefined" ? RALPH_VERSION : packageJson.version;
 
-type Command = "run" | "init" | "setup" | "update" | "help" | "version" | "-v" | "--version" | "-h" | "--help";
+type Command = "run" | "init" | "setup" | "update" | "resume" | "help" | "version" | "-v" | "--version" | "-h" | "--help";
 
 interface ParsedArgs {
 	command: Command;
@@ -47,12 +47,14 @@ Usage:
 
 Commands:
   init              Initialize a new PRD project (AI-generated from description)
+  resume            Resume a previously interrupted session
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
 Slash Commands (in-app):
   /start [n]        Start the agent loop (default: 10 iterations)
+  /resume           Resume a previously interrupted session
   /init             Initialize a new PRD project
   /add              Add a new task to the PRD (AI-generated from description)
   /setup            Configure global preferences
@@ -63,6 +65,7 @@ Slash Commands (in-app):
 Examples:
   ralph             Open the Ralph UI
   ralph init        Create a new PRD project from a description
+  ralph resume      Resume a previously interrupted session
   ralph update      Check for and install updates
 `);
 }
@@ -78,16 +81,17 @@ function clearTerminal(): void {
 interface RunWithSetupProps {
 	version: string;
 	iterations: number;
+	autoResume?: boolean;
 }
 
-function RunWithSetup({ version, iterations }: RunWithSetupProps): React.ReactElement {
+function RunWithSetup({ version, iterations, autoResume = false }: RunWithSetupProps): React.ReactElement {
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
 
 	if (!setupComplete) {
 		return <SetupWizard version={version} onComplete={() => setSetupComplete(true)} />;
 	}
 
-	return <RunApp version={version} iterations={iterations} />;
+	return <RunApp version={version} iterations={iterations} autoResume={autoResume} />;
 }
 
 function main(): void {
@@ -97,6 +101,10 @@ function main(): void {
 	switch (command) {
 		case "run":
 			render(<RunWithSetup version={VERSION} iterations={iterations} />);
+			break;
+
+		case "resume":
+			render(<RunWithSetup version={VERSION} iterations={iterations} autoResume />);
 			break;
 
 		case "init":

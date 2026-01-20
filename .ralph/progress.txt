@@ -7,3 +7,16 @@ Implementation:
 - Updated RunApp to pass retryCount and isRetrying props to AgentOutput
 - Added configuration options in SetupWizard for max_retries and retry_delay steps
 - Display retry configuration in setup completion summary
+
+Task 2: Implement session persistence and resume capability - COMPLETED
+
+Implementation:
+- Session types (Session, SessionStatus) already existed in src/types.ts with iteration count, start time, current task index
+- Core session functions (loadSession, saveSession, deleteSession, createSession, updateSessionIteration, updateSessionStatus, isSessionResumable) already existed in lib/session.ts
+- Auto-save on iteration completion was already implemented in RunApp's onIterationComplete callback
+- Added resume prompt UI in RunApp showing session info when a resumable session is detected
+- Added /resume slash command handler in RunApp to resume interrupted sessions
+- Added autoResume prop to RunApp to support automatic resume from CLI
+- Added "ralph resume" CLI command to index.tsx that auto-resumes existing sessions
+- Updated HelpView with /resume command and resume CLI command documentation
+- Updated printHelp() with resume command documentation

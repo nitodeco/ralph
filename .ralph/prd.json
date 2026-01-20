@@ -23,7 +23,7 @@
 				"Add resume command to CLI that reads session state",
 				"Update RunApp to check for existing session on startup and prompt for resume"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add comprehensive logging system",

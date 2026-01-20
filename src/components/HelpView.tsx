@@ -51,6 +51,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Initialize a new PRD project (AI-generated)</Text>
 						</Text>
 						<Text>
+							<Text dimColor>resume</Text>
+							{"            "}
+							<Text>Resume a previously interrupted session</Text>
+						</Text>
+						<Text>
 							<Text dimColor>setup</Text>
 							{"             "}
 							<Text>Configure global preferences</Text>
@@ -75,6 +80,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text dimColor>/start [n]</Text>
 							{"        "}
 							<Text>Start the agent loop (default: 10 iterations)</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/resume</Text>
+							{"           "}
+							<Text>Resume a previously interrupted session</Text>
 						</Text>
 						<Text>
 							<Text dimColor>/init</Text>
