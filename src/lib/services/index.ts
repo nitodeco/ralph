@@ -45,6 +45,7 @@ export type {
 export { isPartialRalphConfig, isRalphConfig, validateConfig } from "./config/validation.ts";
 export {
 	getConfigService,
+	getGuardrailsService,
 	getPrdService,
 	getServices,
 	getSessionMemoryService,
@@ -54,6 +55,19 @@ export {
 	resetServices,
 	type ServiceContainer,
 } from "./container.ts";
+export { createDefaultGuardrails } from "./guardrails/defaults.ts";
+export { formatGuardrailsForPrompt } from "./guardrails/formatters.ts";
+export { createGuardrailsService } from "./guardrails/implementation.ts";
+export type {
+	AddGuardrailOptions,
+	GuardrailCategory,
+	GuardrailsFile,
+	GuardrailsService,
+	GuardrailTrigger,
+	PromptGuardrail,
+} from "./guardrails/types.ts";
+export { VALID_GUARDRAIL_CATEGORIES, VALID_GUARDRAIL_TRIGGERS } from "./guardrails/types.ts";
+export { isGuardrailsFile, isPromptGuardrail } from "./guardrails/validation.ts";
 export { IterationTimer } from "./IterationTimer.ts";
 export { createPrdService } from "./prd/implementation.ts";
 export type {

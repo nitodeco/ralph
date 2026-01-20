@@ -1,20 +1,15 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { createDefaultGuardrails } from "@/lib/constants/defaults.ts";
-import {
-	addGuardrail,
-	formatGuardrailsForPrompt,
-	getActiveGuardrails,
-	getGuardrailById,
-	guardrailsFileExists,
-	initializeGuardrails,
-	loadGuardrails,
-	removeGuardrail,
-	saveGuardrails,
-	toggleGuardrail,
-} from "@/lib/guardrails.ts";
 import { ensureRalphDirExists, GUARDRAILS_FILE_PATH } from "@/lib/paths.ts";
-import type { PromptGuardrail } from "@/types.ts";
+import {
+	bootstrapTestServices,
+	createDefaultGuardrails,
+	createGuardrailsService,
+	formatGuardrailsForPrompt,
+	getGuardrailsService,
+	type PromptGuardrail,
+	teardownTestServices,
+} from "@/lib/services/index.ts";
 
 const TEST_DIR = "/tmp/ralph-test-guardrails";
 const RALPH_DIR = `${TEST_DIR}/.ralph`;
@@ -38,17 +33,26 @@ describe("guardrails functions", () => {
 		mkdirSync(RALPH_DIR, { recursive: true });
 		process.chdir(TEST_DIR);
 		ensureRalphDirExists();
+
+		bootstrapTestServices({
+			guardrails: createGuardrailsService(),
+		});
 	});
 
 	afterEach(() => {
+		teardownTestServices();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
 	});
 
-	describe("loadGuardrails", () => {
+	describe("get/load", () => {
 		test("returns default guardrails when file does not exist", () => {
-			const guardrails = loadGuardrails();
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.invalidate();
+			const guardrails = guardrailsService.get();
 
 			expect(guardrails.length).toBeGreaterThan(0);
 			expect(normalizeGuardrails(guardrails)).toEqual(
@@ -57,6 +61,7 @@ describe("guardrails functions", () => {
 		});
 
 		test("loads guardrails from file", () => {
+			const guardrailsService = getGuardrailsService();
 			const customGuardrails: PromptGuardrail[] = [
 				{
 					id: "custom-1",
@@ -68,17 +73,21 @@ describe("guardrails functions", () => {
 				},
 			];
 
-			saveGuardrails(customGuardrails);
+			guardrailsService.save(customGuardrails);
+			guardrailsService.invalidate();
 
-			const loaded = loadGuardrails();
+			const loaded = guardrailsService.get();
 
 			expect(loaded).toHaveLength(1);
 			expect(loaded[0]?.instruction).toBe("Custom instruction");
 		});
 
 		test("returns defaults when file is corrupted", () => {
+			const guardrailsService = getGuardrailsService();
+
 			writeFileSync(GUARDRAILS_FILE_PATH, "{ invalid json }");
-			const guardrails = loadGuardrails();
+			guardrailsService.invalidate();
+			const guardrails = guardrailsService.get();
 
 			expect(normalizeGuardrails(guardrails)).toEqual(
 				normalizeGuardrails(createDefaultGuardrails()),
@@ -86,8 +95,11 @@ describe("guardrails functions", () => {
 		});
 
 		test("returns defaults when guardrails array is missing", () => {
+			const guardrailsService = getGuardrailsService();
+
 			writeFileSync(GUARDRAILS_FILE_PATH, JSON.stringify({}));
-			const guardrails = loadGuardrails();
+			guardrailsService.invalidate();
+			const guardrails = guardrailsService.get();
 
 			expect(normalizeGuardrails(guardrails)).toEqual(
 				normalizeGuardrails(createDefaultGuardrails()),
@@ -95,8 +107,9 @@ describe("guardrails functions", () => {
 		});
 	});
 
-	describe("saveGuardrails", () => {
+	describe("save", () => {
 		test("saves guardrails to file", () => {
+			const guardrailsService = getGuardrailsService();
 			const guardrails: PromptGuardrail[] = [
 				{
 					id: "test-1",
@@ -108,40 +121,49 @@ describe("guardrails functions", () => {
 				},
 			];
 
-			saveGuardrails(guardrails);
-			expect(guardrailsFileExists()).toBe(true);
+			guardrailsService.save(guardrails);
+			expect(guardrailsService.exists()).toBe(true);
 
-			const loaded = loadGuardrails();
+			guardrailsService.invalidate();
+			const loaded = guardrailsService.get();
 
 			expect(loaded).toHaveLength(1);
 			expect(loaded[0]?.instruction).toBe("Test instruction");
 		});
 
 		test("creates directory if it does not exist", () => {
+			const guardrailsService = getGuardrailsService();
 			const guardrails: PromptGuardrail[] = [];
 
-			saveGuardrails(guardrails);
+			guardrailsService.save(guardrails);
 			expect(existsSync(RALPH_DIR)).toBe(true);
 		});
 	});
 
-	describe("guardrailsFileExists", () => {
+	describe("exists", () => {
 		test("returns false when file does not exist", () => {
-			expect(guardrailsFileExists()).toBe(false);
+			const guardrailsService = getGuardrailsService();
+
+			expect(guardrailsService.exists()).toBe(false);
 		});
 
 		test("returns true when file exists", () => {
-			saveGuardrails([]);
-			expect(guardrailsFileExists()).toBe(true);
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.save([]);
+			expect(guardrailsService.exists()).toBe(true);
 		});
 	});
 
-	describe("initializeGuardrails", () => {
+	describe("initialize", () => {
 		test("creates guardrails file with defaults if it does not exist", () => {
-			expect(guardrailsFileExists()).toBe(false);
-			initializeGuardrails();
-			expect(guardrailsFileExists()).toBe(true);
-			const guardrails = loadGuardrails();
+			const guardrailsService = getGuardrailsService();
+
+			expect(guardrailsService.exists()).toBe(false);
+			guardrailsService.initialize();
+			expect(guardrailsService.exists()).toBe(true);
+			guardrailsService.invalidate();
+			const guardrails = guardrailsService.get();
 
 			expect(normalizeGuardrails(guardrails)).toEqual(
 				normalizeGuardrails(createDefaultGuardrails()),
@@ -149,6 +171,7 @@ describe("guardrails functions", () => {
 		});
 
 		test("does not overwrite existing guardrails file", () => {
+			const guardrailsService = getGuardrailsService();
 			const customGuardrails: PromptGuardrail[] = [
 				{
 					id: "custom",
@@ -160,19 +183,22 @@ describe("guardrails functions", () => {
 				},
 			];
 
-			saveGuardrails(customGuardrails);
-			initializeGuardrails();
-			const loaded = loadGuardrails();
+			guardrailsService.save(customGuardrails);
+			guardrailsService.initialize();
+			guardrailsService.invalidate();
+			const loaded = guardrailsService.get();
 
 			expect(loaded).toHaveLength(1);
 			expect(loaded[0]?.instruction).toBe("Custom");
 		});
 	});
 
-	describe("addGuardrail", () => {
+	describe("add", () => {
 		test("adds guardrail with required fields", () => {
-			initializeGuardrails();
-			const guardrail = addGuardrail({
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrail = guardrailsService.add({
 				instruction: "New guardrail",
 			});
 
@@ -183,14 +209,17 @@ describe("guardrails functions", () => {
 			expect(guardrail.id).toBeDefined();
 			expect(guardrail.addedAt).toBeDefined();
 
-			const loaded = loadGuardrails();
+			guardrailsService.invalidate();
+			const loaded = guardrailsService.get();
 
-			expect(loaded.some((g) => g.id === guardrail.id)).toBe(true);
+			expect(loaded.some((loadedGuardrail) => loadedGuardrail.id === guardrail.id)).toBe(true);
 		});
 
 		test("adds guardrail with custom options", () => {
-			initializeGuardrails();
-			const guardrail = addGuardrail({
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrail = guardrailsService.add({
 				instruction: "Custom guardrail",
 				trigger: "on-error",
 				category: "safety",
@@ -205,142 +234,180 @@ describe("guardrails functions", () => {
 		});
 
 		test("appends to existing guardrails", () => {
-			initializeGuardrails();
-			const initialCount = loadGuardrails().length;
+			const guardrailsService = getGuardrailsService();
 
-			addGuardrail({ instruction: "New one" });
-			expect(loadGuardrails().length).toBe(initialCount + 1);
+			guardrailsService.initialize();
+			const initialCount = guardrailsService.get().length;
+
+			guardrailsService.add({ instruction: "New one" });
+			guardrailsService.invalidate();
+			expect(guardrailsService.get().length).toBe(initialCount + 1);
 		});
 	});
 
-	describe("removeGuardrail", () => {
+	describe("remove", () => {
 		test("removes guardrail by id", () => {
-			initializeGuardrails();
-			const guardrail = addGuardrail({ instruction: "To remove" });
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrail = guardrailsService.add({ instruction: "To remove" });
 			const id = guardrail.id;
 
-			const removed = removeGuardrail(id);
+			const removed = guardrailsService.remove(id);
 
 			expect(removed).toBe(true);
-			const loaded = loadGuardrails();
+			guardrailsService.invalidate();
+			const loaded = guardrailsService.get();
 
-			expect(loaded.some((g) => g.id === id)).toBe(false);
+			expect(loaded.some((guardrail) => guardrail.id === id)).toBe(false);
 		});
 
 		test("returns false when guardrail not found", () => {
-			initializeGuardrails();
-			const removed = removeGuardrail("nonexistent-id");
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const removed = guardrailsService.remove("nonexistent-id");
 
 			expect(removed).toBe(false);
 		});
 
 		test("preserves other guardrails when removing one", () => {
-			initializeGuardrails();
-			const guardrail1 = addGuardrail({ instruction: "Keep this" });
-			const guardrail2 = addGuardrail({ instruction: "Remove this" });
+			const guardrailsService = getGuardrailsService();
 
-			removeGuardrail(guardrail2.id);
-			const loaded = loadGuardrails();
+			guardrailsService.initialize();
+			const guardrail1 = guardrailsService.add({ instruction: "Keep this" });
+			const guardrail2 = guardrailsService.add({ instruction: "Remove this" });
 
-			expect(loaded.some((g) => g.id === guardrail1.id)).toBe(true);
-			expect(loaded.some((g) => g.id === guardrail2.id)).toBe(false);
+			guardrailsService.remove(guardrail2.id);
+			guardrailsService.invalidate();
+			const loaded = guardrailsService.get();
+
+			expect(loaded.some((guardrail) => guardrail.id === guardrail1.id)).toBe(true);
+			expect(loaded.some((guardrail) => guardrail.id === guardrail2.id)).toBe(false);
 		});
 	});
 
-	describe("toggleGuardrail", () => {
+	describe("toggle", () => {
 		test("toggles enabled state from true to false", () => {
-			initializeGuardrails();
-			const guardrail = addGuardrail({ instruction: "Test", enabled: true });
-			const toggled = toggleGuardrail(guardrail.id);
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrail = guardrailsService.add({ instruction: "Test", enabled: true });
+			const toggled = guardrailsService.toggle(guardrail.id);
 
 			expect(toggled).not.toBeNull();
 			expect(toggled?.enabled).toBe(false);
 
-			const loaded = loadGuardrails();
-			const found = loaded.find((g) => g.id === guardrail.id);
+			guardrailsService.invalidate();
+			const loaded = guardrailsService.get();
+			const found = loaded.find((loadedGuardrail) => loadedGuardrail.id === guardrail.id);
 
 			expect(found?.enabled).toBe(false);
 		});
 
 		test("toggles enabled state from false to true", () => {
-			initializeGuardrails();
-			const guardrail = addGuardrail({ instruction: "Test", enabled: false });
-			const toggled = toggleGuardrail(guardrail.id);
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrail = guardrailsService.add({ instruction: "Test", enabled: false });
+			const toggled = guardrailsService.toggle(guardrail.id);
 
 			expect(toggled).not.toBeNull();
 			expect(toggled?.enabled).toBe(true);
 		});
 
 		test("returns null when guardrail not found", () => {
-			initializeGuardrails();
-			const toggled = toggleGuardrail("nonexistent-id");
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const toggled = guardrailsService.toggle("nonexistent-id");
 
 			expect(toggled).toBeNull();
 		});
 	});
 
-	describe("getActiveGuardrails", () => {
+	describe("getActive", () => {
 		test("returns only enabled guardrails", () => {
-			initializeGuardrails();
-			addGuardrail({ instruction: "Enabled 1", enabled: true });
-			addGuardrail({ instruction: "Disabled", enabled: false });
-			addGuardrail({ instruction: "Enabled 2", enabled: true });
+			const guardrailsService = getGuardrailsService();
 
-			const active = getActiveGuardrails();
+			guardrailsService.initialize();
+			guardrailsService.add({ instruction: "Enabled 1", enabled: true });
+			guardrailsService.add({ instruction: "Disabled", enabled: false });
+			guardrailsService.add({ instruction: "Enabled 2", enabled: true });
 
-			expect(active.every((g) => g.enabled)).toBe(true);
-			expect(active.some((g) => g.instruction === "Disabled")).toBe(false);
+			const active = guardrailsService.getActive();
+
+			expect(active.every((guardrail) => guardrail.enabled)).toBe(true);
+			expect(active.some((guardrail) => guardrail.instruction === "Disabled")).toBe(false);
 		});
 
 		test("filters by trigger when provided", () => {
-			initializeGuardrails();
-			addGuardrail({ instruction: "Always", trigger: "always", enabled: true });
-			addGuardrail({ instruction: "On error", trigger: "on-error", enabled: true });
-			addGuardrail({ instruction: "On task type", trigger: "on-task-type", enabled: true });
+			const guardrailsService = getGuardrailsService();
 
-			const onError = getActiveGuardrails("on-error");
+			guardrailsService.initialize();
+			guardrailsService.add({ instruction: "Always", trigger: "always", enabled: true });
+			guardrailsService.add({ instruction: "On error", trigger: "on-error", enabled: true });
+			guardrailsService.add({
+				instruction: "On task type",
+				trigger: "on-task-type",
+				enabled: true,
+			});
 
-			expect(onError.every((g) => g.trigger === "on-error" || g.trigger === "always")).toBe(true);
-			expect(onError.some((g) => g.instruction === "On task type")).toBe(false);
+			const onError = guardrailsService.getActive("on-error");
+
+			expect(
+				onError.every(
+					(guardrail) => guardrail.trigger === "on-error" || guardrail.trigger === "always",
+				),
+			).toBe(true);
+			expect(onError.some((guardrail) => guardrail.instruction === "On task type")).toBe(false);
 		});
 
 		test("includes always trigger guardrails regardless of filter", () => {
-			initializeGuardrails();
-			addGuardrail({ instruction: "Always", trigger: "always", enabled: true });
-			addGuardrail({ instruction: "On error", trigger: "on-error", enabled: true });
+			const guardrailsService = getGuardrailsService();
 
-			const filtered = getActiveGuardrails("on-task-type");
+			guardrailsService.initialize();
+			guardrailsService.add({ instruction: "Always", trigger: "always", enabled: true });
+			guardrailsService.add({ instruction: "On error", trigger: "on-error", enabled: true });
 
-			expect(filtered.some((g) => g.instruction === "Always")).toBe(true);
+			const filtered = guardrailsService.getActive("on-task-type");
+
+			expect(filtered.some((guardrail) => guardrail.instruction === "Always")).toBe(true);
 		});
 
 		test("returns empty array when no active guardrails", () => {
-			initializeGuardrails();
-			const guardrails = loadGuardrails();
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrails = guardrailsService.get();
 
 			for (const guardrail of guardrails) {
-				toggleGuardrail(guardrail.id);
+				guardrailsService.toggle(guardrail.id);
 			}
 
-			const active = getActiveGuardrails();
+			const active = guardrailsService.getActive();
 
 			expect(active).toEqual([]);
 		});
 	});
 
-	describe("getGuardrailById", () => {
+	describe("getById", () => {
 		test("returns guardrail when found", () => {
-			initializeGuardrails();
-			const guardrail = addGuardrail({ instruction: "Test" });
-			const found = getGuardrailById(guardrail.id);
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const guardrail = guardrailsService.add({ instruction: "Test" });
+			const found = guardrailsService.getById(guardrail.id);
 
 			expect(found).not.toBeNull();
 			expect(found?.instruction).toBe("Test");
 		});
 
 		test("returns null when not found", () => {
-			initializeGuardrails();
-			const found = getGuardrailById("nonexistent-id");
+			const guardrailsService = getGuardrailsService();
+
+			guardrailsService.initialize();
+			const found = guardrailsService.getById("nonexistent-id");
 
 			expect(found).toBeNull();
 		});

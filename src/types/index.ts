@@ -1,4 +1,5 @@
 export type {
+	AddGuardrailOptions,
 	AgentType,
 	CanWorkResult,
 	ConfigService,
@@ -6,6 +7,10 @@ export type {
 	ConfigValidationResult,
 	DecompositionRequest,
 	DecompositionSubtask,
+	GuardrailCategory,
+	GuardrailsFile,
+	GuardrailsService,
+	GuardrailTrigger,
 	IterationTiming,
 	LoadPrdResult,
 	MemoryConfig,
@@ -14,6 +19,7 @@ export type {
 	Prd,
 	PrdService,
 	PrdTask,
+	PromptGuardrail,
 	RalphConfig,
 	Session,
 	SessionMemory,
@@ -41,13 +47,7 @@ export type {
 	ParsedArgs,
 	TaskListOutput,
 } from "./cli.types.ts";
-export type {
-	CheckResult,
-	GuardrailCategory,
-	GuardrailTrigger,
-	PromptGuardrail,
-	VerificationResult,
-} from "./config.types.ts";
+export type { CheckResult, VerificationResult } from "./config.types.ts";
 export type {
 	FailureHistory,
 	FailureHistoryEntry,

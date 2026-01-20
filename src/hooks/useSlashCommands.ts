@@ -3,8 +3,11 @@ import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
-import { addGuardrail } from "@/lib/guardrails.ts";
-import { getSessionMemoryService, getSessionService } from "@/lib/services/index.ts";
+import {
+	getGuardrailsService,
+	getSessionMemoryService,
+	getSessionService,
+} from "@/lib/services/index.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types.ts";
 
 interface SlashCommandMessage {
@@ -101,7 +104,9 @@ export function useSlashCommands({
 				case "guardrail":
 					if (args?.guardrailInstruction) {
 						try {
-							const guardrail = addGuardrail({ instruction: args.guardrailInstruction });
+							const guardrail = getGuardrailsService().add({
+								instruction: args.guardrailInstruction,
+							});
 
 							setGuardrailMessage({
 								type: "success",

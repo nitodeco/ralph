@@ -1,13 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
 import { TextInput } from "@/components/common/TextInput.tsx";
-import {
-	addGuardrail,
-	loadGuardrails,
-	removeGuardrail,
-	toggleGuardrail,
-} from "@/lib/guardrails.ts";
-import type { PromptGuardrail } from "@/types.ts";
+import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
 
 interface GuardrailsViewProps {
 	version: string;
@@ -17,14 +11,16 @@ interface GuardrailsViewProps {
 type ViewMode = "list" | "add";
 
 export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React.ReactElement {
-	const [guardrails, setGuardrails] = useState<PromptGuardrail[]>(() => loadGuardrails());
+	const guardrailsService = getGuardrailsService();
+	const [guardrails, setGuardrails] = useState<PromptGuardrail[]>(() => guardrailsService.get());
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 	const [newInstruction, setNewInstruction] = useState("");
 	const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
 	const refreshGuardrails = () => {
-		setGuardrails(loadGuardrails());
+		guardrailsService.invalidate();
+		setGuardrails(guardrailsService.get());
 	};
 
 	const showMessage = (type: "success" | "error", text: string) => {
@@ -64,7 +60,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 			const guardrail = guardrails[selectedIndex];
 
 			if (guardrail) {
-				toggleGuardrail(guardrail.id);
+				guardrailsService.toggle(guardrail.id);
 				refreshGuardrails();
 				showMessage("success", `Guardrail ${guardrail.enabled ? "disabled" : "enabled"}`);
 			}
@@ -74,7 +70,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 			const guardrail = guardrails[selectedIndex];
 
 			if (guardrail) {
-				removeGuardrail(guardrail.id);
+				guardrailsService.remove(guardrail.id);
 				refreshGuardrails();
 
 				if (selectedIndex >= guardrails.length - 1) {
@@ -88,7 +84,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 
 	const handleAddSubmit = (value: string) => {
 		if (value.trim()) {
-			addGuardrail({ instruction: value.trim() });
+			guardrailsService.add({ instruction: value.trim() });
 			refreshGuardrails();
 			showMessage("success", "Guardrail added");
 		}

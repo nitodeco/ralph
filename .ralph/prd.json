@@ -94,7 +94,7 @@
 				"Remove guardrail types from src/types/config.types.ts and guardrail type guards from src/lib/type-guards.ts",
 				"Delete src/lib/guardrails.ts and remove createDefaultGuardrails from src/lib/constants/defaults.ts after migration"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Clean up legacy files and types after service migration",

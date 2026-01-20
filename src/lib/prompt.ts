@@ -1,5 +1,4 @@
-import { formatGuardrailsForPrompt, getActiveGuardrails } from "@/lib/guardrails.ts";
-import { getSessionMemoryService } from "@/lib/services/index.ts";
+import { getGuardrailsService, getSessionMemoryService } from "@/lib/services/index.ts";
 import type { Prd } from "@/types.ts";
 
 export const COMPLETION_MARKER = "<promise>COMPLETE</promise>";
@@ -23,8 +22,9 @@ export function buildPrompt(options: BuildPromptOptions = {}): string {
 
 	const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
 
+	const guardrailsService = getGuardrailsService();
 	const guardrailsSection = includeGuardrails
-		? formatGuardrailsForPrompt(getActiveGuardrails())
+		? guardrailsService.formatForPrompt(guardrailsService.getActive())
 		: "";
 
 	let memorySection = "";

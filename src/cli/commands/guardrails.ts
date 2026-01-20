@@ -1,10 +1,4 @@
-import {
-	addGuardrail,
-	loadGuardrails,
-	removeGuardrail,
-	toggleGuardrail,
-} from "@/lib/guardrails.ts";
-import type { PromptGuardrail } from "@/types.ts";
+import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
 
 interface GuardrailsOutput {
 	guardrails: PromptGuardrail[];
@@ -23,7 +17,7 @@ function formatGuardrailStatus(guardrail: PromptGuardrail): string {
 }
 
 export function printGuardrails(version: string, jsonOutput: boolean): void {
-	const guardrails = loadGuardrails();
+	const guardrails = getGuardrailsService().get();
 	const enabledCount = guardrails.filter((guardrail) => guardrail.enabled).length;
 
 	if (jsonOutput) {
@@ -70,7 +64,7 @@ export function handleGuardrailsAdd(instruction: string): void {
 		process.exit(1);
 	}
 
-	const guardrail = addGuardrail({ instruction: instruction.trim() });
+	const guardrail = getGuardrailsService().add({ instruction: instruction.trim() });
 
 	console.log(`\x1b[32m✓\x1b[0m Added guardrail: "${guardrail.instruction}"`);
 	console.log(`  id: ${guardrail.id}`);
@@ -82,7 +76,7 @@ export function handleGuardrailsRemove(guardrailId: string): void {
 		process.exit(1);
 	}
 
-	const removed = removeGuardrail(guardrailId.trim());
+	const removed = getGuardrailsService().remove(guardrailId.trim());
 
 	if (removed) {
 		console.log(`\x1b[32m✓\x1b[0m Removed guardrail: ${guardrailId}`);
@@ -98,7 +92,7 @@ export function handleGuardrailsToggle(guardrailId: string): void {
 		process.exit(1);
 	}
 
-	const guardrail = toggleGuardrail(guardrailId.trim());
+	const guardrail = getGuardrailsService().toggle(guardrailId.trim());
 
 	if (guardrail) {
 		const status = guardrail.enabled ? "enabled" : "disabled";

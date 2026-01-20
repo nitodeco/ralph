@@ -1,6 +1,8 @@
 import { createConfigService } from "./config/implementation.ts";
 import type { ConfigService } from "./config/types.ts";
 import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
+import { createGuardrailsService } from "./guardrails/implementation.ts";
+import type { GuardrailsService } from "./guardrails/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
 import type { PrdService } from "./prd/types.ts";
 import { createSessionService } from "./session/implementation.ts";
@@ -11,6 +13,7 @@ import type { SessionMemoryService } from "./session-memory/types.ts";
 export function bootstrapServices(): void {
 	initializeServices({
 		config: createConfigService(),
+		guardrails: createGuardrailsService(),
 		prd: createPrdService(),
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
@@ -19,6 +22,7 @@ export function bootstrapServices(): void {
 
 export interface TestServiceOverrides {
 	config?: Partial<ConfigService>;
+	guardrails?: Partial<GuardrailsService>;
 	prd?: Partial<PrdService>;
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
@@ -170,11 +174,51 @@ function createMockSessionService(overrides: Partial<SessionService> = {}): Sess
 	};
 }
 
+function createMockGuardrailsService(
+	overrides: Partial<GuardrailsService> = {},
+): GuardrailsService {
+	const defaultGuardrails = [
+		{
+			id: "verify-before-commit",
+			instruction: "Verify changes work before committing",
+			trigger: "always" as const,
+			category: "quality" as const,
+			enabled: true,
+			addedAt: new Date().toISOString(),
+		},
+	];
+
+	return {
+		get: () => defaultGuardrails,
+		load: () => defaultGuardrails,
+		save: () => {},
+		exists: () => false,
+		initialize: () => {},
+		invalidate: () => {},
+		add: (options) => ({
+			id: `guardrail-${Date.now()}`,
+			instruction: options.instruction,
+			trigger: options.trigger ?? "always",
+			category: options.category ?? "quality",
+			enabled: options.enabled ?? true,
+			addedAt: new Date().toISOString(),
+			addedAfterFailure: options.addedAfterFailure,
+		}),
+		remove: () => true,
+		toggle: () => null,
+		getById: () => null,
+		getActive: () => defaultGuardrails,
+		formatForPrompt: () => "",
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
 	const testContainer: ServiceContainer = {
 		config: createMockConfigService(overrides.config),
+		guardrails: createMockGuardrailsService(overrides.guardrails),
 		prd: createMockPrdService(overrides.prd),
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 		session: createMockSessionService(overrides.session),

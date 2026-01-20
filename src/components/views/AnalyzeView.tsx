@@ -6,7 +6,7 @@ import {
 	generatePatternReport,
 	getSuggestedGuardrails,
 } from "@/lib/failure-patterns.ts";
-import { addGuardrail } from "@/lib/guardrails.ts";
+import { getGuardrailsService } from "@/lib/services/index.ts";
 import { Header } from "../Header.tsx";
 
 interface AnalyzeViewProps {
@@ -49,7 +49,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({ version, onClose }) =>
 				const guardrail = suggestedGuardrails[selectedSuggestionIndex];
 
 				try {
-					addGuardrail({
+					getGuardrailsService().add({
 						instruction: guardrail.instruction,
 						category: guardrail.category,
 						addedAfterFailure: guardrail.addedAfterFailure,

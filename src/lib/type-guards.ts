@@ -1,4 +1,3 @@
-import type { GuardrailCategory, GuardrailTrigger, PromptGuardrail } from "@/types/config.types.ts";
 import type {
 	FailureHistory,
 	FailureHistoryEntry,
@@ -10,7 +9,6 @@ import type {
 	IterationLogsIndexEntry,
 } from "@/types/session.types.ts";
 import type { StreamJsonMessage } from "./agent-stream.ts";
-import type { GuardrailsFile } from "./guardrails.ts";
 
 function isObject(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -30,49 +28,6 @@ function isBoolean(value: unknown): value is boolean {
 
 function isStringArray(value: unknown): value is string[] {
 	return Array.isArray(value) && value.every((item) => isString(item));
-}
-
-const VALID_GUARDRAIL_TRIGGERS: GuardrailTrigger[] = ["always", "on-error", "on-task-type"];
-const VALID_GUARDRAIL_CATEGORIES: GuardrailCategory[] = ["safety", "quality", "style", "process"];
-
-function isPromptGuardrail(value: unknown): value is PromptGuardrail {
-	if (!isObject(value)) {
-		return false;
-	}
-
-	const { id, instruction, trigger, category, enabled, addedAt } = value;
-
-	if (!isString(id) || !isString(instruction)) {
-		return false;
-	}
-
-	if (!isString(trigger) || !VALID_GUARDRAIL_TRIGGERS.includes(trigger as GuardrailTrigger)) {
-		return false;
-	}
-
-	if (!isString(category) || !VALID_GUARDRAIL_CATEGORIES.includes(category as GuardrailCategory)) {
-		return false;
-	}
-
-	if (!isBoolean(enabled) || !isString(addedAt)) {
-		return false;
-	}
-
-	return true;
-}
-
-export function isGuardrailsFile(value: unknown): value is GuardrailsFile {
-	if (!isObject(value)) {
-		return false;
-	}
-
-	const { guardrails } = value;
-
-	if (!Array.isArray(guardrails)) {
-		return false;
-	}
-
-	return guardrails.every((guardrail) => isPromptGuardrail(guardrail));
 }
 
 export function isStreamJsonMessage(value: unknown): value is StreamJsonMessage {
