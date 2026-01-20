@@ -6,7 +6,7 @@
 	"logFilePath": ".ralph/ralph.log",
 	"agentTimeoutMs": 1800000,
 	"stuckThresholdMs": 300000,
-	"lastUpdateCheck": 1768911327590,
+	"lastUpdateCheck": 1768913238140,
 	"notifications": {
 		"systemNotification": true
 	},
