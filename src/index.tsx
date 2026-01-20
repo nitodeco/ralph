@@ -76,7 +76,7 @@ function parseArgs(args: string[]): ParsedArgs {
 			arg !== "--json" &&
 			arg !== "--task" &&
 			arg !== "-t" &&
-			argIndex !== taskIndex + 1,
+			(taskIndex === -1 || argIndex !== taskIndex + 1),
 	);
 	const command = (filteredArgs[0] ?? "run") as Command;
 
