@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { performSessionArchive } from "@/lib/archive.ts";
-import { loadConfig } from "@/lib/config.ts";
+import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { getLogger } from "@/lib/logger.ts";
@@ -13,6 +13,7 @@ import {
 	getNextTask,
 	getTaskByIndex,
 	getTaskByTitle,
+	invalidatePrdCache,
 	loadPrd,
 } from "@/lib/prd.ts";
 import { initializeProgressFile } from "@/lib/progress.ts";
@@ -377,6 +378,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	revalidateAndGoIdle: () => {
+		invalidateConfigCache();
+		invalidatePrdCache();
+
 		const warning = validateProject();
 		if (warning) {
 			set({

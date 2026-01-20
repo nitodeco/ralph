@@ -52,7 +52,7 @@
 				"Update src/stores/orchestrator.ts callbacks (onIterationComplete, onAllComplete) to use PrdService.reload() when PRD may have changed",
 				"Create src/lib/services/index.ts to export both services"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Refactor: Encapsulate module-level mutable state in service classes",

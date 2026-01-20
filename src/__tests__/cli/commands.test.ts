@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { invalidatePrdCache } from "@/lib/prd.ts";
 
 const TEST_DIR = "/tmp/ralph-test-cli";
 const RALPH_DIR = `${TEST_DIR}/.ralph`;
@@ -18,6 +19,7 @@ function getAllCallArgs(spy: ReturnType<typeof spyOn>): string[] {
 
 describe("CLI commands", () => {
 	beforeEach(() => {
+		invalidatePrdCache();
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}

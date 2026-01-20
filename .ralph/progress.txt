@@ -44,3 +44,25 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Refactor: Create ConfigService and PrdService to eliminate repeated disk reads
+Date: 2026-01-20
+
+Changes made:
+- Created src/lib/services/ directory for service classes
+- Created src/lib/services/ConfigService.ts as a singleton class with caching for config reads
+- Created src/lib/services/PrdService.ts as a singleton class with caching for PRD reads
+- Created src/lib/services/index.ts to export both services
+- Updated src/lib/config.ts to use ConfigService as thin wrapper for backward compatibility
+- Updated src/lib/prd.ts to use PrdService as thin wrapper for backward compatibility
+- Added invalidateConfigCache() and invalidatePrdCache() functions for cache invalidation
+- Added reloadPrd() function for forced fresh reads
+- Updated src/stores/appStore.ts to invalidate caches in revalidateAndGoIdle()
+- Updated src/stores/orchestrator.ts to use reloadPrd() in callbacks where PRD may have changed
+- Updated test files to invalidate caches in beforeEach hooks
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

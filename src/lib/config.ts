@@ -1,4 +1,3 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import type {
 	AgentType,
 	ConfigValidationError,
@@ -9,12 +8,8 @@ import type {
 	RalphConfig,
 } from "@/types.ts";
 import { DEFAULTS } from "./defaults.ts";
-import {
-	ensureGlobalRalphDirExists,
-	ensureRalphDirExists,
-	GLOBAL_CONFIG_PATH,
-	PROJECT_CONFIG_PATH,
-} from "./paths.ts";
+import { GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH } from "./paths.ts";
+import { ConfigService } from "./services/ConfigService.ts";
 
 export const DEFAULT_AGENT_TIMEOUT_MS = DEFAULTS.agentTimeoutMs;
 export const DEFAULT_STUCK_THRESHOLD_MS = DEFAULTS.stuckThresholdMs;
@@ -44,7 +39,7 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 	maxRuntimeMs: 0,
 };
 
-const DEFAULT_CONFIG: RalphConfig = {
+const _DEFAULT_CONFIG: RalphConfig = {
 	agent: DEFAULTS.agent,
 	prdFormat: DEFAULTS.prdFormat,
 	maxRetries: DEFAULTS.maxRetries,
@@ -479,82 +474,38 @@ export const AGENT_COMMANDS: Record<AgentType, string[]> = {
 };
 
 export function loadGlobalConfig(): RalphConfig {
-	if (!existsSync(GLOBAL_CONFIG_PATH)) {
-		return applyDefaults(DEFAULT_CONFIG);
-	}
-
-	try {
-		const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
-		const parsed = JSON.parse(content) as Partial<RalphConfig>;
-		return applyDefaults({ ...DEFAULT_CONFIG, ...parsed });
-	} catch {
-		return applyDefaults(DEFAULT_CONFIG);
-	}
+	return ConfigService.loadGlobal();
 }
 
 export function loadGlobalConfigRaw(): Partial<RalphConfig> | null {
-	if (!existsSync(GLOBAL_CONFIG_PATH)) {
-		return null;
-	}
-
-	try {
-		const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
-		return JSON.parse(content) as Partial<RalphConfig>;
-	} catch {
-		return null;
-	}
+	return ConfigService.loadGlobalRaw();
 }
 
 export function saveGlobalConfig(config: RalphConfig): void {
-	ensureGlobalRalphDirExists();
-	writeFileSync(GLOBAL_CONFIG_PATH, JSON.stringify(config, null, 2));
+	ConfigService.saveGlobal(config);
 }
 
 export function globalConfigExists(): boolean {
-	return existsSync(GLOBAL_CONFIG_PATH);
+	return ConfigService.globalConfigExists();
 }
 
 export function loadConfig(): RalphConfig {
-	const globalConfig = loadGlobalConfig();
-
-	if (!existsSync(PROJECT_CONFIG_PATH)) {
-		return globalConfig;
-	}
-
-	try {
-		const projectContent = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
-		const projectConfig = JSON.parse(projectContent) as Partial<RalphConfig>;
-		return applyDefaults({ ...globalConfig, ...projectConfig });
-	} catch {
-		return globalConfig;
-	}
+	return ConfigService.get();
 }
 
 export function loadProjectConfigRaw(): Partial<RalphConfig> | null {
-	if (!existsSync(PROJECT_CONFIG_PATH)) {
-		return null;
-	}
-
-	try {
-		const content = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
-		return JSON.parse(content) as Partial<RalphConfig>;
-	} catch {
-		return null;
-	}
+	return ConfigService.loadProjectRaw();
 }
 
 export function loadConfigWithValidation(): {
 	config: RalphConfig;
 	validation: ConfigValidationResult;
 } {
-	const config = loadConfig();
-	const validation = validateConfig(config);
-	return { config, validation };
+	return ConfigService.getWithValidation(validateConfig);
 }
 
 export function saveConfig(config: RalphConfig): void {
-	ensureRalphDirExists();
-	writeFileSync(PROJECT_CONFIG_PATH, JSON.stringify(config, null, 2));
+	ConfigService.saveProject(config);
 }
 
 export function getAgentCommand(agentType: AgentType): string[] {
@@ -574,9 +525,9 @@ export function getEffectiveConfig(): {
 	project: Partial<RalphConfig> | null;
 	effective: RalphConfig;
 } {
-	return {
-		global: loadGlobalConfigRaw(),
-		project: loadProjectConfigRaw(),
-		effective: loadConfig(),
-	};
+	return ConfigService.getEffective();
+}
+
+export function invalidateConfigCache(): void {
+	ConfigService.invalidateAll();
 }

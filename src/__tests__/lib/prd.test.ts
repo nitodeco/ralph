@@ -8,6 +8,7 @@ import {
 	getNextTaskWithIndex,
 	getTaskByIndex,
 	getTaskByTitle,
+	invalidatePrdCache,
 	isPrdComplete,
 	loadPrdWithValidation,
 } from "@/lib/prd.ts";
@@ -18,6 +19,7 @@ const RALPH_DIR = `${TEST_DIR}/.ralph`;
 
 describe("prd functions", () => {
 	beforeEach(() => {
+		invalidatePrdCache();
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}

@@ -9,7 +9,7 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getCurrentTaskIndex, getNextTaskWithIndex, loadPrd } from "@/lib/prd.ts";
+import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
@@ -83,7 +83,7 @@ class SessionOrchestrator {
 	}
 
 	private handleAgentComplete(_agentClaimsComplete: boolean): void {
-		const currentPrd = loadPrd();
+		const currentPrd = reloadPrd();
 		const allTasksActuallyDone = currentPrd
 			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
 			: false;
@@ -106,7 +106,7 @@ class SessionOrchestrator {
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logIterationStart(iterationNumber, iterations);
-				const currentPrd = loadPrd();
+				const currentPrd = reloadPrd();
 				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
 				useAgentStore.getState().reset();
 				if (currentPrd) {
@@ -134,7 +134,7 @@ class SessionOrchestrator {
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
-				const currentPrd = loadPrd();
+				const currentPrd = reloadPrd();
 				if (appState.currentSession) {
 					const wasSuccessful = !agentStore.error && agentStore.isComplete;
 					let updatedSession = recordIterationEnd(
@@ -183,7 +183,7 @@ class SessionOrchestrator {
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logSessionComplete();
-				const currentPrd = loadPrd();
+				const currentPrd = reloadPrd();
 				sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
 					totalIterations: iterations,
 				});
@@ -205,7 +205,7 @@ class SessionOrchestrator {
 				const loadedConfig = loadConfig();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 				logger.logMaxIterationsReached(iterationState.total);
-				const currentPrd = loadPrd();
+				const currentPrd = reloadPrd();
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
 					totalIterations: iterationState.total,
@@ -227,7 +227,7 @@ class SessionOrchestrator {
 					maxRuntimeMs: iterationState.maxRuntimeMs,
 					completedIterations: iterationState.current,
 				});
-				const currentPrd = loadPrd();
+				const currentPrd = reloadPrd();
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
 					totalIterations: iterationState.total,
