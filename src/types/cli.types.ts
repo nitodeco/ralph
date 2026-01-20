@@ -30,16 +30,13 @@ export interface TaskListOutput {
 		index: number;
 		title: string;
 		description: string;
-		status: "done" | "pending" | "blocked";
+		status: "done" | "pending";
 		steps: string[];
-		dependsOn?: string[];
-		blockedBy?: string[];
 	}>;
 	summary: {
 		total: number;
 		completed: number;
 		pending: number;
-		blocked: number;
 		percentComplete: number;
 	};
 }

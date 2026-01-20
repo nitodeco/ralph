@@ -7,7 +7,6 @@ export type {
 	ConfigOutput,
 	ConfigValidationError,
 	ConfigValidationResult,
-	DependencyValidationResult,
 	IterationLog,
 	IterationLogAgent,
 	IterationLogError,

@@ -82,7 +82,7 @@ export function performSessionArchive(): ArchiveResult {
 		return result;
 	}
 
-	const prd = loadPrd(true);
+	const prd = loadPrd();
 	if (!prd) {
 		return result;
 	}

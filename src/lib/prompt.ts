@@ -54,12 +54,10 @@ tasks:
       - "Step 2"
     done: false
   - title: "Task 2 Title"
-    description: "A task that depends on Task 1"
+    description: "Another task"
     steps:
       - "Step 1"
-    done: false
-    dependsOn:
-      - "Task 1 Title"`
+    done: false`
 			: `{
   "project": "Project Name",
   "tasks": [
@@ -71,10 +69,9 @@ tasks:
     },
     {
       "title": "Task 2 Title",
-      "description": "A task that depends on Task 1",
+      "description": "Another task",
       "steps": ["Step 1"],
-      "done": false,
-      "dependsOn": ["Task 1 Title"]
+      "done": false
     }
   ]
 }`;
@@ -87,10 +84,9 @@ ${description}
 ## Instructions:
 1. Analyze the description and break it down into logical, actionable tasks
 2. Each task should be small enough to complete in one coding session
-3. Use the "dependsOn" field to specify task dependencies when a task requires another task to be completed first
-4. Tasks with dependencies will only be worked on after their dependencies are marked as done
-5. Write clear, specific descriptions and steps for each task
-6. Generate a meaningful project name based on the description
+3. Order tasks logically so that foundational tasks come before tasks that build upon them
+4. Write clear, specific descriptions and steps for each task
+5. Generate a meaningful project name based on the description
 
 ## Output Format:
 Output ONLY the ${format.toUpperCase()} content wrapped in markers. Do not include any other text.
@@ -114,15 +110,12 @@ description: "Detailed description of what this task accomplishes"
 steps:
   - "Step 1"
   - "Step 2"
-done: false
-dependsOn:
-  - "Existing Task Title"`
+done: false`
 			: `{
   "title": "Task Title",
   "description": "Detailed description of what this task accomplishes",
   "steps": ["Step 1", "Step 2"],
-  "done": false,
-  "dependsOn": ["Existing Task Title"]
+  "done": false
 }`;
 
 	const existingTasksList = existingPrd.tasks
@@ -144,12 +137,9 @@ ${description}
 2. Make sure it doesn't duplicate existing tasks
 3. Write a clear, specific description and actionable steps
 4. The task should be small enough to complete in one coding session
-5. If this task depends on any existing tasks, include them in the "dependsOn" array (use exact task titles)
-6. Only include "dependsOn" if the task truly requires other tasks to be completed first
 
 ## Output Format:
 Output ONLY the ${format.toUpperCase()} content for the single task wrapped in markers. Do not include any other text.
-Note: The "dependsOn" field is optional.
 
 ${TASK_OUTPUT_START}
 ${formatExample}

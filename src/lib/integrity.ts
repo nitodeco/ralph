@@ -4,7 +4,6 @@ import { parse as parseYaml } from "yaml";
 import type { Prd, RalphConfig, Session } from "@/types.ts";
 import { validateConfig } from "./config.ts";
 import { RALPH_DIR } from "./paths.ts";
-import { validateDependencies } from "./prd.ts";
 
 const CONFIG_PATH = join(RALPH_DIR, "config.json");
 const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");
@@ -104,15 +103,6 @@ function validatePrdFile(issues: IntegrityIssue[]): void {
 				message: "Missing or invalid 'tasks' array",
 				severity: "error",
 			});
-		} else {
-			const dependencyValidation = validateDependencies(prd);
-			if (!dependencyValidation.valid && dependencyValidation.error) {
-				issues.push({
-					file: fileName,
-					message: dependencyValidation.error,
-					severity: "error",
-				});
-			}
 		}
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);

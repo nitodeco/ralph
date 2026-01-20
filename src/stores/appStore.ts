@@ -265,7 +265,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			return { success: false, error: `Task not found: ${taskIdentifier}` };
 		}
 
-		const canWork = canWorkOnTask(loadedPrd, task);
+		const canWork = canWorkOnTask(task);
 		if (!canWork.canWork) {
 			return { success: false, error: canWork.reason };
 		}
@@ -462,7 +462,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			};
 		}
 
-		const canWork = canWorkOnTask(prd, task);
+		const canWork = canWorkOnTask(task);
 		if (!canWork.canWork) {
 			return {
 				success: false,

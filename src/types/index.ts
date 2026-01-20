@@ -21,12 +21,7 @@ export type {
 	PrdFormat,
 	RalphConfig,
 } from "./config.types.ts";
-export type {
-	DependencyValidationResult,
-	LoadPrdResult,
-	Prd,
-	PrdTask,
-} from "./prd.types.ts";
+export type { LoadPrdResult, Prd, PrdTask } from "./prd.types.ts";
 export type {
 	IterationLog,
 	IterationLogAgent,
