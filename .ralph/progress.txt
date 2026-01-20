@@ -362,3 +362,36 @@ Implementation:
 - Install script (scripts/install.sh) already had Linux support with "Linux" case in get_os()
 - Bun supports cross-compilation, so Linux binaries can be built from macOS runners
 
+Task 16: Implement signal handling for graceful shutdown - COMPLETED
+
+Implementation:
+- Added signal handlers for SIGTERM, SIGINT, and SIGHUP in setupSignalHandlers() in src/lib/daemon.ts
+- handleShutdownSignal() saves session state as "stopped" on signal receipt for resumability
+- Integrated shutdown handler with agent store via setShutdownHandler/clearShutdownHandler
+- Agent process is gracefully terminated via onShutdown callback when signal received
+- PID file is cleaned up on exit via deletePidFile() in handleShutdownSignal and exit handler
+- Shutdown signal and completion are logged to log file with signal name
+- Fixed type mismatch: changed terminateAgent to onShutdown in agentStore.ts shutdown handler
+- setupSignalHandlers() is called in main() in src/index.tsx on startup
+- Fixed TypeScript errors: added missing PrdTask import in appStore.ts, setupSignalHandlers import in index.tsx
+- Fixed CommandInput.tsx null check for parts[0] in parseSlashCommand
+
+
+Task 16: Implement signal handling for graceful shutdown - COMPLETED
+
+Implementation:
+- Added ShutdownSignal type for SIGTERM, SIGINT, SIGHUP in src/lib/daemon.ts
+- Implemented setupSignalHandlers() to register handlers for all three signals
+- Created handleShutdownSignal() that:
+  - Prevents duplicate handling with shutdownInProgress flag
+  - Logs the received signal with logger.info()
+  - Saves session state as "stopped" if running or paused
+  - Calls registered shutdown handler to terminate agent process
+  - Cleans up PID file via deletePidFile()
+  - Logs shutdown completion
+- Added setShutdownHandler() and clearShutdownHandler() to register/unregister agent termination callback
+- Integrated shutdown handler in agentStore.ts start() method:
+  - Registers handler when agent starts that sets abortedRef=true and kills process
+- Called setupSignalHandlers() from main() in src/index.tsx before any other initialization
+- Process exit handler also cleans up PID file if shutdown wasn't already in progress
+
