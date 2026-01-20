@@ -3,7 +3,18 @@ import { create } from "zustand";
 import { loadConfig } from "@/lib/config.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "@/lib/prd.ts";
+import { findPrdFile, getNextTask, loadPrd, RALPH_DIR } from "@/lib/prd.ts";
+import {
+	logError as logProgressError,
+	logIterationComplete as logProgressIterationComplete,
+	logIterationStart as logProgressIterationStart,
+	logMaxIterationsReached as logProgressMaxIterations,
+	logSessionComplete as logProgressSessionComplete,
+	logSessionResume as logProgressSessionResume,
+	logSessionStart as logProgressSessionStart,
+	logSessionStopped as logProgressSessionStopped,
+	PROGRESS_FILE_PATH,
+} from "@/lib/progress.ts";
 import {
 	createSession,
 	deleteSession,
@@ -193,6 +204,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		set({ currentSession: newSession });
 
 		logger.logSessionStart(totalIters, taskIndex);
+		const totalTasks = loadedPrd?.tasks.length ?? 0;
+		const completedTasks = loadedPrd?.tasks.filter((task) => task.done).length ?? 0;
+		logProgressSessionStart(
+			loadedPrd?.project ?? "Unknown Project",
+			totalIters,
+			totalTasks,
+			completedTasks,
+		);
 
 		set({
 			appState: "running",
@@ -245,6 +264,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			state.pendingSession.currentIteration,
 			state.pendingSession.totalIterations,
 			state.pendingSession.elapsedTimeSeconds,
+		);
+		const totalTasks = loadedPrd?.tasks.length ?? 0;
+		const completedTasks = loadedPrd?.tasks.filter((task) => task.done).length ?? 0;
+		logProgressSessionResume(
+			loadedPrd?.project ?? "Unknown Project",
+			state.pendingSession.currentIteration,
+			state.pendingSession.totalIterations,
+			totalTasks,
+			completedTasks,
 		);
 
 		set({
@@ -305,9 +333,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	handleFatalError: (error: string) => {
 		const state = get();
+		const iterationState = useIterationStore.getState();
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		logger.error("Fatal error occurred", { error });
+		logProgressError(iterationState.current, iterationState.total, error, { fatal: true });
+		logProgressSessionStopped(
+			state.prd?.project ?? "Unknown Project",
+			iterationState.current,
+			iterationState.total,
+			`Fatal error: ${error}`,
+		);
 		sendNotifications(loadedConfig.notifications, "fatal_error", state.prd?.project, {
 			error,
 		});
@@ -329,8 +365,10 @@ export function setupIterationCallbacks(iterations: number) {
 			const loadedConfig = loadConfig();
 			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 			logger.logIterationStart(iterationNumber, iterations);
-			useAgentStore.getState().reset();
 			const currentPrd = loadPrd();
+			const currentTask = currentPrd ? getNextTask(currentPrd) : null;
+			logProgressIterationStart(iterationNumber, iterations, currentTask ?? undefined);
+			useAgentStore.getState().reset();
 			if (currentPrd) {
 				appState.setPrd(currentPrd);
 			}
@@ -341,8 +379,15 @@ export function setupIterationCallbacks(iterations: number) {
 			const loadedConfig = loadConfig();
 			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 			logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
+			const currentPrd = loadPrd();
+			const taskTitle = currentPrd ? getNextTask(currentPrd) : undefined;
+			logProgressIterationComplete(
+				iterationNumber,
+				iterations,
+				agentStore.isComplete,
+				taskTitle ?? undefined,
+			);
 			if (appState.currentSession) {
-				const currentPrd = loadPrd();
 				const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
 				const updatedSession = updateSessionIteration(
 					appState.currentSession,
@@ -361,6 +406,13 @@ export function setupIterationCallbacks(iterations: number) {
 			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 			logger.logSessionComplete();
 			const currentPrd = loadPrd();
+			const totalTasks = currentPrd?.tasks.length ?? 0;
+			logProgressSessionComplete(
+				currentPrd?.project ?? "Unknown Project",
+				iterations,
+				totalTasks,
+				appState.elapsedTime,
+			);
 			sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
 				totalIterations: iterations,
 			});
@@ -380,6 +432,14 @@ export function setupIterationCallbacks(iterations: number) {
 			const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 			logger.logMaxIterationsReached(iterationState.total);
 			const currentPrd = loadPrd();
+			const totalTasks = currentPrd?.tasks.length ?? 0;
+			const completedTasks = currentPrd?.tasks.filter((task) => task.done).length ?? 0;
+			logProgressMaxIterations(
+				currentPrd?.project ?? "Unknown Project",
+				iterationState.total,
+				completedTasks,
+				totalTasks,
+			);
 			sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 				completedIterations: iterationState.current,
 				totalIterations: iterationState.total,

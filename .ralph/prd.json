@@ -119,7 +119,7 @@
 				"Add session summary section at top of file",
 				"Implement progress file rotation to prevent unbounded growth"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add memory and resource management",

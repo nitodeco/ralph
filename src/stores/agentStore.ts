@@ -3,7 +3,9 @@ import { create } from "zustand";
 import { getAgentCommand, loadConfig } from "@/lib/config.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { loadInstructions } from "@/lib/prd.ts";
+import { logError as logProgressError, logRetry as logProgressRetry } from "@/lib/progress.ts";
 import { buildPrompt, COMPLETION_MARKER } from "@/lib/prompt.ts";
+import { useIterationStore } from "./iterationStore.ts";
 
 const DEFAULT_AGENT_TIMEOUT_MS = 30 * 60 * 1000;
 const DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000;
@@ -319,6 +321,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						error: categorizedError.message,
 						exitCode: result.exitCode,
 					});
+					const iterationState = useIterationStore.getState();
+					logProgressError(
+						iterationState.current,
+						iterationState.total,
+						`Fatal error: ${categorizedError.message}`,
+						{ exitCode: result.exitCode, fatal: true },
+					);
 					set({
 						isStreaming: false,
 						error: `Fatal error: ${categorizedError.message}`,
@@ -333,6 +342,15 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 					const delay = calculateRetryDelay(retryDelayMs, retryCountRef - 1);
 
 					logger.logAgentRetry(retryCountRef, maxRetries, delay);
+					const iterationState = useIterationStore.getState();
+					logProgressRetry(
+						iterationState.current,
+						iterationState.total,
+						retryCountRef,
+						maxRetries,
+						delay,
+						categorizedError.message,
+					);
 
 					set({
 						isRetrying: true,
@@ -353,6 +371,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 						lastError: categorizedError.message,
 						exitCode: result.exitCode,
 					});
+					const iterationState = useIterationStore.getState();
+					logProgressError(
+						iterationState.current,
+						iterationState.total,
+						`Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,
+						{ exitCode: result.exitCode, maxRetries },
+					);
 					set({
 						isStreaming: false,
 						error: `Max retries (${maxRetries}) exceeded. Last error: ${categorizedError.message}`,

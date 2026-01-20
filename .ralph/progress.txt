@@ -158,3 +158,33 @@ Implementation:
   - JSON output mode with full task details (title, description, status, steps)
 - Added "list" case to CLI switch statement
 - Updated help text with list command documentation and examples
+
+Task 10: Implement progress file improvements - COMPLETED
+
+Implementation:
+- Created src/lib/progress.ts with structured progress tracking:
+  - ProgressEntry type with timestamp, type, iteration, totalIterations, message, and optional context
+  - SessionSummary type with project info, timing, iteration/task counts, and status
+  - Multiple entry types: session_start, session_resume, iteration_start, iteration_complete, task_complete, error, retry, session_complete, session_stopped, max_iterations
+- Added timestamp to each progress entry using ISO format
+- Included iteration number with each update (e.g., [Iteration 3/10])
+- Implemented session summary section at top of progress.txt:
+  - Project name, start time, last update time
+  - Status (Running, Completed, Stopped, Max Iterations Reached)
+  - Iteration progress (X / Y)
+  - Task progress (X / Y)
+- Implemented progress file rotation to prevent unbounded growth:
+  - Default max file size: 1MB
+  - Default max backup files: 2
+  - Files rotated to progress.txt.1, progress.txt.2
+- Integrated logging for errors and retries in progress file:
+  - Error entries include context (exitCode, fatal flag, etc.)
+  - Retry entries include retry count, max retries, delay, and reason
+- Updated src/stores/appStore.ts to call progress functions on:
+  - Session start/resume
+  - Iteration start/complete
+  - Session complete/stopped/max iterations
+  - Fatal errors
+- Updated src/stores/agentStore.ts to log errors and retries to progress file
+- Updated src/lib/prd.ts to remove PROGRESS_FILE_PATH (now in progress.ts)
+- Updated src/components/InitWizard.tsx to import PROGRESS_FILE_PATH from progress.ts

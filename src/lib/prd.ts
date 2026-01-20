@@ -3,7 +3,6 @@ import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import type { Prd } from "@/types.ts";
 
 export const RALPH_DIR = ".ralph";
-export const PROGRESS_FILE_PATH = `${RALPH_DIR}/progress.txt`;
 export const INSTRUCTIONS_FILE_PATH = `${RALPH_DIR}/instructions.md`;
 const PRD_JSON_PATH = `${RALPH_DIR}/prd.json`;
 const PRD_YAML_PATH = `${RALPH_DIR}/prd.yaml`;
