@@ -389,7 +389,7 @@ export function getConfigSummary(config: RalphConfig): string {
 	lines.push("Memory Management:");
 	const memory = config.memory ?? CONFIG_DEFAULTS.memory;
 	const maxOutputBufferBytes =
-		memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes;
+		memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
 	lines.push(`  Output Buffer:      ${formatBytes(maxOutputBufferBytes)}`);
 	lines.push(
 		`  Memory Warning:     ${memory.memoryWarningThresholdMb === 0 ? "disabled" : `${memory.memoryWarningThresholdMb ?? CONFIG_DEFAULTS.memory.memoryWarningThresholdMb} MB`}`,

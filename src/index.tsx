@@ -255,7 +255,11 @@ function printStatus(): void {
 		console.log(`  Tasks:            ${completedTasks} / ${totalTasks} (${progressPercent}%)`);
 
 		const currentTask = prd.tasks[session.currentTaskIndex];
-		if (session.currentTaskIndex >= 0 && session.currentTaskIndex < prd.tasks.length && currentTask) {
+		if (
+			session.currentTaskIndex >= 0 &&
+			session.currentTaskIndex < prd.tasks.length &&
+			currentTask
+		) {
 			console.log(`  Current Task:     ${currentTask.title}`);
 		} else {
 			const nextTask = prd.tasks.find((task) => !task.done);
@@ -571,7 +575,8 @@ function printConfig(jsonOutput: boolean): void {
 
 	console.log("\n  Memory Management:");
 	if (effective.memory) {
-		const bufferSize = effective.memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
+		const bufferSize =
+			effective.memory.maxOutputBufferBytes ?? CONFIG_DEFAULTS.memory.maxOutputBufferBytes ?? 0;
 		console.log(`    maxOutputBuffer:    ${formatBytes(bufferSize)}`);
 		const warningThreshold = effective.memory.memoryWarningThresholdMb;
 		console.log(
