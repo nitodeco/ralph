@@ -1,8 +1,15 @@
 import { loadConfig } from "@/lib/config.ts";
+import {
+	appendIterationError,
+	completeIterationLog,
+	generateSessionId,
+	initializeLogsIndex,
+	startIterationLog,
+} from "@/lib/iteration-logs.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getNextTask, loadPrd } from "@/lib/prd.ts";
+import { getNextTask, getNextTaskWithIndex, loadPrd } from "@/lib/prd.ts";
 import {
 	logError as logProgressError,
 	logIterationComplete as logProgressIterationComplete,
@@ -20,7 +27,7 @@ import {
 	updateSessionIteration,
 	updateSessionStatus,
 } from "@/lib/session.ts";
-import type { Prd, RalphConfig, Session } from "@/types.ts";
+import type { IterationLogStatus, Prd, RalphConfig, Session } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
@@ -110,11 +117,21 @@ class SessionOrchestrator {
 				logger.logIterationStart(iterationNumber, iterations);
 				const currentPrd = loadPrd();
 				const currentTask = currentPrd ? getNextTask(currentPrd) : null;
+				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
 				logProgressIterationStart(iterationNumber, iterations, currentTask ?? undefined);
 				useAgentStore.getState().reset();
 				if (currentPrd) {
 					appState.setPrd(currentPrd);
 				}
+
+				startIterationLog({
+					iteration: iterationNumber,
+					totalIterations: iterations,
+					task: taskWithIndex
+						? { title: taskWithIndex.title, index: taskWithIndex.index, wasCompleted: false }
+						: null,
+					agentType: loadedConfig.agent,
+				});
 			},
 			onIterationComplete: (iterationNumber: number) => {
 				const appState = useAppStore.getState();
@@ -141,6 +158,21 @@ class SessionOrchestrator {
 					saveSession(updatedSession);
 					useAppStore.setState({ currentSession: updatedSession });
 				}
+
+				const iterationStatus: IterationLogStatus = agentStore.error
+					? "failed"
+					: agentStore.isComplete
+						? "completed"
+						: "completed";
+
+				completeIterationLog({
+					iteration: iterationNumber,
+					status: iterationStatus,
+					exitCode: agentStore.exitCode,
+					retryCount: agentStore.retryCount,
+					outputLength: agentStore.output.length,
+					taskWasCompleted: agentStore.isComplete,
+				});
 
 				agentStore.clearOutput();
 				const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
@@ -224,6 +256,9 @@ class SessionOrchestrator {
 			completedTasks,
 		);
 
+		const sessionId = generateSessionId();
+		initializeLogsIndex(sessionId, prd?.project ?? "Unknown Project");
+
 		return newSession;
 	}
 
@@ -261,6 +296,7 @@ class SessionOrchestrator {
 
 	handleFatalError(error: string, prd: Prd | null, currentSession: Session | null): void {
 		const iterationState = useIterationStore.getState();
+		const agentStore = useAgentStore.getState();
 		const loadedConfig = loadConfig();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
@@ -273,6 +309,16 @@ class SessionOrchestrator {
 			`Fatal error: ${error}`,
 		);
 		sendNotifications(loadedConfig.notifications, "fatal_error", prd?.project, { error });
+
+		appendIterationError(iterationState.current, error, { fatal: true });
+		completeIterationLog({
+			iteration: iterationState.current,
+			status: "failed",
+			exitCode: agentStore.exitCode,
+			retryCount: agentStore.retryCount,
+			outputLength: agentStore.output.length,
+			taskWasCompleted: false,
+		});
 
 		if (currentSession) {
 			const stoppedSession = updateSessionStatus(currentSession, "stopped");

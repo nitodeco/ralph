@@ -11,6 +11,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 export const RALPH_DIR = ".ralph";
+export const LOGS_DIR = join(RALPH_DIR, "logs");
 export const GLOBAL_RALPH_DIR = join(homedir(), ".ralph");
 export const LOCAL_BIN_DIR = join(homedir(), ".local", "bin");
 export const SYSTEM_BIN_DIR = "/usr/local/bin";
@@ -88,14 +89,27 @@ export function ensureRalphDirExists(): void {
 		mkdirSync(RALPH_DIR, { recursive: true });
 	}
 	const gitignorePath = join(RALPH_DIR, ".gitignore");
+	const gitignoreContent = "ralph.log\nlogs/\n";
 
 	if (!existsSync(gitignorePath)) {
-		writeFileSync(gitignorePath, "ralph.log\n", "utf-8");
+		writeFileSync(gitignorePath, gitignoreContent, "utf-8");
+	} else {
+		const existingContent = readFileSync(gitignorePath, "utf-8");
+		if (!existingContent.includes("logs/")) {
+			writeFileSync(gitignorePath, `${existingContent.trimEnd()}\nlogs/\n`, "utf-8");
+		}
 	}
 }
 
 export function ensureGlobalRalphDirExists(): void {
 	if (!existsSync(GLOBAL_RALPH_DIR)) {
 		mkdirSync(GLOBAL_RALPH_DIR, { recursive: true });
+	}
+}
+
+export function ensureLogsDirExists(): void {
+	ensureRalphDirExists();
+	if (!existsSync(LOGS_DIR)) {
+		mkdirSync(LOGS_DIR, { recursive: true });
 	}
 }

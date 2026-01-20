@@ -28,6 +28,13 @@ export type {
 	PrdTask,
 } from "./prd.types.ts";
 export type {
+	IterationLog,
+	IterationLogAgent,
+	IterationLogError,
+	IterationLogStatus,
+	IterationLogsIndex,
+	IterationLogsIndexEntry,
+	IterationLogTask,
 	ProgressEntry,
 	ProgressEntryType,
 	Session,

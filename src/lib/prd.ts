@@ -101,6 +101,21 @@ export function getNextTask(prd: Prd): string | null {
 	return nextTask ? nextTask.title : null;
 }
 
+export interface TaskWithIndex {
+	title: string;
+	index: number;
+}
+
+export function getNextTaskWithIndex(prd: Prd): TaskWithIndex | null {
+	for (let taskIndex = 0; taskIndex < prd.tasks.length; taskIndex++) {
+		const task = prd.tasks[taskIndex];
+		if (task && !task.done && areDependenciesSatisfied(task, prd)) {
+			return { title: task.title, index: taskIndex };
+		}
+	}
+	return null;
+}
+
 export function getTaskByTitle(prd: Prd, title: string): PrdTask | null {
 	const normalizedTitle = title.toLowerCase();
 	return prd.tasks.find((task) => task.title.toLowerCase() === normalizedTitle) ?? null;
