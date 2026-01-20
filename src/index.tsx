@@ -3,11 +3,14 @@
 import { render } from "ink";
 import { useState } from "react";
 import {
+	handleAnalyzeClear,
+	handleAnalyzeExport,
 	handleGuardrailsAdd,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
 	handleStopCommand,
 	parseArgs,
+	printAnalyze,
 	printArchive,
 	printConfig,
 	printGuardrails,
@@ -124,6 +127,7 @@ function main(): void {
 		skipVerification,
 		guardrailsSubcommand,
 		guardrailsArg,
+		analyzeSubcommand,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -238,6 +242,20 @@ function main(): void {
 					break;
 				default:
 					printGuardrails(VERSION, json);
+					break;
+			}
+			break;
+
+		case "analyze":
+			switch (analyzeSubcommand) {
+				case "export":
+					handleAnalyzeExport();
+					break;
+				case "clear":
+					handleAnalyzeClear();
+					break;
+				default:
+					printAnalyze(json);
 					break;
 			}
 			break;

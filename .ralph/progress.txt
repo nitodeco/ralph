@@ -286,3 +286,32 @@ Verification:
 - bun check: passed
 - bun run build: passed
 - bun test: 171 tests passed
+
+=== Task Completed ===
+Task: Implement failure pattern learning and analysis
+Date: 2026-01-20
+
+Changes made:
+- Created FailurePattern, FailureHistoryEntry, and FailureHistory interfaces in src/types/session.types.ts
+- Added FAILURE_HISTORY_FILE_PATH constant to src/lib/paths.ts pointing to .ralph/failure-history.json
+- Created src/lib/failure-patterns.ts with functions: loadFailureHistory(), saveFailureHistory(), recordFailure(), analyzePatterns(), getSuggestedGuardrails(), generatePatternReport(), formatPatternReport(), clearFailureHistory(), getFailureHistoryStats()
+- Implemented pattern detection using regex matching and string similarity for common failure types
+- Added 'ralph analyze' CLI command with patterns, export, and clear subcommands
+- Created src/cli/commands/analyze.ts with printAnalyze(), handleAnalyzeExport(), handleAnalyzeClear()
+- Added AnalyzeSubcommand type to src/types/cli.types.ts
+- Updated parser.ts to handle analyze subcommands
+- Added '/analyze' slash command to open the analyze view in the terminal UI
+- Created AnalyzeView component in src/components/views/AnalyzeView.tsx for interactive pattern viewing and guardrail suggestions
+- Added 'analyze' to ActiveView type and SlashCommand type
+- Updated ViewRouter to handle analyze view
+- Updated useSlashCommands hook to handle analyze command
+- Updated HelpView and help.ts to include analyze documentation
+- Integrated automatic failure recording in orchestrator.onIterationComplete() when learningEnabled is true
+- Added learningEnabled config option (boolean, default true) to RalphConfig
+- Updated CONFIG_DEFAULTS in constants.ts, ConfigService.ts, and loader.ts to include learningEnabled
+- When a pattern reaches threshold (3 occurrences), automatically suggest adding a guardrail
+
+Verification:
+- bun check: passed
+- bun run build: passed
+- bun test: 171 tests passed

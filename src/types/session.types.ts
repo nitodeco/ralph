@@ -111,3 +111,30 @@ export interface IterationLogsIndex {
 	lastUpdatedAt: string;
 	iterations: IterationLogsIndexEntry[];
 }
+
+export interface FailurePattern {
+	pattern: string;
+	category: string;
+	occurrences: number;
+	firstSeen: string;
+	lastSeen: string;
+	affectedTasks: string[];
+	suggestedGuardrail: string | null;
+	resolved: boolean;
+}
+
+export interface FailureHistoryEntry {
+	timestamp: string;
+	error: string;
+	taskTitle: string;
+	category: string;
+	rootCause: string;
+	exitCode: number | null;
+	iteration: number;
+}
+
+export interface FailureHistory {
+	entries: FailureHistoryEntry[];
+	patterns: FailurePattern[];
+	lastAnalyzedAt: string | null;
+}

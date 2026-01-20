@@ -6,6 +6,7 @@ export type {
 	ValidationWarning,
 } from "./app.types.ts";
 export type {
+	AnalyzeSubcommand,
 	Command,
 	ConfigOutput,
 	GuardrailsSubcommand,

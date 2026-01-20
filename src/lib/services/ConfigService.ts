@@ -31,6 +31,7 @@ const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersi
 	retryWithContext: DEFAULTS.retryWithContext,
 	verification: DEFAULT_VERIFICATION,
 	maxDecompositionsPerTask: DEFAULTS.maxDecompositionsPerTask,
+	learningEnabled: DEFAULTS.learningEnabled,
 };
 
 const DEFAULT_CONFIG: RalphConfig = {
@@ -63,6 +64,7 @@ function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 			? { ...defaults.verification, ...config.verification }
 			: defaults.verification,
 		maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
+		learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
 	};
 }
 

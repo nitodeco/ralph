@@ -7,6 +7,7 @@ import {
 import { DEFAULTS } from "@/lib/defaults.ts";
 import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
+import { analyzePatterns, recordFailure } from "@/lib/failure-patterns.ts";
 import {
 	appendIterationError,
 	completeIterationLog,
@@ -324,6 +325,27 @@ class SessionOrchestrator {
 							: agentStore.isComplete
 								? "completed"
 								: "completed";
+
+				if ((agentStore.error || verificationFailed) && loadedConfig.learningEnabled !== false) {
+					const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
+					const errorMessage = agentStore.error || "Verification failed";
+					recordFailure({
+						error: errorMessage,
+						output: agentStore.output,
+						taskTitle: taskWithIndex?.title ?? "Unknown task",
+						exitCode: agentStore.exitCode,
+						iteration: iterationNumber,
+					});
+
+					const patterns = analyzePatterns();
+					const significantPatterns = patterns.filter((pattern) => pattern.occurrences >= 3);
+					if (significantPatterns.length > 0) {
+						logger.info("Recurring failure patterns detected", {
+							patternCount: significantPatterns.length,
+							topPattern: significantPatterns[0]?.category,
+						});
+					}
+				}
 
 				const retryContextsForLog =
 					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;

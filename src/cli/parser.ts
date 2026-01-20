@@ -1,7 +1,8 @@
 import { DEFAULTS } from "@/lib/defaults.ts";
-import type { Command, GuardrailsSubcommand, ParsedArgs } from "@/types.ts";
+import type { AnalyzeSubcommand, Command, GuardrailsSubcommand, ParsedArgs } from "@/types.ts";
 
 const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "remove", "toggle"];
+const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
 
 export function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
@@ -74,6 +75,17 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let analyzeSubcommand: AnalyzeSubcommand | undefined;
+
+	if (command === "analyze") {
+		const subcommand = filteredArgs[1] as AnalyzeSubcommand | undefined;
+		if (subcommand && VALID_ANALYZE_SUBCOMMANDS.includes(subcommand)) {
+			analyzeSubcommand = subcommand;
+		} else {
+			analyzeSubcommand = "patterns";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -86,5 +98,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 		skipVerification,
 		guardrailsSubcommand,
 		guardrailsArg,
+		analyzeSubcommand,
 	};
 }

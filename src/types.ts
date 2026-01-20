@@ -2,6 +2,7 @@ export type {
 	ActiveView,
 	AgentResult,
 	AgentType,
+	AnalyzeSubcommand,
 	AppState,
 	CheckResult,
 	Command,

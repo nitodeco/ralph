@@ -11,6 +11,7 @@ export type Command =
 	| "config"
 	| "archive"
 	| "guardrails"
+	| "analyze"
 	| "help"
 	| "version"
 	| "-v"
@@ -19,6 +20,7 @@ export type Command =
 	| "--help";
 
 export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle";
+export type AnalyzeSubcommand = "patterns" | "export" | "clear";
 
 export interface ParsedArgs {
 	command: Command;
@@ -32,6 +34,7 @@ export interface ParsedArgs {
 	skipVerification: boolean;
 	guardrailsSubcommand?: GuardrailsSubcommand;
 	guardrailsArg?: string;
+	analyzeSubcommand?: AnalyzeSubcommand;
 }
 
 export interface TaskListOutput {

@@ -228,7 +228,7 @@
 				"Create 'ralph analyze --export' option to export analysis as JSON for external processing",
 				"Add learningEnabled config option (boolean, default true) to enable/disable pattern learning"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement session memory for cross-session learning",

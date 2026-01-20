@@ -15,6 +15,7 @@ export const DEFAULTS = {
 	iterations: 10,
 	retryWithContext: true,
 	maxDecompositionsPerTask: 2,
+	learningEnabled: true,
 } as const;
 
 export const DEFAULT_VERIFICATION: VerificationConfig = {

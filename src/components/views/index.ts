@@ -1,3 +1,4 @@
+export { AnalyzeView } from "./AnalyzeView.tsx";
 export { ArchiveView } from "./ArchiveView.tsx";
 export { type DryRunState, DryRunView } from "./DryRunView.tsx";
 export { GuardrailsView } from "./GuardrailsView.tsx";

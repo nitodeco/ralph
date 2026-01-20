@@ -1,3 +1,4 @@
+export { handleAnalyzeClear, handleAnalyzeExport, printAnalyze } from "./analyze.ts";
 export { printArchive } from "./archive.ts";
 export { printConfig } from "./config.ts";
 export {

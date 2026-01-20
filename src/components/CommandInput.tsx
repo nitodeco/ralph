@@ -17,7 +17,8 @@ export type SlashCommand =
 	| "status"
 	| "archive"
 	| "guardrail"
-	| "guardrails";
+	| "guardrails"
+	| "analyze";
 
 export interface CommandArgs {
 	iterations?: number;
@@ -42,6 +43,7 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"archive",
 	"guardrail",
 	"guardrails",
+	"analyze",
 ];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
 

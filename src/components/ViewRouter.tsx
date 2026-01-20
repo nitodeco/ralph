@@ -13,6 +13,7 @@ import { InitWizard } from "./InitWizard.tsx";
 import { SetupWizard } from "./SetupWizard.tsx";
 import { UpdatePrompt } from "./UpdatePrompt.tsx";
 import {
+	AnalyzeView,
 	ArchiveView,
 	DryRunView,
 	GuardrailsView,
@@ -82,6 +83,10 @@ export function ViewRouter({
 
 	if (activeView === "guardrails") {
 		return <GuardrailsView version={version} onClose={onHelpClose} />;
+	}
+
+	if (activeView === "analyze") {
+		return <AnalyzeView version={version} onClose={onHelpClose} />;
 	}
 
 	if (dryRun) {

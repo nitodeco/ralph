@@ -17,14 +17,20 @@ Commands:
   config            View current configuration with validation
   archive           Archive completed tasks and progress file
   guardrails        View and manage prompt guardrails
+  analyze           Analyze failure patterns and get suggestions
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
   help              Show this help message
 
+Analyze Subcommands:
+  analyze           Show failure pattern analysis (default)
+  analyze export    Export analysis as JSON
+  analyze clear     Clear failure history
+
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)
   --dry-run              Simulate agent execution without running agents (validates PRD/config)
-  --json                 Output in JSON format (for list and config commands)
+  --json                 Output in JSON format (for list, config, and analyze commands)
   --verbose              Show detailed error information with context and suggestions
   -t, --task <n>         Run specific task by number or title (single task mode)
   --max-runtime <s>      Set maximum runtime in seconds (stops gracefully when reached)
@@ -39,6 +45,7 @@ Slash Commands (in-app):
   /add              Add a new task to the PRD (AI-generated from description)
   /guardrail <text> Add a new guardrail instruction
   /guardrails       View and manage guardrails
+  /analyze          View failure pattern analysis
   /setup            Configure global preferences
   /update           Check for updates
   /archive          Archive completed tasks and progress file

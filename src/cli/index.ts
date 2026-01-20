@@ -1,8 +1,11 @@
 export {
+	handleAnalyzeClear,
+	handleAnalyzeExport,
 	handleGuardrailsAdd,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
 	handleStopCommand,
+	printAnalyze,
 	printArchive,
 	printConfig,
 	printGuardrails,

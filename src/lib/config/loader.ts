@@ -27,6 +27,7 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 			? { ...defaults.verification, ...config.verification }
 			: defaults.verification,
 		maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
+		learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
 	};
 }
 

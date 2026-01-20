@@ -33,6 +33,7 @@ export interface RalphConfig {
 	retryWithContext?: boolean;
 	verification?: VerificationConfig;
 	maxDecompositionsPerTask?: number;
+	learningEnabled?: boolean;
 }
 
 export interface ConfigValidationError {

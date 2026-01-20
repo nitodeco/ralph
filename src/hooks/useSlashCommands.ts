@@ -105,6 +105,7 @@ export function useSlashCommands({
 				case "add":
 				case "status":
 				case "archive":
+				case "analyze":
 					agentStop();
 					iterationPause();
 					setActiveView(command === "add" ? "add" : command);

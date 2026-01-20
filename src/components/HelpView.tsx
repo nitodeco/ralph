@@ -156,6 +156,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>View and manage guardrails</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/analyze</Text>
+							{"          "}
+							<Text>View failure pattern analysis</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/help</Text>
 							{"             "}
 							<Text>Show this help message</Text>
