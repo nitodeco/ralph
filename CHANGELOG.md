@@ -1,5 +1,15 @@
 # ralph
 
+## 0.5.0
+
+### Minor Changes
+
+- 32d79da: Refactor state management to use zustand
+
+### Patch Changes
+
+- 3ba8440: Restart after update
+
 ## 0.4.0
 
 ### Minor Changes
