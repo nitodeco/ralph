@@ -2,282 +2,117 @@
 	"project": "Ralph CLI",
 	"tasks": [
 		{
-			"title": "Refactor: Centralize path constants",
-			"description": "Consolidate all file path constants into a single source of truth in src/lib/paths.ts. Currently paths are scattered across multiple files: PROGRESS_FILE_PATH in progress.ts, SESSION_FILE_PATH in session.ts, INSTRUCTIONS_FILE_PATH/PRD_JSON_PATH/PRD_YAML_PATH in prd.ts, and GLOBAL_CONFIG_PATH/PROJECT_CONFIG_PATH in config.ts. This creates maintenance burden and inconsistency.",
+			"title": "Create service container and bootstrap infrastructure",
+			"description": "Create the core service container and bootstrap infrastructure that all services will use. This establishes the dependency injection pattern for the entire application.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- Each service directory is self-contained with: types.ts, implementation.ts, validation.ts (if needed), and any service-specific helpers",
 			"steps": [
-				"Add all path constants to src/lib/paths.ts: PROGRESS_FILE_PATH, SESSION_FILE_PATH, INSTRUCTIONS_FILE_PATH, PRD_JSON_PATH, PRD_YAML_PATH, GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH",
-				"Export paths as both individual constants and a structured PATHS object for organization",
-				"Update src/lib/progress.ts to import PROGRESS_FILE_PATH from paths.ts instead of defining locally",
-				"Update src/lib/session.ts to import SESSION_FILE_PATH from paths.ts instead of defining locally",
-				"Update src/lib/prd.ts to import INSTRUCTIONS_FILE_PATH, PRD_JSON_PATH, PRD_YAML_PATH from paths.ts and remove local definitions",
-				"Update src/lib/config.ts to import GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH from paths.ts and remove local definitions",
-				"Remove the re-export of ensureRalphDirExists and RALPH_DIR from prd.ts (line 13) - consumers should import directly from paths.ts"
+				"Create src/lib/services/container.ts with ServiceContainer interface, initializeServices(), getServices(), resetServices(), isInitialized(), and convenience accessors (getConfigService, getPrdService, etc.)",
+				"Create src/lib/services/bootstrap.ts with bootstrapServices() and bootstrapTestServices(overrides) functions",
+				"Update src/lib/services/index.ts to export container and bootstrap functions, plus type re-exports from each service's types.ts",
+				"Update src/index.tsx to call bootstrapServices() before application startup"
 			],
 			"done": true
 		},
 		{
-			"title": "Refactor: Consolidate type exports to single canonical path",
-			"description": "Establish @/types as the single canonical import path for all types. Currently types are re-exported from 6+ locations creating confusion: src/types.ts re-exports from src/types/index.ts, src/stores/appStore.ts re-exports ActiveView/AppState/ValidationWarning, src/lib/config.ts re-exports ConfigValidationError/ConfigValidationResult, src/lib/prd.ts re-exports LoadPrdResult, src/lib/progress.ts re-exports ProgressEntry/ProgressEntryType/SessionSummary. 24 files import from @/types.",
+			"title": "Migrate SessionMemoryService to new architecture",
+			"description": "Migrate the session-memory module to the new self-contained service architecture.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- Each service directory is self-contained with: types.ts, implementation.ts, validation.ts (if needed), and any service-specific helpers\n- Move SessionMemory type from src/types/session.types.ts to the service's types.ts\n- Move isSessionMemory from src/lib/type-guards.ts to the service's validation.ts\n- Implementation uses closure-based caching (let cachedMemory inside factory function)",
 			"steps": [
-				"Remove type re-exports from src/lib/config.ts line 60: 'export type { ConfigValidationError, ConfigValidationResult } from \"@/types.ts\";'",
-				"Remove type re-exports from src/lib/prd.ts line 6: 'export type { LoadPrdResult } from \"@/types.ts\";'",
-				"Remove type re-exports from src/lib/progress.ts line 6: 'export type { ProgressEntry, ProgressEntryType, SessionSummary } from \"@/types.ts\";'",
-				"Remove type re-exports from src/stores/appStore.ts line 45: 'export type { ActiveView, AppState, SetManualTaskResult, ValidationWarning } from \"@/types.ts\";'",
-				"Search codebase for any imports that use these re-export paths (e.g., import from '@/lib/config' for types) and update to import from '@/types' directly",
-				"Verify all 24 files that import from @/types still compile correctly"
+				"Create src/lib/services/session-memory/types.ts with SessionMemory interface, SessionMemoryStats interface, SessionMemoryService interface, and SESSION_MEMORY_CONSTANTS",
+				"Create src/lib/services/session-memory/validation.ts with isSessionMemory type guard",
+				"Create src/lib/services/session-memory/formatters.ts with formatForPrompt, formatForTask, and exportAsMarkdown functions",
+				"Create src/lib/services/session-memory/implementation.ts with createSessionMemoryService factory function",
+				"Update src/lib/services/container.ts to import SessionMemoryService from ./session-memory/types.ts",
+				"Update src/lib/services/bootstrap.ts to import createSessionMemoryService from ./session-memory/implementation.ts",
+				"Update src/lib/services/index.ts to re-export SessionMemory and SessionMemoryService types",
+				"Update all consumers to use getSessionMemoryService() instead of direct imports from src/lib/session-memory.ts",
+				"Remove SessionMemory from src/types/session.types.ts and isSessionMemory from src/lib/type-guards.ts",
+				"Delete src/lib/session-memory.ts after all consumers are migrated"
 			],
-			"done": true
+			"done": false
 		},
 		{
-			"title": "Refactor: Extract duplicated getCurrentTaskIndex utility",
-			"description": "The function getCurrentTaskIndex(prd: Prd): number is duplicated identically in two files: src/stores/appStore.ts (line 102) and src/stores/orchestrator.ts (line 33). Both implementations are: 'return prd.tasks.findIndex((task) => !task.done);'. This violates DRY and should be consolidated into src/lib/prd.ts alongside other PRD utilities.",
+			"title": "Migrate SessionService to new architecture",
+			"description": "Migrate the session module to the new self-contained service architecture.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- Each service directory is self-contained with: types.ts, implementation.ts, validation.ts (if needed), and any service-specific helpers\n- Move Session, SessionStatus, SessionStatistics, IterationTiming types from src/types/session.types.ts to the service's types.ts\n- Move isSession, isSessionStatus from src/lib/type-guards.ts to the service's validation.ts\n- Implementation uses closure-based caching",
 			"steps": [
-				"Add getCurrentTaskIndex function to src/lib/prd.ts: 'export function getCurrentTaskIndex(prd: Prd): number { return prd.tasks.findIndex((task) => !task.done); }'",
-				"Update src/stores/appStore.ts to import getCurrentTaskIndex from '@/lib/prd.ts' and remove the local function definition at line 102-104",
-				"Update src/stores/orchestrator.ts to import getCurrentTaskIndex from '@/lib/prd.ts' and remove the local function definition at line 33-35",
-				"Verify both stores still function correctly after the change"
+				"Create src/lib/services/session/types.ts with Session, SessionStatus, SessionStatistics, IterationTiming interfaces, and SessionService interface",
+				"Create src/lib/services/session/validation.ts with isSession, isSessionStatus type guards",
+				"Create src/lib/services/session/implementation.ts with createSessionService factory function including all session operations (create, load, save, delete, recordIterationStart, recordIterationEnd, updateIteration, updateStatus, isResumable)",
+				"Update src/lib/services/container.ts to import SessionService from ./session/types.ts",
+				"Update src/lib/services/bootstrap.ts to import createSessionService from ./session/implementation.ts",
+				"Update src/lib/services/index.ts to re-export Session, SessionService, SessionStatus types",
+				"Update all consumers to use getSessionService() instead of direct imports from src/lib/session.ts",
+				"Remove Session types from src/types/session.types.ts and session type guards from src/lib/type-guards.ts",
+				"Delete src/lib/session.ts after all consumers are migrated"
 			],
-			"done": true
+			"done": false
 		},
 		{
-			"title": "Refactor: Create ConfigService and PrdService to eliminate repeated disk reads",
-			"description": "loadConfig() is called 27 times across 8 files and loadPrd() is called 16 times across 6 files, each time reading from disk. This causes performance overhead and potential inconsistency if files change mid-operation. Create singleton services that load once and cache, with invalidate() for when files change (e.g., after init wizard).",
+			"title": "Migrate ConfigService to new architecture",
+			"description": "Migrate the config module to the new self-contained service architecture. ConfigService already exists but needs restructuring.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- Each service directory is self-contained with: types.ts, implementation.ts, validation.ts (if needed), and any service-specific helpers\n- Move RalphConfig, AgentType, NotificationConfig, MemoryConfig, VerificationConfig, ConfigValidationError, ConfigValidationResult from src/types/config.types.ts to the service's types.ts\n- Move isRalphConfig, isPartialRalphConfig from src/lib/type-guards.ts to the service's validation.ts\n- Move config constants from src/lib/constants/config.ts to the service's constants.ts",
 			"steps": [
-				"Create src/lib/services/ directory for service classes",
-				"Create src/lib/services/ConfigService.ts as a singleton class with: private cachedConfig, load() that reads from disk only if cache is null, get() that returns cached config, invalidate() that clears cache, and getWithValidation() for validated access",
-				"Create src/lib/services/PrdService.ts as a singleton class with: private cachedPrd, load() that reads from disk only if cache is null, get() that returns cached PRD, invalidate() that clears cache, reload() that forces a fresh read",
-				"Update src/lib/config.ts to keep loadConfig() as a thin wrapper that calls ConfigService.get() for backward compatibility",
-				"Update src/lib/prd.ts to keep loadPrd() as a thin wrapper that calls PrdService.get() for backward compatibility",
-				"Update src/stores/appStore.ts to call ConfigService.invalidate() and PrdService.invalidate() after init wizard completes or config changes",
-				"Update src/stores/orchestrator.ts callbacks (onIterationComplete, onAllComplete) to use PrdService.reload() when PRD may have changed",
-				"Create src/lib/services/index.ts to export both services"
+				"Create src/lib/services/config/types.ts with RalphConfig, AgentType, NotificationConfig, MemoryConfig, VerificationConfig, ConfigValidationError, ConfigValidationResult interfaces, and ConfigService interface",
+				"Create src/lib/services/config/validation.ts with isRalphConfig, isPartialRalphConfig, validateConfig type guards",
+				"Create src/lib/services/config/constants.ts with CONFIG_DEFAULTS, DEFAULT_CONFIG, VALID_AGENTS, AGENT_COMMANDS, and default value constants",
+				"Create src/lib/services/config/implementation.ts with createConfigService factory function (refactor from existing ConfigServiceImpl)",
+				"Update src/lib/services/container.ts to import ConfigService from ./config/types.ts",
+				"Update src/lib/services/bootstrap.ts to import createConfigService from ./config/implementation.ts",
+				"Update src/lib/services/index.ts to re-export RalphConfig, ConfigService, AgentType types",
+				"Update all consumers to use getConfigService() instead of imports from src/lib/config.ts or src/lib/config/index.ts",
+				"Remove config types from src/types/config.types.ts and config type guards from src/lib/type-guards.ts",
+				"Delete src/lib/config.ts, src/lib/config/ directory, and src/lib/constants/config.ts after migration"
 			],
-			"done": true
+			"done": false
 		},
 		{
-			"title": "Refactor: Encapsulate module-level mutable state in service classes",
-			"description": "Module-level mutable variables exist outside Zustand stores creating hidden state that's difficult to track and test. In src/stores/agentStore.ts lines 125-128: processRef, abortedRef, retryCountRef. In src/stores/iterationStore.ts lines 42-43: delayTimeoutRef, projectCompleteRef. These should be encapsulated in proper service classes.",
+			"title": "Migrate PrdService to new architecture",
+			"description": "Migrate the PRD module to the new self-contained service architecture. PrdService already exists but needs restructuring.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- Each service directory is self-contained with: types.ts, implementation.ts, validation.ts (if needed), and any service-specific helpers\n- Move Prd, PrdTask, LoadPrdResult, DecompositionSubtask, DecompositionRequest from src/types/prd.types.ts to the service's types.ts\n- Move isPrd, isPrdTask from src/lib/type-guards.ts to the service's validation.ts\n- Include helper functions like getNextTask, getTaskByTitle, canWorkOnTask in the service interface",
 			"steps": [
-				"Create src/lib/services/AgentProcessManager.ts class with: private process (Subprocess | null), private aborted (boolean), private retryCount (number), methods: spawn(command, prompt), kill(), isRunning(), getRetryCount(), incrementRetry(), resetRetry(), setAborted(value), isAborted()",
-				"Create src/lib/services/IterationTimer.ts class with: private delayTimeout (ReturnType<typeof setTimeout> | null), private projectComplete (boolean), methods: scheduleNext(delayMs, callback), cancel(), setProjectComplete(value), isProjectComplete()",
-				"Update src/stores/agentStore.ts to use AgentProcessManager instead of module-level refs: replace processRef with agentProcessManager.process, abortedRef with agentProcessManager.isAborted(), retryCountRef with agentProcessManager.getRetryCount()",
-				"Update src/stores/iterationStore.ts to use IterationTimer instead of module-level refs: replace delayTimeoutRef with iterationTimer, projectCompleteRef with iterationTimer.isProjectComplete()",
-				"Export service instances from src/lib/services/index.ts",
-				"Ensure cleanup methods are called appropriately on store reset/stop actions"
+				"Create src/lib/services/prd/types.ts with Prd, PrdTask, LoadPrdResult, DecompositionSubtask, DecompositionRequest, TaskWithIndex, CanWorkResult interfaces, and PrdService interface",
+				"Create src/lib/services/prd/validation.ts with isPrd, isPrdTask type guards",
+				"Create src/lib/services/prd/implementation.ts with createPrdService factory function including all PRD operations (get, save, reload, invalidate, findFile, isComplete, getNextTask, getNextTaskWithIndex, getTaskByTitle, getTaskByIndex, getCurrentTaskIndex, canWorkOnTask, createEmpty, loadInstructions)",
+				"Update src/lib/services/container.ts to import PrdService from ./prd/types.ts",
+				"Update src/lib/services/bootstrap.ts to import createPrdService from ./prd/implementation.ts",
+				"Update src/lib/services/index.ts to re-export Prd, PrdTask, PrdService types",
+				"Update all consumers to use getPrdService() instead of imports from src/lib/prd.ts",
+				"Remove PRD types from src/types/prd.types.ts and PRD type guards from src/lib/type-guards.ts",
+				"Delete src/lib/prd.ts and src/lib/services/PrdService.ts after migration"
 			],
-			"done": true
+			"done": false
 		},
 		{
-			"title": "Refactor: Introduce event bus to decouple stores",
-			"description": "Stores directly call getState() on each other creating tight coupling. There are 35 cross-store getState() calls across 5 files: src/stores/orchestrator.ts (17), src/stores/appStore.ts (12), src/stores/agentStore.ts (4), src/components/RunApp.tsx (1), src/index.tsx (1). Stores should emit events and only the orchestrator should coordinate between them.",
+			"title": "Migrate GuardrailsService to new architecture",
+			"description": "Migrate the guardrails module to the new self-contained service architecture.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- Each service directory is self-contained with: types.ts, implementation.ts, validation.ts (if needed), and any service-specific helpers\n- Move PromptGuardrail, GuardrailTrigger, GuardrailCategory from src/types/config.types.ts to the service's types.ts\n- Move isPromptGuardrail, isGuardrailsFile from src/lib/type-guards.ts to the service's validation.ts\n- Move createDefaultGuardrails from src/lib/constants/defaults.ts to the service's defaults.ts",
 			"steps": [
-				"Create src/lib/events.ts with a typed EventEmitter class supporting events: 'agent:start', 'agent:complete', 'agent:error', 'agent:retry', 'iteration:start', 'iteration:complete', 'iteration:delay', 'session:start', 'session:stop', 'session:complete'",
-				"Define event payload types for each event (e.g., AgentCompleteEvent with isComplete, exitCode fields)",
-				"Export a singleton eventBus instance from events.ts",
-				"Update src/stores/agentStore.ts: emit 'agent:complete' when agent finishes instead of directly calling useAppStore.getState().handleAgentComplete(), emit 'agent:error' on fatal errors",
-				"Update src/stores/iterationStore.ts: emit 'iteration:start', 'iteration:complete', 'iteration:delay' events instead of directly calling callbacks that access other stores",
-				"Update src/stores/orchestrator.ts to subscribe to all events from eventBus and coordinate between stores - this becomes the single place that calls getState() on multiple stores",
-				"Remove direct useXStore.getState() calls from agentStore and iterationStore (keep only in orchestrator)",
-				"Update src/stores/appStore.ts to emit events for session lifecycle instead of directly manipulating other stores"
+				"Create src/lib/services/guardrails/types.ts with PromptGuardrail, GuardrailTrigger, GuardrailCategory, AddGuardrailOptions, GuardrailsFile interfaces, and GuardrailsService interface",
+				"Create src/lib/services/guardrails/validation.ts with isPromptGuardrail, isGuardrailsFile type guards",
+				"Create src/lib/services/guardrails/defaults.ts with createDefaultGuardrails function",
+				"Create src/lib/services/guardrails/formatters.ts with formatGuardrailsForPrompt function",
+				"Create src/lib/services/guardrails/implementation.ts with createGuardrailsService factory function including all guardrails operations (get, save, exists, initialize, invalidate, add, remove, toggle, getById, getActive)",
+				"Update src/lib/services/container.ts to import GuardrailsService from ./guardrails/types.ts",
+				"Update src/lib/services/bootstrap.ts to import createGuardrailsService from ./guardrails/implementation.ts",
+				"Update src/lib/services/index.ts to re-export PromptGuardrail, GuardrailsService types",
+				"Update all consumers to use getGuardrailsService() instead of imports from src/lib/guardrails.ts",
+				"Remove guardrail types from src/types/config.types.ts and guardrail type guards from src/lib/type-guards.ts",
+				"Delete src/lib/guardrails.ts and remove createDefaultGuardrails from src/lib/constants/defaults.ts after migration"
 			],
-			"done": true
+			"done": false
 		},
 		{
-			"title": "Refactor: Consolidate session lifecycle management in orchestrator",
-			"description": "Both src/stores/appStore.ts and src/stores/orchestrator.ts handle session start/resume/stop with duplicated logging. appStore has startIterations(), resumeSession(), handleFatalError() that duplicate orchestrator's startSession(), resumeSession(), handleFatalError(). The orchestrator should own all session lifecycle; appStore should only manage UI state.",
+			"title": "Clean up legacy files and types after service migration",
+			"description": "Remove all legacy files, empty type definitions, and unused code after all services have been migrated.\n\nARCHITECTURE RULES:\n- Services are defined as interfaces in types.ts within each service directory\n- Implementations are factory functions (createXxxService) that return the interface\n- NO index.ts barrel files inside service directories to avoid circular imports\n- Container imports types from ./servicename/types.ts and implementations from ./servicename/implementation.ts\n- Top-level src/lib/services/index.ts is the ONLY barrel file, explicitly listing all exports\n- src/types/ should only contain cross-cutting types that don't belong to any single service (AppState, ActiveView, CLI types, etc.)\n- src/lib/type-guards.ts should only contain type guards for remaining cross-cutting types",
 			"steps": [
-				"Move session creation logic from appStore.startIterations() to orchestrator.startSession(): createSession(), saveSession(), logger.logSessionStart(), logProgressSessionStart()",
-				"Move session resume logic from appStore.resumeSession() to orchestrator.resumeSession(): updateSessionStatus(), saveSession(), logger.logSessionResume(), logProgressSessionResume()",
-				"Move fatal error handling from appStore.handleFatalError() to orchestrator.handleFatalError(): logger.error(), logProgressError(), logProgressSessionStopped(), sendNotifications(), updateSessionStatus()",
-				"Simplify appStore.startIterations() to: validate project, set UI state (appState, validationWarning), call orchestrator.startSession(), then iterationStore.start()",
-				"Simplify appStore.resumeSession() to: validate project, set UI state, call orchestrator.resumeSession(), then iterationStore.start()",
-				"Simplify appStore.handleFatalError() to: call orchestrator.handleFatalError(), set appState to 'error'",
-				"Remove duplicated logging calls from appStore that are now handled by orchestrator",
-				"Update appStore to only manage: appState, activeView, validationWarning, elapsedTime, pendingSession reference (not lifecycle)"
+				"Review src/types/session.types.ts and remove any types that were migrated to services (keep only IterationLog types if they weren't migrated)",
+				"Review src/types/config.types.ts and remove any types that were migrated to services (keep only CheckResult, VerificationResult if they weren't migrated)",
+				"Review src/types/prd.types.ts and delete if empty after migration",
+				"Review src/lib/type-guards.ts and remove migrated type guards, keep only guards for remaining types",
+				"Update src/types/index.ts to only export remaining cross-cutting types",
+				"Delete src/lib/config.ts facade file if still exists",
+				"Delete src/lib/config/ directory if still exists",
+				"Delete src/lib/constants/config.ts if migrated to config service",
+				"Update src/lib/constants/index.ts to remove migrated exports",
+				"Run TypeScript compiler to verify no broken imports",
+				"Run tests to verify all functionality still works"
 			],
-			"done": true
-		},
-		{
-			"title": "Refactor: Split config.ts into focused modules",
-			"description": "src/lib/config.ts is 553 lines handling multiple concerns: config loading/saving (loadConfig, saveConfig, loadGlobalConfig, etc.), config validation (validateConfig, validatePositiveInteger, etc.), config formatting (formatValidationErrors, getConfigSummary, formatMs, formatBytes), and constants (AGENT_COMMANDS, CONFIG_DEFAULTS). Split into single-responsibility modules.",
-			"steps": [
-				"Create src/lib/config/ directory for config submodules",
-				"Create src/lib/config/loader.ts with: loadConfig(), saveConfig(), loadGlobalConfig(), saveGlobalConfig(), loadGlobalConfigRaw(), loadProjectConfigRaw(), loadConfigWithValidation(), getEffectiveConfig(), globalConfigExists(), getGlobalConfigPath(), getProjectConfigPath(), applyDefaults()",
-				"Create src/lib/config/validator.ts with: validateConfig(), validatePositiveInteger(), validateString(), validateBoolean(), validateUrl(), validateNotificationConfig(), validateMemoryConfig(), and the ConfigValidationError/ConfigValidationResult type imports",
-				"Create src/lib/config/formatter.ts with: formatValidationErrors(), getConfigSummary(), formatMs(), formatBytes()",
-				"Move AGENT_COMMANDS to src/lib/defaults.ts alongside other defaults, or create src/lib/agents.ts if it grows",
-				"Keep CONFIG_DEFAULTS in loader.ts as it's used by applyDefaults()",
-				"Create src/lib/config/index.ts that re-exports everything from submodules for backward compatibility: export * from './loader', export * from './validator', export * from './formatter'",
-				"Update src/lib/config.ts to simply re-export from src/lib/config/index.ts for backward compatibility",
-				"Verify all existing imports of '@/lib/config' still work"
-			],
-			"done": true
-		},
-		{
-			"title": "Refactor: Simplify RunApp component by extracting hooks and ViewRouter",
-			"description": "src/components/RunApp.tsx is 310 lines with too many responsibilities: manages 8+ view states, handles all slash commands, coordinates 3 stores, contains 7 useEffect hooks. Extract into focused hooks and a view router component.",
-			"steps": [
-				"Create src/hooks/useSlashCommands.ts hook that encapsulates handleSlashCommand logic: takes dependencies (startIterations, resumeSession, stopAgent, setManualNextTask, agentStop, iterationPause, setActiveView, exit), returns handleSlashCommand callback and nextTaskMessage state",
-				"Create src/hooks/useAgentLifecycle.ts hook that encapsulates agent-related effects: the useEffect for starting agent when iteration is running (lines 201-205), the useEffect for handling agent complete (lines 207-211), the useEffect for handling fatal errors (lines 220-224)",
-				"Create src/hooks/useSessionLifecycle.ts hook that encapsulates session-related effects: the useEffect for initial state loading (lines 162-166), the useEffect for auto-resume (lines 168-172), the useEffect for auto-start/initial-task (lines 174-199), the useEffect for elapsed time timer (lines 213-218)",
-				"Create src/components/ViewRouter.tsx component that handles view switching: takes activeView, version, handlers as props, renders appropriate view component (InitWizard, SetupWizard, UpdatePrompt, HelpView, AddTaskWizard, DryRunView, NotInitializedView, ResumePromptView, or MainRunView)",
-				"Create src/components/MainRunView.tsx for the main run view content (lines 269-310 of current RunApp): Header, TaskList, IterationProgress, AgentOutput, status messages, CommandInput, StatusBar",
-				"Refactor RunApp.tsx to compose these pieces: use the custom hooks, render ViewRouter with MainRunView as the default view",
-				"Update src/components/index.ts to export new components",
-				"Update src/hooks/index.ts to export new hooks"
-			],
-			"done": true
-		},
-		{
-			"title": "Add Codex agent support",
-			"description": "Add OpenAI Codex CLI as a supported coding agent in Ralph, allowing users to select Codex as their AI agent alongside Cursor and Claude Code.",
-			"steps": [
-				"Add 'codex' to the AgentType union type in src/types/config.types.ts",
-				"Add 'codex' to the VALID_AGENTS array in src/lib/config.ts",
-				"Add Codex CLI command configuration to AGENT_COMMANDS in src/lib/config.ts (e.g., ['codex', '-q', '--approval-mode', 'full-auto'])",
-				"Update parseStreamJsonLine function in src/lib/agent.ts if Codex uses a different output format",
-				"Add Codex option to AGENT_CHOICES array in src/components/SetupWizard.tsx",
-				"Update the agent name display logic in SetupWizard.tsx completion screen to handle 'codex' type",
-				"Test agent selection, configuration saving, and agent invocation with Codex"
-			],
-			"done": true
-		},
-		{
-			"title": "Implement dynamic prompt guardrail system",
-			"description": "Create a tunable guardrail system that allows users to add 'signs' to the prompt based on observed failure patterns. This implements the core Ralph philosophy of tuning the agent like a guitar - when Ralph does something bad, you add a guardrail so it doesn't happen again. Guardrails are stored in .ralph/guardrails.json and automatically injected into every prompt.",
-			"steps": [
-				"Create PromptGuardrail interface in src/types/config.types.ts with fields: id (string), instruction (string), trigger ('always' | 'on-error' | 'on-task-type'), category ('safety' | 'quality' | 'style' | 'process'), enabled (boolean), addedAt (ISO timestamp), addedAfterFailure (optional string describing the failure that prompted this guardrail)",
-				"Create src/lib/guardrails.ts with functions: loadGuardrails(), saveGuardrails(), addGuardrail(), removeGuardrail(), toggleGuardrail(), getActiveGuardrails(trigger?: string)",
-				"Add GUARDRAILS_FILE_PATH constant to src/lib/paths.ts pointing to .ralph/guardrails.json",
-				"Create default guardrails in src/lib/defaults.ts: DEFAULT_GUARDRAILS array with essential guardrails like 'Verify changes work before committing', 'Read existing code patterns before writing new code', 'If build fails, fix it before proceeding'",
-				"Update buildPrompt() in src/lib/prompt.ts to inject active guardrails into the prompt under a '## Guardrails' section, formatting each as a numbered rule",
-				"Add 'ralph guardrails' CLI command to list all guardrails with their status (enabled/disabled)",
-				"Add 'ralph guardrails add <instruction>' CLI command to add a new guardrail interactively",
-				"Add 'ralph guardrails remove <id>' CLI command to remove a guardrail",
-				"Add '/guardrail <instruction>' slash command in RunApp to quickly add a guardrail during a session when observing a failure pattern",
-				"Update SetupWizard to show default guardrails and allow user to customize during init"
-			],
-			"done": true
-		},
-		{
-			"title": "Implement adaptive retry with failure context injection",
-			"description": "Enhance the retry mechanism to analyze failures and inject contextual guidance into subsequent retry attempts. Instead of blindly retrying with the same prompt, the system analyzes the error and output to provide specific guidance for the next attempt. This implements the Ralph philosophy of self-healing loops.",
-			"steps": [
-				"Create src/lib/failure-analyzer.ts with analyzeFailure(error: string, output: string, exitCode: number): FailureAnalysis function that categorizes failures and generates recovery suggestions",
-				"Define FailureAnalysis interface with fields: category (string), rootCause (string), suggestedApproach (string), contextInjection (string), shouldRetry (boolean)",
-				"Implement failure pattern detection for common scenarios: build failures (suggest running build first), test failures (suggest running tests first), lint errors (suggest fixing lint issues), permission errors (suggest checking file permissions), timeout (suggest breaking task into smaller pieces)",
-				"Create generateRetryContext(analysis: FailureAnalysis, attemptNumber: number): string function that formats the context injection for the prompt",
-				"Update runAgentInternal() in src/stores/agentStore.ts to accept optional additionalContext parameter that gets appended to the prompt",
-				"Modify the retry loop in agentStore.start() to call analyzeFailure() on failure, generate retry context, and pass it to the next runAgentInternal() call",
-				"Add retryContext field to iteration logs to track what context was injected on retries",
-				"Log the failure analysis and retry context to both the log file and progress.txt for debugging",
-				"Add configuration option retryWithContext (boolean, default true) to enable/disable adaptive retry"
-			],
-			"done": true
-		},
-		{
-			"title": "Implement verification phase after each iteration",
-			"description": "Add an automated verification phase that runs after the agent completes each iteration to ensure the codebase is in a valid state before marking the task as done. This prevents broken commits and ensures quality. Verification commands are configurable per-project.",
-			"steps": [
-				"Create VerificationConfig interface in src/types/config.types.ts with fields: enabled (boolean), buildCommand (optional string), testCommand (optional string), lintCommand (optional string), customChecks (optional string array), failOnWarning (boolean)",
-				"Add 'verification' section to RalphConfig type with VerificationConfig",
-				"Create src/lib/verification.ts with runVerification(config: VerificationConfig): Promise<VerificationResult> function",
-				"Define VerificationResult interface with fields: passed (boolean), checks (array of CheckResult with name, passed, output, duration), failedChecks (string array), totalDuration (number)",
-				"Implement runCheck(name: string, command: string): Promise<CheckResult> helper that executes a command and captures output, exit code, and duration",
-				"Update orchestrator onIterationComplete callback to run verification after agent completes but before marking iteration as done",
-				"If verification fails, set iteration status to 'verification_failed' instead of 'completed' and trigger a retry with context about what verification failed",
-				"Add verification results to iteration logs (IterationLog.verification field)",
-				"Log verification results to progress.txt with pass/fail status for each check",
-				"Add verification configuration to SetupWizard with auto-detection of common commands (npm test, bun test, npm run build, etc.)",
-				"Add --skip-verification flag to run command for cases where verification should be bypassed",
-				"Display verification status in the UI during the verification phase"
-			],
-			"done": true
-		},
-		{
-			"title": "Implement task decomposition request handling",
-			"description": "Allow the agent to signal when a task is too large to complete in one iteration and request decomposition into subtasks. The orchestrator parses this request, updates the PRD with subtasks, and continues without counting the iteration as a failure. This enables handling of complex tasks that weren't properly broken down initially.",
-			"steps": [
-				"Define DECOMPOSITION_MARKER constant in src/lib/prompt.ts as '<request>DECOMPOSE_TASK</request>'",
-				"Create DecompositionRequest interface in src/types/prd.types.ts with fields: originalTaskTitle (string), reason (string), suggestedSubtasks (array of {title, description, steps})",
-				"Update the agent prompt in buildPrompt() to include instructions for requesting decomposition: 'If a task is too large to complete in one iteration, output the decomposition marker with a JSON payload containing originalTaskTitle, reason, and suggestedSubtasks'",
-				"Create src/lib/decomposition.ts with parseDecompositionRequest(output: string): DecompositionRequest | null function that extracts and validates the decomposition request from agent output",
-				"Implement applyDecomposition(prd: Prd, request: DecompositionRequest): Prd function that replaces the original task with subtasks",
-				"Update the agent completion handler in orchestrator to check for decomposition marker before marking iteration complete",
-				"If decomposition is detected: parse request, apply to PRD, save PRD, log the decomposition, do NOT increment iteration count, restart iteration with first subtask",
-				"Add decomposition events to iteration logs with original task, subtasks created, and reason",
-				"Log decomposition to progress.txt with clear indication that task was split",
-				"Add UI feedback in AgentOutput or status message when decomposition occurs",
-				"Add maxDecompositionsPerTask config option (default 2) to prevent infinite decomposition loops"
-			],
-			"done": true
-		},
-		{
-			"title": "Implement failure pattern learning and analysis",
-			"description": "Track failure patterns across iterations and sessions to identify recurring issues. Provide analysis and suggestions for guardrails or PRD improvements. This implements the Ralph philosophy that failures are opportunities for tuning.",
-			"steps": [
-				"Create FailurePattern interface in src/types/session.types.ts with fields: pattern (string), category (string), occurrences (number), firstSeen (ISO timestamp), lastSeen (ISO timestamp), affectedTasks (string array), suggestedGuardrail (string | null), resolved (boolean)",
-				"Create src/lib/failure-patterns.ts with functions: recordFailure(error: string, taskTitle: string, context: object), analyzePatterns(): FailurePattern[], getSuggestedGuardrails(): PromptGuardrail[]",
-				"Store failure history in .ralph/failure-history.json with rolling window (keep last 100 failures)",
-				"Implement pattern detection using regex matching and string similarity for common failure types: repeated build errors, same test failing, similar error messages across iterations",
-				"Create generatePatternReport(): string function that summarizes patterns and their frequency",
-				"Add 'ralph analyze' CLI command that runs pattern analysis and displays: top failure patterns, suggested guardrails, tasks with highest failure rates, recommendations",
-				"Implement automatic pattern detection after each failed iteration in orchestrator",
-				"When a pattern reaches threshold (e.g., 3 occurrences), automatically suggest adding a guardrail via notification or UI prompt",
-				"Add pattern summary to session completion report",
-				"Create 'ralph analyze --export' option to export analysis as JSON for external processing",
-				"Add learningEnabled config option (boolean, default true) to enable/disable pattern learning"
-			],
-			"done": true
-		},
-		{
-			"title": "Implement session memory for cross-session learning",
-			"description": "Persist lessons learned, successful patterns, and failed approaches across sessions so that resumed or new sessions benefit from past experience. This creates institutional memory for the project that improves Ralph's effectiveness over time.",
-			"steps": [
-				"Create SessionMemory interface in src/types/session.types.ts with fields: projectName (string), lessonsLearned (string array), successfulPatterns (string array), failedApproaches (string array), taskNotes (Record<taskTitle, string>), lastUpdated (ISO timestamp)",
-				"Create src/lib/session-memory.ts with functions: loadSessionMemory(), saveSessionMemory(), addLesson(lesson: string), addSuccessPattern(pattern: string), addFailedApproach(approach: string), addTaskNote(taskTitle: string, note: string), getMemoryForPrompt(): string",
-				"Store session memory in .ralph/session-memory.json (persists across sessions unlike session.json)",
-				"Update buildPrompt() to include session memory section when available: '## Lessons from Previous Sessions' with bullet points",
-				"Automatically record lessons when: a task completes after retry (what worked), a guardrail prevents a known issue, verification catches an error",
-				"Add '/learn <lesson>' slash command to manually add a lesson during a session",
-				"Add '/note <note>' slash command to add a note about the current task",
-				"Include session memory in the prompt for resumed sessions with clear indication these are learnings from past runs",
-				"Add 'ralph memory' CLI command to view current session memory",
-				"Add 'ralph memory clear' CLI command to reset session memory",
-				"Add 'ralph memory export' CLI command to export memory as markdown for documentation",
-				"Implement memory pruning to keep only the most relevant/recent entries (max 50 lessons, 20 patterns, 20 failed approaches)"
-			],
-			"done": true
-		},
-		{
-			"title": "Add automatic update check on startup with non-intrusive UI notification",
-			"description": "Automatically check for updates every time Ralph starts and display a non-intrusive notification banner in the terminal UI when an update is available. Unlike the current UpdatePrompt which is a full-screen blocking view, this should be a subtle indicator that doesn't interrupt the user's workflow.",
-			"steps": [
-				"Create checkForUpdateOnStartup() async function in src/lib/update.ts that fetches latest version and returns { updateAvailable: boolean, latestVersion: string | null, error: string | null }",
-				"Add updateAvailable and latestVersion fields to appStore state to track update status across the app",
-				"Call checkForUpdateOnStartup() in RunApp's initial useEffect (or in loadInitialState in appStore) and store result in appStore",
-				"Create UpdateBanner component in src/components/UpdateBanner.tsx that displays a single-line notification like 'Update available: v1.2.3 → Type /update to install'",
-				"Style UpdateBanner to be non-intrusive: dim text, positioned at top or bottom of main view, dismissible",
-				"Add UpdateBanner to RunApp's main view (below Header or above StatusBar) when updateAvailable is true",
-				"Respect skipVersion config - don't show banner if the available version was previously skipped",
-				"Respect shouldCheckForUpdates() interval - only make network request if 24 hours have passed since last check",
-				"Handle network errors gracefully - don't show error banner, just silently skip the update check",
-				"Add /dismiss-update slash command or keyboard shortcut to hide the banner for the current session"
-			],
-			"done": true
-		},
-		{
-			"title": "Add /refresh slash command to reload PRD and update UI state",
-			"description": "Add a /refresh command to the terminal UI that reloads the PRD from disk and updates the current task number, task list, and other UI state. This is useful when the PRD file has been modified externally (e.g., by the agent or manually) and the user wants to see the updated state without restarting Ralph.",
-			"steps": [
-				"Add '/refresh' case to the slash command handler in src/components/RunApp.tsx (or useSlashCommands hook if extracted)",
-				"Create refreshState() action in src/stores/appStore.ts that reloads PRD from disk using loadPrd(), updates currentTaskIndex, taskCount, and any other derived state",
-				"Call refreshState() when /refresh command is entered",
-				"Display a brief confirmation message in the UI after refresh completes (e.g., 'Refreshed: Task 3/10')",
-				"Handle errors gracefully if PRD file is missing or invalid after refresh",
-				"Add /refresh to the help text in HelpView.tsx"
-			],
-			"done": true
+			"done": false
 		}
 	]
 }

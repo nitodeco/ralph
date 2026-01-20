@@ -38,6 +38,7 @@ import {
 	writePidFile,
 } from "@/lib/daemon.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
+import { bootstrapServices } from "@/lib/services/index.ts";
 import { orchestrator, useAgentStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
@@ -120,6 +121,8 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
+	bootstrapServices();
+
 	const {
 		command,
 		iterations,
