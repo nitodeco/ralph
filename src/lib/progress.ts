@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
 
 export const PROGRESS_FILE_PATH = `${RALPH_DIR}/progress.txt`;
@@ -19,4 +19,9 @@ export function readProgressFile(): string | null {
 	} catch {
 		return null;
 	}
+}
+
+export function appendProgress(content: string): void {
+	ensureRalphDirExists();
+	appendFileSync(PROGRESS_FILE_PATH, `${content}\n`);
 }

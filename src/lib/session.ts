@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import type { Session, SessionStatus } from "@/types.ts";
+import type { IterationTiming, Session, SessionStatistics, SessionStatus } from "@/types.ts";
 import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
 
 const SESSION_FILE_PATH = `${RALPH_DIR}/session.json`;
@@ -11,7 +11,12 @@ export function loadSession(): Session | null {
 
 	try {
 		const content = readFileSync(SESSION_FILE_PATH, "utf-8");
-		return JSON.parse(content) as Session;
+		const session = JSON.parse(content) as Session;
+		if (!session.statistics) {
+			session.statistics = createInitialStatistics(session.totalIterations);
+			saveSession(session);
+		}
+		return session;
 	} catch {
 		return null;
 	}
@@ -32,6 +37,19 @@ export function sessionExists(): boolean {
 	return existsSync(SESSION_FILE_PATH);
 }
 
+function createInitialStatistics(totalIterations: number): SessionStatistics {
+	return {
+		totalIterations,
+		completedIterations: 0,
+		failedIterations: 0,
+		successfulIterations: 0,
+		totalDurationMs: 0,
+		averageDurationMs: 0,
+		successRate: 0,
+		iterationTimings: [],
+	};
+}
+
 export function createSession(totalIterations: number, currentTaskIndex: number): Session {
 	const now = Date.now();
 	return {
@@ -42,6 +60,104 @@ export function createSession(totalIterations: number, currentTaskIndex: number)
 		currentTaskIndex,
 		status: "running",
 		elapsedTimeSeconds: 0,
+		statistics: createInitialStatistics(totalIterations),
+	};
+}
+
+export function recordIterationStart(session: Session, iteration: number): Session {
+	const now = Date.now();
+	const existingTimingIndex = session.statistics.iterationTimings.findIndex(
+		(timing) => timing.iteration === iteration,
+	);
+
+	let updatedTimings: IterationTiming[];
+	if (existingTimingIndex >= 0) {
+		updatedTimings = [...session.statistics.iterationTimings];
+		updatedTimings[existingTimingIndex] = {
+			...updatedTimings[existingTimingIndex],
+			startTime: now,
+		};
+	} else {
+		updatedTimings = [
+			...session.statistics.iterationTimings,
+			{
+				iteration,
+				startTime: now,
+				endTime: null,
+				durationMs: null,
+			},
+		];
+	}
+
+	return {
+		...session,
+		lastUpdateTime: now,
+		statistics: {
+			...session.statistics,
+			iterationTimings: updatedTimings,
+		},
+	};
+}
+
+export function recordIterationEnd(
+	session: Session,
+	iteration: number,
+	wasSuccessful: boolean,
+): Session {
+	const now = Date.now();
+	const existingTimingIndex = session.statistics.iterationTimings.findIndex(
+		(timing) => timing.iteration === iteration,
+	);
+
+	let updatedTimings: IterationTiming[];
+	let durationMs = 0;
+
+	if (existingTimingIndex >= 0) {
+		const existingTiming = session.statistics.iterationTimings[existingTimingIndex];
+		durationMs = now - existingTiming.startTime;
+		updatedTimings = [...session.statistics.iterationTimings];
+		updatedTimings[existingTimingIndex] = {
+			...existingTiming,
+			endTime: now,
+			durationMs,
+		};
+	} else {
+		updatedTimings = [
+			...session.statistics.iterationTimings,
+			{
+				iteration,
+				startTime: now,
+				endTime: now,
+				durationMs: 0,
+			},
+		];
+	}
+
+	const completedIterations = session.statistics.completedIterations + 1;
+	const successfulIterations = wasSuccessful
+		? session.statistics.successfulIterations + 1
+		: session.statistics.successfulIterations;
+	const failedIterations = wasSuccessful
+		? session.statistics.failedIterations
+		: session.statistics.failedIterations + 1;
+	const totalDurationMs = session.statistics.totalDurationMs + durationMs;
+	const averageDurationMs = completedIterations > 0 ? totalDurationMs / completedIterations : 0;
+	const successRate =
+		completedIterations > 0 ? (successfulIterations / completedIterations) * 100 : 0;
+
+	return {
+		...session,
+		lastUpdateTime: now,
+		statistics: {
+			...session.statistics,
+			completedIterations,
+			successfulIterations,
+			failedIterations,
+			totalDurationMs,
+			averageDurationMs,
+			successRate,
+			iterationTimings: updatedTimings,
+		},
 	};
 }
 

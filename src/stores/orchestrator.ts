@@ -14,10 +14,17 @@ import { initializeProgressFile } from "@/lib/progress.ts";
 import {
 	createSession,
 	deleteSession,
+	recordIterationEnd,
+	recordIterationStart,
 	saveSession,
 	updateSessionIteration,
 	updateSessionStatus,
 } from "@/lib/session.ts";
+import {
+	calculateStatisticsFromLogs,
+	displayStatisticsReport,
+	logStatisticsToProgress,
+} from "@/lib/statistics.ts";
 import type { IterationLogStatus, Prd, RalphConfig, Session } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useAppStore } from "./appStore.ts";
@@ -113,6 +120,12 @@ class SessionOrchestrator {
 					appState.setPrd(currentPrd);
 				}
 
+				if (appState.currentSession) {
+					const updatedSession = recordIterationStart(appState.currentSession, iterationNumber);
+					saveSession(updatedSession);
+					useAppStore.setState({ currentSession: updatedSession });
+				}
+
 				startIterationLog({
 					iteration: iterationNumber,
 					totalIterations: iterations,
@@ -130,9 +143,15 @@ class SessionOrchestrator {
 				logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
 				const currentPrd = loadPrd();
 				if (appState.currentSession) {
-					const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
-					const updatedSession = updateSessionIteration(
+					const wasSuccessful = !agentStore.error && agentStore.isComplete;
+					let updatedSession = recordIterationEnd(
 						appState.currentSession,
+						iterationNumber,
+						wasSuccessful,
+					);
+					const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
+					updatedSession = updateSessionIteration(
+						updatedSession,
 						iterationNumber,
 						taskIndex,
 						appState.elapsedTime,
@@ -175,13 +194,16 @@ class SessionOrchestrator {
 				sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
 					totalIterations: iterations,
 				});
-				useAppStore.setState({ appState: "complete" });
 				if (appState.currentSession) {
+					const finalStatistics = calculateStatisticsFromLogs(appState.currentSession);
+					displayStatisticsReport(finalStatistics);
+					logStatisticsToProgress(finalStatistics);
 					const completedSession = updateSessionStatus(appState.currentSession, "completed");
 					saveSession(completedSession);
 					deleteSession();
 					useAppStore.setState({ currentSession: null });
 				}
+				useAppStore.setState({ appState: "complete" });
 			},
 			onMaxIterations: () => {
 				const appState = useAppStore.getState();

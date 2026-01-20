@@ -1,5 +1,23 @@
 export type SessionStatus = "running" | "paused" | "stopped" | "completed";
 
+export interface IterationTiming {
+	iteration: number;
+	startTime: number;
+	endTime: number | null;
+	durationMs: number | null;
+}
+
+export interface SessionStatistics {
+	totalIterations: number;
+	completedIterations: number;
+	failedIterations: number;
+	successfulIterations: number;
+	totalDurationMs: number;
+	averageDurationMs: number;
+	successRate: number;
+	iterationTimings: IterationTiming[];
+}
+
 export interface Session {
 	startTime: number;
 	lastUpdateTime: number;
@@ -8,6 +26,7 @@ export interface Session {
 	currentTaskIndex: number;
 	status: SessionStatus;
 	elapsedTimeSeconds: number;
+	statistics: SessionStatistics;
 }
 
 export type IterationLogStatus = "running" | "completed" | "failed" | "stopped";
