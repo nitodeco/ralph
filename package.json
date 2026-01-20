@@ -15,7 +15,9 @@
 		"prepare": "husky",
 		"changeset": "changeset",
 		"version": "changeset version",
-		"release": "bun run build"
+		"release": "bun run build",
+		"test": "bun test",
+		"test:coverage": "bun test --coverage"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.11",

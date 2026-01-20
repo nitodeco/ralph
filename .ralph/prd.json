@@ -2,18 +2,6 @@
 	"project": "Ralph CLI",
 	"tasks": [
 		{
-			"title": "Improve error messages and user feedback",
-			"description": "Enhance error handling throughout the application with clear, actionable error messages.",
-			"steps": [
-				"Audit all error paths and improve messages",
-				"Add suggestions for common errors",
-				"Implement error codes for programmatic handling",
-				"Add --verbose flag for detailed error output",
-				"Include relevant context in error messages"
-			],
-			"done": true
-		},
-		{
 			"title": "Add comprehensive test suite",
 			"description": "Implement unit and integration tests to ensure reliability for production use.",
 			"steps": [
@@ -23,7 +11,7 @@
 				"Create integration tests for CLI commands",
 				"Add test coverage reporting"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Create troubleshooting documentation",
