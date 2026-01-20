@@ -1,6 +1,14 @@
 import type { Prd, PrdFormat } from "../types.ts";
 
-export function buildPrompt(): string {
+export interface BuildPromptOptions {
+	instructions?: string | null;
+}
+
+export function buildPrompt(options: BuildPromptOptions = {}): string {
+	const { instructions } = options;
+
+	const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
+
 	return `@.ralph/prd.json @.ralph/progress.txt
 
 You are a coding agent working on a long running project.
@@ -17,7 +25,7 @@ Your workflow is as follows:
 - Always leave the codebase in a buildable state
 - If the build fails, fix it before committing
 - Ensure you are using the proper tools in this project
-
+${instructionsSection}
 IMPORTANT:
 If all tasks in .ralph/prd.json are marked as done, output EXACTLY this: <promise>COMPLETE</promise>
 `;

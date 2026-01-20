@@ -73,6 +73,10 @@ tasks:
     done: false
 ```
 
+## Custom Instructions
+
+You can provide project-specific instructions to the agent by creating a `.ralph/instructions.md` file. The contents of this file will be included in the agent prompt.
+
 ## Requirements
 
 One of the following AI coding agents must be installed:

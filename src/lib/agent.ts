@@ -1,9 +1,11 @@
 import type { AgentResult, AgentType } from "../types.ts";
 import { getAgentCommand, loadConfig } from "./config.ts";
+import { loadInstructions } from "./prd.ts";
 import { buildPrompt, COMPLETION_MARKER } from "./prompt.ts";
 
 export async function runAgent(): Promise<AgentResult> {
-	const prompt = buildPrompt();
+	const instructions = loadInstructions();
+	const prompt = buildPrompt({ instructions });
 	const config = loadConfig();
 	const baseCommand = getAgentCommand(config.agent);
 
