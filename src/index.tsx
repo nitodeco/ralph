@@ -24,6 +24,7 @@ import {
 	spawnDaemonProcess,
 	writePidFile,
 } from "@/lib/daemon.ts";
+import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
 import { useAgentStore } from "@/stores/agentStore.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
@@ -110,10 +111,16 @@ function main(): void {
 
 	setupSignalHandlers();
 
+	const integrityResult = checkRalphDirectoryIntegrity();
+	const integrityWarnings = formatIntegrityIssues(integrityResult);
+
 	if (isDaemonProcess()) {
 		writePidFile(process.pid);
 	} else {
 		clearTerminal();
+		if (integrityWarnings) {
+			console.warn(integrityWarnings);
+		}
 	}
 
 	if (background && !isDaemonProcess()) {
