@@ -1,19 +1,7 @@
-## Session Progress
-
-### Completed: Add comprehensive test suite
-- Set up bun test framework with `bun test` and `bun test:coverage` scripts
-- Added unit tests for lib functions:
-  - config.ts: validateConfig, applyDefaults, formatValidationErrors, getConfigSummary
-  - prd.ts: findPrdFile, loadPrdWithValidation, isPrdComplete, getNextTask, getTaskByTitle, getTaskByIndex, canWorkOnTask, createEmptyPrd
-  - prompt.ts: buildPrompt, buildPrdGenerationPrompt, buildAddTaskPrompt, prompt constants
-  - update.ts: compareVersions, getArchitecture, getOperatingSystem, getRemoveOldBinaryCommand
-  - statistics.ts: generateStatisticsReport
-  - errors.ts: createError, formatError, formatErrorCompact, getErrorSuggestion, categorizeAgentError, ErrorCode enum
-- Added tests for hooks:
-  - useDryRun.ts: DryRunState type validation
-- Created integration tests for CLI commands:
-  - parser.ts: parseArgs with all flags and commands
-  - commands: printHelp, printVersion, printList (with and without PRD, JSON output)
-  - formatters.ts: formatElapsedTime, formatDuration, formatBytes, formatConfigValue
-- Added test coverage reporting via `bun test --coverage`
-- All 171 tests passing
+[2026-01-20] Completed: Create troubleshooting documentation
+- Added comprehensive configuration options documentation with all settings explained
+- Created FAQ section covering common questions about sessions, tasks, and logging
+- Documented all error codes (E001-E042) with causes and solutions
+- Added example PRDs for web applications, CLI tools, and API backends
+- Included performance tuning recommendations for long-running sessions, memory-constrained systems, and fast iteration scenarios
+- Added task design best practices

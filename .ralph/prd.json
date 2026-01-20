@@ -1,30 +1,18 @@
 {
-	"project": "Ralph CLI",
-	"tasks": [
-		{
-			"title": "Add comprehensive test suite",
-			"description": "Implement unit and integration tests to ensure reliability for production use.",
-			"steps": [
-				"Set up bun test framework",
-				"Add unit tests for lib functions (config, prd, prompt, update)",
-				"Add tests for hooks (useAgent, useIteration)",
-				"Create integration tests for CLI commands",
-				"Add test coverage reporting"
-			],
-			"done": true
-		},
-		{
-			"title": "Create troubleshooting documentation",
-			"description": "Document common issues and their solutions for production deployments.",
-			"steps": [
-				"Document common error scenarios and fixes",
-				"Add FAQ section to README",
-				"Document configuration options with examples",
-				"Create example PRDs for different project types",
-				"Add performance tuning recommendations"
-			],
-			"done": false
-		},
+  "project": "Ralph CLI",
+  "tasks": [
+    {
+      "title": "Create troubleshooting documentation",
+      "description": "Document common issues and their solutions for production deployments.",
+      "steps": [
+        "Document common error scenarios and fixes",
+        "Add FAQ section to README",
+        "Document configuration options with examples",
+        "Create example PRDs for different project types",
+        "Add performance tuning recommendations"
+      ],
+      "done": true
+    },
 		{
 			"title": "Fix UI offset caused by agent output stream on iteration completion",
 			"description": "When a Ralph iteration completes, the last agent output stream causes the entire UI to become offset/misaligned. This visual bug needs to be fixed to maintain consistent UI layout.",
