@@ -12,6 +12,16 @@ export const config = {
 			target: "bun-darwin-x64",
 			outputName: "ralph-darwin-x64",
 		},
+		{
+			name: "Linux ARM64",
+			target: "bun-linux-arm64",
+			outputName: "ralph-linux-arm64",
+		},
+		{
+			name: "Linux x64",
+			target: "bun-linux-x64",
+			outputName: "ralph-linux-x64",
+		},
 	],
 } as const;
 

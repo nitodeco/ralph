@@ -43,8 +43,10 @@ export function getOperatingSystem(): string {
 	switch (platform) {
 		case "darwin":
 			return "darwin";
+		case "linux":
+			return "linux";
 		default:
-			throw new Error(`Unsupported OS: ${platform}. Ralph currently only supports macOS.`);
+			throw new Error(`Unsupported OS: ${platform}. Ralph currently supports macOS and Linux.`);
 	}
 }
 

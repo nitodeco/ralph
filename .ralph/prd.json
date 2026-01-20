@@ -11,7 +11,7 @@
 				"Test update flow on Linux environments",
 				"Update documentation with Linux support"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement iteration statistics and reporting",

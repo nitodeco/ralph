@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Build binaries
+        run: bun run build
+
       - name: Create Release Pull Request or Build
         id: changesets
         uses: changesets/action@v1
