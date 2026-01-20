@@ -208,16 +208,16 @@ export function useAgent(): UseAgentReturn {
 			while (retryCountRef.current <= maxRetries && !abortedRef.current) {
 				const result = await runAgent();
 
-			if (result.success || abortedRef.current) {
-				setState((prev) => ({
-					...prev,
-					isStreaming: false,
-					isComplete: result.isComplete,
-					exitCode: result.exitCode,
-					retryCount: retryCountRef.current,
-				}));
-				break;
-			}
+				if (result.success || abortedRef.current) {
+					setState((prev) => ({
+						...prev,
+						isStreaming: false,
+						isComplete: result.isComplete,
+						exitCode: result.exitCode,
+						retryCount: retryCountRef.current,
+					}));
+					break;
+				}
 
 				const categorizedError = categorizeError(result.error ?? "", result.exitCode);
 
