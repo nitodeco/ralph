@@ -1,10 +1,12 @@
 #!/usr/bin/env bun
 
 import { render } from "ink";
+import { useState } from "react";
 import { InitWizard } from "./components/InitWizard.tsx";
 import { RunApp } from "./components/RunApp.tsx";
 import { SetupWizard } from "./components/SetupWizard.tsx";
 import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
+import { globalConfigExists } from "./lib/config.ts";
 
 export const VERSION = "1.0.0";
 
@@ -58,12 +60,32 @@ function printVersion(): void {
 	console.log(`ralph v${VERSION}`);
 }
 
+function clearTerminal(): void {
+	process.stdout.write("\x1b[2J\x1b[H");
+}
+
+interface RunWithSetupProps {
+	version: string;
+	iterations: number;
+}
+
+function RunWithSetup({ version, iterations }: RunWithSetupProps): React.ReactElement {
+	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
+
+	if (!setupComplete) {
+		return <SetupWizard version={version} onComplete={() => setSetupComplete(true)} />;
+	}
+
+	return <RunApp version={version} iterations={iterations} />;
+}
+
 function main(): void {
+	clearTerminal();
 	const { command, iterations } = parseArgs(process.argv);
 
 	switch (command) {
 		case "run":
-			render(<RunApp version={VERSION} iterations={iterations} />);
+			render(<RunWithSetup version={VERSION} iterations={iterations} />);
 			break;
 
 		case "init":

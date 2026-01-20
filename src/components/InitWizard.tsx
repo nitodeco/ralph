@@ -17,6 +17,7 @@ import { Message } from "./common/Message.tsx";
 
 interface InitWizardProps {
 	version: string;
+	onComplete?: () => void;
 }
 
 type WizardStep =
@@ -62,8 +63,16 @@ function getDefaultProjectName(): string {
 	return process.cwd().split("/").pop() ?? "my-project";
 }
 
-export function InitWizard({ version }: InitWizardProps): React.ReactElement {
+export function InitWizard({ version, onComplete }: InitWizardProps): React.ReactElement {
 	const { exit } = useApp();
+
+	const handleExit = () => {
+		if (onComplete) {
+			onComplete();
+		} else {
+			exit();
+		}
+	};
 
 	const existingPrd = findPrdFile();
 	const existingProgress = existsSync(PROGRESS_FILE_PATH);
@@ -197,7 +206,7 @@ export function InitWizard({ version }: InitWizardProps): React.ReactElement {
 	useInput((_, key) => {
 		if (state.step === "complete" || state.step === "aborted") {
 			if (key.return || key.escape) {
-				exit();
+				handleExit();
 			}
 		}
 	});

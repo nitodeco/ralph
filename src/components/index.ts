@@ -1,6 +1,9 @@
 export { AgentOutput } from "./AgentOutput.tsx";
+export type { SlashCommand } from "./CommandInput.tsx";
+export { CommandInput } from "./CommandInput.tsx";
 export * from "./common/index.ts";
 export { Header } from "./Header.tsx";
+export { HelpView } from "./HelpView.tsx";
 export { InitWizard } from "./InitWizard.tsx";
 export { IterationProgress } from "./IterationProgress.tsx";
 export { RunApp } from "./RunApp.tsx";

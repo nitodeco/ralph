@@ -8,6 +8,7 @@ import { Message } from "./common/Message.tsx";
 
 interface SetupWizardProps {
 	version: string;
+	onComplete?: () => void;
 }
 
 type SetupStep = "agent_type" | "prd_format" | "complete";
@@ -28,9 +29,17 @@ const FORMAT_CHOICES = [
 	{ label: "YAML", value: "yaml" as const },
 ];
 
-export function SetupWizard({ version }: SetupWizardProps): React.ReactElement {
+export function SetupWizard({ version, onComplete }: SetupWizardProps): React.ReactElement {
 	const { exit } = useApp();
 	const existingConfig = loadGlobalConfig();
+
+	const handleExit = () => {
+		if (onComplete) {
+			onComplete();
+		} else {
+			exit();
+		}
+	};
 
 	const [state, setState] = useState<SetupState>({
 		step: "agent_type",
@@ -54,7 +63,7 @@ export function SetupWizard({ version }: SetupWizardProps): React.ReactElement {
 	useInput((_, key) => {
 		if (state.step === "complete") {
 			if (key.return || key.escape) {
-				exit();
+				handleExit();
 			}
 		}
 	});
@@ -104,10 +113,16 @@ export function SetupWizard({ version }: SetupWizardProps): React.ReactElement {
 								Configuration saved to ~/.ralph/config.json
 							</Text>
 						</Box>
-						<Box marginTop={1}>
-							<Text dimColor>Run 'ralph init' in a project directory to get started.</Text>
-						</Box>
-						<Text dimColor>Press Enter to exit</Text>
+						{onComplete ? (
+							<Text dimColor>Press Enter to continue</Text>
+						) : (
+							<>
+								<Box marginTop={1}>
+									<Text dimColor>Run 'ralph init' in a project directory to get started.</Text>
+								</Box>
+								<Text dimColor>Press Enter to exit</Text>
+							</>
+						)}
 					</Box>
 				);
 			}

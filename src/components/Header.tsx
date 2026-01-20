@@ -18,20 +18,21 @@ export function Header({
 	projectName,
 }: HeaderProps): React.ReactElement {
 	return (
-		<Box
-			flexDirection="column"
-			borderStyle="round"
-			borderColor="cyan"
-			paddingX={1}
-		>
-			<Box justifyContent="space-between">
+		<Box flexDirection="column" paddingX={1}>
+			<Box justifyContent="space-between" alignItems="flex-end">
 				<Text bold color="cyan">
-					◆ ralph
+					{`
+ ██████╗   █████╗  ██╗      ██████╗  ██╗  ██╗
+ ██╔══██╗ ██╔══██╗ ██║      ██╔══██╗ ██║  ██║
+ ██████╔╝ ███████║ ██║      ██████╔╝ ███████║
+ ██╔══██╗ ██╔══██║ ██║      ██╔═══╝  ██╔══██║
+ ██║  ██║ ██║  ██║ ███████╗ ██║      ██║  ██║
+ ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═╝      ╚═╝  ╚═╝`}
 				</Text>
 				<Text dimColor>v{version}</Text>
 			</Box>
 			{(agent || projectName) && (
-				<Box gap={2}>
+				<Box gap={2} marginTop={1}>
 					{agent && (
 						<Text>
 							<Text dimColor>agent:</Text>{" "}

@@ -18,6 +18,7 @@ import { Spinner } from "./common/Spinner.tsx";
 interface UpdatePromptProps {
 	version: string;
 	forceCheck?: boolean;
+	onComplete?: () => void;
 }
 
 type UpdateState =
@@ -46,9 +47,18 @@ function skipVersion(version: string): void {
 export function UpdatePrompt({
 	version,
 	forceCheck = false,
+	onComplete,
 }: UpdatePromptProps): React.ReactElement {
 	const { exit } = useApp();
 	const [state, setState] = useState<UpdateState>("checking");
+
+	const handleExit = () => {
+		if (onComplete) {
+			onComplete();
+		} else {
+			exit();
+		}
+	};
 	const [latestVersion, setLatestVersion] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [downloadProgress, setDownloadProgress] = useState<string>("");
@@ -126,11 +136,11 @@ export function UpdatePrompt({
 	useEffect(() => {
 		if (state === "complete" || state === "up_to_date" || state === "error") {
 			const timeout = setTimeout(() => {
-				exit();
+				handleExit();
 			}, 2000);
 			return () => clearTimeout(timeout);
 		}
-	}, [state, exit]);
+	}, [state]);
 
 	const renderContent = () => {
 		switch (state) {

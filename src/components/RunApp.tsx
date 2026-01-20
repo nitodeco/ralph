@@ -6,11 +6,16 @@ import { loadConfig } from "../lib/config.ts";
 import { findPrdFile, loadPrd, PROGRESS_FILE_PATH, RALPH_DIR } from "../lib/prd.ts";
 import type { Prd, RalphConfig } from "../types.ts";
 import { AgentOutput } from "./AgentOutput.tsx";
+import { CommandInput, type SlashCommand } from "./CommandInput.tsx";
 import { Message } from "./common/Message.tsx";
 import { Header } from "./Header.tsx";
+import { HelpView } from "./HelpView.tsx";
+import { InitWizard } from "./InitWizard.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
+import { SetupWizard } from "./SetupWizard.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
+import { UpdatePrompt } from "./UpdatePrompt.tsx";
 import { existsSync } from "node:fs";
 
 interface RunAppProps {
@@ -18,26 +23,27 @@ interface RunAppProps {
 	iterations: number;
 }
 
-type AppState = "validating" | "running" | "complete" | "error" | "max_iterations";
+type AppState = "validating" | "running" | "complete" | "error" | "max_iterations" | "not_initialized";
+type ActiveView = "run" | "init" | "setup" | "update" | "help";
 
-interface ValidationError {
+interface ValidationWarning {
 	message: string;
 	hint: string;
 }
 
-function validateProject(): ValidationError | null {
+function validateProject(): ValidationWarning | null {
 	const prdFile = findPrdFile();
 	if (!prdFile) {
 		return {
 			message: `No prd.json or prd.yaml found in ${RALPH_DIR}/`,
-			hint: "Run 'ralph init' to create one",
+			hint: "Run 'ralph init' or type /init to create one",
 		};
 	}
 
 	if (!existsSync(PROGRESS_FILE_PATH)) {
 		return {
 			message: `No ${PROGRESS_FILE_PATH} found`,
-			hint: "Run 'ralph init' to create one",
+			hint: "Run 'ralph init' or type /init to create one",
 		};
 	}
 
@@ -51,7 +57,8 @@ function getCurrentTaskIndex(prd: Prd): number {
 export function RunApp({ version, iterations }: RunAppProps): React.ReactElement {
 	const { exit } = useApp();
 	const [appState, setAppState] = useState<AppState>("validating");
-	const [validationError, setValidationError] = useState<ValidationError | null>(null);
+	const [activeView, setActiveView] = useState<ActiveView>("run");
+	const [validationWarning, setValidationWarning] = useState<ValidationWarning | null>(null);
 	const [config, setConfig] = useState<RalphConfig | null>(null);
 	const [prd, setPrd] = useState<Prd | null>(null);
 	const [elapsedTime, setElapsedTime] = useState(0);
@@ -81,11 +88,72 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		}
 	}, [agent.isComplete, iteration]);
 
+	const revalidateAndRestart = useCallback(() => {
+		const warning = validateProject();
+		if (warning) {
+			setValidationWarning(warning);
+			setAppState("not_initialized");
+			return;
+		}
+
+		const loadedConfig = loadConfig();
+		const loadedPrd = loadPrd();
+
+		setConfig(loadedConfig);
+		setPrd(loadedPrd);
+		setValidationWarning(null);
+		setAppState("running");
+		setElapsedTime(0);
+		agent.reset();
+		iteration.start();
+	}, [agent, iteration]);
+
+	const handleSlashCommand = useCallback((command: SlashCommand) => {
+		switch (command) {
+			case "init":
+				agent.stop();
+				iteration.pause();
+				setActiveView("init");
+				break;
+			case "setup":
+				agent.stop();
+				iteration.pause();
+				setActiveView("setup");
+				break;
+			case "update":
+				agent.stop();
+				iteration.pause();
+				setActiveView("update");
+				break;
+			case "help":
+				agent.stop();
+				iteration.pause();
+				setActiveView("help");
+				break;
+			case "quit":
+			case "exit":
+				exit();
+				break;
+		}
+	}, [agent, iteration, exit]);
+
+	const handleViewComplete = useCallback(() => {
+		setActiveView("run");
+		revalidateAndRestart();
+	}, [revalidateAndRestart]);
+
+	const handleHelpClose = useCallback(() => {
+		setActiveView("run");
+		if (appState === "running" && iteration.isPaused) {
+			iteration.resume();
+		}
+	}, [appState, iteration]);
+
 	useEffect(() => {
-		const error = validateProject();
-		if (error) {
-			setValidationError(error);
-			setAppState("error");
+		const warning = validateProject();
+		if (warning) {
+			setValidationWarning(warning);
+			setAppState("not_initialized");
 			return;
 		}
 
@@ -119,23 +187,23 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 	}, [iteration.current, iterations, agent.isStreaming, agent.isComplete, appState]);
 
 	useEffect(() => {
-		if (appState !== "running") return;
+		if (appState !== "running" || activeView !== "run") return;
 
 		const timer = setInterval(() => {
 			setElapsedTime((prev) => prev + 1);
 		}, 1000);
 
 		return () => clearInterval(timer);
-	}, [appState]);
+	}, [appState, activeView]);
 
 	useEffect(() => {
-		if (appState === "complete" || appState === "max_iterations" || appState === "error") {
+		if ((appState === "complete" || appState === "max_iterations" || appState === "error") && activeView === "run") {
 			const timeout = setTimeout(() => {
 				exit();
 			}, 100);
 			return () => clearTimeout(timeout);
 		}
-	}, [appState, exit]);
+	}, [appState, activeView, exit]);
 
 	const getStatus = () => {
 		if (appState === "error") return "error";
@@ -150,14 +218,31 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 		? prd.tasks[currentTaskIndex]?.title
 		: undefined;
 
-	if (appState === "error" && validationError) {
+	if (activeView === "init") {
+		return <InitWizard version={version} onComplete={handleViewComplete} />;
+	}
+
+	if (activeView === "setup") {
+		return <SetupWizard version={version} onComplete={handleViewComplete} />;
+	}
+
+	if (activeView === "update") {
+		return <UpdatePrompt version={version} forceCheck onComplete={handleViewComplete} />;
+	}
+
+	if (activeView === "help") {
+		return <HelpView version={version} onClose={handleHelpClose} />;
+	}
+
+	if (appState === "not_initialized" && validationWarning) {
 		return (
 			<Box flexDirection="column" padding={1}>
 				<Header version={version} />
 				<Box flexDirection="column" marginY={1} paddingX={1}>
-					<Message type="error">{validationError.message}</Message>
-					<Text dimColor>{validationError.hint}</Text>
+					<Message type="warning">{validationWarning.message}</Message>
+					<Text dimColor>{validationWarning.hint}</Text>
 				</Box>
+				<CommandInput onCommand={handleSlashCommand} />
 			</Box>
 		);
 	}
@@ -204,6 +289,8 @@ export function RunApp({ version, iterations }: RunAppProps): React.ReactElement
 					</Message>
 				</Box>
 			)}
+
+			<CommandInput onCommand={handleSlashCommand} disabled={agent.isStreaming} />
 
 			<StatusBar
 				status={getStatus()}
