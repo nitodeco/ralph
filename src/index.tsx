@@ -16,9 +16,10 @@ import {
 	validateConfig,
 } from "@/lib/config.ts";
 import {
-	cleanupDaemon,
 	isBackgroundProcessRunning,
 	isDaemonProcess,
+	setShutdownHandler,
+	setupSignalHandlers,
 	spawnDaemonProcess,
 	stopDaemonProcess,
 	writePidFile,
@@ -26,6 +27,7 @@ import {
 import { getRecentLogEntries } from "@/lib/logger.ts";
 import { loadPrd } from "@/lib/prd.ts";
 import { loadSession, saveSession, updateSessionStatus } from "@/lib/session.ts";
+import { useAgentStore } from "@/stores/agentStore.ts";
 import packageJson from "../package.json";
 
 declare const RALPH_VERSION: string | undefined;
@@ -704,20 +706,17 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 function main(): void {
 	const { command, iterations, background, json, task } = parseArgs(process.argv);
 
+	setShutdownHandler({
+		onShutdown: () => {
+			const agentStore = useAgentStore.getState();
+			agentStore.stop();
+		},
+	});
+
+	setupSignalHandlers();
+
 	if (isDaemonProcess()) {
 		writePidFile(process.pid);
-
-		process.on("exit", () => {
-			cleanupDaemon();
-		});
-		process.on("SIGTERM", () => {
-			cleanupDaemon();
-			process.exit(0);
-		});
-		process.on("SIGINT", () => {
-			cleanupDaemon();
-			process.exit(0);
-		});
 	} else {
 		clearTerminal();
 	}

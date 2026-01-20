@@ -191,7 +191,7 @@
 				"Clean up PID file on exit",
 				"Log shutdown reason to log file"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add dry-run mode for testing",

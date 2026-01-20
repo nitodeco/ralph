@@ -2,6 +2,16 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { getLogger } from "./logger.ts";
 import { ensureRalphDirExists, RALPH_DIR } from "./prd.ts";
+import { loadSession, saveSession, updateSessionStatus } from "./session.ts";
+
+export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";
+
+interface ShutdownHandler {
+	onShutdown: () => void;
+}
+
+let shutdownHandlerRef: ShutdownHandler | null = null;
+let shutdownInProgress = false;
 
 export const PID_FILE_PATH = `${RALPH_DIR}/ralph.pid`;
 
@@ -202,4 +212,60 @@ export async function stopDaemonProcess(timeoutMs = 5000): Promise<StopResult> {
 		message: `Failed to stop Ralph process (PID: ${pid})`,
 		wasKilled: false,
 	};
+}
+
+export function setShutdownHandler(handler: ShutdownHandler): void {
+	shutdownHandlerRef = handler;
+}
+
+export function clearShutdownHandler(): void {
+	shutdownHandlerRef = null;
+}
+
+function handleShutdownSignal(signal: ShutdownSignal): void {
+	if (shutdownInProgress) {
+		return;
+	}
+	shutdownInProgress = true;
+
+	const logger = getLogger({});
+	logger.info("Shutdown signal received", { signal });
+
+	const session = loadSession();
+	if (session && (session.status === "running" || session.status === "paused")) {
+		const updatedSession = updateSessionStatus(session, "stopped");
+		saveSession(updatedSession);
+		logger.info("Session state saved as stopped", { signal });
+	}
+
+	if (shutdownHandlerRef) {
+		try {
+			shutdownHandlerRef.onShutdown();
+			logger.info("Agent process terminated", { signal });
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			logger.error("Error during shutdown handler", { signal, error: errorMessage });
+		}
+	}
+
+	deletePidFile();
+	logger.info("Shutdown complete", { signal });
+
+	process.exit(0);
+}
+
+export function setupSignalHandlers(): void {
+	const signals: ShutdownSignal[] = ["SIGTERM", "SIGINT", "SIGHUP"];
+
+	for (const signal of signals) {
+		process.on(signal, () => handleShutdownSignal(signal));
+	}
+
+	process.on("exit", () => {
+		if (!shutdownInProgress) {
+			const logger = getLogger({});
+			logger.info("Process exiting");
+			deletePidFile();
+		}
+	});
 }
