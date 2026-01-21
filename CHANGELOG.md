@@ -1,5 +1,184 @@
 # ralph
 
+## 0.10.0
+
+### Minor Changes
+
+- 53effd6: Add adaptive retry with failure context injection
+
+  - Create failure-analyzer.ts with pattern detection for build failures, test failures, lint errors, permission errors, timeouts, stuck processes, network errors, syntax errors, and dependency errors
+  - Implement generateRetryContext() to format contextual guidance for retry attempts
+  - Update agentStore to analyze failures and inject context into subsequent retry prompts
+  - Add IterationLogRetryContext type to track retry history in iteration logs
+  - Add retryWithContext config option (default: true) to enable/disable adaptive retry
+  - Log retry analysis to progress.txt for debugging
+
+- 970fcec: Add /clear command to clear existing session and archive done tasks
+- ff66ea6: Remove yaml as PRD format
+- a73f17e: Add failure pattern learning and analysis system
+
+  - Track failure patterns across iterations and sessions to identify recurring issues
+  - Store failure history in .ralph/failure-history.json with rolling window (last 100 failures)
+  - Implement pattern detection using regex matching and string similarity for common failure types
+  - Add 'ralph analyze' CLI command that displays: top failure patterns, suggested guardrails, tasks with highest failure rates, and recommendations
+  - Add 'ralph analyze export' to export analysis as JSON for external processing
+  - Add 'ralph analyze clear' to clear failure history
+  - Add '/analyze' slash command in the terminal UI to view failure pattern analysis
+  - Add AnalyzeView component for interactive pattern viewing and guardrail suggestions
+  - Automatically record failures and analyze patterns after each failed iteration when learningEnabled is true
+  - When a pattern reaches threshold (3 occurrences), automatically suggest adding a guardrail
+  - Add learningEnabled config option (boolean, default true) to enable/disable pattern learning
+
+- 88b71e5: Add dynamic prompt guardrail system for tuning agent behavior
+
+  - Added PromptGuardrail interface with id, instruction, trigger, category, enabled, and addedAt fields
+  - Created src/lib/guardrails.ts with loadGuardrails, saveGuardrails, addGuardrail, removeGuardrail, toggleGuardrail, and getActiveGuardrails functions
+  - Added GUARDRAILS_FILE_PATH constant to src/lib/paths.ts
+  - Added DEFAULT_GUARDRAILS with essential guardrails: verify before commit, read existing patterns, fix build before proceeding
+  - Updated buildPrompt() to inject active guardrails into the prompt under a "## Guardrails" section
+  - Added 'ralph guardrails' CLI command with list, add, remove, and toggle subcommands
+  - Added '/guardrail <instruction>' slash command for quick guardrail addition during sessions
+  - Added '/guardrails' slash command to open the guardrails management view
+  - Created GuardrailsView component for interactive guardrail management in the terminal UI
+
+- 3826baa: Add service container and bootstrap infrastructure for dependency injection
+
+  - Create ServiceContainer interface with ConfigService and PrdService
+  - Add initializeServices(), getServices(), resetServices(), and isInitialized() functions
+  - Add convenience accessors getConfigService() and getPrdService()
+  - Create bootstrapServices() for production and bootstrapTestServices() for testing
+  - Bootstrap services at application startup in main()
+
+- 540c3a5: Migrate SessionMemoryService to new service container architecture
+
+  - Created self-contained session-memory service directory with types.ts, validation.ts, formatters.ts, and implementation.ts
+  - Added SessionMemoryService to ServiceContainer with getSessionMemoryService() accessor
+  - Updated all consumers to use the service container pattern instead of direct imports
+  - Moved SessionMemory type from session.types.ts to service's types.ts
+  - Moved isSessionMemory type guard from type-guards.ts to service's validation.ts
+  - Added closure-based caching in createSessionMemoryService factory function
+  - Removed legacy src/lib/session-memory.ts file
+
+- 8fa2bf0: Implement session memory for cross-session learning
+
+  - Add SessionMemory interface to track lessons learned, successful patterns, failed approaches, and task notes
+  - Create session-memory.ts with functions for loading, saving, and managing memory entries
+  - Update buildPrompt() to inject session memory into agent prompts
+  - Add /learn and /note slash commands for manual memory entries
+  - Add /memory slash command to view and manage memory in the terminal UI
+  - Add 'ralph memory' CLI command with list, export, and clear subcommands
+  - Create MemoryView component for interactive memory management
+  - Integrate automatic memory recording in orchestrator:
+    - Record lessons when tasks complete after retry
+    - Record successful patterns when tasks complete
+    - Record failed approaches when verification fails
+  - Memory is pruned to keep max 50 lessons, 20 patterns, and 20 failed approaches
+  - Memory persists across sessions in .ralph/session-memory.json
+
+- 3e1c69a: Implement task decomposition request handling
+
+  - Add DECOMPOSITION_MARKER constant for agent to signal task decomposition
+  - Create DecompositionRequest and DecompositionSubtask types in prd.types.ts
+  - Update buildPrompt() to include decomposition instructions for the agent
+  - Create src/lib/decomposition.ts with parseDecompositionRequest() and applyDecomposition() functions
+  - Add maxDecompositionsPerTask config option (default: 2) to prevent infinite decomposition loops
+  - Update orchestrator to detect decomposition marker and apply subtasks to PRD
+  - Add restartCurrentIteration() to iteration store for seamless decomposition handling
+  - Add decomposition logging to iteration logs with IterationLogDecomposition type
+  - Add 'decomposed' status to IterationLogStatus
+  - Display decomposition feedback in IterationProgress component
+  - Log decomposition events to progress.txt
+
+- 8fcdb03: Add verification phase after each iteration
+
+  - Added VerificationConfig interface with buildCommand, testCommand, lintCommand, customChecks, and failOnWarning options
+  - Created src/lib/verification.ts with runVerification() and runCheck() functions
+  - Orchestrator now runs verification after agent completes (before marking iteration as done)
+  - If verification fails, iteration status is set to 'verification_failed' and triggers retry
+  - Added verification results to iteration logs (IterationLogVerification)
+  - Added --skip-verification CLI flag to bypass verification checks
+  - Added verification status display in IterationProgress component
+  - Verification results are logged to progress.txt
+
+### Patch Changes
+
+- 7cb7f88: Add /refresh slash command to reload PRD from disk and update UI state
+- 2054961: Clear terminal when exiting ralph
+- 972edb6: Verified cleanup of legacy files and types after service migration
+- 94add0c: Migrate ConfigService to new self-contained service architecture
+
+  - Created src/lib/services/config/ directory with types.ts, validation.ts, constants.ts, formatter.ts, and implementation.ts
+  - Moved RalphConfig, AgentType, NotificationConfig, MemoryConfig, VerificationConfig, ConfigValidationError, ConfigValidationResult to service types
+  - Moved isRalphConfig, isPartialRalphConfig, validateConfig to service validation
+  - Moved config constants and defaults to service constants
+  - Updated bootstrap to use createConfigService factory function
+  - Updated all re-exports through services/index.ts
+  - Deleted legacy ConfigService.ts, config/ directory, and constants/config.ts
+
+- 7598e21: Migrate GuardrailsService to new architecture
+
+  - Created src/lib/services/guardrails/ directory with self-contained service files
+  - Created types.ts with PromptGuardrail, GuardrailTrigger, GuardrailCategory, AddGuardrailOptions, GuardrailsFile interfaces and GuardrailsService interface
+  - Created validation.ts with isPromptGuardrail, isGuardrailsFile type guards
+  - Created defaults.ts with createDefaultGuardrails function
+  - Created formatters.ts with formatGuardrailsForPrompt function
+  - Created implementation.ts with createGuardrailsService factory function using closure-based caching
+  - Updated container.ts to add GuardrailsService to ServiceContainer and getGuardrailsService() accessor
+  - Updated bootstrap.ts to create GuardrailsService instance and add mock for tests
+  - Updated index.ts to re-export all guardrails types, constants, formatters, and validation functions
+  - Updated all consumers (prompt.ts, guardrails.ts CLI command, useSlashCommands.ts, GuardrailsView.tsx, AnalyzeView.tsx)
+  - Updated test files to use bootstrapTestServices() with real GuardrailsService
+  - Removed PromptGuardrail, GuardrailTrigger, GuardrailCategory from src/types/config.types.ts
+  - Removed isGuardrailsFile from src/lib/type-guards.ts
+  - Re-exported guardrails types from src/types/index.ts via services
+  - Updated src/lib/constants/defaults.ts to re-export createDefaultGuardrails from service
+  - Deleted src/lib/guardrails.ts
+  - All 414 tests pass
+
+- 16ccc3e: Migrate PrdService to new service architecture
+
+  - Created src/lib/services/prd/ directory with self-contained service files
+  - Created types.ts with Prd, PrdTask, LoadPrdResult, DecompositionSubtask, DecompositionRequest, TaskWithIndex, CanWorkResult interfaces and PrdService interface
+  - Created validation.ts with isPrd, isPrdTask type guards
+  - Created implementation.ts with createPrdService factory function using closure-based caching
+  - Updated container.ts to import PrdService from ./prd/types.ts
+  - Updated bootstrap.ts to use createPrdService() instead of singleton
+  - Updated index.ts to re-export all PRD types, validation functions
+  - Updated src/lib/prd.ts facade to re-export from new service location
+  - Updated src/types/index.ts to export PRD types from services
+  - Removed Prd, PrdTask, LoadPrdResult, DecompositionSubtask, DecompositionRequest from src/types/prd.types.ts
+  - Removed isPrd, isPrdTask from src/lib/type-guards.ts
+  - Updated src/lib/integrity.ts to import isPrd from new location
+  - Updated InitWizard.tsx and AddTaskWizard.tsx to import isPrd/isPrdTask from services
+  - Deleted src/types/prd.types.ts
+  - Deleted src/lib/services/PrdService.ts (old singleton)
+  - All 414 tests pass
+
+- 81d3870: Migrate SessionService to new service architecture
+
+  - Created src/lib/services/session/ directory with self-contained service files
+  - Created types.ts with Session, SessionStatus, SessionStatistics, IterationTiming interfaces and SessionService interface
+  - Created validation.ts with isSession, isSessionStatus type guards
+  - Created implementation.ts with createSessionService factory function using closure-based caching
+  - Updated container.ts to add SessionService to ServiceContainer and getSessionService() accessor
+  - Updated bootstrap.ts to create SessionService instance and add mock for tests
+  - Updated index.ts to re-export Session, SessionService, SessionStatus types
+  - Updated all consumers (orchestrator.ts, appStore.ts, daemon.ts, CLI commands, useSlashCommands.ts)
+  - Updated test files to use the new service
+  - Removed Session types from src/types/session.types.ts
+  - Removed isSession from src/lib/type-guards.ts
+  - Deleted src/lib/session.ts
+
+- c2ae916: Fix claude and cursor commands
+- cebb465: Add automatic update check on startup with non-intrusive UI notification
+
+  - Added `checkForUpdateOnStartup()` function in update.ts that checks for updates respecting the 24-hour interval and skipped versions
+  - Added update status tracking to appStore (updateAvailable, latestVersion, updateBannerDismissed)
+  - Created UpdateBanner component that displays a subtle notification when an update is available
+  - Added `/dismiss-update` slash command to hide the update banner for the current session
+  - Integrated update check into useSessionLifecycle hook to run on startup
+  - Updated HelpView to document the new `/dismiss-update` command
+
 ## 0.9.0
 
 ### Minor Changes
