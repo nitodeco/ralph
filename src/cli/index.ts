@@ -6,6 +6,7 @@ export {
 	handleGuardrailsToggle,
 	handleMemoryClear,
 	handleMemoryExport,
+	handleMigrateCommand,
 	handleStopCommand,
 	printAnalyze,
 	printArchive,

@@ -14,6 +14,7 @@ import {
 	loadPrd,
 } from "@/lib/prd.ts";
 import { getProjectRegistryService, getSessionService } from "@/lib/services/index.ts";
+import { needsProjectMigration } from "@/lib/services/project-registry/migration.ts";
 import type {
 	ActiveView,
 	AppState,
@@ -50,6 +51,7 @@ interface AppStoreState {
 	latestVersion: string | null;
 	updateBannerDismissed: boolean;
 	isInGitRepository: boolean;
+	needsMigration: boolean;
 }
 
 interface RefreshStateResult {
@@ -83,6 +85,8 @@ interface AppStoreActions {
 	dismissUpdateBanner: () => void;
 	refreshState: () => RefreshStateResult;
 	clearSession: () => void;
+	handleMigrationComplete: () => void;
+	handleMigrationSkip: () => void;
 }
 
 type AppStore = AppStoreState & AppStoreActions;
@@ -121,6 +125,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	latestVersion: null,
 	updateBannerDismissed: false,
 	isInGitRepository: true,
+	needsMigration: false,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });
@@ -151,6 +156,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	loadInitialState: (autoResume: boolean) => {
+		const hasMigrationNeeded = needsProjectMigration();
+
+		if (hasMigrationNeeded) {
+			const loadedConfig = loadConfig();
+
+			set({
+				needsMigration: true,
+				activeView: "migration_prompt",
+				config: loadedConfig,
+				appState: "idle",
+			});
+
+			return;
+		}
+
 		const warning = validateProject();
 
 		if (warning) {
@@ -589,6 +609,73 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			pendingSession: null,
 			currentSession: null,
 			appState: "idle",
+		});
+	},
+
+	handleMigrationComplete: () => {
+		invalidateConfigCache();
+		invalidatePrdCache();
+
+		set({
+			needsMigration: false,
+			activeView: "run",
+		});
+
+		const projectRegistryService = getProjectRegistryService();
+		const isInitialized = projectRegistryService.isProjectInitialized();
+
+		if (!isInitialized) {
+			set({
+				validationWarning: {
+					message: "No prd.json found for this project",
+					hint: "Run 'ralph init' or type /init to create one",
+				},
+				appState: "not_initialized",
+			});
+
+			return;
+		}
+
+		const loadedConfig = loadConfig();
+		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
+
+		set({
+			config: loadedConfig,
+			prd: loadedPrd,
+			validationWarning: null,
+			appState: "idle",
+			isInGitRepository: isInGitRepo,
+		});
+	},
+
+	handleMigrationSkip: () => {
+		set({
+			needsMigration: false,
+			activeView: "run",
+		});
+
+		const warning = validateProject();
+
+		if (warning) {
+			set({
+				validationWarning: warning,
+				appState: "not_initialized",
+			});
+
+			return;
+		}
+
+		const loadedConfig = loadConfig();
+		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
+
+		set({
+			config: loadedConfig,
+			prd: loadedPrd,
+			validationWarning: null,
+			appState: "idle",
+			isInGitRepository: isInGitRepo,
 		});
 	},
 }));

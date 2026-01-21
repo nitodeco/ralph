@@ -10,6 +10,7 @@ import {
 	handleGuardrailsToggle,
 	handleMemoryClear,
 	handleMemoryExport,
+	handleMigrateCommand,
 	handleStopCommand,
 	parseArgs,
 	printAnalyze,
@@ -293,6 +294,10 @@ function main(): void {
 					break;
 			}
 
+			break;
+
+		case "migrate":
+			handleMigrateCommand(VERSION, process.argv.includes("--remove"));
 			break;
 
 		case "stop":

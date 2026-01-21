@@ -142,7 +142,7 @@
 				"Update loadInitialState() in appStore.ts: if local .ralph exists but isProjectInitialized() returns false, set activeView to 'migration_prompt'",
 				"After successful migration, show option to delete local .ralph directory or keep it as backup"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add project management commands",

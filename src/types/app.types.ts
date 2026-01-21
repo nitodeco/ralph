@@ -21,7 +21,8 @@ export type ActiveView =
 	| "analyze"
 	| "memory"
 	| "agent"
-	| "tasks";
+	| "tasks"
+	| "migration_prompt";
 
 export interface ValidationWarning {
 	message: string;

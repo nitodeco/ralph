@@ -4,6 +4,7 @@ export { ArchiveView } from "./ArchiveView.tsx";
 export { type DryRunState, DryRunView } from "./DryRunView.tsx";
 export { GuardrailsView } from "./GuardrailsView.tsx";
 export { MemoryView } from "./MemoryView.tsx";
+export { MigrationPromptView } from "./MigrationPromptView.tsx";
 export { NotInitializedView } from "./NotInitializedView.tsx";
 export { ResumePromptView } from "./ResumePromptView.tsx";
 export { StatusView } from "./StatusView.tsx";

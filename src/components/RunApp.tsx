@@ -35,6 +35,7 @@ export function RunApp({
 	const prd = useAppStore((state) => state.prd);
 	const pendingSession = useAppStore((state) => state.pendingSession);
 
+	const needsMigration = useAppStore((state) => state.needsMigration);
 	const setActiveView = useAppStore((state) => state.setActiveView);
 	const loadInitialState = useAppStore((state) => state.loadInitialState);
 	const startIterations = useAppStore((state) => state.startIterations);
@@ -50,6 +51,8 @@ export function RunApp({
 	const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
 	const refreshState = useAppStore((state) => state.refreshState);
 	const clearSession = useAppStore((state) => state.clearSession);
+	const handleMigrationComplete = useAppStore((state) => state.handleMigrationComplete);
+	const handleMigrationSkip = useAppStore((state) => state.handleMigrationSkip);
 
 	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
 	const agentError = useAgentStore((state) => state.error);
@@ -168,11 +171,14 @@ export function RunApp({
 			projectName={prd?.project}
 			pendingSession={pendingSession}
 			validationWarning={validationWarning}
+			needsMigration={needsMigration}
 			dryRun={dryRun}
 			dryRunState={dryRunState}
 			onViewComplete={handleViewComplete}
 			onHelpClose={handleHelpClose}
 			onCommand={handleSlashCommand}
+			onMigrationComplete={handleMigrationComplete}
+			onMigrationSkip={handleMigrationSkip}
 		>
 			<MainRunView
 				version={version}

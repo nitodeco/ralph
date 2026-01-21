@@ -1,6 +1,13 @@
 export { getGitRemoteUrl } from "./git.ts";
 export { createProjectRegistryService } from "./implementation.ts";
 export {
+	hasLocalRalphDir,
+	type MigrationResult,
+	migrateLocalRalphDir,
+	needsProjectMigration,
+	removeLocalRalphDir,
+} from "./migration.ts";
+export {
 	buildFolderName,
 	createGitProjectIdentifier,
 	createPathProjectIdentifier,

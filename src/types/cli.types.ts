@@ -14,6 +14,7 @@ export type Command =
 	| "guardrails"
 	| "analyze"
 	| "memory"
+	| "migrate"
 	| "help"
 	| "version"
 	| "-v"

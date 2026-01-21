@@ -11,6 +11,7 @@ export {
 export { printHelp, printVersion } from "./help.ts";
 export { printList } from "./list.ts";
 export { handleMemoryClear, handleMemoryExport, printMemory } from "./memory.ts";
+export { handleMigrateCommand, printMigrateStatus } from "./migrate.ts";
 export { printStats } from "./stats.ts";
 export { printStatus } from "./status.ts";
 export { handleStopCommand } from "./stop.ts";

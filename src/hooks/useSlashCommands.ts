@@ -46,6 +46,18 @@ interface UseSlashCommandsResult {
 	clearMessage: SlashCommandMessage | null;
 }
 
+function getViewForCommand(command: SlashCommand): ActiveView {
+	if (command === "add") {
+		return "add";
+	}
+
+	if (command === "migrate") {
+		return "migration_prompt";
+	}
+
+	return command as ActiveView;
+}
+
 export function useSlashCommands({
 	startIterations,
 	resumeSession,
@@ -208,9 +220,10 @@ export function useSlashCommands({
 				case "analyze":
 				case "agent":
 				case "tasks":
+				case "migrate":
 					agentStop();
 					iterationPause();
-					setActiveView(command === "add" ? "add" : command);
+					setActiveView(getViewForCommand(command));
 					break;
 				case "dismiss-update":
 					dismissUpdateBanner?.();
