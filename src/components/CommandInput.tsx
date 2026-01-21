@@ -44,38 +44,94 @@ export interface CommandArgs {
 	taskSubcommand?: TaskSubcommand;
 }
 
-const VALID_COMMANDS: SlashCommand[] = [
-	"init",
-	"setup",
-	"update",
-	"help",
-	"quit",
-	"exit",
-	"add",
-	"start",
-	"resume",
-	"stop",
-	"next",
-	"status",
-	"archive",
-	"clear",
-	"guardrail",
-	"guardrails",
-	"analyze",
-	"learn",
-	"note",
-	"memory",
-	"dismiss-update",
-	"refresh",
-	"agent",
-	"task",
-	"tasks",
-	"projects",
-	"migrate",
-	"plan",
-];
+interface CommandHint {
+	description: string;
+	args?: string;
+}
+
+const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
+	start: { description: "Start the agent loop", args: "[n|full]" },
+	stop: { description: "Stop the running agent" },
+	resume: { description: "Resume a previously interrupted session" },
+	init: { description: "Initialize a new PRD project" },
+	add: { description: "Add a new task to the PRD" },
+	next: { description: "Set the next task to work on", args: "[n|title]" },
+	task: { description: "Manage tasks", args: "<done|undone|current|list> [id]" },
+	tasks: { description: "Open the tasks view" },
+	setup: { description: "Configure global preferences" },
+	agent: { description: "Switch coding agent" },
+	update: { description: "Check for updates" },
+	status: { description: "Show session and project status" },
+	archive: { description: "Archive completed tasks and progress" },
+	clear: { description: "Clear session data" },
+	guardrail: { description: "Add a new guardrail instruction", args: "<text>" },
+	guardrails: { description: "View and manage guardrails" },
+	analyze: { description: "View failure pattern analysis" },
+	learn: { description: "Add a lesson to session memory", args: "<lesson>" },
+	note: { description: "Add a note about the current task", args: "<note>" },
+	memory: { description: "View and manage session memory" },
+	"dismiss-update": { description: "Dismiss the update notification" },
+	refresh: { description: "Reload PRD from disk" },
+	help: { description: "Show help message" },
+	quit: { description: "Exit the application" },
+	exit: { description: "Exit the application" },
+	projects: { description: "Manage projects" },
+	migrate: { description: "Migrate project data" },
+	plan: { description: "View the current plan" },
+};
+
+const VALID_COMMANDS = Object.keys(COMMAND_HINTS) as SlashCommand[];
 const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = ["done", "undone", "current", "list"];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
+
+interface AutocompleteResult {
+	type: "suggestions" | "argument-hint" | "default";
+	suggestions?: Array<{ command: SlashCommand; hint: CommandHint }>;
+	argumentHint?: string;
+}
+
+function getAutocompleteHint(input: string, isRunning: boolean): AutocompleteResult {
+	const trimmed = input.trim();
+
+	if (!trimmed.startsWith("/")) {
+		return { type: "default" };
+	}
+
+	const parts = trimmed.slice(1).split(/\s+/);
+	const [partialCommand, ...restParts] = parts;
+
+	if (partialCommand === undefined) {
+		return { type: "default" };
+	}
+
+	const commandLower = partialCommand.toLowerCase();
+	const availableCommands = isRunning ? RUNNING_COMMANDS : VALID_COMMANDS;
+	const exactMatch = availableCommands.find((cmd) => cmd === commandLower);
+
+	if (exactMatch) {
+		const hint = COMMAND_HINTS[exactMatch];
+		const hasEnteredArgs = restParts.length > 0 || trimmed.endsWith(" ");
+
+		if (hint.args && !hasEnteredArgs) {
+			return {
+				type: "argument-hint",
+				argumentHint: `/${exactMatch} ${hint.args} — ${hint.description}`,
+			};
+		}
+
+		return { type: "default" };
+	}
+
+	const matchingCommands = availableCommands
+		.filter((cmd) => cmd.startsWith(commandLower))
+		.map((cmd) => ({ command: cmd, hint: COMMAND_HINTS[cmd] }));
+
+	if (matchingCommands.length > 0) {
+		return { type: "suggestions", suggestions: matchingCommands };
+	}
+
+	return { type: "default" };
+}
 
 interface CommandInputProps {
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
@@ -169,9 +225,48 @@ export function CommandInput({
 	const [inputValue, setInputValue] = useState("");
 	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
 	const [error, setError] = useState<string | null>(null);
+	const [selectedHintIndex, setSelectedHintIndex] = useState(0);
+
+	const autocomplete = getAutocompleteHint(inputValue, isRunning);
+	const suggestions = autocomplete.type === "suggestions" ? (autocomplete.suggestions ?? []) : [];
+	const hasSuggestions = suggestions.length > 0;
+
+	const handleInputChange = (value: string) => {
+		setInputValue(value);
+		setSelectedHintIndex(0);
+	};
 
 	const handlePaste = (segment: PastedTextSegment) => {
 		setPastedSegments((prev) => [...prev, segment]);
+	};
+
+	const applyAutocomplete = () => {
+		if (!hasSuggestions) {
+			return;
+		}
+
+		const selectedSuggestion = suggestions[selectedHintIndex];
+
+		if (selectedSuggestion) {
+			setInputValue(`/${selectedSuggestion.command}`);
+			setSelectedHintIndex(0);
+		}
+	};
+
+	const handleArrowUp = () => {
+		if (!hasSuggestions) {
+			return;
+		}
+
+		setSelectedHintIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+	};
+
+	const handleArrowDown = () => {
+		if (!hasSuggestions) {
+			return;
+		}
+
+		setSelectedHintIndex((prev) => (prev >= suggestions.length - 1 ? 0 : prev + 1));
 	};
 
 	const handleSubmit = (value: string) => {
@@ -196,6 +291,7 @@ export function CommandInput({
 			setError(null);
 			setInputValue("");
 			setPastedSegments([]);
+			setSelectedHintIndex(0);
 			onCommand(parsed.command, parsed.args);
 		} else {
 			setError(`Unknown command: ${expandedValue}`);
@@ -207,23 +303,69 @@ export function CommandInput({
 	const borderColor = isRunning ? "yellow" : "cyan";
 	const promptColor = isRunning ? "yellow" : "cyan";
 	const placeholder = isRunning ? "/stop" : "/command";
-	const hintText = isRunning
+	const defaultHintText = isRunning
 		? "Press Escape or type /stop to stop the agent"
 		: "Enter /help for a list of commands";
 
+	const maxSuggestions = 5;
+
+	const renderHint = (): React.ReactElement => {
+		if (autocomplete.type === "argument-hint" && autocomplete.argumentHint) {
+			return <Text dimColor>{autocomplete.argumentHint}</Text>;
+		}
+
+		if (hasSuggestions) {
+			const displayedSuggestions = suggestions.slice(0, maxSuggestions);
+			const remainingCount = suggestions.length - maxSuggestions;
+
+			return (
+				<Box flexDirection="column">
+					{displayedSuggestions.map(({ command, hint }, index) => {
+						const isSelected = index === selectedHintIndex;
+
+						return (
+							<Box key={command} gap={1}>
+								<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+									{isSelected ? "▸" : " "}
+								</Text>
+								<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+									/{command}
+								</Text>
+								{hint.args && <Text dimColor>{hint.args}</Text>}
+								<Text dimColor>— {hint.description}</Text>
+							</Box>
+						);
+					})}
+					{remainingCount > 0 && (
+						<Text dimColor> (+{remainingCount} more, keep typing to filter)</Text>
+					)}
+				</Box>
+			);
+		}
+
+		return <Text dimColor>{defaultHintText}</Text>;
+	};
+
 	return (
 		<Box flexDirection="column">
+			<Box paddingLeft={1} marginBottom={hasSuggestions ? 0 : 0}>
+				{renderHint()}
+			</Box>
 			<Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1}>
 				<Box gap={1}>
 					<Text color={promptColor}>❯</Text>
 					<TextInput
 						value={inputValue}
-						onChange={setInputValue}
+						onChange={handleInputChange}
 						onSubmit={handleSubmit}
 						placeholder={placeholder}
 						collapsePastedText
 						pastedSegments={pastedSegments}
 						onPaste={handlePaste}
+						onArrowUp={handleArrowUp}
+						onArrowDown={handleArrowDown}
+						onTab={applyAutocomplete}
+						onArrowRight={applyAutocomplete}
 					/>
 				</Box>
 				{error && (
@@ -231,9 +373,6 @@ export function CommandInput({
 						<Text color="red">{error}</Text>
 					</Box>
 				)}
-			</Box>
-			<Box paddingLeft={1}>
-				<Text dimColor>{hintText}</Text>
 			</Box>
 		</Box>
 	);

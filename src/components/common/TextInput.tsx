@@ -40,6 +40,10 @@ export interface TextInputProps {
 	readonly value: string;
 	readonly onChange: (value: string) => void;
 	readonly onSubmit?: (value: string) => void;
+	readonly onArrowUp?: () => void;
+	readonly onArrowDown?: () => void;
+	readonly onTab?: () => void;
+	readonly onArrowRight?: () => void;
 }
 
 function renderValueWithPlaceholders(
@@ -95,6 +99,10 @@ export function TextInput({
 	showCursor = true,
 	onChange,
 	onSubmit,
+	onArrowUp,
+	onArrowDown,
+	onTab,
+	onArrowRight,
 }: TextInputProps): React.ReactElement {
 	const [state, setState] = useState({
 		cursorOffset: (originalValue || "").length,
@@ -158,13 +166,25 @@ export function TextInput({
 
 	useInput(
 		(input, key) => {
-			if (
-				key.upArrow ||
-				key.downArrow ||
-				(key.ctrl && input === "c") ||
-				key.tab ||
-				(key.shift && key.tab)
-			) {
+			if (key.upArrow) {
+				onArrowUp?.();
+
+				return;
+			}
+
+			if (key.downArrow) {
+				onArrowDown?.();
+
+				return;
+			}
+
+			if (key.tab || (key.shift && key.tab)) {
+				onTab?.();
+
+				return;
+			}
+
+			if (key.ctrl && input === "c") {
 				return;
 			}
 
@@ -185,6 +205,14 @@ export function TextInput({
 					nextCursorOffset--;
 				}
 			} else if (key.rightArrow) {
+				const isAtEnd = cursorOffset >= originalValue.length;
+
+				if (isAtEnd && onArrowRight) {
+					onArrowRight();
+
+					return;
+				}
+
 				if (showCursor) {
 					nextCursorOffset++;
 				}
