@@ -1,88 +1,32 @@
 import {
 	hasLocalRalphDir,
-	migrateLocalRalphDir,
-	needsProjectMigration,
 	removeLocalRalphDir,
 } from "@/lib/services/project-registry/migration.ts";
 
 export function handleMigrateCommand(version: string): void {
-	console.log(`◆ ralph v${version} - Migrate\n`);
+	console.log(`◆ ralph v${version} - Cleanup\n`);
 
 	if (!hasLocalRalphDir()) {
 		console.log("No local .ralph directory found in current directory.");
-		console.log("Nothing to migrate.");
+		console.log("Nothing to clean up.");
 		process.exit(0);
 	}
 
-	if (!needsProjectMigration()) {
-		console.log("This project is already registered in global storage.");
-		console.log("Local .ralph directory still exists and can be removed.\n");
+	console.log("Removing local .ralph directory...");
 
-		console.log("Removing local .ralph directory...");
-		const removed = removeLocalRalphDir();
+	const removed = removeLocalRalphDir();
 
-		if (removed) {
-			console.log("\x1b[32m✓\x1b[0m Local .ralph directory removed.");
-		} else {
-			console.log("\x1b[31m✗\x1b[0m Failed to remove local .ralph directory.");
-			process.exit(1);
-		}
-
-		process.exit(0);
-	}
-
-	console.log("Migrating local .ralph directory to global storage...\n");
-
-	const result = migrateLocalRalphDir();
-
-	if (result.success && result.identifier) {
-		console.log("\x1b[32m✓\x1b[0m Migration successful!\n");
-		console.log(`  Project: ${result.identifier.folderName}`);
-		console.log(`  Source: ${result.sourcePath}`);
-		console.log(`  Destination: ${result.destinationPath}\n`);
-
-		if (result.migratedFiles.length > 0) {
-			console.log("  Migrated files:");
-
-			for (const file of result.migratedFiles) {
-				console.log(`    - ${file}`);
-			}
-		}
-
-		console.log("\nRemoving local .ralph directory...");
-		const removed = removeLocalRalphDir();
-
-		if (removed) {
-			console.log("\x1b[32m✓\x1b[0m Local .ralph directory removed.");
-		} else {
-			console.log("\x1b[33m!\x1b[0m Failed to remove local .ralph directory.");
-		}
+	if (removed) {
+		console.log("\x1b[32m✓\x1b[0m Local .ralph directory removed.");
+		console.log("\nRalph now stores all project data in ~/.ralph/projects/");
 	} else {
-		console.error("\x1b[31m✗\x1b[0m Migration failed.\n");
-
-		if (result.errors.length > 0) {
-			console.error("  Errors:");
-
-			for (const error of result.errors) {
-				console.error(`    - ${error}`);
-			}
-		}
-
-		if (result.migratedFiles.length > 0) {
-			console.log("\n  Partially migrated files:");
-
-			for (const file of result.migratedFiles) {
-				console.log(`    - ${file}`);
-			}
-		}
-
+		console.log("\x1b[31m✗\x1b[0m Failed to remove local .ralph directory.");
 		process.exit(1);
 	}
 }
 
 export function printMigrateStatus(): void {
 	const hasLocal = hasLocalRalphDir();
-	const needsMigration = needsProjectMigration();
 
 	if (!hasLocal) {
 		console.log("No local .ralph directory found.");
@@ -90,13 +34,7 @@ export function printMigrateStatus(): void {
 		return;
 	}
 
-	if (needsMigration) {
-		console.log(
-			"Migration needed: Local .ralph directory found but project not in global registry.",
-		);
-		console.log("Run 'ralph migrate' to migrate to global storage.");
-	} else {
-		console.log("Project is already in global storage.");
-		console.log("Run 'ralph migrate' to remove the local .ralph directory.");
-	}
+	console.log("Local .ralph directory found in this repository.");
+	console.log("Run 'ralph migrate' to remove it.");
+	console.log("\nNote: Ralph now stores all project data in ~/.ralph/projects/");
 }

@@ -1,4 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { checkAndRotateFile, formatTimestamp } from "./logging-utils.ts";
 import { ensureProjectDirExists } from "./paths.ts";
@@ -20,16 +21,25 @@ interface LoggerConfig {
 	minLevel?: LogLevel;
 }
 
+function getGlobalFallbackLogPath(): string {
+	return join(homedir(), ".ralph", "ralph.log");
+}
+
 function getDefaultLogFile(): string {
 	if (!isInitialized()) {
-		return join(process.cwd(), ".ralph", "ralph.log");
+		return getGlobalFallbackLogPath();
 	}
 
 	const projectRegistryService = getProjectRegistryService();
-	const maybeProjectDir = projectRegistryService.getProjectDir();
+	let maybeProjectDir = projectRegistryService.getProjectDir();
 
 	if (maybeProjectDir === null) {
-		return join(process.cwd(), ".ralph", "ralph.log");
+		projectRegistryService.registerProject();
+		maybeProjectDir = projectRegistryService.getProjectDir();
+	}
+
+	if (maybeProjectDir === null) {
+		return getGlobalFallbackLogPath();
 	}
 
 	return join(maybeProjectDir, "ralph.log");

@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+function normalizePath(path: string): string {
+	try {
+		return realpathSync(path);
+	} catch {
+		return path;
+	}
+}
+
 import { createProjectRegistryService } from "@/lib/services/project-registry/implementation.ts";
 import type { ProjectRegistryConfig } from "@/lib/services/project-registry/types.ts";
 import { REGISTRY_VERSION } from "@/lib/services/project-registry/types.ts";
@@ -184,7 +193,7 @@ describe("ProjectRegistryService", () => {
 			const registry = service.loadRegistry();
 
 			expect(registry.projects[identifier.folderName]).toBeDefined();
-			expect(registry.pathCache[testProjectDir]).toBe(identifier.folderName);
+			expect(registry.pathCache[normalizePath(testProjectDir)]).toBe(identifier.folderName);
 		});
 
 		test("registers a project with custom displayName", () => {
@@ -421,7 +430,7 @@ describe("ProjectRegistryService", () => {
 
 			expect(metadata).not.toBeNull();
 			expect(metadata?.displayName).toBe("Test Project");
-			expect(metadata?.lastKnownPath).toBe(testProjectDir);
+			expect(metadata?.lastKnownPath).toBe(normalizePath(testProjectDir));
 		});
 	});
 

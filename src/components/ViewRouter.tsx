@@ -13,7 +13,6 @@ import {
 	DryRunView,
 	GuardrailsView,
 	MemoryView,
-	MigrationPromptView,
 	NotInitializedView,
 	PlanView,
 	ProjectsView,
@@ -30,14 +29,11 @@ interface ViewRouterProps {
 	projectName?: string;
 	pendingSession: Session | null;
 	validationWarning: ValidationWarning | null;
-	needsMigration: boolean;
 	dryRun: boolean;
 	dryRunState: DryRunState;
 	onViewComplete: () => void;
 	onHelpClose: () => void;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
-	onMigrationComplete: () => void;
-	onMigrationSkip: () => void;
 	children: React.ReactNode;
 }
 
@@ -49,14 +45,11 @@ export function ViewRouter({
 	projectName,
 	pendingSession,
 	validationWarning,
-	needsMigration,
 	dryRun,
 	dryRunState,
 	onViewComplete,
 	onHelpClose,
 	onCommand,
-	onMigrationComplete,
-	onMigrationSkip,
 	children,
 }: ViewRouterProps): React.ReactElement {
 	if (activeView === "init") {
@@ -113,18 +106,6 @@ export function ViewRouter({
 
 	if (activeView === "plan") {
 		return <PlanView version={version} onClose={onViewComplete} />;
-	}
-
-	if (activeView === "migration_prompt" && needsMigration) {
-		return (
-			<MigrationPromptView
-				version={version}
-				config={config}
-				projectName={projectName}
-				onMigrationComplete={onMigrationComplete}
-				onSkip={onMigrationSkip}
-			/>
-		);
 	}
 
 	if (dryRun) {

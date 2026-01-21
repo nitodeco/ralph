@@ -53,10 +53,6 @@ function getViewForCommand(command: SlashCommand): ActiveView {
 		return "add";
 	}
 
-	if (command === "migrate") {
-		return "migration_prompt";
-	}
-
 	return command as ActiveView;
 }
 
@@ -341,7 +337,6 @@ export function useSlashCommands({
 				case "agent":
 				case "tasks":
 				case "projects":
-				case "migrate":
 				case "plan":
 					agentStop();
 					iterationPause();

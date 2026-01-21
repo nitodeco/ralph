@@ -1,6 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
+function normalizePath(path: string): string {
+	try {
+		return realpathSync(path);
+	} catch {
+		return path;
+	}
+}
+
 import { getGitRemoteUrl } from "./git.ts";
 import {
 	createGitProjectIdentifier,
@@ -97,8 +106,10 @@ export function createProjectRegistryService(
 	}
 
 	function resolveCurrentProject(cwd: string = process.cwd()): ProjectIdentifier | null {
+		const normalizedCwd = normalizePath(cwd);
 		const registry = loadRegistry();
-		const cachedFolderName = registry.pathCache[cwd];
+
+		const cachedFolderName = registry.pathCache[normalizedCwd];
 
 		if (cachedFolderName) {
 			const maybeProject = registry.projects[cachedFolderName];
@@ -135,15 +146,16 @@ export function createProjectRegistryService(
 	): ProjectIdentifier {
 		ensureProjectsDir();
 
+		const normalizedCwd = normalizePath(cwd);
 		let identifier: ProjectIdentifier;
-		const maybeGitRemote = getGitRemoteUrl(cwd);
+		const maybeGitRemote = getGitRemoteUrl(normalizedCwd);
 
 		if (options.customId) {
 			identifier = createProjectIdentifier("custom", options.customId);
 		} else if (maybeGitRemote) {
 			identifier = createGitProjectIdentifier(maybeGitRemote);
 		} else {
-			identifier = createPathProjectIdentifier(cwd);
+			identifier = createPathProjectIdentifier(normalizedCwd);
 		}
 
 		const projectDir = join(config.projectsDir, identifier.folderName);
@@ -161,12 +173,12 @@ export function createProjectRegistryService(
 			displayName: options.displayName ?? existingProject?.displayName ?? identifier.folderName,
 			createdAt: existingProject?.createdAt ?? now,
 			lastAccessedAt: now,
-			lastKnownPath: cwd,
+			lastKnownPath: normalizedCwd,
 			gitRemote: maybeGitRemote ?? undefined,
 		};
 
 		registry.projects[identifier.folderName] = metadata;
-		registry.pathCache[cwd] = identifier.folderName;
+		registry.pathCache[normalizedCwd] = identifier.folderName;
 
 		saveRegistry(registry);
 

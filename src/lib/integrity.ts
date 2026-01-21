@@ -1,16 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import type { Session } from "@/types.ts";
 import { validateConfig } from "./config.ts";
 import { getErrorMessage } from "./errors.ts";
-import { LOCAL_RALPH_DIR } from "./paths.ts";
+import { getPrdJsonPath, getProjectConfigPath, getSessionFilePath } from "./paths.ts";
 import { isPrd } from "./services/prd/validation.ts";
 import { isSession } from "./services/session/validation.ts";
-
-const CONFIG_PATH = join(LOCAL_RALPH_DIR, "config.json");
-const PRD_JSON_PATH = join(LOCAL_RALPH_DIR, "prd.json");
-const SESSION_PATH = join(LOCAL_RALPH_DIR, "session.json");
-const GITIGNORE_PATH = join(LOCAL_RALPH_DIR, ".gitignore");
 
 export interface IntegrityIssue {
 	file: string;
@@ -24,23 +18,15 @@ export interface IntegrityCheckResult {
 	gitignoreCreated: boolean;
 }
 
-function ensureGitignoreExists(): boolean {
-	if (existsSync(GITIGNORE_PATH)) {
-		return false;
-	}
-
-	writeFileSync(GITIGNORE_PATH, "ralph.log\n", "utf-8");
-
-	return true;
-}
-
 function validateConfigFile(issues: IntegrityIssue[]): void {
-	if (!existsSync(CONFIG_PATH)) {
+	const configPath = getProjectConfigPath();
+
+	if (!existsSync(configPath)) {
 		return;
 	}
 
 	try {
-		const content = readFileSync(CONFIG_PATH, "utf-8");
+		const content = readFileSync(configPath, "utf-8");
 		const parsed: unknown = JSON.parse(content);
 		const validationResult = validateConfig(parsed);
 
@@ -71,12 +57,14 @@ function validateConfigFile(issues: IntegrityIssue[]): void {
 }
 
 function validatePrdFile(issues: IntegrityIssue[]): void {
-	if (!existsSync(PRD_JSON_PATH)) {
+	const prdPath = getPrdJsonPath();
+
+	if (!existsSync(prdPath)) {
 		return;
 	}
 
 	try {
-		const content = readFileSync(PRD_JSON_PATH, "utf-8");
+		const content = readFileSync(prdPath, "utf-8");
 		const parsed: unknown = JSON.parse(content);
 
 		if (!isPrd(parsed)) {
@@ -98,12 +86,14 @@ function validatePrdFile(issues: IntegrityIssue[]): void {
 }
 
 function validateSessionFile(issues: IntegrityIssue[]): void {
-	if (!existsSync(SESSION_PATH)) {
+	const sessionPath = getSessionFilePath();
+
+	if (!existsSync(sessionPath)) {
 		return;
 	}
 
 	try {
-		const content = readFileSync(SESSION_PATH, "utf-8");
+		const content = readFileSync(sessionPath, "utf-8");
 		const parsed: unknown = JSON.parse(content);
 
 		if (!isSession(parsed)) {
@@ -149,16 +139,7 @@ function validateSessionFile(issues: IntegrityIssue[]): void {
 }
 
 export function checkRalphDirectoryIntegrity(): IntegrityCheckResult {
-	if (!existsSync(LOCAL_RALPH_DIR)) {
-		return {
-			directoryExists: false,
-			issues: [],
-			gitignoreCreated: false,
-		};
-	}
-
 	const issues: IntegrityIssue[] = [];
-	const gitignoreCreated = ensureGitignoreExists();
 
 	validateConfigFile(issues);
 	validatePrdFile(issues);
@@ -167,7 +148,7 @@ export function checkRalphDirectoryIntegrity(): IntegrityCheckResult {
 	return {
 		directoryExists: true,
 		issues,
-		gitignoreCreated,
+		gitignoreCreated: false,
 	};
 }
 
@@ -176,7 +157,7 @@ export function formatIntegrityIssues(result: IntegrityCheckResult): string | nu
 		return null;
 	}
 
-	const lines: string[] = ["Integrity check found issues in .ralph directory:", ""];
+	const lines: string[] = ["Integrity check found issues in project configuration:", ""];
 
 	const errors = result.issues.filter((issue) => issue.severity === "error");
 	const warnings = result.issues.filter((issue) => issue.severity === "warning");

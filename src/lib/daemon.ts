@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_DAEMON_STOP_TIMEOUT_MS, FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "./errors.ts";
@@ -17,16 +18,25 @@ interface ShutdownHandler {
 let shutdownHandlerRef: ShutdownHandler | null = null;
 let shutdownInProgress = false;
 
+function getGlobalFallbackPidPath(): string {
+	return join(homedir(), ".ralph", "ralph.pid");
+}
+
 export function getPidFilePath(): string {
 	if (!isInitialized()) {
-		return join(process.cwd(), ".ralph", "ralph.pid");
+		return getGlobalFallbackPidPath();
 	}
 
 	const projectRegistryService = getProjectRegistryService();
-	const maybeProjectDir = projectRegistryService.getProjectDir();
+	let maybeProjectDir = projectRegistryService.getProjectDir();
 
 	if (maybeProjectDir === null) {
-		return join(process.cwd(), ".ralph", "ralph.pid");
+		projectRegistryService.registerProject();
+		maybeProjectDir = projectRegistryService.getProjectDir();
+	}
+
+	if (maybeProjectDir === null) {
+		return getGlobalFallbackPidPath();
 	}
 
 	return join(maybeProjectDir, "ralph.pid");
@@ -120,7 +130,7 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 		const defaultLogFile =
 			maybeProjectDir !== null
 				? join(maybeProjectDir, "ralph.log")
-				: join(process.cwd(), ".ralph", "ralph.log");
+				: join(homedir(), ".ralph", "ralph.log");
 
 		const logFile = logFilePath ?? defaultLogFile;
 		const outFd = openSync(logFile, "a");

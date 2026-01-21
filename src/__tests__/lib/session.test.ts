@@ -1,29 +1,243 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { ensureRalphDirExists, SESSION_FILE_PATH } from "@/lib/paths.ts";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+	initializeServices,
+	resetServices,
+	type ServiceContainer,
+} from "@/lib/services/container.ts";
+import { createProjectRegistryService } from "@/lib/services/project-registry/implementation.ts";
+import type { ProjectRegistryConfig } from "@/lib/services/project-registry/types.ts";
 import { createSessionService } from "@/lib/services/session/implementation.ts";
 import type { Session, SessionStatus } from "@/types.ts";
 
-const TEST_DIR = "/tmp/ralph-test-session";
-const RALPH_DIR = `${TEST_DIR}/.ralph`;
+const TEST_DIR = join(tmpdir(), `ralph-test-session-${Date.now()}`);
+const TEST_RALPH_DIR = join(TEST_DIR, ".ralph");
+const TEST_PROJECTS_DIR = join(TEST_RALPH_DIR, "projects");
+const TEST_PROJECT_DIR = join(TEST_PROJECTS_DIR, "test-project");
+
+function getTestConfig(): ProjectRegistryConfig {
+	return {
+		globalDir: TEST_RALPH_DIR,
+		registryPath: join(TEST_RALPH_DIR, "registry.json"),
+		projectsDir: TEST_PROJECTS_DIR,
+	};
+}
+
+function createMockServices(
+	projectRegistryService: ReturnType<typeof createProjectRegistryService>,
+): ServiceContainer {
+	const defaultConfig = {
+		agent: "cursor" as const,
+		maxRetries: 3,
+		retryDelayMs: 1000,
+		agentTimeoutMs: 300000,
+		stuckThresholdMs: 60000,
+		maxOutputHistoryBytes: 1048576,
+		retryWithContext: true,
+		maxDecompositionsPerTask: 3,
+		learningEnabled: true,
+		verification: { enabled: false, failOnWarning: false },
+	};
+
+	return {
+		projectRegistry: projectRegistryService,
+		config: {
+			get: () => defaultConfig,
+			load: () => defaultConfig,
+			loadGlobal: () => defaultConfig,
+			loadGlobalRaw: () => null,
+			loadProjectRaw: () => null,
+			getWithValidation: (validateFn) => ({
+				config: defaultConfig,
+				validation: validateFn(defaultConfig),
+			}),
+			saveGlobal: () => {},
+			saveProject: () => {},
+			invalidate: () => {},
+			invalidateGlobal: () => {},
+			invalidateAll: () => {},
+			globalConfigExists: () => true,
+			getEffective: () => ({ global: null, project: null, effective: defaultConfig }),
+		},
+		guardrails: {
+			get: () => [],
+			load: () => [],
+			save: () => {},
+			exists: () => false,
+			initialize: () => {},
+			invalidate: () => {},
+			add: () => ({
+				id: "test",
+				instruction: "test",
+				trigger: "always" as const,
+				category: "quality" as const,
+				enabled: true,
+				addedAt: new Date().toISOString(),
+			}),
+			remove: () => true,
+			toggle: () => null,
+			getById: () => null,
+			getActive: () => [],
+			formatForPrompt: () => "",
+		},
+		prd: {
+			get: () => null,
+			load: () => null,
+			loadWithValidation: () => ({ prd: null }),
+			reload: () => null,
+			reloadWithValidation: () => ({ prd: null }),
+			save: () => {},
+			invalidate: () => {},
+			findFile: () => null,
+			isComplete: () => false,
+			getNextTask: () => null,
+			getNextTaskWithIndex: () => null,
+			getTaskByTitle: () => null,
+			getTaskByIndex: () => null,
+			getCurrentTaskIndex: () => -1,
+			canWorkOnTask: () => ({ canWork: true }),
+			createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
+			loadInstructions: () => null,
+		},
+		sessionMemory: {
+			get: () => ({
+				projectName: "Test",
+				lessonsLearned: [],
+				successfulPatterns: [],
+				failedApproaches: [],
+				taskNotes: {},
+				lastUpdated: new Date().toISOString(),
+			}),
+			load: () => ({
+				projectName: "Test",
+				lessonsLearned: [],
+				successfulPatterns: [],
+				failedApproaches: [],
+				taskNotes: {},
+				lastUpdated: new Date().toISOString(),
+			}),
+			save: () => {},
+			exists: () => false,
+			initialize: () => ({
+				projectName: "Test",
+				lessonsLearned: [],
+				successfulPatterns: [],
+				failedApproaches: [],
+				taskNotes: {},
+				lastUpdated: new Date().toISOString(),
+			}),
+			invalidate: () => {},
+			addLesson: () => {},
+			addSuccessPattern: () => {},
+			addFailedApproach: () => {},
+			addTaskNote: () => {},
+			getTaskNote: () => null,
+			clear: () => {},
+			getStats: () => ({
+				lessonsCount: 0,
+				patternsCount: 0,
+				failedApproachesCount: 0,
+				taskNotesCount: 0,
+				lastUpdated: null,
+			}),
+			formatForPrompt: () => "",
+			formatForTask: () => "",
+			exportAsMarkdown: () => "",
+		},
+		session: {
+			load: () => null,
+			save: () => {},
+			delete: () => {},
+			exists: () => false,
+			create: (total, task) => ({
+				startTime: Date.now(),
+				lastUpdateTime: Date.now(),
+				currentIteration: 0,
+				totalIterations: total,
+				currentTaskIndex: task,
+				status: "running" as const,
+				elapsedTimeSeconds: 0,
+				statistics: {
+					totalIterations: total,
+					completedIterations: 0,
+					failedIterations: 0,
+					successfulIterations: 0,
+					totalDurationMs: 0,
+					averageDurationMs: 0,
+					successRate: 0,
+					iterationTimings: [],
+				},
+			}),
+			recordIterationStart: (s) => ({ ...s, lastUpdateTime: Date.now() }),
+			recordIterationEnd: (s) => ({ ...s, lastUpdateTime: Date.now() }),
+			updateIteration: (s, i, t, e) => ({
+				...s,
+				currentIteration: i,
+				currentTaskIndex: t,
+				elapsedTimeSeconds: e,
+				lastUpdateTime: Date.now(),
+			}),
+			updateStatus: (s, status) => ({ ...s, status, lastUpdateTime: Date.now() }),
+			isResumable: () => false,
+		},
+		sleepPrevention: {
+			start: () => {},
+			stop: () => {},
+			isActive: () => false,
+		},
+	};
+}
+
+const ORIGINAL_CWD = process.cwd();
 
 describe("session functions", () => {
 	let sessionService: ReturnType<typeof createSessionService>;
 
 	beforeEach(() => {
 		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
+			rmSync(TEST_DIR, { recursive: true, force: true });
 		}
 
-		mkdirSync(RALPH_DIR, { recursive: true });
+		mkdirSync(TEST_PROJECT_DIR, { recursive: true });
+
+		const registry = {
+			version: 1,
+			projects: {
+				"test-project": {
+					identifier: { type: "custom", value: "test-project", folderName: "test-project" },
+					displayName: "Test Project",
+					createdAt: Date.now(),
+					lastAccessedAt: Date.now(),
+					lastKnownPath: TEST_DIR,
+				},
+			},
+			pathCache: { [TEST_DIR]: "test-project" },
+		};
+
+		writeFileSync(join(TEST_RALPH_DIR, "registry.json"), JSON.stringify(registry));
+
+		const projectRegistryService = createProjectRegistryService(getTestConfig());
+		const services = createMockServices(projectRegistryService);
+
+		initializeServices(services);
+
 		process.chdir(TEST_DIR);
-		ensureRalphDirExists();
 		sessionService = createSessionService();
 	});
 
 	afterEach(() => {
+		try {
+			process.chdir(ORIGINAL_CWD);
+		} catch {
+			// Ignore if directory doesn't exist
+		}
+
+		resetServices();
+
 		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
+			rmSync(TEST_DIR, { recursive: true, force: true });
 		}
 	});
 
@@ -91,8 +305,9 @@ describe("session functions", () => {
 		});
 
 		test("load handles corrupted JSON gracefully", () => {
-			ensureRalphDirExists();
-			writeFileSync(SESSION_FILE_PATH, "{ invalid json }");
+			const sessionPath = join(TEST_PROJECT_DIR, "session.json");
+
+			writeFileSync(sessionPath, "{ invalid json }");
 
 			const loaded = sessionService.load();
 

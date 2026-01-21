@@ -25,7 +25,6 @@ export type ActiveView =
 	| "agent"
 	| "tasks"
 	| "projects"
-	| "migration_prompt"
 	| "plan";
 
 export interface ValidationWarning {

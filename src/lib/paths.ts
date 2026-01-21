@@ -5,7 +5,6 @@ import {
 	existsSync,
 	mkdirSync,
 	readFileSync,
-	writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -21,14 +20,21 @@ export const SYSTEM_BIN_DIR = "/usr/local/bin";
 
 function getProjectFilePath(relativePath: string): string {
 	if (!isInitialized()) {
-		return join(LOCAL_RALPH_DIR, relativePath);
+		return join(GLOBAL_RALPH_DIR, "default", relativePath);
 	}
 
 	const projectRegistryService = getProjectRegistryService();
 	const maybePath = projectRegistryService.getProjectFilePath(relativePath);
 
 	if (maybePath === null) {
-		return join(LOCAL_RALPH_DIR, relativePath);
+		projectRegistryService.registerProject();
+		const newPath = projectRegistryService.getProjectFilePath(relativePath);
+
+		if (newPath === null) {
+			return join(GLOBAL_RALPH_DIR, "default", relativePath);
+		}
+
+		return newPath;
 	}
 
 	return maybePath;
@@ -150,18 +156,31 @@ export function getDefaultInstallDir(): string {
 
 export function ensureProjectDirExists(): void {
 	if (!isInitialized()) {
-		if (!existsSync(LOCAL_RALPH_DIR)) {
-			mkdirSync(LOCAL_RALPH_DIR, { recursive: true });
+		const defaultDir = join(GLOBAL_RALPH_DIR, "default");
+
+		if (!existsSync(defaultDir)) {
+			mkdirSync(defaultDir, { recursive: true });
 		}
 
 		return;
 	}
 
 	const projectRegistryService = getProjectRegistryService();
-	const maybeProjectDir = projectRegistryService.getProjectDir();
+	let maybeProjectDir = projectRegistryService.getProjectDir();
 
 	if (maybeProjectDir === null) {
-		throw new Error("Project is not initialized. Run 'ralph init' first.");
+		projectRegistryService.registerProject();
+		maybeProjectDir = projectRegistryService.getProjectDir();
+	}
+
+	if (maybeProjectDir === null) {
+		const defaultDir = join(GLOBAL_RALPH_DIR, "default");
+
+		if (!existsSync(defaultDir)) {
+			mkdirSync(defaultDir, { recursive: true });
+		}
+
+		return;
 	}
 
 	if (!existsSync(maybeProjectDir)) {
@@ -187,95 +206,4 @@ export function isGitRepository(directory: string = process.cwd()): boolean {
 	const gitDir = join(directory, ".git");
 
 	return existsSync(gitDir);
-}
-
-/**
- * @deprecated Use LOCAL_RALPH_DIR instead. Will be removed in a future version.
- */
-export const RALPH_DIR = LOCAL_RALPH_DIR;
-
-/**
- * @deprecated Use getLogsDir() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const LOGS_DIR = join(LOCAL_RALPH_DIR, "logs");
-
-/**
- * @deprecated Use getSessionFilePath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const SESSION_FILE_PATH = join(LOCAL_RALPH_DIR, "session.json");
-
-/**
- * @deprecated Use getPrdJsonPath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const PRD_JSON_PATH = join(LOCAL_RALPH_DIR, "prd.json");
-
-/**
- * @deprecated Use getProgressFilePath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const PROGRESS_FILE_PATH = join(LOCAL_RALPH_DIR, "progress.txt");
-
-/**
- * @deprecated Use getInstructionsFilePath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const INSTRUCTIONS_FILE_PATH = join(LOCAL_RALPH_DIR, "instructions.md");
-
-/**
- * @deprecated Use getProjectConfigPath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const PROJECT_CONFIG_PATH = join(LOCAL_RALPH_DIR, "config.json");
-
-/**
- * @deprecated Use getGuardrailsFilePath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const GUARDRAILS_FILE_PATH = join(LOCAL_RALPH_DIR, "guardrails.json");
-
-/**
- * @deprecated Use getFailureHistoryFilePath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const FAILURE_HISTORY_FILE_PATH = join(LOCAL_RALPH_DIR, "failure-history.json");
-
-/**
- * @deprecated Use getSessionMemoryFilePath() instead. Will be removed in a future version.
- * This constant is kept for backward compatibility but returns the local path.
- */
-export const SESSION_MEMORY_FILE_PATH = join(LOCAL_RALPH_DIR, "session-memory.json");
-
-/**
- * @deprecated Use ensureProjectDirExists() instead. Will be removed in a future version.
- * This function creates the local .ralph directory for backward compatibility.
- */
-export function ensureRalphDirExists(): void {
-	if (!existsSync(LOCAL_RALPH_DIR)) {
-		mkdirSync(LOCAL_RALPH_DIR, { recursive: true });
-	}
-
-	const gitignorePath = join(LOCAL_RALPH_DIR, ".gitignore");
-	const gitignoreContent = "ralph.log\nlogs/\narchive/\n";
-
-	if (existsSync(gitignorePath)) {
-		const content = readFileSync(gitignorePath, "utf-8");
-		let updatedContent = content;
-
-		if (!content.includes("logs/")) {
-			updatedContent = `${updatedContent.trimEnd()}\nlogs/\n`;
-		}
-
-		if (!content.includes("archive/")) {
-			updatedContent = `${updatedContent.trimEnd()}\narchive/\n`;
-		}
-
-		if (updatedContent !== content) {
-			writeFileSync(gitignorePath, updatedContent, "utf-8");
-		}
-	} else {
-		writeFileSync(gitignorePath, gitignoreContent, "utf-8");
-	}
 }
