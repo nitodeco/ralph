@@ -7,6 +7,7 @@ class AgentProcessManagerClass {
 	private aborted = false;
 	private retryCount = 0;
 	private forceKillTimeout: ReturnType<typeof setTimeout> | null = null;
+	private pendingKillTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
 
 	getProcess(): Subprocess | null {
 		return this.process;
@@ -60,13 +61,25 @@ class AgentProcessManagerClass {
 			// Process may have already exited
 		}
 
-		setTimeout(() => {
+		const killTimeout = setTimeout(() => {
 			try {
 				proc.kill("SIGKILL");
 			} catch {
 				// Process may have already exited
 			}
+
+			this.pendingKillTimeouts.delete(killTimeout);
 		}, FORCE_KILL_TIMEOUT_MS);
+
+		this.pendingKillTimeouts.add(killTimeout);
+	}
+
+	clearPendingKillTimeouts(): void {
+		for (const timeout of this.pendingKillTimeouts) {
+			clearTimeout(timeout);
+		}
+
+		this.pendingKillTimeouts.clear();
 	}
 
 	isAborted(): boolean {
@@ -141,6 +154,7 @@ class AgentProcessManagerClass {
 		this.aborted = false;
 		this.retryCount = 0;
 		this.clearForceKillTimeout();
+		this.clearPendingKillTimeouts();
 		this.processId = null;
 		this.process = null;
 	}

@@ -33,7 +33,7 @@ export function calculateRetryDelay(baseDelayMs: number, retryCount: number): nu
 export function createThrottledFunction<T extends (arg: string) => void>(
 	func: T,
 	limitMs: number,
-): { throttled: T; flush: () => void } {
+): { throttled: T; flush: () => void; reset: () => void } {
 	let lastRun = 0;
 	let pendingArg: string | null = null;
 	let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -76,5 +76,15 @@ export function createThrottledFunction<T extends (arg: string) => void>(
 		}
 	};
 
-	return { throttled, flush };
+	const reset = () => {
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+			timeoutId = null;
+		}
+
+		pendingArg = null;
+		lastRun = 0;
+	};
+
+	return { throttled, flush, reset };
 }

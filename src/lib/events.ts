@@ -119,6 +119,30 @@ class TypedEventEmitter {
 			this.handlers.clear();
 		}
 	}
+
+	getListenerCount(eventName?: EventName): number {
+		if (eventName) {
+			return this.handlers.get(eventName)?.size ?? 0;
+		}
+
+		let totalCount = 0;
+
+		for (const handlersSet of this.handlers.values()) {
+			totalCount += handlersSet.size;
+		}
+
+		return totalCount;
+	}
+
+	getListenerStats(): Record<string, number> {
+		const stats: Record<string, number> = {};
+
+		for (const [eventName, handlersSet] of this.handlers.entries()) {
+			stats[eventName] = handlersSet.size;
+		}
+
+		return stats;
+	}
 }
 
 export const eventBus = new TypedEventEmitter();

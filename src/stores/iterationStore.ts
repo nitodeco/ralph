@@ -30,11 +30,13 @@ interface IterationActions {
 	markIterationComplete: (isProjectComplete: boolean) => void;
 	restartCurrentIteration: () => void;
 	setCallbacks: (callbacks: IterationCallbacks) => void;
+	clearCallbacks: () => void;
 	setDelayMs: (delayMs: number) => void;
 	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => void;
 	setStartTime: (startTime: number) => void;
 	getTimeRemaining: () => number | null;
 	isMaxRuntimeReached: () => boolean;
+	reset: () => void;
 }
 
 type IterationStore = IterationState &
@@ -62,6 +64,10 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 
 	setCallbacks: (callbacks: IterationCallbacks) => {
 		set({ callbacks });
+	},
+
+	clearCallbacks: () => {
+		set({ callbacks: {} });
 	},
 
 	setDelayMs: (delayMs: number) => {
@@ -247,6 +253,18 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 			});
 			currentState.callbacks.onIterationStart?.(currentState.current);
 			set({ isDelaying: false });
+		});
+	},
+
+	reset: () => {
+		IterationTimer.reset();
+
+		set({
+			...INITIAL_STATE,
+			callbacks: {},
+			delayMs: DEFAULTS.iterationDelayMs,
+			maxRuntimeMs: undefined,
+			startTime: null,
 		});
 	},
 }));

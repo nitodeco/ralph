@@ -607,11 +607,16 @@ class SessionOrchestrator {
 
 		this.unsubscribers = [];
 		this.initialized = false;
+		this.lastRetryContexts = [];
+		this.lastDecomposition = null;
 		this.decompositionHandler?.reset();
 		this.verificationHandler?.reset();
 		this.decompositionHandler = null;
 		this.verificationHandler = null;
 		this.learningHandler = null;
+
+		useIterationStore.getState().clearCallbacks();
+
 		eventBus.removeAllListeners();
 	}
 }

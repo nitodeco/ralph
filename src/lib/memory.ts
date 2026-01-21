@@ -1,7 +1,10 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { eventBus } from "./events.ts";
 import { getLogger } from "./logger.ts";
+import { AgentProcessManager } from "./services/AgentProcessManager.ts";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
+import { IterationTimer } from "./services/IterationTimer.ts";
 
 export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = 5 * 1024 * 1024;
 export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = 500;
@@ -181,4 +184,76 @@ export function performIterationCleanup(config?: MemoryConfig): {
 
 export function getMaxOutputBytes(configValue?: number): number {
 	return configValue ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES;
+}
+
+export interface SessionCleanupResult {
+	eventListenersCleared: boolean;
+	timersCleared: boolean;
+	processManagerReset: boolean;
+	gcTriggered: boolean;
+}
+
+export function performSessionCleanup(config?: MemoryConfig): SessionCleanupResult {
+	const logger = getLogger({ logFilePath: config?.logFilePath });
+
+	const result: SessionCleanupResult = {
+		eventListenersCleared: false,
+		timersCleared: false,
+		processManagerReset: false,
+		gcTriggered: false,
+	};
+
+	try {
+		const listenerCountBefore = eventBus.getListenerCount();
+
+		eventBus.removeAllListeners();
+		result.eventListenersCleared = true;
+
+		if (listenerCountBefore > 0) {
+			logger.debug("Cleared event listeners", { count: listenerCountBefore });
+		}
+	} catch (error) {
+		logger.warn("Failed to clear event listeners", { error: String(error) });
+	}
+
+	try {
+		IterationTimer.reset();
+		result.timersCleared = true;
+	} catch (error) {
+		logger.warn("Failed to reset iteration timer", { error: String(error) });
+	}
+
+	try {
+		AgentProcessManager.reset();
+		result.processManagerReset = true;
+	} catch (error) {
+		logger.warn("Failed to reset agent process manager", { error: String(error) });
+	}
+
+	try {
+		triggerGarbageCollection(config);
+		result.gcTriggered = true;
+	} catch (error) {
+		logger.warn("Failed to trigger garbage collection", { error: String(error) });
+	}
+
+	return result;
+}
+
+export interface MemoryDiagnostics {
+	memoryUsage: MemoryUsage;
+	eventListenerCount: number;
+	eventListenerStats: Record<string, number>;
+	hasActiveProcess: boolean;
+	hasActiveTimer: boolean;
+}
+
+export function getMemoryDiagnostics(): MemoryDiagnostics {
+	return {
+		memoryUsage: getMemoryUsage(),
+		eventListenerCount: eventBus.getListenerCount(),
+		eventListenerStats: eventBus.getListenerStats(),
+		hasActiveProcess: AgentProcessManager.isRunning(),
+		hasActiveTimer: IterationTimer.isProjectComplete() === false,
+	};
 }
