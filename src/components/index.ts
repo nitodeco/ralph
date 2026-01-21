@@ -1,5 +1,5 @@
 export { AddTaskWizard } from "./AddTaskWizard.tsx";
-export { AgentOutput } from "./AgentOutput.tsx";
+export { AgentStatus } from "./AgentStatus.tsx";
 export type { SlashCommand } from "./CommandInput.tsx";
 export { CommandInput } from "./CommandInput.tsx";
 export * from "./common/index.ts";

@@ -3,7 +3,12 @@ import { useAppStore, useIterationStore } from "@/stores/index.ts";
 import { Spinner } from "./common/Spinner.tsx";
 
 function createProgressBar(current: number, total: number, width: number): string {
-	const filled = Math.round((current / total) * width);
+	if (total <= 0) {
+		return "░".repeat(width);
+	}
+
+	const ratio = Math.min(current / total, 1);
+	const filled = Math.round(ratio * width);
 	const empty = width - filled;
 
 	return `${"█".repeat(filled)}${"░".repeat(empty)}`;
@@ -19,7 +24,7 @@ export function IterationProgress(): React.ReactElement {
 	const lastDecomposition = useAppStore((state) => state.lastDecomposition);
 
 	const progressBar = createProgressBar(current, total, 20);
-	const percentage = Math.round((current / total) * 100);
+	const percentage = total > 0 ? Math.min(Math.round((current / total) * 100), 100) : 0;
 
 	return (
 		<Box flexDirection="column" paddingX={1} marginY={1}>

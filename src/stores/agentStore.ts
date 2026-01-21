@@ -1,15 +1,18 @@
 import { create } from "zustand";
 import { AgentRunner } from "@/lib/agent.ts";
+import { detectPhaseFromOutput } from "@/lib/agent-phase.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
+import { getGitStatusStats } from "@/lib/git-stats.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { buildPrompt } from "@/lib/prompt.ts";
 import { AgentProcessManager } from "@/lib/services/index.ts";
+import { useAgentStatusStore } from "./agentStatusStore.ts";
 
 interface AgentState {
 	output: string;
@@ -49,6 +52,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const maxBytes = getMaxOutputBytes(config.maxOutputHistoryBytes);
 		const truncatedOutput = truncateOutputBuffer(output, maxBytes);
 
+		const detectedPhase = detectPhaseFromOutput(output);
+
+		useAgentStatusStore.getState().setPhase(detectedPhase);
+
 		set({ output: truncatedOutput });
 	},
 
@@ -69,6 +76,11 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			...INITIAL_STATE,
 			isStreaming: true,
 		});
+
+		const statusStore = useAgentStatusStore.getState();
+
+		statusStore.reset();
+		statusStore.setPhase("starting");
 
 		const config = loadConfig();
 		const logger = getLogger({ logFilePath: config.logFilePath });
@@ -100,6 +112,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			},
 			emitEvents: true,
 		});
+
+		const GIT_STATS_POLL_INTERVAL_MS = 5_000;
+		const gitStatsInterval = setInterval(() => {
+			const stats = getGitStatusStats();
+
+			useAgentStatusStore.getState().setFileChanges(stats);
+		}, GIT_STATS_POLL_INTERVAL_MS);
 
 		try {
 			const result = await agentRunner.run(prompt);
@@ -135,6 +154,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 				isRetrying: false,
 			});
 		} finally {
+			clearInterval(gitStatsInterval);
+			useAgentStatusStore.getState().setPhase("idle");
 			AgentProcessManager.setProcess(null);
 			clearShutdownHandler();
 		}
@@ -149,6 +170,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 	reset: () => {
 		AgentProcessManager.reset();
+		useAgentStatusStore.getState().reset();
 		set(INITIAL_STATE);
 	},
 

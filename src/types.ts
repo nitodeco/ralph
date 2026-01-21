@@ -1,3 +1,5 @@
+export type { AgentPhase } from "@/lib/agent-phase.ts";
+export type { GitDiffStats } from "@/lib/git-stats.ts";
 export type {
 	ActiveView,
 	AgentResult,

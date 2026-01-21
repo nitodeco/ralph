@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 import type { Prd, RalphConfig } from "@/types.ts";
-import { AgentOutput } from "./AgentOutput.tsx";
+import { AgentStatus } from "./AgentStatus.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
 import { CommandInput } from "./CommandInput.tsx";
 import { FixedLayout } from "./common/FixedLayout.tsx";
@@ -105,7 +105,7 @@ function ContentSection({
 		<ScrollableContent>
 			<TaskList />
 			<IterationProgress />
-			<AgentOutput />
+			<AgentStatus />
 
 			<MessageDisplay message={nextTaskMessage} />
 			<MessageDisplay message={guardrailMessage} />
