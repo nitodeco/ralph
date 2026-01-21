@@ -128,7 +128,7 @@
 				"Update findPrdFile() in src/lib/prd.ts to use getPrdJsonPath() from registry instead of looking for local file",
 				"Test the full init flow: run 'ralph init' in a new directory and verify files are created in ~/.ralph/projects/"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add migration command and auto-migration prompt",

@@ -7,14 +7,13 @@ import { eventBus } from "@/lib/events.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
-	findPrdFile,
 	getNextTask,
 	getTaskByIndex,
 	getTaskByTitle,
 	invalidatePrdCache,
 	loadPrd,
 } from "@/lib/prd.ts";
-import { getSessionService } from "@/lib/services/index.ts";
+import { getProjectRegistryService, getSessionService } from "@/lib/services/index.ts";
 import type {
 	ActiveView,
 	AppState,
@@ -89,9 +88,10 @@ interface AppStoreActions {
 type AppStore = AppStoreState & AppStoreActions;
 
 function validateProject(): ValidationWarning | null {
-	const prdFile = findPrdFile();
+	const projectRegistryService = getProjectRegistryService();
+	const isInitialized = projectRegistryService.isProjectInitialized();
 
-	if (!prdFile) {
+	if (!isInitialized) {
 		return {
 			message: "No prd.json found for this project",
 			hint: "Run 'ralph init' or type /init to create one",

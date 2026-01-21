@@ -8,7 +8,7 @@ import { getErrorMessage } from "@/lib/errors.ts";
 import { ensureProjectDirExists, getPrdJsonPath, getProgressFilePath } from "@/lib/paths.ts";
 import { findPrdFile, savePrd } from "@/lib/prd.ts";
 import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
-import { isPrd } from "@/lib/services/index.ts";
+import { getProjectRegistryService, isPrd } from "@/lib/services/index.ts";
 import type { AgentType, Prd, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
@@ -187,9 +187,17 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				return;
 			}
 
+			const projectRegistryService = getProjectRegistryService();
+
+			projectRegistryService.registerProject(process.cwd(), {
+				displayName: prd.project,
+			});
 			ensureProjectDirExists();
 			savePrd(prd);
-			writeFileSync(progressFilePath, "");
+
+			const registeredProgressFilePath = getProgressFilePath();
+
+			writeFileSync(registeredProgressFilePath, "");
 
 			const config: RalphConfig = { agent: state.agentType };
 
@@ -287,12 +295,13 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 
 			case "complete": {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
-				const prdJsonPath = getPrdJsonPath();
+				const registeredPrdPath = getPrdJsonPath();
+				const registeredProgressPath = getProgressFilePath();
 
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">
-							Created {prdJsonPath} and {progressFilePath}
+							Created {registeredPrdPath} and {registeredProgressPath}
 						</Message>
 						<Text>
 							<Text dimColor>Project:</Text>{" "}
