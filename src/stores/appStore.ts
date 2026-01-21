@@ -363,14 +363,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			isInGitRepository: isInGitRepo,
 		});
 
-		const { session: resumedSession, remainingIterations } = orchestrator.resumeSession(
-			state.pendingSession,
-			loadedPrd,
-		);
+		const { session: resumedSession } = orchestrator.resumeSession(state.pendingSession, loadedPrd);
 
 		const iterationStore = useIterationStore.getState();
+		const resumeFromIteration = state.pendingSession.currentIteration + 1;
 
-		iterationStore.setTotal(remainingIterations);
+		iterationStore.setTotal(state.pendingSession.totalIterations);
 
 		const elapsedMs = state.pendingSession.elapsedTimeSeconds * 1000;
 
@@ -387,7 +385,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		});
 
 		useAgentStore.getState().reset();
-		iterationStore.start();
+		iterationStore.startFromIteration(resumeFromIteration);
 	},
 
 	stopAgent: () => {

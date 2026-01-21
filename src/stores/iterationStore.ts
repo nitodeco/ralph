@@ -21,6 +21,7 @@ interface IterationCallbacks {
 
 interface IterationActions {
 	start: () => void;
+	startFromIteration: (iteration: number) => void;
 	pause: () => void;
 	resume: () => void;
 	stop: () => void;
@@ -114,6 +115,22 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		});
 		eventBus.emit("iteration:start", { iteration: 1, totalIterations: state.total });
 		get().callbacks.onIterationStart?.(1);
+	},
+
+	startFromIteration: (iteration: number) => {
+		IterationTimer.setProjectComplete(false);
+		const state = get();
+		const startTime = state.startTime ?? Date.now();
+
+		set({
+			current: iteration,
+			isRunning: true,
+			isDelaying: false,
+			isPaused: false,
+			startTime,
+		});
+		eventBus.emit("iteration:start", { iteration, totalIterations: state.total });
+		get().callbacks.onIterationStart?.(iteration);
 	},
 
 	pause: () => {
