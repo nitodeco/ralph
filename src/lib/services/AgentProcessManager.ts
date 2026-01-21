@@ -3,6 +3,7 @@ import { FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 
 class AgentProcessManagerClass {
 	private process: Subprocess | null = null;
+	private processId: number | null = null;
 	private aborted = false;
 	private retryCount = 0;
 	private forceKillTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -12,7 +13,60 @@ class AgentProcessManagerClass {
 	}
 
 	setProcess(process: Subprocess | null): void {
+		if (process !== null && this.process !== null && this.process !== process) {
+			this.safeKillProcess(this.process);
+		}
+
 		this.process = process;
+		this.processId = process?.pid ?? null;
+	}
+
+	getProcessId(): number | null {
+		return this.processId;
+	}
+
+	isProcessAlive(): boolean {
+		if (this.process === null) {
+			return false;
+		}
+
+		try {
+			if (this.process.exitCode !== null) {
+				return false;
+			}
+
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	validateProcessState(): { isValid: boolean; reason?: string } {
+		if (this.process === null && this.processId !== null) {
+			return { isValid: false, reason: "Process reference lost but PID still tracked" };
+		}
+
+		if (this.process !== null && this.process.pid !== this.processId) {
+			return { isValid: false, reason: "Process PID mismatch" };
+		}
+
+		return { isValid: true };
+	}
+
+	private safeKillProcess(proc: Subprocess): void {
+		try {
+			proc.kill("SIGTERM");
+		} catch {
+			// Process may have already exited
+		}
+
+		setTimeout(() => {
+			try {
+				proc.kill("SIGKILL");
+			} catch {
+				// Process may have already exited
+			}
+		}, FORCE_KILL_TIMEOUT_MS);
 	}
 
 	isAborted(): boolean {
@@ -38,7 +92,7 @@ class AgentProcessManagerClass {
 	}
 
 	isRunning(): boolean {
-		return this.process !== null;
+		return this.process !== null && this.isProcessAlive();
 	}
 
 	kill(): void {
@@ -47,6 +101,7 @@ class AgentProcessManagerClass {
 
 		if (this.process) {
 			const processToKill = this.process;
+			const pidToKill = this.processId;
 
 			try {
 				processToKill.kill("SIGTERM");
@@ -55,20 +110,19 @@ class AgentProcessManagerClass {
 			}
 
 			this.forceKillTimeout = setTimeout(() => {
-				if (this.process === processToKill) {
+				if (this.processId === pidToKill && processToKill) {
 					try {
 						processToKill.kill("SIGKILL");
 					} catch {
 						// Process may have already exited, ignore
 					}
-
-					this.process = null;
 				}
 
 				this.forceKillTimeout = null;
 			}, FORCE_KILL_TIMEOUT_MS);
 
 			this.process = null;
+			this.processId = null;
 		}
 	}
 
@@ -80,9 +134,14 @@ class AgentProcessManagerClass {
 	}
 
 	reset(): void {
+		if (this.process && this.isProcessAlive()) {
+			this.safeKillProcess(this.process);
+		}
+
 		this.aborted = false;
 		this.retryCount = 0;
 		this.clearForceKillTimeout();
+		this.processId = null;
 		this.process = null;
 	}
 }

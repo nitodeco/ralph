@@ -1,5 +1,6 @@
 import { loadConfig } from "@/lib/config.ts";
 import { parseDecompositionRequest } from "@/lib/decomposition.ts";
+import { getErrorMessage } from "@/lib/errors.ts";
 import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
 import {
@@ -112,22 +113,44 @@ class SessionOrchestrator {
 	}
 
 	private setupSubscriptions(): void {
+		const loadedConfig = loadConfig();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
 		this.unsubscribers.push(
 			eventBus.on("agent:complete", (event) => {
-				this.handleAgentComplete(event);
+				try {
+					this.handleAgentComplete(event).catch((error) => {
+						logger.error("Error in handleAgentComplete", { error: getErrorMessage(error) });
+
+						const iterationStore = useIterationStore.getState();
+
+						iterationStore.markIterationComplete(false);
+					});
+				} catch (error) {
+					logger.error("Sync error in agent:complete handler", { error: getErrorMessage(error) });
+
+					const iterationStore = useIterationStore.getState();
+
+					iterationStore.markIterationComplete(false);
+				}
 			}),
 		);
 
 		this.unsubscribers.push(
 			eventBus.on("agent:error", (event) => {
-				if (event.retryContexts) {
-					this.lastRetryContexts = event.retryContexts;
-				}
+				try {
+					if (event.retryContexts) {
+						this.lastRetryContexts = event.retryContexts;
+					}
 
-				if (event.isFatal) {
-					const appState = useAppStore.getState();
+					if (event.isFatal) {
+						const appState = useAppStore.getState();
 
-					this.handleFatalError(event.error, appState.prd, appState.currentSession);
+						this.handleFatalError(event.error, appState.prd, appState.currentSession);
+						useAppStore.setState({ appState: "error" });
+					}
+				} catch (error) {
+					logger.error("Error in agent:error handler", { error: getErrorMessage(error) });
 					useAppStore.setState({ appState: "error" });
 				}
 			}),
@@ -166,14 +189,24 @@ class SessionOrchestrator {
 			!allTasksActuallyDone &&
 			this.verificationHandler
 		) {
-			const verificationResult = await this.verificationHandler.run(verificationConfig);
+			try {
+				const verificationResult = await this.verificationHandler.run(verificationConfig);
 
-			if (!verificationResult.passed) {
-				const iterationStore = useIterationStore.getState();
+				if (!verificationResult.passed) {
+					const iterationStore = useIterationStore.getState();
 
-				iterationStore.markIterationComplete(false);
+					iterationStore.markIterationComplete(false);
 
-				return;
+					return;
+				}
+			} catch (verificationError) {
+				const loadedConfig = loadConfig();
+				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+
+				logger.error("Verification handler threw an error, continuing without verification", {
+					error: getErrorMessage(verificationError),
+				});
+				this.verificationHandler?.reset();
 			}
 		} else {
 			this.verificationHandler?.reset();
@@ -302,18 +335,24 @@ class SessionOrchestrator {
 				const wasSuccessful = !agentStore.error && agentStore.isComplete && !verificationFailed;
 				const failedChecks = lastVerificationResult ? lastVerificationResult.failedChecks : [];
 
-				this.learningHandler?.recordIterationOutcome({
-					iteration: iterationNumber,
-					wasSuccessful,
-					agentError: agentStore.error,
-					output: agentStore.output,
-					exitCode: agentStore.exitCode,
-					taskTitle,
-					retryCount: agentStore.retryCount,
-					retryContexts: this.lastRetryContexts,
-					verificationFailed,
-					failedChecks,
-				});
+				try {
+					this.learningHandler?.recordIterationOutcome({
+						iteration: iterationNumber,
+						wasSuccessful,
+						agentError: agentStore.error,
+						output: agentStore.output,
+						exitCode: agentStore.exitCode,
+						taskTitle,
+						retryCount: agentStore.retryCount,
+						retryContexts: this.lastRetryContexts,
+						verificationFailed,
+						failedChecks,
+					});
+				} catch (learningError) {
+					logger.warn("Learning handler threw an error", {
+						error: getErrorMessage(learningError),
+					});
+				}
 
 				const retryContextsForLog =
 					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
@@ -349,26 +388,37 @@ class SessionOrchestrator {
 				this.lastDecomposition = null;
 				useAppStore.setState({ lastDecomposition: null });
 
-				completeIterationLog({
-					iteration: iterationNumber,
-					status: iterationStatus,
-					exitCode: agentStore.exitCode,
-					retryCount: agentStore.retryCount,
-					outputLength: agentStore.output.length,
-					taskWasCompleted: agentStore.isComplete,
-					retryContexts: retryContextsForLog,
-					verification: verificationForLog,
-					decomposition: decompositionForLog,
-				});
+				try {
+					completeIterationLog({
+						iteration: iterationNumber,
+						status: iterationStatus,
+						exitCode: agentStore.exitCode,
+						retryCount: agentStore.retryCount,
+						outputLength: agentStore.output.length,
+						taskWasCompleted: agentStore.isComplete,
+						retryContexts: retryContextsForLog,
+						verification: verificationForLog,
+						decomposition: decompositionForLog,
+					});
+				} catch (logError) {
+					logger.warn("Failed to complete iteration log", {
+						error: getErrorMessage(logError),
+					});
+				}
 
 				agentStore.reset();
-				const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
 
-				if (cleanupResult.memoryStatus !== "ok") {
-					logger.warn("Memory cleanup completed with warnings", {
-						status: cleanupResult.memoryStatus,
-						tempFilesRemoved: cleanupResult.tempFilesRemoved,
-					});
+				try {
+					const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
+
+					if (cleanupResult.memoryStatus !== "ok") {
+						logger.warn("Memory cleanup completed with warnings", {
+							status: cleanupResult.memoryStatus,
+							tempFilesRemoved: cleanupResult.tempFilesRemoved,
+						});
+					}
+				} catch (cleanupError) {
+					logger.warn("Memory cleanup failed", { error: getErrorMessage(cleanupError) });
 				}
 			},
 			onAllComplete: () => {

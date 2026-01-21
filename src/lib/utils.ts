@@ -2,6 +2,30 @@ export function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export async function withTimeout<T>(
+	promise: Promise<T>,
+	timeoutMs: number,
+	timeoutMessage = "Operation timed out",
+): Promise<T> {
+	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+	const timeoutPromise = new Promise<never>((_, reject) => {
+		timeoutId = setTimeout(() => {
+			reject(new Error(timeoutMessage));
+		}, timeoutMs);
+	});
+
+	try {
+		const result = await Promise.race([promise, timeoutPromise]);
+
+		return result;
+	} finally {
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+		}
+	}
+}
+
 export function calculateRetryDelay(baseDelayMs: number, retryCount: number): number {
 	return baseDelayMs * 2 ** retryCount;
 }

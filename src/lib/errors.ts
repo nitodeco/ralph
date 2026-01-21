@@ -16,6 +16,9 @@ export enum ErrorCode {
 	AGENT_AUTH_FAILED = "E024",
 	AGENT_PERMISSION_DENIED = "E025",
 	AGENT_MAX_RETRIES = "E026",
+	AGENT_STREAM_ERROR = "E027",
+	AGENT_PROCESS_HANG = "E028",
+	AGENT_DECODE_ERROR = "E029",
 
 	SESSION_NOT_FOUND = "E030",
 	SESSION_CORRUPTED = "E031",
@@ -67,6 +70,12 @@ const ERROR_SUGGESTIONS: Record<ErrorCode, string> = {
 		"The agent lacks permissions. Check file/directory permissions or run with appropriate privileges.",
 	[ErrorCode.AGENT_MAX_RETRIES]:
 		"The agent failed repeatedly. Check the logs for the root cause, or increase 'maxRetries' in your config.",
+	[ErrorCode.AGENT_STREAM_ERROR]:
+		"Failed to read agent output stream. The agent process may have crashed or become unresponsive.",
+	[ErrorCode.AGENT_PROCESS_HANG]:
+		"The agent process did not exit cleanly. Try running 'ralph stop' and restarting the session.",
+	[ErrorCode.AGENT_DECODE_ERROR]:
+		"Failed to decode agent output. The agent may have produced invalid UTF-8 output.",
 
 	[ErrorCode.SESSION_NOT_FOUND]: "No active session found. Run 'ralph' to start a new session.",
 	[ErrorCode.SESSION_CORRUPTED]:

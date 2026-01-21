@@ -1,15 +1,25 @@
 import { parseStreamJsonLine } from "@/lib/agent-stream.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
-import { MAX_STUCK_CHECK_INTERVAL_MS, STUCK_CHECK_INTERVAL_DIVISOR } from "@/lib/constants/ui.ts";
+import {
+	MAX_STUCK_CHECK_INTERVAL_MS,
+	PROCESS_EXIT_TIMEOUT_MS,
+	STUCK_CHECK_INTERVAL_DIVISOR,
+} from "@/lib/constants/ui.ts";
 import type { AgentType, IterationLogRetryContext } from "@/types.ts";
 import { getAgentCommand } from "./config.ts";
-import { categorizeAgentErrorFull, createError, ErrorCode, formatErrorCompact } from "./errors.ts";
+import {
+	categorizeAgentErrorFull,
+	createError,
+	ErrorCode,
+	formatErrorCompact,
+	getErrorMessage,
+} from "./errors.ts";
 import { eventBus } from "./events.ts";
 import { analyzeFailure, type FailureAnalysis, generateRetryContext } from "./failure-analyzer.ts";
 import { getLogger } from "./logger.ts";
 import { COMPLETION_MARKER } from "./prompt.ts";
 import { AgentProcessManager } from "./services/AgentProcessManager.ts";
-import { calculateRetryDelay, createThrottledFunction, sleep } from "./utils.ts";
+import { calculateRetryDelay, createThrottledFunction, sleep, withTimeout } from "./utils.ts";
 
 export interface RunAgentWithPromptOptions {
 	prompt: string;
@@ -224,28 +234,41 @@ export class AgentRunner {
 				let failureAnalysis: FailureAnalysis | null = null;
 
 				if (retryWithContext) {
-					failureAnalysis = analyzeFailure(result.error ?? "", result.output, result.exitCode);
-					currentRetryContext = generateRetryContext(failureAnalysis, currentRetryCount);
+					try {
+						failureAnalysis = analyzeFailure(result.error ?? "", result.output, result.exitCode);
+						currentRetryContext = generateRetryContext(failureAnalysis, currentRetryCount);
 
-					const retryContextEntry: IterationLogRetryContext = {
-						attemptNumber: currentRetryCount,
-						failureCategory: failureAnalysis.category,
-						rootCause: failureAnalysis.rootCause,
-						contextInjected: currentRetryContext,
-					};
+						const retryContextEntry: IterationLogRetryContext = {
+							attemptNumber: currentRetryCount,
+							failureCategory: failureAnalysis.category,
+							rootCause: failureAnalysis.rootCause,
+							contextInjected: currentRetryContext,
+						};
 
-					retryContexts.push(retryContextEntry);
+						retryContexts.push(retryContextEntry);
 
-					logger.info("Failure analysis for retry", {
-						attemptNumber: currentRetryCount,
-						category: failureAnalysis.category,
-						rootCause: failureAnalysis.rootCause,
-						suggestedApproach: failureAnalysis.suggestedApproach,
-					});
+						logger.info("Failure analysis for retry", {
+							attemptNumber: currentRetryCount,
+							category: failureAnalysis.category,
+							rootCause: failureAnalysis.rootCause,
+							suggestedApproach: failureAnalysis.suggestedApproach,
+						});
+					} catch (analysisError) {
+						logger.warn("Failed to analyze failure, retrying without context", {
+							error: getErrorMessage(analysisError),
+						});
+						currentRetryContext = null;
+					}
 				}
 
 				if (this.config.onRetry) {
-					this.config.onRetry(currentRetryCount, maxRetries, delay, categorizedError.message);
+					try {
+						this.config.onRetry(currentRetryCount, maxRetries, delay, categorizedError.message);
+					} catch (callbackError) {
+						logger.warn("onRetry callback threw an error", {
+							error: getErrorMessage(callbackError),
+						});
+					}
 				}
 
 				if (this.config.emitEvents) {
@@ -401,46 +424,80 @@ export class AgentRunner {
 					)
 				: null;
 
+		const safeDecodeText = (value: Uint8Array): string => {
+			try {
+				return decoder.decode(value);
+			} catch (decodeError) {
+				logger.warn("Failed to decode stream data, using lossy decoding", {
+					error: getErrorMessage(decodeError),
+					byteLength: value.length,
+				});
+
+				return decoder.decode(value, { stream: true });
+			}
+		};
+
+		const safeCallOutputHandler = (output: string): void => {
+			try {
+				throttledSetOutput(output);
+			} catch (handlerError) {
+				logger.warn("Output handler threw an error", {
+					error: getErrorMessage(handlerError),
+				});
+			}
+		};
+
+		const streamState = { error: null as Error | null };
+
 		const readStdout = async () => {
-			while (!AgentProcessManager.isAborted()) {
-				const { done, value } = await stdoutReader.read();
+			try {
+				while (!AgentProcessManager.isAborted()) {
+					const { done, value } = await stdoutReader.read();
 
-				if (done) {
-					break;
-				}
+					if (done) {
+						break;
+					}
 
-				updateLastActivity();
-				const text = decoder.decode(value);
+					updateLastActivity();
+					const text = safeDecodeText(value);
 
-				rawOutput += text;
-				lineBuffer += text;
+					rawOutput += text;
+					lineBuffer += text;
 
-				const lines = lineBuffer.split("\n");
+					const lines = lineBuffer.split("\n");
 
-				lineBuffer = lines.pop() ?? "";
+					lineBuffer = lines.pop() ?? "";
 
-				for (const line of lines) {
-					const parsedText = parseStreamJsonLine(line);
+					for (const line of lines) {
+						const parsedText = parseStreamJsonLine(line);
 
-					if (parsedText && parsedText !== lastParsedText) {
-						lastParsedText = parsedText;
-						parsedOutput = parsedText;
-						throttledSetOutput(parsedOutput);
+						if (parsedText && parsedText !== lastParsedText) {
+							lastParsedText = parsedText;
+							parsedOutput = parsedText;
+							safeCallOutputHandler(parsedOutput);
+						}
 					}
 				}
+			} catch (error) {
+				streamState.error = error instanceof Error ? error : new Error(String(error));
+				logger.error("Error reading stdout stream", { error: getErrorMessage(error) });
 			}
 		};
 
 		const readStderr = async () => {
-			while (!AgentProcessManager.isAborted()) {
-				const { done, value } = await stderrReader.read();
+			try {
+				while (!AgentProcessManager.isAborted()) {
+					const { done, value } = await stderrReader.read();
 
-				if (done) {
-					break;
+					if (done) {
+						break;
+					}
+
+					updateLastActivity();
+					stderrOutput += safeDecodeText(value);
 				}
-
-				updateLastActivity();
-				stderrOutput += decoder.decode(value);
+			} catch (error) {
+				logger.warn("Error reading stderr stream", { error: getErrorMessage(error) });
 			}
 		};
 
@@ -459,11 +516,59 @@ export class AgentRunner {
 			AgentProcessManager.setProcess(null);
 		}
 
-		const exitCode = await agentProcess.exited;
+		if (streamState.error) {
+			const streamErrorMessage = createError(
+				ErrorCode.AGENT_STREAM_ERROR,
+				`Stream read error: ${streamState.error.message}`,
+				{ originalError: streamState.error.message },
+			);
+
+			logger.logAgentError(streamErrorMessage.message, null);
+
+			return {
+				success: false,
+				exitCode: null,
+				output: parsedOutput,
+				isComplete: false,
+				error: formatErrorCompact(streamErrorMessage),
+			};
+		}
+
+		let exitCode: number | null = null;
+
+		try {
+			exitCode = await withTimeout(
+				agentProcess.exited,
+				PROCESS_EXIT_TIMEOUT_MS,
+				"Process exit wait timed out",
+			);
+		} catch (exitError) {
+			const hangError = createError(
+				ErrorCode.AGENT_PROCESS_HANG,
+				`Process did not exit cleanly: ${getErrorMessage(exitError)}`,
+			);
+
+			logger.error("Process exit wait failed", { error: getErrorMessage(exitError) });
+
+			try {
+				agentProcess.kill("SIGKILL");
+			} catch {
+				// Process may have already exited
+			}
+
+			return {
+				success: false,
+				exitCode: null,
+				output: parsedOutput,
+				isComplete: false,
+				error: formatErrorCompact(hangError),
+			};
+		}
+
 		const isComplete = rawOutput.includes(COMPLETION_MARKER);
 
 		if (timeoutTriggered) {
-			const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1000 / 60)} minutes`;
+			const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1_000 / 60)} minutes`;
 
 			logger.logAgentError(errorMessage, exitCode);
 
@@ -477,7 +582,7 @@ export class AgentRunner {
 		}
 
 		if (stuckTriggered) {
-			const errorMessage = `Agent stuck (no output for ${Math.round(stuckThresholdMs / 1000 / 60)} minutes)`;
+			const errorMessage = `Agent stuck (no output for ${Math.round(stuckThresholdMs / 1_000 / 60)} minutes)`;
 
 			logger.logAgentError(errorMessage, exitCode);
 
