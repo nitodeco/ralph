@@ -99,7 +99,7 @@
 				"Update ensureRalphDirExists() to call getProjectRegistryService().getProjectDir() and create that directory instead of local .ralph",
 				"Keep the old constants temporarily but have them throw an error with migration instructions if accessed (or remove if confident all usages are updated)"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Update all services to use new path functions",
