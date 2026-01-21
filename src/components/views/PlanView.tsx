@@ -122,6 +122,15 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 		handleExit();
 	};
 
+	const handleRetry = () => {
+		setState((prev) => ({
+			...prev,
+			phase: "input",
+			agentOutput: "",
+			errorMessage: null,
+		}));
+	};
+
 	const renderPhase = (): React.ReactNode =>
 		match(state.phase)
 			.with("input", () => (
@@ -139,7 +148,11 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 				state.finalPrd ? <PlanCompletePhase prd={state.finalPrd} onClose={handleExit} /> : null,
 			)
 			.with("error", () => (
-				<PlanErrorPhase errorMessage={state.errorMessage ?? "Unknown error"} onClose={handleExit} />
+				<PlanErrorPhase
+					errorMessage={state.errorMessage ?? "Unknown error"}
+					onRetry={handleRetry}
+					onClose={handleExit}
+				/>
 			))
 			.exhaustive();
 
