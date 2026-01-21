@@ -26,6 +26,19 @@ bun test --watch               # Watch mode
 bun run build                  # Production build via scripts/build.ts
 ```
 
+## Ralph CLI Commands
+
+These commands manage PRD tasks and progress:
+
+```bash
+ralph task list              # List all tasks with completion status
+ralph task current           # Show the next pending task
+ralph task done <n>          # Mark task as complete (by number or title)
+ralph task undone <n>        # Mark task as not done
+ralph progress add "<text>"  # Add a progress note
+ralph progress show          # Display progress notes
+```
+
 ## Architecture
 
 ### Entry Point & CLI Flow
