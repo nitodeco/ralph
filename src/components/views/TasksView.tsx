@@ -1,7 +1,9 @@
 import { Box, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
-import { savePrd, toggleTaskDone } from "@/lib/prd.ts";
+import { deleteTask, savePrd, toggleTaskDone } from "@/lib/prd.ts";
 import { getPrdService, type Prd } from "@/lib/services/index.ts";
+
+type ViewMode = "list" | "confirm-delete";
 
 interface TasksViewProps {
 	version: string;
@@ -13,6 +15,7 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 	const [prd, setPrd] = useState<Prd | null>(() => prdService.get());
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [statusMessage, setStatusMessage] = useState<string | null>(null);
+	const [viewMode, setViewMode] = useState<ViewMode>("list");
 
 	const tasks = prd?.tasks ?? [];
 
@@ -25,6 +28,35 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 	}, [statusMessage]);
 
 	useInput((input, key) => {
+		if (viewMode === "confirm-delete") {
+			if (key.escape) {
+				setViewMode("list");
+
+				return;
+			}
+
+			if (key.return && prd && tasks.length > 0) {
+				const selectedTask = tasks.at(selectedIndex);
+
+				if (!selectedTask) {
+					return;
+				}
+
+				const updatedPrd = deleteTask(prd, selectedIndex);
+
+				savePrd(updatedPrd);
+				setPrd(updatedPrd);
+				setViewMode("list");
+
+				const newSelectedIndex = Math.min(selectedIndex, updatedPrd.tasks.length - 1);
+
+				setSelectedIndex(Math.max(0, newSelectedIndex));
+				setStatusMessage(`Deleted: ${selectedTask.title}`);
+			}
+
+			return;
+		}
+
 		if (key.escape || input === "q") {
 			onClose();
 
@@ -59,6 +91,10 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 			const statusText = newStatus ? "completed" : "incomplete";
 
 			setStatusMessage(`Task marked as ${statusText}`);
+		}
+
+		if (input === "x" && tasks.length > 0) {
+			setViewMode("confirm-delete");
 		}
 	});
 
@@ -132,6 +168,26 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 					</Box>
 				)}
 
+				{viewMode === "confirm-delete" && selectedTask && (
+					<Box
+						flexDirection="column"
+						marginTop={1}
+						borderStyle="single"
+						borderColor="red"
+						paddingX={1}
+					>
+						<Text bold color="red">
+							Delete task?
+						</Text>
+						<Box marginTop={1}>
+							<Text>"{selectedTask.title}"</Text>
+						</Box>
+						<Box marginTop={1}>
+							<Text dimColor>Press Enter to confirm, Escape to cancel</Text>
+						</Box>
+					</Box>
+				)}
+
 				{statusMessage && (
 					<Box marginTop={1}>
 						<Text color="green">{statusMessage}</Text>
@@ -139,7 +195,7 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 				)}
 
 				<Box flexDirection="column" marginTop={1}>
-					<Text dimColor>↑/↓ Navigate | d Toggle done | q/Esc Close</Text>
+					<Text dimColor>↑/↓ Navigate | d Toggle done | x Delete | q/Esc Close</Text>
 				</Box>
 			</Box>
 		</Box>

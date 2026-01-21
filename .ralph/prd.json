@@ -33,7 +33,7 @@
 				"Handle Enter to confirm deletion, Escape to cancel",
 				"Adjust selected index after deletion to stay in bounds"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Gracefully handle non-git repositories",
