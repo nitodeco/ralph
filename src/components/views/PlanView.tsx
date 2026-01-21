@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { Header } from "@/components/Header.tsx";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
@@ -52,6 +52,8 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 		errorMessage: null,
 	});
 
+	const abortRef = useRef<(() => void) | null>(null);
+
 	const handleSpecificationSubmit = async (specification: string) => {
 		setState((prev) => ({
 			...prev,
@@ -62,7 +64,7 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 
 		try {
 			const prompt = buildPlanPrompt(specification, state.existingPrd);
-			const output = await runAgentWithPrompt({
+			const { promise, abort } = runAgentWithPrompt({
 				prompt,
 				agentType: config.agent,
 				onOutput: (chunk) => {
@@ -72,6 +74,12 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 					}));
 				},
 			});
+
+			abortRef.current = abort;
+
+			const output = await promise;
+
+			abortRef.current = null;
 
 			const generatedPrd = parsePlanFromOutput(output);
 
@@ -95,13 +103,26 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 				phase: "review",
 			}));
 		} catch (error) {
+			abortRef.current = null;
 			const errorMessage = getErrorMessage(error);
+
+			if (errorMessage === "Agent generation was cancelled") {
+				handleExit();
+
+				return;
+			}
 
 			setState((prev) => ({
 				...prev,
 				phase: "error",
 				errorMessage,
 			}));
+		}
+	};
+
+	const handleGenerationCancel = () => {
+		if (abortRef.current) {
+			abortRef.current();
 		}
 	};
 
@@ -141,7 +162,9 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 			.with("input", () => (
 				<PlanInputPhase existingPrd={state.existingPrd} onSubmit={handleSpecificationSubmit} />
 			))
-			.with("generating", () => <PlanGeneratingPhase agentOutput={state.agentOutput} />)
+			.with("generating", () => (
+				<PlanGeneratingPhase agentOutput={state.agentOutput} onCancel={handleGenerationCancel} />
+			))
 			.with("review", () => (
 				<PlanReviewPhase
 					diffTasks={state.diffTasks}

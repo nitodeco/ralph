@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from "node:fs";
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
@@ -118,9 +118,16 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 
 	const [inputValue, setInputValue] = useState("");
 	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
+	const abortRef = useRef<(() => void) | null>(null);
 
 	const handlePaste = (segment: PastedTextSegment) => {
 		setPastedSegments((prev) => [...prev, segment]);
+	};
+
+	const handleGenerationCancel = () => {
+		if (abortRef.current) {
+			abortRef.current();
+		}
 	};
 
 	const handleConfirmOverwritePrd = (item: { value: boolean }) => {
@@ -170,7 +177,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 
 		try {
 			const prompt = buildPrdGenerationPrompt(description);
-			const output = await runAgentWithPrompt({
+			const { promise, abort } = runAgentWithPrompt({
 				prompt,
 				agentType: state.agentType,
 				onOutput: (chunk) => {
@@ -180,6 +187,12 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 					}));
 				},
 			});
+
+			abortRef.current = abort;
+
+			const output = await promise;
+
+			abortRef.current = null;
 
 			const prd = parsePrdFromOutput(output);
 
@@ -216,7 +229,14 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				step: "complete",
 			}));
 		} catch (error) {
+			abortRef.current = null;
 			const errorMessage = getErrorMessage(error);
+
+			if (errorMessage === "Agent generation was cancelled") {
+				handleExit();
+
+				return;
+			}
 
 			setState((prev) => ({
 				...prev,
@@ -226,10 +246,16 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 		}
 	};
 
-	useInput((_, key) => {
+	useInput((input, key) => {
 		if (state.step === "complete" || state.step === "aborted" || state.step === "error") {
 			if (key.return || key.escape) {
 				handleExit();
+			}
+		}
+
+		if (state.step === "generating") {
+			if (key.escape || input === "q") {
+				handleGenerationCancel();
 			}
 		}
 	});
@@ -300,6 +326,9 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 								</Box>
 							</Box>
 						)}
+						<Box marginTop={1}>
+							<Text dimColor>q/Esc Cancel</Text>
+						</Box>
 					</Box>
 				);
 

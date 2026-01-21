@@ -1,11 +1,21 @@
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import { Spinner } from "@/components/common/Spinner.tsx";
 
 interface PlanGeneratingPhaseProps {
 	agentOutput: string;
+	onCancel: () => void;
 }
 
-export function PlanGeneratingPhase({ agentOutput }: PlanGeneratingPhaseProps): React.ReactElement {
+export function PlanGeneratingPhase({
+	agentOutput,
+	onCancel,
+}: PlanGeneratingPhaseProps): React.ReactElement {
+	useInput((input, key) => {
+		if (key.escape || input === "q") {
+			onCancel();
+		}
+	});
+
 	return (
 		<Box flexDirection="column" gap={1}>
 			<Spinner label="Generating PRD from your specification..." />
@@ -17,6 +27,9 @@ export function PlanGeneratingPhase({ agentOutput }: PlanGeneratingPhaseProps): 
 					</Box>
 				</Box>
 			)}
+			<Box marginTop={1}>
+				<Text dimColor>q/Esc Cancel</Text>
+			</Box>
 		</Box>
 	);
 }

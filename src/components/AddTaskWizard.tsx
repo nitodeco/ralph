@@ -1,5 +1,5 @@
 import { Box, Text, useApp, useInput } from "ink";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
@@ -87,9 +87,16 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 
 	const [inputValue, setInputValue] = useState("");
 	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
+	const abortRef = useRef<(() => void) | null>(null);
 
 	const handlePaste = (segment: PastedTextSegment) => {
 		setPastedSegments((prev) => [...prev, segment]);
+	};
+
+	const handleGenerationCancel = () => {
+		if (abortRef.current) {
+			abortRef.current();
+		}
 	};
 
 	const handleDescriptionSubmit = async (value: string) => {
@@ -120,7 +127,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 
 		try {
 			const prompt = buildAddTaskPrompt(description, state.prd);
-			const output = await runAgentWithPrompt({
+			const { promise, abort } = runAgentWithPrompt({
 				prompt,
 				agentType: config.agent,
 				onOutput: (chunk) => {
@@ -130,6 +137,12 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 					}));
 				},
 			});
+
+			abortRef.current = abort;
+
+			const output = await promise;
+
+			abortRef.current = null;
 
 			const task = parseTaskFromOutput(output);
 
@@ -158,7 +171,14 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				step: "complete",
 			}));
 		} catch (error) {
+			abortRef.current = null;
 			const errorMessage = getErrorMessage(error);
+
+			if (errorMessage === "Agent generation was cancelled") {
+				handleExit();
+
+				return;
+			}
 
 			setState((prev) => ({
 				...prev,
@@ -168,10 +188,16 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 		}
 	};
 
-	useInput((_, key) => {
+	useInput((input, key) => {
 		if (state.step === "complete" || state.step === "error" || state.step === "check_prd") {
 			if (key.return || key.escape) {
 				handleExit();
+			}
+		}
+
+		if (state.step === "generating") {
+			if (key.escape || input === "q") {
+				handleGenerationCancel();
 			}
 		}
 	});
@@ -222,6 +248,9 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 								</Box>
 							</Box>
 						)}
+						<Box marginTop={1}>
+							<Text dimColor>q/Esc Cancel</Text>
+						</Box>
 					</Box>
 				);
 

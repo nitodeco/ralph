@@ -17,12 +17,18 @@ export interface RunAgentWithPromptOptions {
 	onOutput?: (chunk: string) => void;
 }
 
-export async function runAgentWithPrompt({
+export interface RunAgentWithPromptResult {
+	promise: Promise<string>;
+	abort: () => void;
+}
+
+export function runAgentWithPrompt({
 	prompt,
 	agentType,
 	onOutput,
-}: RunAgentWithPromptOptions): Promise<string> {
+}: RunAgentWithPromptOptions): RunAgentWithPromptResult {
 	const baseCommand = getAgentCommand(agentType);
+	let isAborted = false;
 
 	const agentProcess = Bun.spawn([...baseCommand, prompt], {
 		stdin: null,
@@ -30,28 +36,60 @@ export async function runAgentWithPrompt({
 		stderr: "pipe",
 	});
 
-	const parsedOutputChunks: string[] = [];
-	const stdoutReader = agentProcess.stdout.getReader();
-	const decoder = new TextDecoder();
-	let lineBuffer = "";
+	const abort = () => {
+		isAborted = true;
 
-	while (true) {
-		const { done, value } = await stdoutReader.read();
-
-		if (done) {
-			break;
+		try {
+			agentProcess.kill("SIGTERM");
+		} catch {
+			// Process may have already exited
 		}
 
-		const text = decoder.decode(value);
+		setTimeout(() => {
+			try {
+				agentProcess.kill("SIGKILL");
+			} catch {
+				// Process may have already exited
+			}
+		}, 1_000);
+	};
 
-		lineBuffer += text;
+	const promise = (async (): Promise<string> => {
+		const parsedOutputChunks: string[] = [];
+		const stdoutReader = agentProcess.stdout.getReader();
+		const decoder = new TextDecoder();
+		let lineBuffer = "";
 
-		const lines = lineBuffer.split("\n");
+		while (!isAborted) {
+			const { done, value } = await stdoutReader.read();
 
-		lineBuffer = lines.pop() ?? "";
+			if (done) {
+				break;
+			}
 
-		for (const line of lines) {
-			const parsedText = parseStreamJsonLine(line);
+			const text = decoder.decode(value);
+
+			lineBuffer += text;
+
+			const lines = lineBuffer.split("\n");
+
+			lineBuffer = lines.pop() ?? "";
+
+			for (const line of lines) {
+				const parsedText = parseStreamJsonLine(line);
+
+				if (parsedText) {
+					parsedOutputChunks.push(parsedText);
+
+					if (onOutput) {
+						onOutput(parsedText);
+					}
+				}
+			}
+		}
+
+		if (lineBuffer && !isAborted) {
+			const parsedText = parseStreamJsonLine(lineBuffer);
 
 			if (parsedText) {
 				parsedOutputChunks.push(parsedText);
@@ -61,23 +99,17 @@ export async function runAgentWithPrompt({
 				}
 			}
 		}
-	}
 
-	if (lineBuffer) {
-		const parsedText = parseStreamJsonLine(lineBuffer);
+		await agentProcess.exited;
 
-		if (parsedText) {
-			parsedOutputChunks.push(parsedText);
-
-			if (onOutput) {
-				onOutput(parsedText);
-			}
+		if (isAborted) {
+			throw new Error("Agent generation was cancelled");
 		}
-	}
 
-	await agentProcess.exited;
+		return parsedOutputChunks.join("");
+	})();
 
-	return parsedOutputChunks.join("");
+	return { promise, abort };
 }
 
 export interface AgentRunnerConfig {
