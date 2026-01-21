@@ -1,10 +1,21 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
-import type { PlanDiffTask } from "@/types.ts";
+import { TextInput } from "@/components/common/TextInput.tsx";
+import type { PlanDiffTask, PrdTask } from "@/types.ts";
+
+type EditField = "title" | "description" | "steps";
+
+interface EditState {
+	isEditing: boolean;
+	taskIndex: number;
+	activeField: EditField;
+	stepIndex: number;
+	editedTask: PrdTask | null;
+}
 
 interface PlanReviewPhaseProps {
 	diffTasks: PlanDiffTask[];
-	onAccept: (acceptedIndices: Set<number>) => void;
+	onAccept: (acceptedIndices: Set<number>, editedTasks: Map<number, PrdTask>) => void;
 	onCancel: () => void;
 }
 
@@ -29,6 +40,30 @@ function buildInitialAcceptedIndices(diffTasks: PlanDiffTask[]): Set<number> {
 	return initialAccepted;
 }
 
+function getInitialEditState(): EditState {
+	return {
+		isEditing: false,
+		taskIndex: -1,
+		activeField: "title",
+		stepIndex: 0,
+		editedTask: null,
+	};
+}
+
+function getTaskForIndex(
+	index: number,
+	diffTasks: PlanDiffTask[],
+	editedTasks: Map<number, PrdTask>,
+): PrdTask | undefined {
+	const maybeEditedTask = editedTasks.get(index);
+
+	if (maybeEditedTask) {
+		return maybeEditedTask;
+	}
+
+	return diffTasks.at(index)?.task;
+}
+
 export function PlanReviewPhase({
 	diffTasks,
 	onAccept,
@@ -38,6 +73,8 @@ export function PlanReviewPhase({
 	const [acceptedIndices, setAcceptedIndices] = useState<Set<number>>(() =>
 		buildInitialAcceptedIndices(diffTasks),
 	);
+	const [editedTasks, setEditedTasks] = useState<Map<number, PrdTask>>(new Map());
+	const [editState, setEditState] = useState<EditState>(getInitialEditState);
 
 	const newCount = diffTasks.filter((diffTask) => diffTask.status === "new").length;
 	const modifiedCount = diffTasks.filter((diffTask) => diffTask.status === "modified").length;
@@ -58,21 +95,161 @@ export function PlanReviewPhase({
 		});
 	};
 
-	useInput((input, key) => {
-		if (key.upArrow) {
-			setSelectedIndex((prev) => Math.max(0, prev - 1));
-		} else if (key.downArrow) {
-			setSelectedIndex((prev) => Math.min(diffTasks.length - 1, prev + 1));
-		} else if (input === " ") {
-			handleToggleAccepted(selectedIndex);
-		} else if (key.return || input === "y") {
-			onAccept(acceptedIndices);
-		} else if (key.escape || input === "q") {
-			onCancel();
-		}
-	});
+	const handleStartEdit = () => {
+		const maybeTask = getTaskForIndex(selectedIndex, diffTasks, editedTasks);
 
-	const selectedTask = diffTasks.at(selectedIndex);
+		if (!maybeTask) {
+			return;
+		}
+
+		setEditState({
+			isEditing: true,
+			taskIndex: selectedIndex,
+			activeField: "title",
+			stepIndex: 0,
+			editedTask: { ...maybeTask, steps: [...maybeTask.steps] },
+		});
+	};
+
+	const handleCancelEdit = () => {
+		setEditState(getInitialEditState());
+	};
+
+	const handleSaveEdit = () => {
+		if (!editState.editedTask) {
+			return;
+		}
+
+		setEditedTasks((prev) => {
+			const next = new Map(prev);
+
+			next.set(editState.taskIndex, editState.editedTask as PrdTask);
+
+			return next;
+		});
+		setEditState(getInitialEditState());
+	};
+
+	const handleEditFieldChange = (field: EditField, value: string, stepIndex?: number) => {
+		if (!editState.editedTask) {
+			return;
+		}
+
+		setEditState((prev) => {
+			if (!prev.editedTask) {
+				return prev;
+			}
+
+			if (field === "steps" && stepIndex !== undefined) {
+				const newSteps = [...prev.editedTask.steps];
+
+				newSteps[stepIndex] = value;
+
+				return {
+					...prev,
+					editedTask: { ...prev.editedTask, steps: newSteps },
+				};
+			}
+
+			return {
+				...prev,
+				editedTask: { ...prev.editedTask, [field]: value },
+			};
+		});
+	};
+
+	const handleNextField = () => {
+		const stepsCount = editState.editedTask?.steps.length ?? 0;
+
+		setEditState((prev) => {
+			if (prev.activeField === "title") {
+				return { ...prev, activeField: "description" };
+			}
+
+			if (prev.activeField === "description") {
+				if (stepsCount > 0) {
+					return { ...prev, activeField: "steps", stepIndex: 0 };
+				}
+
+				return prev;
+			}
+
+			if (prev.activeField === "steps") {
+				if (prev.stepIndex < stepsCount - 1) {
+					return { ...prev, stepIndex: prev.stepIndex + 1 };
+				}
+
+				return { ...prev, activeField: "title", stepIndex: 0 };
+			}
+
+			return prev;
+		});
+	};
+
+	const handlePrevField = () => {
+		const stepsCount = editState.editedTask?.steps.length ?? 0;
+
+		setEditState((prev) => {
+			if (prev.activeField === "title") {
+				if (stepsCount > 0) {
+					return { ...prev, activeField: "steps", stepIndex: stepsCount - 1 };
+				}
+
+				return { ...prev, activeField: "description" };
+			}
+
+			if (prev.activeField === "description") {
+				return { ...prev, activeField: "title" };
+			}
+
+			if (prev.activeField === "steps") {
+				if (prev.stepIndex > 0) {
+					return { ...prev, stepIndex: prev.stepIndex - 1 };
+				}
+
+				return { ...prev, activeField: "description", stepIndex: 0 };
+			}
+
+			return prev;
+		});
+	};
+
+	useInput(
+		(input, key) => {
+			if (key.upArrow) {
+				setSelectedIndex((prev) => Math.max(0, prev - 1));
+			} else if (key.downArrow) {
+				setSelectedIndex((prev) => Math.min(diffTasks.length - 1, prev + 1));
+			} else if (input === " ") {
+				handleToggleAccepted(selectedIndex);
+			} else if (input === "e") {
+				handleStartEdit();
+			} else if (key.return || input === "y") {
+				onAccept(acceptedIndices, editedTasks);
+			} else if (key.escape || input === "q") {
+				onCancel();
+			}
+		},
+		{ isActive: !editState.isEditing },
+	);
+
+	useInput(
+		(_input, key) => {
+			if (key.escape) {
+				handleCancelEdit();
+			} else if (key.tab && key.shift) {
+				handlePrevField();
+			} else if (key.tab) {
+				handleNextField();
+			} else if (key.return && (key.ctrl || key.meta)) {
+				handleSaveEdit();
+			}
+		},
+		{ isActive: editState.isEditing },
+	);
+
+	const selectedDiffTask = diffTasks.at(selectedIndex);
+	const displayTask = getTaskForIndex(selectedIndex, diffTasks, editedTasks);
 
 	return (
 		<Box flexDirection="column" gap={1}>
@@ -95,6 +272,9 @@ export function PlanReviewPhase({
 					marginTop={1}
 				>
 					{diffTasks.map((diffTask, index) => {
+						const maybeEditedTask = editedTasks.get(index);
+						const taskToDisplay = maybeEditedTask ?? diffTask.task;
+						const isEdited = maybeEditedTask !== undefined;
 						const indicator = STATUS_INDICATOR_BY_STATUS[diffTask.status];
 						const isSelected = index === selectedIndex;
 						const isAccepted = acceptedIndices.has(index);
@@ -107,8 +287,9 @@ export function PlanReviewPhase({
 								<Text color={checkboxColor}>{checkboxSymbol}</Text>
 								<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
 									{isSelected ? "▸ " : "  "}
-									{diffTask.task.title}
-									{diffTask.task.done && <Text dimColor> (done)</Text>}
+									{taskToDisplay.title}
+									{isEdited && <Text color="magenta"> (edited)</Text>}
+									{taskToDisplay.done && <Text dimColor> (done)</Text>}
 								</Text>
 							</Box>
 						);
@@ -116,69 +297,145 @@ export function PlanReviewPhase({
 				</Box>
 			</Box>
 
-			{selectedTask && (
+			{editState.isEditing && editState.editedTask ? (
 				<Box flexDirection="column" marginTop={1}>
-					<Text dimColor>Details:</Text>
+					<Text dimColor>Edit Task:</Text>
 					<Box
 						flexDirection="column"
 						borderStyle="round"
-						borderColor="cyan"
+						borderColor="magenta"
 						paddingX={1}
 						marginTop={1}
 					>
-						<Text>
-							<Text bold>Title:</Text> {selectedTask.task.title}
-						</Text>
-						<Text>
-							<Text bold>Status:</Text>{" "}
-							<Text color={STATUS_INDICATOR_BY_STATUS[selectedTask.status].color}>
-								{selectedTask.status}
+						<Box>
+							<Text bold color={editState.activeField === "title" ? "cyan" : undefined}>
+								Title:{" "}
 							</Text>
-						</Text>
-						<Text>
-							<Text bold>Description:</Text> {selectedTask.task.description}
-						</Text>
-						{selectedTask.task.steps.length > 0 && (
+							<TextInput
+								value={editState.editedTask.title}
+								onChange={(value) => handleEditFieldChange("title", value)}
+								focus={editState.activeField === "title"}
+								placeholder="Task title"
+							/>
+						</Box>
+						<Box>
+							<Text bold color={editState.activeField === "description" ? "cyan" : undefined}>
+								Description:{" "}
+							</Text>
+							<TextInput
+								value={editState.editedTask.description}
+								onChange={(value) => handleEditFieldChange("description", value)}
+								focus={editState.activeField === "description"}
+								placeholder="Task description"
+							/>
+						</Box>
+						{editState.editedTask.steps.length > 0 && (
 							<Box flexDirection="column">
 								<Text bold>Steps:</Text>
-								{selectedTask.task.steps.map((step, stepIndex) => (
-									<Text key={step}>
-										{"  "}
-										{stepIndex + 1}. {step}
-									</Text>
-								))}
-							</Box>
-						)}
+								{editState.editedTask.steps.map((step, stepIndex) => {
+									const isActiveStep =
+										editState.activeField === "steps" && editState.stepIndex === stepIndex;
+									const stepKey = `${editState.taskIndex}-step-${stepIndex}`;
 
-						{selectedTask.status === "modified" && selectedTask.originalTask && (
-							<Box flexDirection="column" marginTop={1}>
-								<Text bold color="yellow">
-									Original:
-								</Text>
-								<Text dimColor>Description: {selectedTask.originalTask.description}</Text>
-								{selectedTask.originalTask.steps.length > 0 && (
-									<Box flexDirection="column">
-										<Text dimColor>Steps:</Text>
-										{selectedTask.originalTask.steps.map((step, stepIndex) => (
-											<Text key={step} dimColor>
+									return (
+										<Box key={stepKey}>
+											<Text bold={isActiveStep} color={isActiveStep ? "cyan" : undefined}>
 												{"  "}
-												{stepIndex + 1}. {step}
+												{stepIndex + 1}.{" "}
 											</Text>
-										))}
-									</Box>
-								)}
+											<TextInput
+												value={step}
+												onChange={(value) => handleEditFieldChange("steps", value, stepIndex)}
+												focus={isActiveStep}
+												placeholder={`Step ${stepIndex + 1}`}
+											/>
+										</Box>
+									);
+								})}
 							</Box>
 						)}
 					</Box>
 				</Box>
+			) : (
+				selectedDiffTask &&
+				displayTask && (
+					<Box flexDirection="column" marginTop={1}>
+						<Text dimColor>Details:</Text>
+						<Box
+							flexDirection="column"
+							borderStyle="round"
+							borderColor="cyan"
+							paddingX={1}
+							marginTop={1}
+						>
+							<Text>
+								<Text bold>Title:</Text> {displayTask.title}
+							</Text>
+							<Text>
+								<Text bold>Status:</Text>{" "}
+								<Text color={STATUS_INDICATOR_BY_STATUS[selectedDiffTask.status].color}>
+									{selectedDiffTask.status}
+								</Text>
+								{editedTasks.has(selectedIndex) && <Text color="magenta"> (edited)</Text>}
+							</Text>
+							<Text>
+								<Text bold>Description:</Text> {displayTask.description}
+							</Text>
+							{displayTask.steps.length > 0 && (
+								<Box flexDirection="column">
+									<Text bold>Steps:</Text>
+									{displayTask.steps.map((step, stepIndex) => (
+										<Text key={`${displayTask.title}-step-${stepIndex}`}>
+											{"  "}
+											{stepIndex + 1}. {step}
+										</Text>
+									))}
+								</Box>
+							)}
+
+							{selectedDiffTask.status === "modified" && selectedDiffTask.originalTask && (
+								<Box flexDirection="column" marginTop={1}>
+									<Text bold color="yellow">
+										Original:
+									</Text>
+									<Text dimColor>Description: {selectedDiffTask.originalTask.description}</Text>
+									{selectedDiffTask.originalTask.steps.length > 0 && (
+										<Box flexDirection="column">
+											<Text dimColor>Steps:</Text>
+											{selectedDiffTask.originalTask.steps.map((step, stepIndex) => (
+												<Text
+													key={`${selectedDiffTask.originalTask?.title}-orig-step-${stepIndex}`}
+													dimColor
+												>
+													{"  "}
+													{stepIndex + 1}. {step}
+												</Text>
+											))}
+										</Box>
+									)}
+								</Box>
+							)}
+						</Box>
+					</Box>
+				)
 			)}
 
-			<Box marginTop={1} gap={2}>
-				<Text dimColor>↑/↓ Navigate</Text>
-				<Text dimColor>Space Toggle</Text>
-				<Text dimColor>Enter/y Accept</Text>
-				<Text dimColor>q/Esc Cancel</Text>
-			</Box>
+			{editState.isEditing ? (
+				<Box marginTop={1} gap={2}>
+					<Text dimColor>Tab Next field</Text>
+					<Text dimColor>Shift+Tab Previous</Text>
+					<Text dimColor>Ctrl+Enter Save</Text>
+					<Text dimColor>Esc Cancel</Text>
+				</Box>
+			) : (
+				<Box marginTop={1} gap={2}>
+					<Text dimColor>↑/↓ Navigate</Text>
+					<Text dimColor>Space Toggle</Text>
+					<Text dimColor>e Edit</Text>
+					<Text dimColor>Enter/y Accept</Text>
+					<Text dimColor>q/Esc Cancel</Text>
+				</Box>
+			)}
 		</Box>
 	);
 }

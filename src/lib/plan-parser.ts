@@ -148,6 +148,7 @@ export function applyDiffToPrd(
 	diffTasks: PlanDiffTask[],
 	projectName: string,
 	acceptedIndices: Set<number>,
+	editedTasks?: Map<number, PrdTask>,
 ): Prd {
 	const tasks: PrdTask[] = [];
 
@@ -159,6 +160,7 @@ export function applyDiffToPrd(
 		}
 
 		const isAccepted = acceptedIndices.has(taskIndex);
+		const maybeEditedTask = editedTasks?.get(taskIndex);
 
 		if (diffTask.status === "removed") {
 			if (isAccepted && diffTask.originalTask) {
@@ -166,16 +168,16 @@ export function applyDiffToPrd(
 			}
 
 			if (!isAccepted && diffTask.originalTask) {
-				tasks.push(diffTask.originalTask);
+				tasks.push(maybeEditedTask ?? diffTask.originalTask);
 			}
 		} else if (diffTask.status === "modified") {
 			if (isAccepted) {
-				tasks.push(diffTask.task);
+				tasks.push(maybeEditedTask ?? diffTask.task);
 			} else if (diffTask.originalTask) {
-				tasks.push(diffTask.originalTask);
+				tasks.push(maybeEditedTask ?? diffTask.originalTask);
 			}
 		} else if (isAccepted) {
-			tasks.push(diffTask.task);
+			tasks.push(maybeEditedTask ?? diffTask.task);
 		}
 	}
 

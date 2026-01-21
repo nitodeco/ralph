@@ -8,7 +8,7 @@ import { getErrorMessage } from "@/lib/errors.ts";
 import { applyDiffToPrd, computeTaskDiff, parsePlanFromOutput } from "@/lib/plan-parser.ts";
 import { loadPrd, savePrd } from "@/lib/prd.ts";
 import { buildPlanPrompt } from "@/lib/prompt.ts";
-import type { PlanDiffTask, PlanPhase, Prd } from "@/types.ts";
+import type { PlanDiffTask, PlanPhase, Prd, PrdTask } from "@/types.ts";
 import {
 	PlanCompletePhase,
 	PlanErrorPhase,
@@ -126,13 +126,14 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 		}
 	};
 
-	const handleAccept = (acceptedIndices: Set<number>) => {
+	const handleAccept = (acceptedIndices: Set<number>, editedTasks: Map<number, PrdTask>) => {
 		const projectName = state.generatedPrd?.project ?? "Untitled Project";
 		const finalPrd = applyDiffToPrd(
 			state.existingPrd,
 			state.diffTasks,
 			projectName,
 			acceptedIndices,
+			editedTasks,
 		);
 
 		savePrd(finalPrd);
