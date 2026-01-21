@@ -1,5 +1,141 @@
 # ralph
 
+## 0.11.0
+
+### Minor Changes
+
+- 5219e1c: Add /plan command for AI-powered PRD generation
+
+  - Add `/plan` slash command that generates a PRD from a free-form specification
+  - Support intelligent merging with existing PRD tasks using title similarity matching
+  - Show diff view with status indicators (+new, ~modified, -removed, unchanged)
+  - Keyboard navigation (↑/↓) through tasks with detail panel
+  - Accept (Enter/y) or cancel (q/Esc) generated changes
+  - Preserve done status for matched existing tasks
+
+- be2a18e: Add project management commands for viewing and managing registered Ralph projects
+
+  - Added `ralph projects` CLI command to list all registered projects with name, path, type, and last accessed time
+  - Added `ralph projects current` subcommand to show details about the current directory's project
+  - Added `ralph projects prune` subcommand to remove orphaned projects with invalid paths
+  - Added `--json` flag support for all projects commands for scripting
+  - Added `/projects` slash command and interactive ProjectsView with keyboard navigation
+  - ProjectsView features: list view with highlighting, detail view, remove project, prune orphaned projects
+
+- 48fc585: Add sleep prevention using macOS caffeinate during active sessions
+- 732854d: Update init flow to use global storage
+
+  - InitWizard now registers projects in the global registry (~/.ralph/registry.json) before saving files
+  - Project files are now stored in ~/.ralph/projects/<folder-name>/ instead of local .ralph directory
+  - validateProject() now uses isProjectInitialized() from ProjectRegistryService
+  - Success message shows the global storage path after initialization
+
+- b23e74d: Ralph uses cli commands to view and modify the PRD and progress file
+- 2b8e386: Add migration command and auto-migration prompt for global storage
+
+  - Add `ralph migrate` CLI command to migrate local .ralph directory to global storage
+  - Add `--remove` flag to delete local .ralph directory after successful migration
+  - Add MigrationPromptView component that prompts users to migrate when a local .ralph directory is detected
+  - Auto-detect migration needs on startup and show migration prompt
+  - Add `/migrate` slash command for in-app migration
+  - Migration copies all files (prd.json, session.json, progress.txt, logs/, archive/, etc.) to ~/.ralph/projects/
+  - After migration, users can choose to keep or delete the local .ralph directory as a backup
+
+- 5aa10a1: Add collapsible paste placeholders for long text in input fields
+
+  - When users paste long text (multiline or over 80 characters), display as compact placeholder like "[Pasted text #1]"
+  - Placeholders are displayed in dim cyan styling inline with regular text
+  - Multiple pastes in the same input are numbered sequentially
+  - Full pasted content is preserved and expanded on submission
+  - Added to CommandInput, InitWizard, and AddTaskWizard description fields
+  - Added isPasteLongEnough() and expandPastedSegments() utility functions with tests
+
+- 6ab497a: Add /agent command to change preferred coding agent
+- 7e7f04b: Add task checkboxes in plan review phase for selective acceptance
+
+  - Tasks can now be individually toggled with Space key during review
+  - New/modified/unchanged tasks are checked by default
+  - Removed tasks are unchecked by default (must be checked to confirm removal)
+  - Visual checkboxes (✓/○) show acceptance state for each task
+
+### Patch Changes
+
+- ac73d2c: Add cancellation during generation for plan, init, and add-task wizards. Users can now press Escape or 'q' to cancel generation and exit gracefully.
+- 4c48114: Add task mutation functions to PRD library
+
+  - Add toggleTaskDone function to toggle task done status
+  - Add deleteTask function to remove tasks by index
+  - Add reorderTask function to move tasks between positions
+  - All functions follow immutable patterns (return new Prd objects)
+  - Add comprehensive unit tests for all three functions
+
+- 1759bf6: Add TasksView component with read-only interactive list
+
+  - Create TasksView component for viewing all tasks in a navigable list
+  - Display task title, done status (✓/○), and step count for each task
+  - Show full task details (description, steps) for the selected task
+  - Add keyboard navigation (↑/↓ arrows) and close shortcuts (q/Esc)
+  - Export TasksView from views index
+
+- 1a5c5fe: feat: convert path constants to registry-based functions
+
+  - Added new constants: REGISTRY_PATH, PROJECTS_DIR, LOCAL_RALPH_DIR
+  - Created new registry-based path functions: getSessionFilePath(), getPrdJsonPath(), getProgressFilePath(), getInstructionsFilePath(), getProjectConfigPath(), getGuardrailsFilePath(), getFailureHistoryFilePath(), getSessionMemoryFilePath(), getLogsDir(), getArchiveDir()
+  - Added ensureProjectDirExists() for creating project directories in global storage
+  - Kept deprecated constants (RALPH_DIR, LOGS_DIR, etc.) for backward compatibility during migration
+  - Updated ensureLogsDirExists() to use getLogsDir()
+
+- a85dc15: Add delete task functionality with confirmation to TasksView
+
+  - Add 'x' key handler to enter delete confirmation mode
+  - Show confirmation prompt with task title and red border
+  - Handle Enter to confirm deletion, Escape to cancel
+  - Adjust selected index after deletion to stay in bounds
+  - Update help text to show 'x' key shortcut
+
+- c1bd69f: Gracefully handle non-git repositories
+
+  - Add isGitRepository() utility function in src/lib/paths.ts
+  - Track git repository status in appStore.ts during project validation
+  - Conditionally include commit instructions in agent prompts based on git availability
+  - Warn users during dry-run validation when not in a git repository
+  - Add tests for the new isGitRepository() function
+
+- eb7d626: Add inline task editing in plan review phase. Users can now press 'e' to edit a selected task's title, description, and steps directly in the review phase. Use Tab/Shift+Tab to navigate between fields and Ctrl+Enter to save changes.
+- 1eb35f0: Apply code style fixes to plan feature
+
+  - Replace switch statement with ts-pattern match in PlanView
+  - Replace forEach loops with for loops in plan-parser
+  - Use descriptive variable names instead of single-letter abbreviations
+
+- 4f23327: Add retry option in plan error phase
+
+  - Add retry option (Enter/r) in the error phase to return to input and try again
+  - Add exit option (q/Esc) to close the plan view after an error
+
+- acba53e: Implement ProjectRegistryService for managing global project storage
+- fdf2b9a: Add project registry types and resolution logic for global storage migration
+- 503315e: Add task slash commands in terminal UI. Users can now use `/task done <id>`, `/task undone <id>`, `/task current`, and `/task list` to manage tasks directly from the command input without navigating to the tasks view.
+- 25173f8: Add toggle done functionality to TasksView
+
+  - Add 'd' key handler to toggle task completion status
+  - Save updated PRD and refresh local state immediately
+  - Display success message when task status changes
+  - Update help text to show 'd' key shortcut
+
+- 4bcc2c4: Update components and stores to use new registry-based path functions
+
+  - Updated InitWizard.tsx to use getProgressFilePath(), getPrdJsonPath(), and ensureProjectDirExists() instead of deprecated constants
+  - Updated appStore.ts to remove LOCAL_RALPH_DIR import and use a more generic error message
+  - All 507 tests pass
+
+- c9cbb51: Wire up /tasks command and view routing
+
+  - Add 'tasks' to ActiveView type for view state management
+  - Add 'tasks' to SlashCommand type and VALID_COMMANDS array
+  - Handle 'tasks' command in useSlashCommands hook
+  - Add TasksView routing in ViewRouter component
+
 ## 0.10.0
 
 ### Minor Changes
