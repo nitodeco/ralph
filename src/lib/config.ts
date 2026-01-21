@@ -2,6 +2,7 @@ import type { RalphConfig } from "./services/config/types.ts";
 import { validateConfig } from "./services/config/validation.ts";
 import { getConfigService } from "./services/index.ts";
 
+export { getProjectConfigPath } from "./paths.ts";
 export {
 	AGENT_COMMANDS,
 	CONFIG_DEFAULTS,
@@ -13,19 +14,16 @@ export {
 	DEFAULT_STUCK_THRESHOLD_MS,
 	VALID_AGENTS,
 } from "./services/config/constants.ts";
-
 export {
 	formatBytes,
 	formatMs,
 	formatValidationErrors,
 	getConfigSummary,
 } from "./services/config/formatter.ts";
-
 export {
 	applyDefaults,
 	getAgentCommand,
 	getGlobalConfigPath,
-	getProjectConfigPath,
 } from "./services/config/implementation.ts";
 
 export { validateConfig } from "./services/config/validation.ts";

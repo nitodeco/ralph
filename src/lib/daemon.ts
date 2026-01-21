@@ -1,9 +1,11 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { DEFAULT_DAEMON_STOP_TIMEOUT_MS, FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
+import { ensureProjectDirExists } from "./paths.ts";
+import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 import { getSessionService } from "./services/index.ts";
 
 export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";
@@ -15,20 +17,35 @@ interface ShutdownHandler {
 let shutdownHandlerRef: ShutdownHandler | null = null;
 let shutdownInProgress = false;
 
-export const PID_FILE_PATH = `${RALPH_DIR}/ralph.pid`;
+export function getPidFilePath(): string {
+	if (!isInitialized()) {
+		return join(process.cwd(), ".ralph", "ralph.pid");
+	}
+
+	const projectRegistryService = getProjectRegistryService();
+	const maybeProjectDir = projectRegistryService.getProjectDir();
+
+	if (maybeProjectDir === null) {
+		return join(process.cwd(), ".ralph", "ralph.pid");
+	}
+
+	return join(maybeProjectDir, "ralph.pid");
+}
 
 export function writePidFile(pid: number): void {
-	ensureRalphDirExists();
-	writeFileSync(PID_FILE_PATH, pid.toString());
+	ensureProjectDirExists();
+	writeFileSync(getPidFilePath(), pid.toString());
 }
 
 export function readPidFile(): number | null {
-	if (!existsSync(PID_FILE_PATH)) {
+	const pidFilePath = getPidFilePath();
+
+	if (!existsSync(pidFilePath)) {
 		return null;
 	}
 
 	try {
-		const content = readFileSync(PID_FILE_PATH, "utf-8").trim();
+		const content = readFileSync(pidFilePath, "utf-8").trim();
 		const pid = Number.parseInt(content, 10);
 
 		return Number.isNaN(pid) ? null : pid;
@@ -38,9 +55,11 @@ export function readPidFile(): number | null {
 }
 
 export function deletePidFile(): void {
-	if (existsSync(PID_FILE_PATH)) {
+	const pidFilePath = getPidFilePath();
+
+	if (existsSync(pidFilePath)) {
 		try {
-			unlinkSync(PID_FILE_PATH);
+			unlinkSync(pidFilePath);
 		} catch (error) {
 			console.error(`Failed to delete PID file: ${getErrorMessage(error)}`);
 		}
@@ -94,9 +113,16 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 	const spawnArgs: string[] = [scriptPath, ...argsWithoutBackground, "--daemon-child"];
 
 	try {
-		ensureRalphDirExists();
+		ensureProjectDirExists();
 
-		const logFile = logFilePath ?? `${RALPH_DIR}/ralph.log`;
+		const projectRegistryService = getProjectRegistryService();
+		const maybeProjectDir = projectRegistryService.getProjectDir();
+		const defaultLogFile =
+			maybeProjectDir !== null
+				? join(maybeProjectDir, "ralph.log")
+				: join(process.cwd(), ".ralph", "ralph.log");
+
+		const logFile = logFilePath ?? defaultLogFile;
 		const outFd = openSync(logFile, "a");
 		const errFd = openSync(logFile, "a");
 

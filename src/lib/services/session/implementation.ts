@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { ensureRalphDirExists, SESSION_FILE_PATH } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getSessionFilePath } from "@/lib/paths.ts";
 import type {
 	IterationTiming,
 	Session,
@@ -24,12 +24,14 @@ function createInitialStatistics(totalIterations: number): SessionStatistics {
 
 export function createSessionService(): SessionService {
 	function load(): Session | null {
-		if (!existsSync(SESSION_FILE_PATH)) {
+		const sessionFilePath = getSessionFilePath();
+
+		if (!existsSync(sessionFilePath)) {
 			return null;
 		}
 
 		try {
-			const content = readFileSync(SESSION_FILE_PATH, "utf-8");
+			const content = readFileSync(sessionFilePath, "utf-8");
 			const parsed: unknown = JSON.parse(content);
 
 			if (!isSession(parsed)) {
@@ -48,18 +50,20 @@ export function createSessionService(): SessionService {
 	}
 
 	function save(session: Session): void {
-		ensureRalphDirExists();
-		writeFileSync(SESSION_FILE_PATH, JSON.stringify(session, null, 2));
+		ensureProjectDirExists();
+		writeFileSync(getSessionFilePath(), JSON.stringify(session, null, 2));
 	}
 
 	function deleteSession(): void {
-		if (existsSync(SESSION_FILE_PATH)) {
-			unlinkSync(SESSION_FILE_PATH);
+		const sessionFilePath = getSessionFilePath();
+
+		if (existsSync(sessionFilePath)) {
+			unlinkSync(sessionFilePath);
 		}
 	}
 
 	function exists(): boolean {
-		return existsSync(SESSION_FILE_PATH);
+		return existsSync(getSessionFilePath());
 	}
 
 	function create(totalIterations: number, currentTaskIndex: number): Session {

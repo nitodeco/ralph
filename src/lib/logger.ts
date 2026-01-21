@@ -1,7 +1,8 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { checkAndRotateFile, formatTimestamp } from "./logging-utils.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "./paths.ts";
+import { ensureProjectDirExists } from "./paths.ts";
+import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -19,7 +20,21 @@ interface LoggerConfig {
 	minLevel?: LogLevel;
 }
 
-const DEFAULT_LOG_FILE = `${RALPH_DIR}/ralph.log`;
+function getDefaultLogFile(): string {
+	if (!isInitialized()) {
+		return join(process.cwd(), ".ralph", "ralph.log");
+	}
+
+	const projectRegistryService = getProjectRegistryService();
+	const maybeProjectDir = projectRegistryService.getProjectDir();
+
+	if (maybeProjectDir === null) {
+		return join(process.cwd(), ".ralph", "ralph.log");
+	}
+
+	return join(maybeProjectDir, "ralph.log");
+}
+
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024;
 const DEFAULT_MAX_BACKUP_FILES = 3;
 
@@ -54,7 +69,7 @@ class Logger {
 
 	constructor(config: LoggerConfig = {}) {
 		this.config = {
-			logFilePath: config.logFilePath ?? DEFAULT_LOG_FILE,
+			logFilePath: config.logFilePath ?? getDefaultLogFile(),
 			maxFileSizeBytes: config.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE,
 			maxBackupFiles: config.maxBackupFiles ?? DEFAULT_MAX_BACKUP_FILES,
 			minLevel: config.minLevel ?? "debug",
@@ -66,7 +81,7 @@ class Logger {
 		const logFilePath = this.config.logFilePath;
 
 		try {
-			ensureRalphDirExists();
+			ensureProjectDirExists();
 			ensureLogDirectoryExists(logFilePath);
 			checkAndRotateFile(logFilePath, this.config.maxFileSizeBytes, this.config.maxBackupFiles);
 			appendFileSync(logFilePath, `${formattedEntry}\n`);
@@ -204,7 +219,7 @@ export function createLogger(config?: LoggerConfig): Logger {
 }
 
 export function readLogFile(logFilePath?: string): string | null {
-	const filePath = logFilePath ?? DEFAULT_LOG_FILE;
+	const filePath = logFilePath ?? getDefaultLogFile();
 
 	if (!existsSync(filePath)) {
 		return null;

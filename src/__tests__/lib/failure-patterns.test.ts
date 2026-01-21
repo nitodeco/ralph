@@ -10,7 +10,8 @@ import {
 	loadFailureHistory,
 	recordFailure,
 } from "@/lib/failure-patterns.ts";
-import { ensureRalphDirExists, FAILURE_HISTORY_FILE_PATH } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getFailureHistoryFilePath } from "@/lib/paths.ts";
+import { bootstrapTestServices, teardownTestServices } from "@/lib/services/index.ts";
 
 const TEST_DIR = "/tmp/ralph-test-failure-patterns";
 const RALPH_DIR = `${TEST_DIR}/.ralph`;
@@ -23,10 +24,13 @@ describe("failure-patterns functions", () => {
 
 		mkdirSync(RALPH_DIR, { recursive: true });
 		process.chdir(TEST_DIR);
-		ensureRalphDirExists();
+		bootstrapTestServices();
+		ensureProjectDirExists();
 	});
 
 	afterEach(() => {
+		teardownTestServices();
+
 		if (existsSync(TEST_DIR)) {
 			rmSync(TEST_DIR, { recursive: true });
 		}
@@ -56,7 +60,7 @@ describe("failure-patterns functions", () => {
 		});
 
 		test("handles corrupted JSON gracefully", () => {
-			writeFileSync(FAILURE_HISTORY_FILE_PATH, "{ invalid json }");
+			writeFileSync(getFailureHistoryFilePath(), "{ invalid json }");
 			const history = loadFailureHistory();
 
 			expect(history.entries).toEqual([]);

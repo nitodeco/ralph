@@ -2,11 +2,9 @@ import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Prd, PrdTask } from "@/types.ts";
 import { formatTimestamp } from "./logging-utils.ts";
-import { RALPH_DIR } from "./paths.ts";
+import { getArchiveDir } from "./paths.ts";
 import { findPrdFile, loadPrd, savePrd } from "./prd.ts";
-import { PROGRESS_FILE_PATH } from "./progress.ts";
-
-export const ARCHIVE_DIR = join(RALPH_DIR, "archive");
+import { getProgressFilePath } from "./progress.ts";
 
 interface ArchivedTasks {
 	archivedAt: string;
@@ -15,8 +13,10 @@ interface ArchivedTasks {
 }
 
 export function ensureArchiveDirExists(): void {
-	if (!existsSync(ARCHIVE_DIR)) {
-		mkdirSync(ARCHIVE_DIR, { recursive: true });
+	const archiveDir = getArchiveDir();
+
+	if (!existsSync(archiveDir)) {
+		mkdirSync(archiveDir, { recursive: true });
 	}
 }
 
@@ -40,7 +40,7 @@ export function archiveCompletedTasks(prd: Prd): Prd {
 	};
 
 	const archiveFileName = `tasks-${generateArchiveTimestamp()}.json`;
-	const archivePath = join(ARCHIVE_DIR, archiveFileName);
+	const archivePath = join(getArchiveDir(), archiveFileName);
 
 	writeFileSync(archivePath, JSON.stringify(archiveData, null, 2));
 
@@ -54,16 +54,18 @@ export function archiveCompletedTasks(prd: Prd): Prd {
 }
 
 export function archiveProgressFile(): void {
-	if (!existsSync(PROGRESS_FILE_PATH)) {
+	const progressFilePath = getProgressFilePath();
+
+	if (!existsSync(progressFilePath)) {
 		return;
 	}
 
 	ensureArchiveDirExists();
 
 	const archiveFileName = `progress-${generateArchiveTimestamp()}.txt`;
-	const archivePath = join(ARCHIVE_DIR, archiveFileName);
+	const archivePath = join(getArchiveDir(), archiveFileName);
 
-	renameSync(PROGRESS_FILE_PATH, archivePath);
+	renameSync(progressFilePath, archivePath);
 }
 
 export interface ArchiveResult {
@@ -98,7 +100,9 @@ export function performSessionArchive(): ArchiveResult {
 		result.tasksArchived = completedTaskCount;
 	}
 
-	if (existsSync(PROGRESS_FILE_PATH)) {
+	const progressFilePath = getProgressFilePath();
+
+	if (existsSync(progressFilePath)) {
 		archiveProgressFile();
 		result.progressArchived = true;
 	}

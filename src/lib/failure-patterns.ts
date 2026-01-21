@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { analyzeFailure } from "@/lib/failure-analyzer.ts";
-import { ensureRalphDirExists, FAILURE_HISTORY_FILE_PATH } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getFailureHistoryFilePath } from "@/lib/paths.ts";
 import { isFailureHistory } from "@/lib/type-guards.ts";
 import type {
 	FailureHistory,
@@ -21,12 +21,14 @@ function createEmptyFailureHistory(): FailureHistory {
 }
 
 export function loadFailureHistory(): FailureHistory {
-	if (!existsSync(FAILURE_HISTORY_FILE_PATH)) {
+	const failureHistoryFilePath = getFailureHistoryFilePath();
+
+	if (!existsSync(failureHistoryFilePath)) {
 		return createEmptyFailureHistory();
 	}
 
 	try {
-		const content = readFileSync(FAILURE_HISTORY_FILE_PATH, "utf-8");
+		const content = readFileSync(failureHistoryFilePath, "utf-8");
 		const parsed: unknown = JSON.parse(content);
 
 		if (!isFailureHistory(parsed)) {
@@ -44,8 +46,8 @@ export function loadFailureHistory(): FailureHistory {
 }
 
 export function saveFailureHistory(history: FailureHistory): void {
-	ensureRalphDirExists();
-	writeFileSync(FAILURE_HISTORY_FILE_PATH, JSON.stringify(history, null, "\t"), "utf-8");
+	ensureProjectDirExists();
+	writeFileSync(getFailureHistoryFilePath(), JSON.stringify(history, null, "\t"), "utf-8");
 }
 
 export interface RecordFailureOptions {

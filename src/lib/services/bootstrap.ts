@@ -51,15 +51,17 @@ function createMockProjectRegistryService(
 		pathCache: {},
 	};
 
+	const baseProjectDir = process.cwd();
+	const projectStorageDir = `${baseProjectDir}/.ralph`;
+
 	return {
 		loadRegistry: () => emptyRegistry,
 		saveRegistry: () => {},
 		ensureProjectsDir: () => {},
 		resolveCurrentProject: () => testIdentifier,
 		registerProject: () => testIdentifier,
-		getProjectDir: () => "/tmp/ralph-test/projects/path--test-project",
-		getProjectFilePath: (relativePath: string) =>
-			`/tmp/ralph-test/projects/path--test-project/${relativePath}`,
+		getProjectDir: () => projectStorageDir,
+		getProjectFilePath: (relativePath: string) => `${projectStorageDir}/${relativePath}`,
 		listProjects: () => [],
 		getProjectMetadata: () => null,
 		updateLastAccessed: () => {},

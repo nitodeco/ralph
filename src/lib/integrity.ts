@@ -3,14 +3,14 @@ import { join } from "node:path";
 import type { Session } from "@/types.ts";
 import { validateConfig } from "./config.ts";
 import { getErrorMessage } from "./errors.ts";
-import { RALPH_DIR } from "./paths.ts";
+import { LOCAL_RALPH_DIR } from "./paths.ts";
 import { isPrd } from "./services/prd/validation.ts";
 import { isSession } from "./services/session/validation.ts";
 
-const CONFIG_PATH = join(RALPH_DIR, "config.json");
-const PRD_JSON_PATH = join(RALPH_DIR, "prd.json");
-const SESSION_PATH = join(RALPH_DIR, "session.json");
-const GITIGNORE_PATH = join(RALPH_DIR, ".gitignore");
+const CONFIG_PATH = join(LOCAL_RALPH_DIR, "config.json");
+const PRD_JSON_PATH = join(LOCAL_RALPH_DIR, "prd.json");
+const SESSION_PATH = join(LOCAL_RALPH_DIR, "session.json");
+const GITIGNORE_PATH = join(LOCAL_RALPH_DIR, ".gitignore");
 
 export interface IntegrityIssue {
 	file: string;
@@ -149,7 +149,7 @@ function validateSessionFile(issues: IntegrityIssue[]): void {
 }
 
 export function checkRalphDirectoryIntegrity(): IntegrityCheckResult {
-	if (!existsSync(RALPH_DIR)) {
+	if (!existsSync(LOCAL_RALPH_DIR)) {
 		return {
 			directoryExists: false,
 			issues: [],

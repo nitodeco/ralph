@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { getProjectRegistryService } from "./services/container.ts";
+import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 
 export const LOCAL_RALPH_DIR = ".ralph";
 export const GLOBAL_RALPH_DIR = join(homedir(), ".ralph");
@@ -20,13 +20,15 @@ export const LOCAL_BIN_DIR = join(homedir(), ".local", "bin");
 export const SYSTEM_BIN_DIR = "/usr/local/bin";
 
 function getProjectFilePath(relativePath: string): string {
+	if (!isInitialized()) {
+		return join(LOCAL_RALPH_DIR, relativePath);
+	}
+
 	const projectRegistryService = getProjectRegistryService();
 	const maybePath = projectRegistryService.getProjectFilePath(relativePath);
 
 	if (maybePath === null) {
-		throw new Error(
-			`Cannot resolve project file path for '${relativePath}'. Project is not initialized. Run 'ralph init' first.`,
-		);
+		return join(LOCAL_RALPH_DIR, relativePath);
 	}
 
 	return maybePath;
@@ -147,6 +149,14 @@ export function getDefaultInstallDir(): string {
 }
 
 export function ensureProjectDirExists(): void {
+	if (!isInitialized()) {
+		if (!existsSync(LOCAL_RALPH_DIR)) {
+			mkdirSync(LOCAL_RALPH_DIR, { recursive: true });
+		}
+
+		return;
+	}
+
 	const projectRegistryService = getProjectRegistryService();
 	const maybeProjectDir = projectRegistryService.getProjectDir();
 

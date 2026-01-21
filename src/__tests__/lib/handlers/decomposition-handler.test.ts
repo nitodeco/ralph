@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { DecompositionHandler } from "@/lib/handlers/DecompositionHandler.ts";
-import { ensureRalphDirExists, PRD_JSON_PATH } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getPrdJsonPath } from "@/lib/paths.ts";
 import { reloadPrd } from "@/lib/prd.ts";
 import {
 	bootstrapTestServices,
@@ -13,8 +13,8 @@ import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
 const TEST_DIR = "/tmp/ralph-test-decomposition-handler";
 
 function writePrdFile(prd: Prd): void {
-	ensureRalphDirExists();
-	writeFileSync(PRD_JSON_PATH, JSON.stringify(prd, null, 2));
+	ensureProjectDirExists();
+	writeFileSync(getPrdJsonPath(), JSON.stringify(prd, null, 2));
 }
 
 describe("DecompositionHandler", () => {

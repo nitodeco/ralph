@@ -19,7 +19,7 @@ import type {
 	IterationLogVerification,
 } from "@/types.ts";
 import { formatTimestamp } from "./logging-utils.ts";
-import { ensureLogsDirExists, LOGS_DIR } from "./paths.ts";
+import { ensureLogsDirExists, getLogsDir } from "./paths.ts";
 import { isIterationLog, isIterationLogsIndex } from "./type-guards.ts";
 
 const INDEX_FILE = "index.json";
@@ -29,11 +29,11 @@ function getIterationFilename(iteration: number): string {
 }
 
 function getIterationFilePath(iteration: number): string {
-	return join(LOGS_DIR, getIterationFilename(iteration));
+	return join(getLogsDir(), getIterationFilename(iteration));
 }
 
 function getIndexFilePath(): string {
-	return join(LOGS_DIR, INDEX_FILE);
+	return join(getLogsDir(), INDEX_FILE);
 }
 
 export function generateSessionId(): string {
@@ -262,7 +262,9 @@ export function updateIterationAgentInfo(
 }
 
 export function cleanupOldLogs(maxAgeDays: number): number {
-	if (!existsSync(LOGS_DIR)) {
+	const logsDir = getLogsDir();
+
+	if (!existsSync(logsDir)) {
 		return 0;
 	}
 
@@ -271,14 +273,14 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 	let deletedCount = 0;
 
 	try {
-		const files = readdirSync(LOGS_DIR);
+		const files = readdirSync(logsDir);
 
 		for (const file of files) {
 			if (file === INDEX_FILE) {
 				continue;
 			}
 
-			const filePath = join(LOGS_DIR, file);
+			const filePath = join(logsDir, file);
 
 			try {
 				const stats = statSync(filePath);
@@ -297,7 +299,7 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 
 			if (index) {
 				index.iterations = index.iterations.filter((entry) => {
-					const filePath = join(LOGS_DIR, entry.filename);
+					const filePath = join(getLogsDir(), entry.filename);
 
 					return existsSync(filePath);
 				});

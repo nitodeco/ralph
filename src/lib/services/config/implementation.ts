@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import {
 	ensureGlobalRalphDirExists,
-	ensureRalphDirExists,
+	ensureProjectDirExists,
 	GLOBAL_CONFIG_PATH,
-	PROJECT_CONFIG_PATH,
+	getProjectConfigPath,
 } from "../../paths.ts";
 import { AGENT_COMMANDS, CONFIG_DEFAULTS, DEFAULT_CONFIG } from "./constants.ts";
 import type { AgentType, ConfigService, ConfigValidationResult, RalphConfig } from "./types.ts";
@@ -43,10 +43,6 @@ export function getGlobalConfigPath(): string {
 	return GLOBAL_CONFIG_PATH;
 }
 
-export function getProjectConfigPath(): string {
-	return PROJECT_CONFIG_PATH;
-}
-
 export function createConfigService(): ConfigService {
 	let cachedConfig: RalphConfig | null = null;
 	let cachedGlobalConfig: RalphConfig | null = null;
@@ -84,15 +80,16 @@ export function createConfigService(): ConfigService {
 
 	function loadConfig(): RalphConfig {
 		const globalConfig = loadGlobalConfig();
+		const projectConfigPath = getProjectConfigPath();
 
-		if (!existsSync(PROJECT_CONFIG_PATH)) {
+		if (!existsSync(projectConfigPath)) {
 			cachedConfig = globalConfig;
 
 			return globalConfig;
 		}
 
 		try {
-			const projectContent = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
+			const projectContent = readFileSync(projectConfigPath, "utf-8");
 			const parsed: unknown = JSON.parse(projectContent);
 
 			if (!isPartialRalphConfig(parsed)) {
@@ -148,12 +145,14 @@ export function createConfigService(): ConfigService {
 		},
 
 		loadProjectRaw(): Partial<RalphConfig> | null {
-			if (!existsSync(PROJECT_CONFIG_PATH)) {
+			const projectConfigPath = getProjectConfigPath();
+
+			if (!existsSync(projectConfigPath)) {
 				return null;
 			}
 
 			try {
-				const content = readFileSync(PROJECT_CONFIG_PATH, "utf-8");
+				const content = readFileSync(projectConfigPath, "utf-8");
 				const parsed: unknown = JSON.parse(content);
 
 				if (!isPartialRalphConfig(parsed)) {
@@ -184,8 +183,8 @@ export function createConfigService(): ConfigService {
 		},
 
 		saveProject(config: RalphConfig): void {
-			ensureRalphDirExists();
-			writeFileSync(PROJECT_CONFIG_PATH, JSON.stringify(config, null, 2));
+			ensureProjectDirExists();
+			writeFileSync(getProjectConfigPath(), JSON.stringify(config, null, 2));
 			cachedConfig = null;
 		},
 

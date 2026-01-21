@@ -1,4 +1,4 @@
-import { GLOBAL_CONFIG_PATH, PROJECT_CONFIG_PATH } from "../../paths.ts";
+import { GLOBAL_CONFIG_PATH, getProjectConfigPath } from "../../paths.ts";
 import { CONFIG_DEFAULTS } from "./constants.ts";
 import type { ConfigValidationResult, RalphConfig } from "./types.ts";
 
@@ -43,7 +43,7 @@ export function formatValidationErrors(result: ConfigValidationResult, verbose =
 		lines.push("To fix: Edit your config file or run 'ralph setup' to reconfigure.");
 		lines.push("Config locations:");
 		lines.push(`  Global: ${GLOBAL_CONFIG_PATH}`);
-		lines.push(`  Project: ${PROJECT_CONFIG_PATH}`);
+		lines.push(`  Project: ${getProjectConfigPath()}`);
 	}
 
 	if (result.warnings.length > 0) {

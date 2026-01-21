@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { ensureRalphDirExists, SESSION_MEMORY_FILE_PATH } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getSessionMemoryFilePath } from "@/lib/paths.ts";
 import { exportAsMarkdown, formatForPrompt, formatForTask } from "./formatters.ts";
 import {
 	SESSION_MEMORY_CONSTANTS,
@@ -24,12 +24,14 @@ export function createSessionMemoryService(): SessionMemoryService {
 	let cachedMemory: SessionMemory | null = null;
 
 	function load(projectName?: string): SessionMemory {
-		if (!existsSync(SESSION_MEMORY_FILE_PATH)) {
+		const sessionMemoryFilePath = getSessionMemoryFilePath();
+
+		if (!existsSync(sessionMemoryFilePath)) {
 			return createEmptyMemory(projectName ?? "Unknown Project");
 		}
 
 		try {
-			const content = readFileSync(SESSION_MEMORY_FILE_PATH, "utf-8");
+			const content = readFileSync(sessionMemoryFilePath, "utf-8");
 			const parsed: unknown = JSON.parse(content);
 
 			if (!isSessionMemory(parsed)) {
@@ -51,14 +53,14 @@ export function createSessionMemoryService(): SessionMemoryService {
 	}
 
 	function save(memory: SessionMemory): void {
-		ensureRalphDirExists();
+		ensureProjectDirExists();
 		memory.lastUpdated = new Date().toISOString();
-		writeFileSync(SESSION_MEMORY_FILE_PATH, JSON.stringify(memory, null, "\t"), "utf-8");
+		writeFileSync(getSessionMemoryFilePath(), JSON.stringify(memory, null, "\t"), "utf-8");
 		cachedMemory = memory;
 	}
 
 	function exists(): boolean {
-		return existsSync(SESSION_MEMORY_FILE_PATH);
+		return existsSync(getSessionMemoryFilePath());
 	}
 
 	function initialize(projectName: string): SessionMemory {

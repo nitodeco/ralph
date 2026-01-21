@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { getLogger } from "./logger.ts";
-import { RALPH_DIR } from "./paths.ts";
+import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 
 export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = 5 * 1024 * 1024;
 export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = 500;
@@ -119,18 +119,30 @@ const TEMP_FILE_PATTERNS = [/^\.tmp/, /\.tmp$/, /^temp_/, /_temp$/];
 export function cleanupTempFiles(): number {
 	let cleanedCount = 0;
 
-	if (!existsSync(RALPH_DIR)) {
+	let maybeProjectDir: string | null = null;
+
+	if (isInitialized()) {
+		maybeProjectDir = getProjectRegistryService().getProjectDir();
+	} else {
+		maybeProjectDir = join(process.cwd(), ".ralph");
+	}
+
+	if (maybeProjectDir === null) {
+		return cleanedCount;
+	}
+
+	if (!existsSync(maybeProjectDir)) {
 		return cleanedCount;
 	}
 
 	try {
-		const files = readdirSync(RALPH_DIR);
+		const files = readdirSync(maybeProjectDir);
 
 		for (const file of files) {
 			const isTempFile = TEMP_FILE_PATTERNS.some((pattern) => pattern.test(file));
 
 			if (isTempFile) {
-				const filePath = join(RALPH_DIR, file);
+				const filePath = join(maybeProjectDir, file);
 
 				try {
 					const stats = statSync(filePath);

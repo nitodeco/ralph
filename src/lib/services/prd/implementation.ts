@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createError, ErrorCode, formatError } from "../../errors.ts";
-import { INSTRUCTIONS_FILE_PATH, PRD_JSON_PATH } from "../../paths.ts";
+import { getInstructionsFilePath, getPrdJsonPath } from "../../paths.ts";
 import type {
 	CanWorkResult,
 	LoadPrdResult,
@@ -12,8 +12,10 @@ import type {
 import { isPrd } from "./validation.ts";
 
 function findPrdFile(): string | null {
-	if (existsSync(PRD_JSON_PATH)) {
-		return PRD_JSON_PATH;
+	const prdJsonPath = getPrdJsonPath();
+
+	if (existsSync(prdJsonPath)) {
+		return prdJsonPath;
 	}
 
 	return null;
@@ -106,7 +108,7 @@ export function createPrdService(): PrdService {
 
 		save(prd: Prd): void {
 			const prdPath = findPrdFile();
-			const targetPath = prdPath ?? PRD_JSON_PATH;
+			const targetPath = prdPath ?? getPrdJsonPath();
 
 			writeFileSync(targetPath, JSON.stringify(prd, null, "\t"));
 
@@ -178,11 +180,13 @@ export function createPrdService(): PrdService {
 		},
 
 		loadInstructions(): string | null {
-			if (!existsSync(INSTRUCTIONS_FILE_PATH)) {
+			const instructionsFilePath = getInstructionsFilePath();
+
+			if (!existsSync(instructionsFilePath)) {
 				return null;
 			}
 
-			return readFileSync(INSTRUCTIONS_FILE_PATH, "utf-8");
+			return readFileSync(instructionsFilePath, "utf-8");
 		},
 	};
 }

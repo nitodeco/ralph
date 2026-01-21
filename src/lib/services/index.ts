@@ -1,3 +1,4 @@
+export { getProjectConfigPath } from "../paths.ts";
 export { AgentProcessManager } from "./AgentProcessManager.ts";
 export {
 	bootstrapServices,
@@ -29,7 +30,6 @@ export {
 	createConfigService,
 	getAgentCommand,
 	getGlobalConfigPath,
-	getProjectConfigPath,
 } from "./config/implementation.ts";
 export type {
 	AgentType,

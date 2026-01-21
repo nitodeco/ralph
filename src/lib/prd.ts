@@ -7,7 +7,7 @@ import type {
 } from "@/lib/services/index.ts";
 import { getPrdService } from "@/lib/services/index.ts";
 
-export { INSTRUCTIONS_FILE_PATH } from "./paths.ts";
+export { getInstructionsFilePath } from "./paths.ts";
 
 export function findPrdFile(): string | null {
 	return getPrdService().findFile();

@@ -57,7 +57,7 @@ describe("prd functions", () => {
 			writeFileSync(`${RALPH_DIR}/prd.json`, JSON.stringify({ project: "test", tasks: [] }));
 			const result = findPrdFile();
 
-			expect(result).toBe(".ralph/prd.json");
+			expect(result).toEndWith(".ralph/prd.json");
 		});
 	});
 

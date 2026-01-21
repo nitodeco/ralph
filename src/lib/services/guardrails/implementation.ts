@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { ensureRalphDirExists, GUARDRAILS_FILE_PATH } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getGuardrailsFilePath } from "@/lib/paths.ts";
 import { createDefaultGuardrails } from "./defaults.ts";
 import { formatGuardrailsForPrompt } from "./formatters.ts";
 import type {
@@ -19,12 +19,14 @@ export function createGuardrailsService(): GuardrailsService {
 	let cachedGuardrails: PromptGuardrail[] | null = null;
 
 	function load(): PromptGuardrail[] {
-		if (!existsSync(GUARDRAILS_FILE_PATH)) {
+		const guardrailsFilePath = getGuardrailsFilePath();
+
+		if (!existsSync(guardrailsFilePath)) {
 			return createDefaultGuardrails();
 		}
 
 		try {
-			const content = readFileSync(GUARDRAILS_FILE_PATH, "utf-8");
+			const content = readFileSync(guardrailsFilePath, "utf-8");
 			const parsed: unknown = JSON.parse(content);
 
 			if (!isGuardrailsFile(parsed)) {
@@ -46,15 +48,15 @@ export function createGuardrailsService(): GuardrailsService {
 	}
 
 	function save(guardrails: PromptGuardrail[]): void {
-		ensureRalphDirExists();
+		ensureProjectDirExists();
 		const data: GuardrailsFile = { guardrails };
 
-		writeFileSync(GUARDRAILS_FILE_PATH, JSON.stringify(data, null, "\t"), "utf-8");
+		writeFileSync(getGuardrailsFilePath(), JSON.stringify(data, null, "\t"), "utf-8");
 		cachedGuardrails = guardrails;
 	}
 
 	function exists(): boolean {
-		return existsSync(GUARDRAILS_FILE_PATH);
+		return existsSync(getGuardrailsFilePath());
 	}
 
 	function initialize(): void {
