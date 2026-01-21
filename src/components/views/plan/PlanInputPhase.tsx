@@ -58,11 +58,12 @@ export function PlanInputPhase({ existingPrd, onSubmit }: PlanInputPhaseProps): 
 						collapsePastedText
 						pastedSegments={pastedSegments}
 						onPaste={handlePaste}
+						vimMode
 					/>
 				</Box>
 			</Box>
 			<Text dimColor>
-				Tip: You can paste multi-line text. The AI will generate tasks based on your specification.
+				Tip: Vim mode enabled. Press Esc for normal mode. You can paste multi-line text.
 			</Text>
 		</Box>
 	);

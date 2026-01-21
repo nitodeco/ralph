@@ -1,7 +1,8 @@
 import chalk from "chalk";
-import { Text, useInput } from "ink";
+import { Box, Text, useInput } from "ink";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useVimMode, type VimMode } from "@/lib/vim/index.ts";
 
 export interface PastedTextSegment {
 	readonly id: number;
@@ -44,6 +45,9 @@ export interface TextInputProps {
 	readonly onArrowDown?: () => void;
 	readonly onTab?: () => void;
 	readonly onArrowRight?: () => void;
+	readonly vimMode?: boolean;
+	readonly showVimModeIndicator?: boolean;
+	readonly onVimModeChange?: (mode: VimMode) => void;
 }
 
 function renderValueWithPlaceholders(
@@ -103,6 +107,9 @@ export function TextInput({
 	onArrowDown,
 	onTab,
 	onArrowRight,
+	vimMode: isVimModeEnabled = false,
+	showVimModeIndicator = true,
+	onVimModeChange,
 }: TextInputProps): React.ReactElement {
 	const [state, setState] = useState({
 		cursorOffset: (originalValue || "").length,
@@ -113,6 +120,30 @@ export function TextInput({
 
 	const valueRef = useRef(originalValue);
 	const cursorOffsetRef = useRef(cursorOffset);
+
+	const handleCursorChange = useCallback((offset: number) => {
+		cursorOffsetRef.current = offset;
+		setState((previousState) => ({
+			...previousState,
+			cursorOffset: offset,
+		}));
+	}, []);
+
+	const {
+		mode: vimCurrentMode,
+		pendingOperator,
+		handleInput: handleVimInput,
+	} = useVimMode({
+		value: originalValue,
+		cursorOffset,
+		onChange,
+		onCursorChange: handleCursorChange,
+		enabled: isVimModeEnabled,
+	});
+
+	useEffect(() => {
+		onVimModeChange?.(vimCurrentMode);
+	}, [vimCurrentMode, onVimModeChange]);
 
 	useEffect(() => {
 		valueRef.current = originalValue;
@@ -143,6 +174,7 @@ export function TextInput({
 
 	const cursorActualWidth = highlightPastedText ? cursorWidth : 0;
 	const value = mask ? mask.repeat(originalValue.length) : originalValue;
+	const isNormalMode = isVimModeEnabled && vimCurrentMode === "normal";
 	let renderedValue = value;
 	let renderedPlaceholder = placeholder ? chalk.grey(placeholder) : undefined;
 
@@ -162,21 +194,46 @@ export function TextInput({
 			let index = 0;
 
 			for (const char of value) {
-				renderedValue +=
-					index >= cursorOffset - cursorActualWidth && index <= cursorOffset
-						? chalk.inverse(char)
-						: char;
+				const isAtCursor = index === cursorOffset;
+				const isInHighlightRange =
+					index >= cursorOffset - cursorActualWidth && index <= cursorOffset;
+
+				if (isNormalMode && isAtCursor) {
+					renderedValue += chalk.bgYellow.black(char);
+				} else if (isInHighlightRange) {
+					renderedValue += chalk.inverse(char);
+				} else {
+					renderedValue += char;
+				}
+
 				index++;
 			}
 
-			if (value.length > 0 && cursorOffset === value.length) {
-				renderedValue += chalk.inverse(" ");
+			if (value.length > 0 && cursorOffset >= value.length) {
+				renderedValue += isNormalMode ? chalk.bgYellow.black(" ") : chalk.inverse(" ");
+			} else if (value.length === 0) {
+				renderedValue = isNormalMode ? chalk.bgYellow.black(" ") : chalk.inverse(" ");
 			}
 		}
 	}
 
+	const vimModeIndicator =
+		isVimModeEnabled && showVimModeIndicator ? (
+			<Text color={isNormalMode ? "yellow" : "green"}>
+				{isNormalMode ? `[N${pendingOperator ? pendingOperator : ""}]` : "[I]"}
+			</Text>
+		) : null;
+
 	useInput(
 		(input, key) => {
+			const isEscape = key.escape;
+
+			if (isVimModeEnabled && isEscape) {
+				handleVimInput("", true);
+
+				return;
+			}
+
 			if (key.upArrow) {
 				onArrowUp?.();
 
@@ -212,6 +269,21 @@ export function TextInput({
 				}
 
 				return;
+			}
+
+			if (
+				isVimModeEnabled &&
+				vimCurrentMode === "normal" &&
+				!key.leftArrow &&
+				!key.rightArrow &&
+				!key.backspace &&
+				!key.delete
+			) {
+				const wasHandled = handleVimInput(input, false);
+
+				if (wasHandled) {
+					return;
+				}
 			}
 
 			let nextCursorOffset = currentCursorOffset;
@@ -297,11 +369,23 @@ export function TextInput({
 		{ isActive: focus },
 	);
 
-	return (
-		<Text>
-			{placeholder ? (value.length > 0 ? renderedValue : renderedPlaceholder) : renderedValue}
-		</Text>
-	);
+	const textContent = placeholder
+		? value.length > 0
+			? renderedValue
+			: renderedPlaceholder
+		: renderedValue;
+
+	if (vimModeIndicator) {
+		return (
+			<Box>
+				{vimModeIndicator}
+				<Text> </Text>
+				<Text>{textContent}</Text>
+			</Box>
+		);
+	}
+
+	return <Text>{textContent}</Text>;
 }
 
 export default TextInput;
