@@ -12,6 +12,7 @@
 		"build": "bun run scripts/build.ts",
 		"typecheck": "tsc --noEmit",
 		"check": "biome format --write && biome check --write --unsafe && eslint --fix .",
+		"check:ci": "biome format && biome check && eslint .",
 		"prepare": "husky",
 		"changeset": "changeset",
 		"version": "changeset version",
