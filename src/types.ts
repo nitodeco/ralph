@@ -34,6 +34,8 @@ export type {
 	NotificationConfig,
 	NotificationEvent,
 	ParsedArgs,
+	PlanDiffTask,
+	PlanPhase,
 	Prd,
 	PrdTask,
 	ProgressSubcommand,

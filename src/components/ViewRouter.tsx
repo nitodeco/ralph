@@ -15,6 +15,7 @@ import {
 	MemoryView,
 	MigrationPromptView,
 	NotInitializedView,
+	PlanView,
 	ProjectsView,
 	ResumePromptView,
 	StatusView,
@@ -108,6 +109,10 @@ export function ViewRouter({
 
 	if (activeView === "projects") {
 		return <ProjectsView version={version} onClose={onHelpClose} />;
+	}
+
+	if (activeView === "plan") {
+		return <PlanView version={version} onClose={onViewComplete} />;
 	}
 
 	if (activeView === "migration_prompt" && needsMigration) {

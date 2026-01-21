@@ -1,3 +1,5 @@
+import type { PrdTask } from "@/lib/services/index.ts";
+
 export type AppState =
 	| "idle"
 	| "running"
@@ -23,7 +25,8 @@ export type ActiveView =
 	| "agent"
 	| "tasks"
 	| "projects"
-	| "migration_prompt";
+	| "migration_prompt"
+	| "plan";
 
 export interface ValidationWarning {
 	message: string;
@@ -34,4 +37,12 @@ export interface SetManualTaskResult {
 	success: boolean;
 	error?: string;
 	taskTitle?: string;
+}
+
+export type PlanPhase = "input" | "generating" | "review" | "complete" | "error";
+
+export interface PlanDiffTask {
+	task: PrdTask;
+	status: "new" | "modified" | "removed" | "unchanged";
+	originalTask?: PrdTask;
 }

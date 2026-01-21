@@ -222,6 +222,7 @@ export function useSlashCommands({
 				case "tasks":
 				case "projects":
 				case "migrate":
+				case "plan":
 					agentStop();
 					iterationPause();
 					setActiveView(getViewForCommand(command));

@@ -35,6 +35,8 @@ export type { AgentResult, RunOptions } from "./agent.types.ts";
 export type {
 	ActiveView,
 	AppState,
+	PlanDiffTask,
+	PlanPhase,
 	SetManualTaskResult,
 	ValidationWarning,
 } from "./app.types.ts";

@@ -9,6 +9,8 @@ export const TASK_OUTPUT_START = "<task_output>";
 export const TASK_OUTPUT_END = "</task_output>";
 export const DECOMPOSITION_OUTPUT_START = "<decomposition_output>";
 export const DECOMPOSITION_OUTPUT_END = "</decomposition_output>";
+export const PLAN_OUTPUT_START = "<plan_output>";
+export const PLAN_OUTPUT_END = "</plan_output>";
 
 export interface BuildPromptOptions {
 	instructions?: string | null;
@@ -181,4 +183,54 @@ ${formatExample}
 ${TASK_OUTPUT_END}
 
 Generate the task now:`;
+}
+
+export function buildPlanPrompt(specification: string, existingPrd: Prd | null): string {
+	const formatExample = `{
+  "project": "Project Name",
+  "tasks": [
+    {
+      "title": "Task 1 Title",
+      "description": "Detailed description of what this task accomplishes",
+      "steps": ["Step 1", "Step 2"],
+      "done": false
+    }
+  ]
+}`;
+
+	const existingTasksSection = existingPrd
+		? `## Existing PRD (Project: ${existingPrd.project})
+The following tasks already exist. You must intelligently merge them with your generated tasks:
+${existingPrd.tasks.map((task, taskIndex) => `${taskIndex + 1}. ${task.title}${task.done ? " (DONE - preserve this status)" : ""}`).join("\n")}
+
+## Merge Rules:
+- If a generated task aligns with an existing task, keep the existing task (preserve done status)
+- If a generated task contradicts or replaces an existing task, include the new version
+- If an existing task is no longer relevant based on the specification, you may omit it
+- Add new tasks as needed to fulfill the specification
+- Order tasks logically so foundational tasks come first
+`
+		: "";
+
+	return `You are a project planning assistant. Based on the user's specification, generate a complete PRD (Product Requirements Document) in JSON format.
+
+## User's Specification:
+${specification}
+
+${existingTasksSection}## Instructions:
+1. Analyze the specification and break it down into logical, actionable tasks
+2. Each task should be small enough to complete in one coding session
+3. Order tasks logically so that foundational tasks come before tasks that build upon them
+4. Write clear, specific descriptions and steps for each task
+5. Generate a meaningful project name based on the specification
+6. All new tasks should have "done": false
+
+## Output Format:
+Output ONLY the JSON content wrapped in markers. Do not include any other text.
+
+${PLAN_OUTPUT_START}
+${formatExample}
+${PLAN_OUTPUT_END}
+
+Generate the PRD now:`;
 }

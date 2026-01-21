@@ -28,7 +28,8 @@ export type SlashCommand =
 	| "agent"
 	| "tasks"
 	| "projects"
-	| "migrate";
+	| "migrate"
+	| "plan";
 
 export interface CommandArgs {
 	iterations?: number;
@@ -66,6 +67,7 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"tasks",
 	"projects",
 	"migrate",
+	"plan",
 ];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
 
