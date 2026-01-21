@@ -72,7 +72,7 @@
 				"Add unit tests in src/__tests__/lib/project-registry/implementation.test.ts using temp directories",
 				"Create src/lib/services/project-registry/index.ts that exports all public types and the factory function"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Integrate ProjectRegistryService into service container",
