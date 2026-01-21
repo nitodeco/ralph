@@ -7,6 +7,8 @@ import type {
 	ParsedArgs,
 	ProgressSubcommand,
 	ProjectsSubcommand,
+	TaskAddOptions,
+	TaskEditOptions,
 	TaskSubcommand,
 } from "@/types.ts";
 
@@ -14,8 +16,81 @@ const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "re
 const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
 const VALID_MEMORY_SUBCOMMANDS: MemorySubcommand[] = ["list", "clear", "export"];
 const VALID_PROJECTS_SUBCOMMANDS: ProjectsSubcommand[] = ["list", "current", "prune"];
-const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = ["list", "done", "undone", "current"];
+const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = [
+	"list",
+	"done",
+	"undone",
+	"current",
+	"add",
+	"edit",
+	"remove",
+	"show",
+];
 const VALID_PROGRESS_SUBCOMMANDS: ProgressSubcommand[] = ["show", "add", "clear"];
+
+function parseTaskAddOptions(args: string[]): TaskAddOptions {
+	const options: TaskAddOptions = {};
+
+	for (let argIndex = 0; argIndex < args.length; argIndex++) {
+		const arg = args.at(argIndex);
+
+		if (arg === "--stdin") {
+			options.stdin = true;
+		} else if (arg === "--title" && argIndex + 1 < args.length) {
+			options.title = args.at(argIndex + 1);
+			argIndex++;
+		} else if (arg === "--description" && argIndex + 1 < args.length) {
+			options.description = args.at(argIndex + 1);
+			argIndex++;
+		} else if (arg === "--steps" && argIndex + 1 < args.length) {
+			if (!options.steps) {
+				options.steps = [];
+			}
+
+			const step = args.at(argIndex + 1);
+
+			if (step) {
+				options.steps.push(step);
+			}
+
+			argIndex++;
+		}
+	}
+
+	return options;
+}
+
+function parseTaskEditOptions(args: string[]): TaskEditOptions {
+	const options: TaskEditOptions = {};
+
+	for (let argIndex = 0; argIndex < args.length; argIndex++) {
+		const arg = args.at(argIndex);
+
+		if (arg === "--stdin") {
+			options.stdin = true;
+		} else if (arg === "--title" && argIndex + 1 < args.length) {
+			options.title = args.at(argIndex + 1);
+			argIndex++;
+		} else if (arg === "--description" && argIndex + 1 < args.length) {
+			options.description = args.at(argIndex + 1);
+			argIndex++;
+		} else if (arg === "--steps" && argIndex + 1 < args.length) {
+			if (!options.steps) {
+				options.steps = [];
+			}
+
+			const step = args.at(argIndex + 1);
+
+			if (step) {
+				options.steps.push(step);
+			}
+
+			argIndex++;
+		}
+	}
+
+	return options;
+}
 
 export function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
@@ -133,6 +208,8 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	let taskSubcommand: TaskSubcommand | undefined;
 	let taskIdentifier: string | undefined;
+	let taskAddOptions: TaskAddOptions | undefined;
+	let taskEditOptions: TaskEditOptions | undefined;
 
 	if (command === "task") {
 		const subcommand = filteredArgs[1] as TaskSubcommand | undefined;
@@ -142,6 +219,13 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 			if (subcommand === "done" || subcommand === "undone") {
 				taskIdentifier = filteredArgs.slice(2).join(" ");
+			} else if (subcommand === "show" || subcommand === "remove") {
+				taskIdentifier = filteredArgs.at(2);
+			} else if (subcommand === "edit") {
+				taskIdentifier = filteredArgs.at(2);
+				taskEditOptions = parseTaskEditOptions(filteredArgs.slice(3));
+			} else if (subcommand === "add") {
+				taskAddOptions = parseTaskAddOptions(filteredArgs.slice(2));
 			}
 		} else {
 			taskSubcommand = "list";
@@ -185,6 +269,8 @@ export function parseArgs(args: string[]): ParsedArgs {
 		projectsSubcommand,
 		taskSubcommand,
 		taskIdentifier,
+		taskAddOptions,
+		taskEditOptions,
 		progressSubcommand,
 		progressText,
 	};

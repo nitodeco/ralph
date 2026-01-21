@@ -29,7 +29,29 @@ export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle";
 export type AnalyzeSubcommand = "patterns" | "export" | "clear";
 export type MemorySubcommand = "list" | "clear" | "export";
 export type ProjectsSubcommand = "list" | "current" | "prune";
-export type TaskSubcommand = "list" | "done" | "undone" | "current";
+export type TaskSubcommand =
+	| "list"
+	| "done"
+	| "undone"
+	| "current"
+	| "add"
+	| "edit"
+	| "remove"
+	| "show";
+
+export interface TaskAddOptions {
+	title?: string;
+	description?: string;
+	steps?: string[];
+	stdin?: boolean;
+}
+
+export interface TaskEditOptions {
+	title?: string;
+	description?: string;
+	steps?: string[];
+	stdin?: boolean;
+}
 export type ProgressSubcommand = "show" | "add" | "clear";
 
 export interface ParsedArgs {
@@ -49,6 +71,8 @@ export interface ParsedArgs {
 	projectsSubcommand?: ProjectsSubcommand;
 	taskSubcommand?: TaskSubcommand;
 	taskIdentifier?: string;
+	taskAddOptions?: TaskAddOptions;
+	taskEditOptions?: TaskEditOptions;
 	progressSubcommand?: ProgressSubcommand;
 	progressText?: string;
 }

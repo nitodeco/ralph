@@ -18,8 +18,12 @@ export { printStats } from "./stats.ts";
 export { printStatus } from "./status.ts";
 export { handleStopCommand } from "./stop.ts";
 export {
+	handleTaskAdd,
 	handleTaskDone,
+	handleTaskEdit,
+	handleTaskRemove,
 	handleTaskUndone,
 	printCurrentTask,
 	printTaskList,
+	printTaskShow,
 } from "./task.ts";

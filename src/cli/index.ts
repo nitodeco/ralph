@@ -11,7 +11,10 @@ export {
 	handleProgressClear,
 	handleProjectsPrune,
 	handleStopCommand,
+	handleTaskAdd,
 	handleTaskDone,
+	handleTaskEdit,
+	handleTaskRemove,
 	handleTaskUndone,
 	printAnalyze,
 	printArchive,
@@ -28,6 +31,7 @@ export {
 	printStats,
 	printStatus,
 	printTaskList,
+	printTaskShow,
 	printVersion,
 } from "./commands/index.ts";
 export { formatBytes, formatConfigValue, formatDuration, formatElapsedTime } from "./formatters.ts";

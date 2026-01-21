@@ -49,6 +49,8 @@ export type {
 	ParsedArgs,
 	ProgressSubcommand,
 	ProjectsSubcommand,
+	TaskAddOptions,
+	TaskEditOptions,
 	TaskListOutput,
 	TaskSubcommand,
 } from "./cli.types.ts";

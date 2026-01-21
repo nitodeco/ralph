@@ -15,7 +15,10 @@ import {
 	handleProgressClear,
 	handleProjectsPrune,
 	handleStopCommand,
+	handleTaskAdd,
 	handleTaskDone,
+	handleTaskEdit,
+	handleTaskRemove,
 	handleTaskUndone,
 	parseArgs,
 	printAnalyze,
@@ -33,6 +36,7 @@ import {
 	printStats,
 	printStatus,
 	printTaskList,
+	printTaskShow,
 	printVersion,
 } from "@/cli/index.ts";
 import { InitWizard } from "@/components/InitWizard.tsx";
@@ -151,6 +155,8 @@ function main(): void {
 		projectsSubcommand,
 		taskSubcommand,
 		taskIdentifier,
+		taskAddOptions,
+		taskEditOptions,
 		progressSubcommand,
 		progressText,
 	} = parseArgs(process.argv);
@@ -335,6 +341,24 @@ function main(): void {
 
 		case "task":
 			switch (taskSubcommand) {
+				case "add":
+					handleTaskAdd(taskAddOptions ?? {}, json).catch((error) => {
+						console.error("Failed to add task:", error);
+						process.exit(1);
+					});
+					break;
+				case "edit":
+					handleTaskEdit(taskIdentifier ?? "", taskEditOptions ?? {}, json).catch((error) => {
+						console.error("Failed to edit task:", error);
+						process.exit(1);
+					});
+					break;
+				case "remove":
+					handleTaskRemove(taskIdentifier ?? "", json);
+					break;
+				case "show":
+					printTaskShow(taskIdentifier ?? "", json);
+					break;
 				case "done":
 					handleTaskDone(taskIdentifier ?? "", json);
 					break;

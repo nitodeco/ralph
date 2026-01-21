@@ -5,7 +5,11 @@ import { Header } from "@/components/Header.tsx";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
-import { applyDiffToPrd, computeTaskDiff, parsePlanFromOutput } from "@/lib/plan-parser.ts";
+import {
+	applyApprovedCommands,
+	commandsToDiffTasks,
+	parseTaskCommandsFromOutput,
+} from "@/lib/plan-command-parser.ts";
 import { loadPrd, savePrd } from "@/lib/prd.ts";
 import { buildPlanPrompt } from "@/lib/prompt.ts";
 import type { PlanDiffTask, PlanPhase, Prd, PrdTask } from "@/types.ts";
@@ -81,24 +85,25 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 
 			abortRef.current = null;
 
-			const generatedPrd = parsePlanFromOutput(output);
+			const commands = parseTaskCommandsFromOutput(output);
+			const diffTasks = commandsToDiffTasks(commands, state.existingPrd);
 
-			if (!generatedPrd) {
+			const hasChanges = diffTasks.some((diffTask) => diffTask.status !== "unchanged");
+
+			if (!hasChanges) {
 				setState((prev) => ({
 					...prev,
 					phase: "error",
 					errorMessage:
-						"Failed to parse PRD from agent output. The agent may not have followed the expected format.",
+						"No task changes were detected in the agent output. The agent may not have followed the expected command format.",
 				}));
 
 				return;
 			}
 
-			const diffTasks = computeTaskDiff(state.existingPrd, generatedPrd);
-
 			setState((prev) => ({
 				...prev,
-				generatedPrd,
+				generatedPrd: null,
 				diffTasks,
 				phase: "review",
 			}));
@@ -127,11 +132,9 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 	};
 
 	const handleAccept = (acceptedIndices: Set<number>, editedTasks: Map<number, PrdTask>) => {
-		const projectName = state.generatedPrd?.project ?? "Untitled Project";
-		const finalPrd = applyDiffToPrd(
+		const finalPrd = applyApprovedCommands(
 			state.existingPrd,
 			state.diffTasks,
-			projectName,
 			acceptedIndices,
 			editedTasks,
 		);

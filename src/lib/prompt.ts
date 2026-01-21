@@ -186,51 +186,52 @@ Generate the task now:`;
 }
 
 export function buildPlanPrompt(specification: string, existingPrd: Prd | null): string {
-	const formatExample = `{
-  "project": "Project Name",
-  "tasks": [
-    {
-      "title": "Task 1 Title",
-      "description": "Detailed description of what this task accomplishes",
-      "steps": ["Step 1", "Step 2"],
-      "done": false
-    }
-  ]
-}`;
-
 	const existingTasksSection = existingPrd
-		? `## Existing PRD (Project: ${existingPrd.project})
-The following tasks already exist. You must intelligently merge them with your generated tasks:
-${existingPrd.tasks.map((task, taskIndex) => `${taskIndex + 1}. ${task.title}${task.done ? " (DONE - preserve this status)" : ""}`).join("\n")}
+		? `## Existing Tasks (Project: ${existingPrd.project})
 
-## Merge Rules:
-- If a generated task aligns with an existing task, keep the existing task (preserve done status)
-- If a generated task contradicts or replaces an existing task, include the new version
-- If an existing task is no longer relevant based on the specification, you may omit it
-- Add new tasks as needed to fulfill the specification
-- Order tasks logically so foundational tasks come first
+${existingPrd.tasks
+	.map(
+		(task, idx) => `### Task ${idx + 1}: ${task.title}${task.done ? " [DONE]" : ""}
+Description: ${task.description}
+Steps:
+${task.steps.map((step, stepIdx) => `  ${stepIdx + 1}. ${step}`).join("\n")}`,
+	)
+	.join("\n\n")}
+
+## Available Commands
+
+To ADD a new task:
+ralph task add --stdin <<EOF
+{"title": "Task title", "description": "Task description", "steps": ["Step 1", "Step 2"]}
+EOF
+
+To EDIT an existing task (by number):
+ralph task edit <n> --stdin <<EOF
+{"title": "New title", "description": "New description", "steps": ["New step 1", "New step 2"]}
+EOF
+
+To REMOVE a task:
+ralph task remove <n>
+
+## IMPORTANT Rules:
+- ONLY modify tasks that are directly relevant to the specification
+- Do NOT touch tasks that are unrelated to the specification
+- Preserve the done status of tasks (edit does not change done status)
+- Run 'ralph task list' after making changes to verify
 `
-		: "";
+		: `## No existing PRD
 
-	return `You are a project planning assistant. Based on the user's specification, generate a complete PRD (Product Requirements Document) in JSON format.
+Create tasks using:
+ralph task add --stdin <<EOF
+{"title": "Task title", "description": "Task description", "steps": ["Step 1", "Step 2"]}
+EOF
+`;
+
+	return `You are a project planning assistant. Based on the user's specification, create or modify tasks in the PRD.
 
 ## User's Specification:
 ${specification}
 
-${existingTasksSection}## Instructions:
-1. Analyze the specification and break it down into logical, actionable tasks
-2. Each task should be small enough to complete in one coding session
-3. Order tasks logically so that foundational tasks come before tasks that build upon them
-4. Write clear, specific descriptions and steps for each task
-5. Generate a meaningful project name based on the specification
-6. All new tasks should have "done": false
-
-## Output Format:
-Output ONLY the JSON content wrapped in markers. Do not include any other text.
-
-${PLAN_OUTPUT_START}
-${formatExample}
-${PLAN_OUTPUT_END}
-
-Generate the PRD now:`;
+${existingTasksSection}
+Now analyze the specification and execute the necessary task commands. After each command, verify with 'ralph task list'.`;
 }

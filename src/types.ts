@@ -48,6 +48,8 @@ export type {
 	SessionStatistics,
 	SessionStatus,
 	SetManualTaskResult,
+	TaskAddOptions,
+	TaskEditOptions,
 	TaskListOutput,
 	TaskSubcommand,
 	ValidationWarning,
