@@ -5,7 +5,7 @@ import {
 	removeLocalRalphDir,
 } from "@/lib/services/project-registry/migration.ts";
 
-export function handleMigrateCommand(version: string, shouldRemoveLocal: boolean = false): void {
+export function handleMigrateCommand(version: string): void {
 	console.log(`◆ ralph v${version} - Migrate\n`);
 
 	if (!hasLocalRalphDir()) {
@@ -16,7 +16,18 @@ export function handleMigrateCommand(version: string, shouldRemoveLocal: boolean
 
 	if (!needsProjectMigration()) {
 		console.log("This project is already registered in global storage.");
-		console.log("No migration needed.");
+		console.log("Local .ralph directory still exists and can be removed.\n");
+
+		console.log("Removing local .ralph directory...");
+		const removed = removeLocalRalphDir();
+
+		if (removed) {
+			console.log("\x1b[32m✓\x1b[0m Local .ralph directory removed.");
+		} else {
+			console.log("\x1b[31m✗\x1b[0m Failed to remove local .ralph directory.");
+			process.exit(1);
+		}
+
 		process.exit(0);
 	}
 
@@ -38,18 +49,13 @@ export function handleMigrateCommand(version: string, shouldRemoveLocal: boolean
 			}
 		}
 
-		if (shouldRemoveLocal) {
-			console.log("\nRemoving local .ralph directory...");
-			const removed = removeLocalRalphDir();
+		console.log("\nRemoving local .ralph directory...");
+		const removed = removeLocalRalphDir();
 
-			if (removed) {
-				console.log("\x1b[32m✓\x1b[0m Local .ralph directory removed.");
-			} else {
-				console.log("\x1b[33m!\x1b[0m Failed to remove local .ralph directory.");
-			}
+		if (removed) {
+			console.log("\x1b[32m✓\x1b[0m Local .ralph directory removed.");
 		} else {
-			console.log("\n\x1b[33mNote:\x1b[0m Local .ralph directory was kept as a backup.");
-			console.log("You can safely delete it manually or run 'ralph migrate --remove' next time.");
+			console.log("\x1b[33m!\x1b[0m Failed to remove local .ralph directory.");
 		}
 	} else {
 		console.error("\x1b[31m✗\x1b[0m Migration failed.\n");
@@ -91,6 +97,6 @@ export function printMigrateStatus(): void {
 		console.log("Run 'ralph migrate' to migrate to global storage.");
 	} else {
 		console.log("Project is already in global storage.");
-		console.log("Local .ralph directory can be safely deleted.");
+		console.log("Run 'ralph migrate' to remove the local .ralph directory.");
 	}
 }

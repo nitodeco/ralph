@@ -301,7 +301,7 @@ function main(): void {
 			break;
 
 		case "migrate":
-			handleMigrateCommand(VERSION, process.argv.includes("--remove"));
+			handleMigrateCommand(VERSION);
 			break;
 
 		case "projects":

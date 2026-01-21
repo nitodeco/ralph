@@ -1,8 +1,10 @@
 import { Box, Text, useInput } from "ink";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+	hasLocalRalphDir,
 	type MigrationResult,
 	migrateLocalRalphDir,
+	needsProjectMigration,
 	removeLocalRalphDir,
 } from "@/lib/services/project-registry/migration.ts";
 import type { RalphConfig } from "@/types.ts";
@@ -18,7 +20,7 @@ interface MigrationPromptViewProps {
 	onSkip: () => void;
 }
 
-type MigrationPhase = "prompt" | "migrating" | "success" | "delete_prompt" | "error";
+type MigrationPhase = "prompt" | "migrating" | "cleanup_prompt" | "cleanup" | "success" | "error";
 
 export function MigrationPromptView({
 	version,
@@ -29,7 +31,15 @@ export function MigrationPromptView({
 }: MigrationPromptViewProps): React.ReactElement {
 	const [phase, setPhase] = useState<MigrationPhase>("prompt");
 	const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
-	const [deleteLocal, setDeleteLocal] = useState(false);
+	const [localDeleted, setLocalDeleted] = useState(false);
+	const [isAlreadyMigrated, setIsAlreadyMigrated] = useState(false);
+
+	useEffect(() => {
+		if (hasLocalRalphDir() && !needsProjectMigration()) {
+			setIsAlreadyMigrated(true);
+			setPhase("cleanup_prompt");
+		}
+	}, []);
 
 	const handleMigrate = () => {
 		setPhase("migrating");
@@ -40,20 +50,25 @@ export function MigrationPromptView({
 			setMigrationResult(result);
 
 			if (result.success) {
-				setPhase("delete_prompt");
+				const deleted = removeLocalRalphDir();
+
+				setLocalDeleted(deleted);
+				setPhase("success");
 			} else {
 				setPhase("error");
 			}
 		}, 100);
 	};
 
-	const handleDeleteConfirm = (shouldDelete: boolean) => {
-		if (shouldDelete) {
-			removeLocalRalphDir();
-			setDeleteLocal(true);
-		}
+	const handleCleanup = () => {
+		setPhase("cleanup");
 
-		setPhase("success");
+		setTimeout(() => {
+			const deleted = removeLocalRalphDir();
+
+			setLocalDeleted(deleted);
+			setPhase("success");
+		}, 100);
 	};
 
 	useInput((input, key) => {
@@ -63,11 +78,11 @@ export function MigrationPromptView({
 			} else if (input.toLowerCase() === "n" || key.escape) {
 				onSkip();
 			}
-		} else if (phase === "delete_prompt") {
-			if (input.toLowerCase() === "y") {
-				handleDeleteConfirm(true);
+		} else if (phase === "cleanup_prompt") {
+			if (input.toLowerCase() === "y" || key.return) {
+				handleCleanup();
 			} else if (input.toLowerCase() === "n" || key.escape) {
-				handleDeleteConfirm(false);
+				onSkip();
 			}
 		} else if (phase === "success" || phase === "error") {
 			if (key.return || key.escape) {
@@ -99,6 +114,25 @@ export function MigrationPromptView({
 					</>
 				)}
 
+				{phase === "cleanup_prompt" && (
+					<>
+						<Message type="info">Project already migrated</Message>
+						<Box flexDirection="column" paddingLeft={2}>
+							<Text>This project is already registered in global storage.</Text>
+							<Text>However, a local .ralph directory still exists in this repository.</Text>
+						</Box>
+						<Box marginTop={1}>
+							<Text>Would you like to delete the local .ralph directory?</Text>
+						</Box>
+						<Box marginTop={1}>
+							<Text>
+								Press <Text color="green">Y</Text> to delete or <Text color="yellow">N</Text> to
+								keep
+							</Text>
+						</Box>
+					</>
+				)}
+
 				{phase === "migrating" && (
 					<Box gap={1}>
 						<Spinner />
@@ -106,9 +140,16 @@ export function MigrationPromptView({
 					</Box>
 				)}
 
-				{phase === "delete_prompt" && migrationResult?.success && (
+				{phase === "cleanup" && (
+					<Box gap={1}>
+						<Spinner />
+						<Text>Removing local .ralph directory...</Text>
+					</Box>
+				)}
+
+				{phase === "success" && !isAlreadyMigrated && migrationResult?.success && (
 					<>
-						<Message type="success">Migration successful!</Message>
+						<Message type="success">Migration complete!</Message>
 						<Box flexDirection="column" paddingLeft={2}>
 							<Text>
 								<Text dimColor>Project:</Text>{" "}
@@ -128,37 +169,28 @@ export function MigrationPromptView({
 									))}
 								</Box>
 							)}
-						</Box>
-						<Box marginTop={1} flexDirection="column">
-							<Text>
-								Would you like to <Text color="red">delete</Text> the local .ralph directory?
-							</Text>
-							<Text dimColor>(You can keep it as a backup)</Text>
+							<Box marginTop={1}>
+								{localDeleted ? (
+									<Text color="green">Local .ralph directory deleted.</Text>
+								) : (
+									<Text color="yellow">Failed to delete local .ralph directory.</Text>
+								)}
+							</Box>
 						</Box>
 						<Box marginTop={1}>
-							<Text>
-								Press <Text color="red">Y</Text> to delete or <Text color="green">N</Text> to keep
-							</Text>
+							<Text dimColor>Press Enter to continue...</Text>
 						</Box>
 					</>
 				)}
 
-				{phase === "success" && migrationResult?.success && (
+				{phase === "success" && isAlreadyMigrated && (
 					<>
-						<Message type="success">Migration complete!</Message>
+						<Message type="success">Cleanup complete!</Message>
 						<Box flexDirection="column" paddingLeft={2}>
-							<Text>
-								<Text dimColor>Project:</Text>{" "}
-								<Text color="cyan">{migrationResult.identifier?.folderName}</Text>
-							</Text>
-							<Text>
-								<Text dimColor>Destination:</Text>{" "}
-								<Text color="cyan">{migrationResult.destinationPath}</Text>
-							</Text>
-							{deleteLocal ? (
+							{localDeleted ? (
 								<Text color="green">Local .ralph directory deleted.</Text>
 							) : (
-								<Text dimColor>Local .ralph directory kept as backup.</Text>
+								<Text color="yellow">Failed to delete local .ralph directory.</Text>
 							)}
 						</Box>
 						<Box marginTop={1}>
