@@ -114,7 +114,7 @@
 				"Search codebase for any remaining imports of old path constants and update them",
 				"Run 'bun test' to verify all existing tests still pass"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Update init flow for global storage",

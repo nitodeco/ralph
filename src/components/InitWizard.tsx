@@ -5,9 +5,8 @@ import { useState } from "react";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
-import { ensureRalphDirExists, RALPH_DIR } from "@/lib/paths.ts";
+import { ensureProjectDirExists, getPrdJsonPath, getProgressFilePath } from "@/lib/paths.ts";
 import { findPrdFile, savePrd } from "@/lib/prd.ts";
-import { PROGRESS_FILE_PATH } from "@/lib/progress.ts";
 import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
 import { isPrd } from "@/lib/services/index.ts";
 import type { AgentType, Prd, RalphConfig } from "@/types.ts";
@@ -90,7 +89,8 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	};
 
 	const existingPrd = findPrdFile();
-	const existingProgress = existsSync(PROGRESS_FILE_PATH);
+	const progressFilePath = getProgressFilePath();
+	const existingProgress = existsSync(progressFilePath);
 	const globalConfig = loadGlobalConfig();
 
 	const getInitialStep = (): WizardStep => {
@@ -187,9 +187,9 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				return;
 			}
 
-			ensureRalphDirExists();
+			ensureProjectDirExists();
 			savePrd(prd);
-			writeFileSync(PROGRESS_FILE_PATH, "");
+			writeFileSync(progressFilePath, "");
 
 			const config: RalphConfig = { agent: state.agentType };
 
@@ -234,7 +234,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 			case "check_existing_progress":
 				return (
 					<Box flexDirection="column" gap={1}>
-						<Text color="yellow">{PROGRESS_FILE_PATH} already exists. Overwrite it?</Text>
+						<Text color="yellow">{progressFilePath} already exists. Overwrite it?</Text>
 						<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwriteProgress} />
 					</Box>
 				);
@@ -287,11 +287,12 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 
 			case "complete": {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
+				const prdJsonPath = getPrdJsonPath();
 
 				return (
 					<Box flexDirection="column" gap={1}>
 						<Message type="success">
-							Created {RALPH_DIR}/prd.json and {PROGRESS_FILE_PATH}
+							Created {prdJsonPath} and {progressFilePath}
 						</Message>
 						<Text>
 							<Text dimColor>Project:</Text>{" "}

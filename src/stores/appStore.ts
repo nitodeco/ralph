@@ -4,7 +4,7 @@ import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
-import { isGitRepository, RALPH_DIR } from "@/lib/paths.ts";
+import { isGitRepository } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
 	findPrdFile,
@@ -93,7 +93,7 @@ function validateProject(): ValidationWarning | null {
 
 	if (!prdFile) {
 		return {
-			message: `No prd.json found in ${RALPH_DIR}/`,
+			message: "No prd.json found for this project",
 			hint: "Run 'ralph init' or type /init to create one",
 		};
 	}
