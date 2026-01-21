@@ -24,7 +24,8 @@ export type SlashCommand =
 	| "note"
 	| "memory"
 	| "dismiss-update"
-	| "refresh";
+	| "refresh"
+	| "agent";
 
 export interface CommandArgs {
 	iterations?: number;
@@ -58,6 +59,7 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"memory",
 	"dismiss-update",
 	"refresh",
+	"agent",
 ];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
 

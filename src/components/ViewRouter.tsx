@@ -7,6 +7,7 @@ import { InitWizard } from "./InitWizard.tsx";
 import { SetupWizard } from "./SetupWizard.tsx";
 import { UpdatePrompt } from "./UpdatePrompt.tsx";
 import {
+	AgentSelectView,
 	AnalyzeView,
 	ArchiveView,
 	DryRunView,
@@ -86,6 +87,10 @@ export function ViewRouter({
 
 	if (activeView === "memory") {
 		return <MemoryView version={version} onClose={onHelpClose} />;
+	}
+
+	if (activeView === "agent") {
+		return <AgentSelectView version={version} onClose={onViewComplete} />;
 	}
 
 	if (dryRun) {

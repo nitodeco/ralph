@@ -19,7 +19,8 @@ export type ActiveView =
 	| "archive"
 	| "guardrails"
 	| "analyze"
-	| "memory";
+	| "memory"
+	| "agent";
 
 export interface ValidationWarning {
 	message: string;

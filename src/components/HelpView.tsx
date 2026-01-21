@@ -131,6 +131,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Configure global preferences</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/agent</Text>
+							{"            "}
+							<Text>Switch coding agent</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/update</Text>
 							{"           "}
 							<Text>Check for updates</Text>
