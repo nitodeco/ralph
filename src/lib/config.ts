@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { GLOBAL_CONFIG_PATH } from "./paths.ts";
 import type { RalphConfig } from "./services/config/types.ts";
 import { validateConfig } from "./services/config/validation.ts";
 import { getConfigService } from "./services/index.ts";
@@ -41,7 +43,7 @@ export function saveGlobalConfig(config: RalphConfig): void {
 }
 
 export function globalConfigExists(): boolean {
-	return getConfigService().globalConfigExists();
+	return existsSync(GLOBAL_CONFIG_PATH);
 }
 
 export function loadConfig(): RalphConfig {
