@@ -56,7 +56,7 @@
 				"Create src/lib/services/project-registry/git.ts with getGitRemoteUrl(cwd) function that runs 'git remote get-url origin' and returns null if not a git repo or no remote",
 				"Add unit tests for all resolution functions in src/__tests__/lib/project-registry/resolution.test.ts covering edge cases like SSH vs HTTPS URLs, paths with special characters"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Implement ProjectRegistryService",
