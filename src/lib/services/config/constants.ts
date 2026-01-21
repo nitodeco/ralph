@@ -63,6 +63,13 @@ export const DEFAULT_ENABLE_GC_HINTS = DEFAULTS.enableGcHints;
 
 export const AGENT_COMMANDS: Record<AgentType, string[]> = {
 	cursor: ["agent", "-p", "--force", "--output-format", "stream-json", "--stream-partial-output"],
-	claude: ["claude", "-p", "--dangerously-skip-permissions", "--output-format", "stream-json"],
+	claude: [
+		"claude",
+		"-p",
+		"--dangerously-skip-permissions",
+		"--output-format",
+		"stream-json",
+		"--verbose",
+	],
 	codex: ["codex", "exec", "--full-auto", "--json"],
 };
