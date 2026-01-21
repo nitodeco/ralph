@@ -1,18 +1,5 @@
+# Progress
+
 ## Completed Tasks
-
-### Task 1: Add task mutation functions to PRD library
-- Added `toggleTaskDone(prd: Prd, taskIndex: number): Prd` - toggles a task's done status
-- Added `deleteTask(prd: Prd, taskIndex: number): Prd` - removes a task at the given index
-- Added `reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd` - moves a task from one position to another
-- All functions follow immutable patterns (return new Prd objects)
-- Added comprehensive unit tests for all three functions in src/__tests__/lib/prd.test.ts
-
-### Task 2: Create TasksView component with read-only interactive list
-- Created `src/components/views/TasksView.tsx` with list display and keyboard navigation (↑/↓ arrow keys)
-- Displays task title, done status (✓/○), and step count for each task
-- Shows full task details (description, steps) for the selected task in a bordered panel
-- Added keyboard hints at the bottom of the view (↑/↓ Navigate | q/Esc Close)
-- Exported TasksView from `src/components/views/index.ts`
-
-## Next Task
-Task 3: Wire up /tasks command and view routing
+- Wire up /tasks command and view routing: Added 'tasks' to ActiveView type, SlashCommand type, VALID_COMMANDS array, handled the command in useSlashCommands.ts to set active view, and added TasksView routing in ViewRouter.tsx. The /tasks command now opens the TasksView component.
+- Add toggle done functionality to TasksView: Implemented 'd' key handler in TasksView that calls toggleTaskDone from prd.ts, saves the updated PRD, refreshes the local state, and displays a success message. Users can now mark tasks as done or undone directly from the TasksView using the 'd' key.

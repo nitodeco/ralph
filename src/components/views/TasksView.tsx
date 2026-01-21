@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { savePrd, toggleTaskDone } from "@/lib/prd.ts";
 import { getPrdService, type Prd } from "@/lib/services/index.ts";
 
 interface TasksViewProps {
@@ -9,10 +10,19 @@ interface TasksViewProps {
 
 export function TasksView({ version, onClose }: TasksViewProps): React.ReactElement {
 	const prdService = getPrdService();
-	const [prd] = useState<Prd | null>(() => prdService.get());
+	const [prd, setPrd] = useState<Prd | null>(() => prdService.get());
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
 	const tasks = prd?.tasks ?? [];
+
+	useEffect(() => {
+		if (statusMessage) {
+			const timeout = setTimeout(() => setStatusMessage(null), 2000);
+
+			return () => clearTimeout(timeout);
+		}
+	}, [statusMessage]);
 
 	useInput((input, key) => {
 		if (key.escape || input === "q") {
@@ -23,10 +33,32 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 
 		if (key.upArrow && selectedIndex > 0) {
 			setSelectedIndex(selectedIndex - 1);
+
+			return;
 		}
 
 		if (key.downArrow && selectedIndex < tasks.length - 1) {
 			setSelectedIndex(selectedIndex + 1);
+
+			return;
+		}
+
+		if (input === "d" && prd && tasks.length > 0) {
+			const selectedTask = tasks.at(selectedIndex);
+
+			if (!selectedTask) {
+				return;
+			}
+
+			const updatedPrd = toggleTaskDone(prd, selectedIndex);
+
+			savePrd(updatedPrd);
+			setPrd(updatedPrd);
+
+			const newStatus = !selectedTask.done;
+			const statusText = newStatus ? "completed" : "incomplete";
+
+			setStatusMessage(`Task marked as ${statusText}`);
 		}
 	});
 
@@ -100,8 +132,14 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 					</Box>
 				)}
 
+				{statusMessage && (
+					<Box marginTop={1}>
+						<Text color="green">{statusMessage}</Text>
+					</Box>
+				)}
+
 				<Box flexDirection="column" marginTop={1}>
-					<Text dimColor>↑/↓ Navigate | q/Esc Close</Text>
+					<Text dimColor>↑/↓ Navigate | d Toggle done | q/Esc Close</Text>
 				</Box>
 			</Box>
 		</Box>

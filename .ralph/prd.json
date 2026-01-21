@@ -2,29 +2,6 @@
 	"project": "Ralph CLI",
 	"tasks": [
 		{
-			"title": "Add task mutation functions to PRD library",
-			"description": "Create pure functions in src/lib/prd.ts for mutating tasks: toggle done status, delete task, and reorder tasks. These functions should follow immutable patterns (return new Prd objects) and be fully testable.",
-			"steps": [
-				"Add toggleTaskDone(prd: Prd, taskIndex: number): Prd function",
-				"Add deleteTask(prd: Prd, taskIndex: number): Prd function",
-				"Add reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd function",
-				"Add unit tests for all three functions in src/__tests__/lib/prd.test.ts"
-			],
-			"done": true
-		},
-		{
-			"title": "Create TasksView component with read-only interactive list",
-			"description": "Build the TasksView component that displays all tasks in a navigable list. Users can move selection with arrow keys and view task details. Follow the patterns established in GuardrailsView and MemoryView.",
-			"steps": [
-				"Create src/components/views/TasksView.tsx with list display and keyboard navigation",
-				"Show task title, done status, and step count for each task",
-				"Display full task details (description, steps) for the selected task",
-				"Add keyboard hints at the bottom of the view",
-				"Export TasksView from src/components/views/index.ts"
-			],
-			"done": true
-		},
-		{
 			"title": "Wire up /tasks command and view routing",
 			"description": "Connect the TasksView to the application by adding the tasks command and routing. This makes the view accessible via /tasks slash command.",
 			"steps": [
@@ -33,7 +10,7 @@
 				"Handle 'tasks' command in src/hooks/useSlashCommands.ts to set active view",
 				"Add TasksView route in src/components/ViewRouter.tsx"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add toggle done functionality to TasksView",
@@ -44,7 +21,7 @@
 				"Show success message when task status changes",
 				"Update the task list display to reflect the change immediately"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add delete task functionality with confirmation",
