@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import {
 	canWorkOnTask,
 	createEmptyPrd,
+	deleteTask,
 	findPrdFile,
 	getNextTask,
 	getNextTaskWithIndex,
@@ -11,6 +12,8 @@ import {
 	invalidatePrdCache,
 	isPrdComplete,
 	loadPrdWithValidation,
+	reorderTask,
+	toggleTaskDone,
 } from "@/lib/prd.ts";
 import {
 	bootstrapTestServices,
@@ -350,5 +353,246 @@ describe("createEmptyPrd", () => {
 
 		expect(prd.project).toBe("My Project");
 		expect(prd.tasks).toEqual([]);
+	});
+});
+
+describe("toggleTaskDone", () => {
+	test("toggles task from not done to done", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = toggleTaskDone(prd, 0);
+
+		expect(result.tasks.at(0)?.done).toBe(true);
+	});
+
+	test("toggles task from done to not done", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: true }],
+		};
+		const result = toggleTaskDone(prd, 0);
+
+		expect(result.tasks.at(0)?.done).toBe(false);
+	});
+
+	test("returns same prd for invalid index", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = toggleTaskDone(prd, 5);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns new prd object (immutable)", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = toggleTaskDone(prd, 0);
+
+		expect(result).not.toBe(prd);
+		expect(result.tasks).not.toBe(prd.tasks);
+		expect(prd.tasks.at(0)?.done).toBe(false);
+	});
+
+	test("only toggles the specified task", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+				{ title: "Task 3", description: "", steps: [], done: true },
+			],
+		};
+		const result = toggleTaskDone(prd, 1);
+
+		expect(result.tasks.at(0)?.done).toBe(false);
+		expect(result.tasks.at(1)?.done).toBe(true);
+		expect(result.tasks.at(2)?.done).toBe(true);
+	});
+});
+
+describe("deleteTask", () => {
+	test("deletes task at valid index", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+			],
+		};
+		const result = deleteTask(prd, 0);
+
+		expect(result.tasks).toHaveLength(1);
+		expect(result.tasks.at(0)?.title).toBe("Task 2");
+	});
+
+	test("returns same prd for negative index", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = deleteTask(prd, -1);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns same prd for out of bounds index", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = deleteTask(prd, 5);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns new prd object (immutable)", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+			],
+		};
+		const result = deleteTask(prd, 0);
+
+		expect(result).not.toBe(prd);
+		expect(result.tasks).not.toBe(prd.tasks);
+		expect(prd.tasks).toHaveLength(2);
+	});
+
+	test("deletes last task", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+			],
+		};
+		const result = deleteTask(prd, 1);
+
+		expect(result.tasks).toHaveLength(1);
+		expect(result.tasks.at(0)?.title).toBe("Task 1");
+	});
+});
+
+describe("reorderTask", () => {
+	test("moves task from beginning to end", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+				{ title: "Task 3", description: "", steps: [], done: false },
+			],
+		};
+		const result = reorderTask(prd, 0, 2);
+
+		expect(result.tasks.at(0)?.title).toBe("Task 2");
+		expect(result.tasks.at(1)?.title).toBe("Task 3");
+		expect(result.tasks.at(2)?.title).toBe("Task 1");
+	});
+
+	test("moves task from end to beginning", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+				{ title: "Task 3", description: "", steps: [], done: false },
+			],
+		};
+		const result = reorderTask(prd, 2, 0);
+
+		expect(result.tasks.at(0)?.title).toBe("Task 3");
+		expect(result.tasks.at(1)?.title).toBe("Task 1");
+		expect(result.tasks.at(2)?.title).toBe("Task 2");
+	});
+
+	test("moves task to middle position", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+				{ title: "Task 3", description: "", steps: [], done: false },
+			],
+		};
+		const result = reorderTask(prd, 0, 1);
+
+		expect(result.tasks.at(0)?.title).toBe("Task 2");
+		expect(result.tasks.at(1)?.title).toBe("Task 1");
+		expect(result.tasks.at(2)?.title).toBe("Task 3");
+	});
+
+	test("returns same prd when fromIndex equals toIndex", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = reorderTask(prd, 0, 0);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns same prd for negative fromIndex", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = reorderTask(prd, -1, 0);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns same prd for out of bounds fromIndex", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = reorderTask(prd, 5, 0);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns same prd for negative toIndex", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = reorderTask(prd, 0, -1);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns same prd for out of bounds toIndex", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [{ title: "Task 1", description: "", steps: [], done: false }],
+		};
+		const result = reorderTask(prd, 0, 5);
+
+		expect(result).toBe(prd);
+	});
+
+	test("returns new prd object (immutable)", () => {
+		const prd: Prd = {
+			project: "Test",
+			tasks: [
+				{ title: "Task 1", description: "", steps: [], done: false },
+				{ title: "Task 2", description: "", steps: [], done: false },
+			],
+		};
+		const result = reorderTask(prd, 0, 1);
+
+		expect(result).not.toBe(prd);
+		expect(result.tasks).not.toBe(prd.tasks);
+		expect(prd.tasks.at(0)?.title).toBe("Task 1");
+		expect(prd.tasks.at(1)?.title).toBe("Task 2");
 	});
 });
