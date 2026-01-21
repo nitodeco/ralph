@@ -1,4 +1,4 @@
-import { useApp, useInput } from "ink";
+import { useInput } from "ink";
 import { useCallback, useState } from "react";
 import { useDryRun, useSessionLifecycle, useSlashCommands } from "@/hooks/index.ts";
 import { useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
@@ -26,8 +26,6 @@ export function RunApp({
 	maxRuntimeMs,
 	skipVerification = false,
 }: RunAppProps): React.ReactElement {
-	const { exit } = useApp();
-
 	const appState = useAppStore((state) => state.appState);
 	const activeView = useAppStore((state) => state.activeView);
 	const validationWarning = useAppStore((state) => state.validationWarning);
@@ -94,7 +92,6 @@ export function RunApp({
 		agentStop,
 		iterationPause,
 		setActiveView,
-		exit,
 		getCurrentTaskTitle,
 		dismissUpdateBanner,
 		refreshState,

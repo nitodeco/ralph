@@ -277,7 +277,7 @@ export function clearShutdownHandler(): void {
 	shutdownHandlerRef = null;
 }
 
-function handleShutdownSignal(signal: ShutdownSignal): void {
+export function handleShutdownSignal(signal: ShutdownSignal): void {
 	if (shutdownInProgress) {
 		return;
 	}

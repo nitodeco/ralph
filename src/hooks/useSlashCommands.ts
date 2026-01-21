@@ -1,8 +1,8 @@
-import { execSync } from "node:child_process";
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
+import { handleShutdownSignal } from "@/lib/daemon.ts";
 import { loadPrd, savePrd } from "@/lib/prd.ts";
 import {
 	getGuardrailsService,
@@ -31,7 +31,6 @@ interface UseSlashCommandsDependencies {
 	agentStop: () => void;
 	iterationPause: () => void;
 	setActiveView: (view: ActiveView) => void;
-	exit: () => void;
 	getCurrentTaskTitle?: () => string | null;
 	dismissUpdateBanner?: () => void;
 	refreshState?: () => RefreshStateResult;
@@ -64,7 +63,6 @@ export function useSlashCommands({
 	agentStop,
 	iterationPause,
 	setActiveView,
-	exit,
 	getCurrentTaskTitle,
 	dismissUpdateBanner,
 	refreshState,
@@ -419,20 +417,14 @@ export function useSlashCommands({
 					break;
 				case "quit":
 				case "exit":
-					try {
-						execSync("clear", { stdio: "inherit" });
-					} catch {
-						// Ignore errors - still exit even if clear fails
-					}
-
-					exit();
+					process.stdout.write("\x1b[2J\x1b[H");
+					handleShutdownSignal("SIGTERM");
 					break;
 			}
 		},
 		[
 			agentStop,
 			iterationPause,
-			exit,
 			startIterations,
 			resumeSession,
 			stopAgent,
