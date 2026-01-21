@@ -68,6 +68,11 @@ Slash Commands (in-app):
   /stop             Stop the running agent
   /resume           Resume a previously interrupted session
   /next <task>      Set next task to work on (by number or title)
+  /task done <id>   Mark a task as done (by number or title)
+  /task undone <id> Mark a task as pending (by number or title)
+  /task current     Show the next pending task
+  /task list        Open the tasks view
+  /tasks            Open the tasks view
   /init             Initialize a new PRD project
   /add              Add a new task to the PRD (AI-generated from description)
   /guardrail <text> Add a new guardrail instruction

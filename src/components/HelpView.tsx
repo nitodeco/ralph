@@ -126,6 +126,30 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 							<Text>Set the next task to work on (by number or title)</Text>
 						</Text>
 						<Text>
+							<Text dimColor>/task done {"<id>"}</Text>
+							{"   "}
+							<Text>Mark a task as done (by number or title)</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/task undone {"<id>"}</Text>{" "}
+							<Text>Mark a task as pending (by number or title)</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/task current</Text>
+							{"     "}
+							<Text>Show the next pending task</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/task list</Text>
+							{"        "}
+							<Text>Open the tasks view</Text>
+						</Text>
+						<Text>
+							<Text dimColor>/tasks</Text>
+							{"            "}
+							<Text>Open the tasks view (alias)</Text>
+						</Text>
+						<Text>
 							<Text dimColor>/setup</Text>
 							{"            "}
 							<Text>Configure global preferences</Text>

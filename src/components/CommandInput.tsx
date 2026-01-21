@@ -2,6 +2,8 @@ import { Box, Text } from "ink";
 import { useState } from "react";
 import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
 
+export type TaskSubcommand = "done" | "undone" | "current" | "list";
+
 export type SlashCommand =
 	| "init"
 	| "setup"
@@ -26,6 +28,7 @@ export type SlashCommand =
 	| "dismiss-update"
 	| "refresh"
 	| "agent"
+	| "task"
 	| "tasks"
 	| "projects"
 	| "migrate"
@@ -38,6 +41,7 @@ export interface CommandArgs {
 	guardrailInstruction?: string;
 	lesson?: string;
 	note?: string;
+	taskSubcommand?: TaskSubcommand;
 }
 
 const VALID_COMMANDS: SlashCommand[] = [
@@ -64,11 +68,13 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"dismiss-update",
 	"refresh",
 	"agent",
+	"task",
 	"tasks",
 	"projects",
 	"migrate",
 	"plan",
 ];
+const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = ["done", "undone", "current", "list"];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
 
 interface CommandInputProps {
@@ -135,6 +141,22 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 		const note = parts.slice(1).join(" ");
 
 		return { command: commandName, args: { note } };
+	}
+
+	if (commandName === "task") {
+		const subcommand = parts[1]?.toLowerCase() as TaskSubcommand | undefined;
+
+		if (!subcommand || !VALID_TASK_SUBCOMMANDS.includes(subcommand)) {
+			return null;
+		}
+
+		if (subcommand === "done" || subcommand === "undone") {
+			const taskIdentifier = parts.slice(2).join(" ");
+
+			return { command: commandName, args: { taskSubcommand: subcommand, taskIdentifier } };
+		}
+
+		return { command: commandName, args: { taskSubcommand: subcommand } };
 	}
 
 	return { command: commandName };

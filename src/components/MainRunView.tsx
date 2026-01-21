@@ -28,6 +28,7 @@ interface MainRunViewProps {
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
 	clearMessage: SlashCommandMessage | null;
+	taskMessage: SlashCommandMessage | null;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	updateAvailable: boolean;
 	latestVersion: string | null;
@@ -47,6 +48,7 @@ export function MainRunView({
 	memoryMessage,
 	refreshMessage,
 	clearMessage,
+	taskMessage,
 	onCommand,
 	updateAvailable,
 	latestVersion,
@@ -98,6 +100,14 @@ export function MainRunView({
 				<Box paddingX={1} marginY={1}>
 					<Message type={clearMessage.type === "success" ? "success" : "error"}>
 						{clearMessage.text}
+					</Message>
+				</Box>
+			)}
+
+			{taskMessage && (
+				<Box paddingX={1} marginY={1}>
+					<Message type={taskMessage.type === "success" ? "success" : "error"}>
+						{taskMessage.text}
 					</Message>
 				</Box>
 			)}

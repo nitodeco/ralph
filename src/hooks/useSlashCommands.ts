@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
+import { loadPrd, savePrd } from "@/lib/prd.ts";
 import {
 	getGuardrailsService,
 	getSessionMemoryService,
@@ -44,6 +45,7 @@ interface UseSlashCommandsResult {
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
 	clearMessage: SlashCommandMessage | null;
+	taskMessage: SlashCommandMessage | null;
 }
 
 function getViewForCommand(command: SlashCommand): ActiveView {
@@ -77,6 +79,7 @@ export function useSlashCommands({
 	const [memoryMessage, setMemoryMessage] = useState<SlashCommandMessage | null>(null);
 	const [refreshMessage, setRefreshMessage] = useState<SlashCommandMessage | null>(null);
 	const [clearMessage, setClearMessage] = useState<SlashCommandMessage | null>(null);
+	const [taskMessage, setTaskMessage] = useState<SlashCommandMessage | null>(null);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -210,6 +213,123 @@ export function useSlashCommands({
 					iterationPause();
 					setActiveView("memory");
 					break;
+				case "task":
+					if (args?.taskSubcommand === "list") {
+						agentStop();
+						iterationPause();
+						setActiveView("tasks");
+						break;
+					}
+
+					if (args?.taskSubcommand === "current") {
+						const prd = loadPrd();
+
+						if (!prd) {
+							setTaskMessage({ type: "error", text: "No PRD found" });
+							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+							break;
+						}
+
+						const nextPendingIndex = prd.tasks.findIndex((task) => !task.done);
+
+						if (nextPendingIndex === -1) {
+							setTaskMessage({ type: "success", text: "All tasks complete!" });
+						} else {
+							const currentTask = prd.tasks.at(nextPendingIndex);
+
+							setTaskMessage({
+								type: "success",
+								text: `Current task: [${nextPendingIndex + 1}] ${currentTask?.title}`,
+							});
+						}
+
+						setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+						break;
+					}
+
+					if (args?.taskSubcommand === "done" || args?.taskSubcommand === "undone") {
+						const isDone = args.taskSubcommand === "done";
+
+						if (!args.taskIdentifier?.trim()) {
+							setTaskMessage({
+								type: "error",
+								text: `Usage: /task ${args.taskSubcommand} <task number or title>`,
+							});
+							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+							break;
+						}
+
+						const prd = loadPrd();
+
+						if (!prd) {
+							setTaskMessage({ type: "error", text: "No PRD found" });
+							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+							break;
+						}
+
+						const trimmedIdentifier = args.taskIdentifier.trim();
+						const parsed = Number.parseInt(trimmedIdentifier, 10);
+						let taskIndex: number | null = null;
+
+						if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= prd.tasks.length) {
+							taskIndex = parsed - 1;
+						} else {
+							const normalizedIdentifier = trimmedIdentifier.toLowerCase();
+							const matchingIndex = prd.tasks.findIndex(
+								(task) => task.title.toLowerCase() === normalizedIdentifier,
+							);
+
+							if (matchingIndex !== -1) {
+								taskIndex = matchingIndex;
+							}
+						}
+
+						if (taskIndex === null) {
+							setTaskMessage({
+								type: "error",
+								text: `Task not found: "${trimmedIdentifier}"`,
+							});
+							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+							break;
+						}
+
+						const task = prd.tasks.at(taskIndex);
+
+						if (!task) {
+							setTaskMessage({
+								type: "error",
+								text: `Task not found: "${trimmedIdentifier}"`,
+							});
+							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+							break;
+						}
+
+						const isAlreadyInState = isDone ? task.done : !task.done;
+
+						if (isAlreadyInState) {
+							setTaskMessage({
+								type: "success",
+								text: `Task [${taskIndex + 1}] "${task.title}" was already ${isDone ? "done" : "pending"}`,
+							});
+						} else {
+							const updatedTasks = prd.tasks.map((currentTask, index) =>
+								index === taskIndex ? { ...currentTask, done: isDone } : currentTask,
+							);
+
+							savePrd({ ...prd, tasks: updatedTasks });
+							setTaskMessage({
+								type: "success",
+								text: `Marked task [${taskIndex + 1}] "${task.title}" as ${isDone ? "done" : "pending"}`,
+							});
+
+							refreshState?.();
+						}
+
+						setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
+						break;
+					}
+
+					break;
 				case "init":
 				case "setup":
 				case "update":
@@ -337,5 +457,6 @@ export function useSlashCommands({
 		memoryMessage,
 		refreshMessage,
 		clearMessage,
+		taskMessage,
 	};
 }

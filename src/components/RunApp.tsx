@@ -88,6 +88,7 @@ export function RunApp({
 		memoryMessage,
 		refreshMessage,
 		clearMessage,
+		taskMessage,
 	} = useSlashCommands({
 		startIterations,
 		resumeSession,
@@ -193,6 +194,7 @@ export function RunApp({
 				memoryMessage={memoryMessage}
 				refreshMessage={refreshMessage}
 				clearMessage={clearMessage}
+				taskMessage={taskMessage}
 				onCommand={handleSlashCommand}
 				updateAvailable={updateAvailable}
 				latestVersion={latestVersion}
