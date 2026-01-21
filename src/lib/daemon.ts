@@ -313,6 +313,7 @@ export function handleShutdownSignal(signal: ShutdownSignal): void {
 	deletePidFile();
 	logger.info("Shutdown complete", { signal });
 
+	process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
 	process.exit(0);
 }
 

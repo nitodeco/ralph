@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { render } from "ink";
+import { type Instance, render } from "ink";
 import { useState } from "react";
 import {
 	handleAnalyzeClear,
@@ -62,8 +62,17 @@ declare const RALPH_VERSION: string | undefined;
 
 export const VERSION = typeof RALPH_VERSION !== "undefined" ? RALPH_VERSION : packageJson.version;
 
+let maybeInkInstance: Instance | null = null;
+
+export function unmountInk(): void {
+	if (maybeInkInstance) {
+		maybeInkInstance.unmount();
+		maybeInkInstance = null;
+	}
+}
+
 function clearTerminal(): void {
-	process.stdout.write("\x1b[2J\x1b[H");
+	process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
 }
 
 interface RunWithSetupProps {
@@ -163,6 +172,7 @@ function main(): void {
 
 	setShutdownHandler({
 		onShutdown: () => {
+			unmountInk();
 			getSleepPreventionService().stop();
 			orchestrator.cleanup();
 			const agentStore = useAgentStore.getState();
@@ -207,7 +217,7 @@ function main(): void {
 	switch (command) {
 		case "run":
 			getSleepPreventionService().start();
-			render(
+			maybeInkInstance = render(
 				<RunWithSetup
 					version={VERSION}
 					iterations={task ? 1 : iterations}
@@ -222,7 +232,7 @@ function main(): void {
 
 		case "resume":
 			getSleepPreventionService().start();
-			render(
+			maybeInkInstance = render(
 				<RunWithSetup
 					version={VERSION}
 					iterations={iterations}
@@ -237,15 +247,15 @@ function main(): void {
 			break;
 
 		case "init":
-			render(<InitWizard version={VERSION} />);
+			maybeInkInstance = render(<InitWizard version={VERSION} />);
 			break;
 
 		case "setup":
-			render(<SetupWizard version={VERSION} />);
+			maybeInkInstance = render(<SetupWizard version={VERSION} />);
 			break;
 
 		case "update":
-			render(<UpdatePrompt version={VERSION} forceCheck />);
+			maybeInkInstance = render(<UpdatePrompt version={VERSION} forceCheck />);
 			break;
 
 		case "status":

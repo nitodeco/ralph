@@ -417,7 +417,6 @@ export function useSlashCommands({
 					break;
 				case "quit":
 				case "exit":
-					process.stdout.write("\x1b[2J\x1b[H");
 					handleShutdownSignal("SIGTERM");
 					break;
 			}
