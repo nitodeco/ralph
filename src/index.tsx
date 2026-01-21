@@ -11,16 +11,19 @@ import {
 	handleMemoryClear,
 	handleMemoryExport,
 	handleMigrateCommand,
+	handleProjectsPrune,
 	handleStopCommand,
 	parseArgs,
 	printAnalyze,
 	printArchive,
 	printClear,
 	printConfig,
+	printCurrentProject,
 	printGuardrails,
 	printHelp,
 	printList,
 	printMemory,
+	printProjects,
 	printStats,
 	printStatus,
 	printVersion,
@@ -138,6 +141,7 @@ function main(): void {
 		guardrailsArg,
 		analyzeSubcommand,
 		memorySubcommand,
+		projectsSubcommand,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -298,6 +302,21 @@ function main(): void {
 
 		case "migrate":
 			handleMigrateCommand(VERSION, process.argv.includes("--remove"));
+			break;
+
+		case "projects":
+			switch (projectsSubcommand) {
+				case "current":
+					printCurrentProject(json);
+					break;
+				case "prune":
+					handleProjectsPrune(json);
+					break;
+				default:
+					printProjects(VERSION, json);
+					break;
+			}
+
 			break;
 
 		case "stop":

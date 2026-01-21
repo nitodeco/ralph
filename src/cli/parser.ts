@@ -5,11 +5,13 @@ import type {
 	GuardrailsSubcommand,
 	MemorySubcommand,
 	ParsedArgs,
+	ProjectsSubcommand,
 } from "@/types.ts";
 
 const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "remove", "toggle"];
 const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
 const VALID_MEMORY_SUBCOMMANDS: MemorySubcommand[] = ["list", "clear", "export"];
+const VALID_PROJECTS_SUBCOMMANDS: ProjectsSubcommand[] = ["list", "current", "prune"];
 
 export function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
@@ -113,6 +115,18 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let projectsSubcommand: ProjectsSubcommand | undefined;
+
+	if (command === "projects") {
+		const subcommand = filteredArgs[1] as ProjectsSubcommand | undefined;
+
+		if (subcommand && VALID_PROJECTS_SUBCOMMANDS.includes(subcommand)) {
+			projectsSubcommand = subcommand;
+		} else {
+			projectsSubcommand = "list";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -127,5 +141,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 		guardrailsArg,
 		analyzeSubcommand,
 		memorySubcommand,
+		projectsSubcommand,
 	};
 }

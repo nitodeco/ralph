@@ -20,6 +20,7 @@ Commands:
   guardrails        View and manage prompt guardrails
   analyze           Analyze failure patterns and get suggestions
   memory            View and manage session memory (lessons, patterns, notes)
+  projects          View and manage all registered Ralph projects
   migrate           Migrate local .ralph directory to global storage
   setup             Configure global preferences (agent, PRD format)
   update            Check for updates and install the latest version
@@ -34,6 +35,11 @@ Memory Subcommands:
   memory            Show session memory (default)
   memory export     Export memory as markdown
   memory clear      Clear session memory
+
+Projects Subcommands:
+  projects          List all registered projects (default)
+  projects current  Show details about the current project
+  projects prune    Remove projects with invalid paths
 
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)
@@ -57,6 +63,7 @@ Slash Commands (in-app):
   /learn <lesson>   Add a lesson to session memory
   /note <note>      Add a note about the current task
   /memory           View and manage session memory
+  /projects         View and manage all registered projects
   /migrate          Migrate local .ralph to global storage
   /setup            Configure global preferences
   /update           Check for updates

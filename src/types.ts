@@ -34,6 +34,7 @@ export type {
 	NotificationConfig,
 	NotificationEvent,
 	ParsedArgs,
+	ProjectsSubcommand,
 	Prd,
 	PrdTask,
 	PromptGuardrail,

@@ -220,6 +220,7 @@ export function useSlashCommands({
 				case "analyze":
 				case "agent":
 				case "tasks":
+				case "projects":
 				case "migrate":
 					agentStop();
 					iterationPause();

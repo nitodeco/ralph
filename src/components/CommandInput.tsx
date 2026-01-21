@@ -27,6 +27,7 @@ export type SlashCommand =
 	| "refresh"
 	| "agent"
 	| "tasks"
+	| "projects"
 	| "migrate";
 
 export interface CommandArgs {
@@ -63,6 +64,7 @@ const VALID_COMMANDS: SlashCommand[] = [
 	"refresh",
 	"agent",
 	"tasks",
+	"projects",
 	"migrate",
 ];
 const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];

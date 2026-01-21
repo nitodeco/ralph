@@ -157,7 +157,7 @@
 				"Add 'projects' to CLI commands in src/cli/commands/index.ts",
 				"Add '/projects' slash command that opens ProjectsView"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Format long pasted text as collapsible placeholders in input fields",

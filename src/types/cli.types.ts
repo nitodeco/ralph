@@ -15,6 +15,7 @@ export type Command =
 	| "analyze"
 	| "memory"
 	| "migrate"
+	| "projects"
 	| "help"
 	| "version"
 	| "-v"
@@ -25,6 +26,7 @@ export type Command =
 export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle";
 export type AnalyzeSubcommand = "patterns" | "export" | "clear";
 export type MemorySubcommand = "list" | "clear" | "export";
+export type ProjectsSubcommand = "list" | "current" | "prune";
 
 export interface ParsedArgs {
 	command: Command;
@@ -40,6 +42,7 @@ export interface ParsedArgs {
 	guardrailsArg?: string;
 	analyzeSubcommand?: AnalyzeSubcommand;
 	memorySubcommand?: MemorySubcommand;
+	projectsSubcommand?: ProjectsSubcommand;
 }
 
 export interface TaskListOutput {
