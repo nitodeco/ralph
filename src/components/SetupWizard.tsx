@@ -19,6 +19,7 @@ interface SetupWizardProps {
 }
 
 type SetupStep =
+	| "setup_mode"
 	| "agent_type"
 	| "max_retries"
 	| "retry_delay"
@@ -32,8 +33,11 @@ type SetupStep =
 	| "notification_marker"
 	| "complete";
 
+type SetupMode = "default" | "advanced";
+
 interface SetupState {
 	step: SetupStep;
+	setupMode: SetupMode;
 	agentType: AgentType;
 	maxRetries: number;
 	retryDelayMs: number;
@@ -44,6 +48,17 @@ interface SetupState {
 	webhookUrlInput: string;
 	markerFilePathInput: string;
 }
+
+const SETUP_MODE_CHOICES = [
+	{
+		label: "Default (Recommended)",
+		value: "default" as SetupMode,
+	},
+	{
+		label: "Advanced",
+		value: "advanced" as SetupMode,
+	},
+];
 
 const AGENT_CHOICES = [
 	{ label: "Cursor", value: "cursor" as const },
@@ -117,7 +132,8 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	};
 
 	const [state, setState] = useState<SetupState>({
-		step: "agent_type",
+		step: "setup_mode",
+		setupMode: "default",
 		agentType: existingConfig.agent,
 		maxRetries: existingConfig.maxRetries ?? 3,
 		retryDelayMs: existingConfig.retryDelayMs ?? 5000,
@@ -133,8 +149,43 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 		markerFilePathInput: existingConfig.notifications?.markerFilePath ?? "",
 	});
 
+	const handleSetupModeSelect = (item: { value: SetupMode }) => {
+		setState((prev) => ({ ...prev, setupMode: item.value, step: "agent_type" }));
+	};
+
 	const handleAgentSelect = (item: { value: AgentType }) => {
-		setState((prev) => ({ ...prev, agentType: item.value, step: "max_retries" }));
+		if (state.setupMode === "default") {
+			const defaultMemory: MemoryConfig = {
+				maxOutputBufferBytes: DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
+				memoryWarningThresholdMb: DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
+				enableGarbageCollectionHints: DEFAULT_ENABLE_GC_HINTS,
+			};
+			const defaultNotifications: NotificationConfig = {};
+			const newConfig: RalphConfig = {
+				agent: item.value,
+				maxRetries: 3,
+				retryDelayMs: 5000,
+				agentTimeoutMs: 30 * 60 * 1000,
+				stuckThresholdMs: 5 * 60 * 1000,
+				memory: defaultMemory,
+				notifications: defaultNotifications,
+			};
+
+			saveGlobalConfig(newConfig);
+			setState((prev) => ({
+				...prev,
+				agentType: item.value,
+				maxRetries: 3,
+				retryDelayMs: 5000,
+				agentTimeoutMs: 30 * 60 * 1000,
+				stuckThresholdMs: 5 * 60 * 1000,
+				memory: defaultMemory,
+				notifications: defaultNotifications,
+				step: "complete",
+			}));
+		} else {
+			setState((prev) => ({ ...prev, agentType: item.value, step: "max_retries" }));
+		}
 	};
 
 	const handleMaxRetriesSelect = (item: { value: number }) => {
@@ -232,6 +283,17 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 
 	const renderStep = () => {
 		switch (state.step) {
+			case "setup_mode":
+				return (
+					<Box flexDirection="column" gap={1}>
+						<Text color="cyan">How would you like to configure Ralph?</Text>
+						<Text dimColor>
+							Default uses sensible settings, Advanced lets you customize everything
+						</Text>
+						<SelectInput items={SETUP_MODE_CHOICES} onSelect={handleSetupModeSelect} />
+					</Box>
+				);
+
 			case "agent_type":
 				return (
 					<Box flexDirection="column" gap={1}>
