@@ -1,22 +1,23 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createProjectRegistryService } from "@/lib/services/project-registry/implementation.ts";
+import type { ProjectRegistryConfig } from "@/lib/services/project-registry/types.ts";
+import { REGISTRY_VERSION } from "@/lib/services/project-registry/types.ts";
 
 const TEST_HOME_DIR = join(tmpdir(), `ralph-test-${Date.now()}`);
 const TEST_RALPH_DIR = join(TEST_HOME_DIR, ".ralph");
 const TEST_REGISTRY_PATH = join(TEST_RALPH_DIR, "registry.json");
 const TEST_PROJECTS_DIR = join(TEST_RALPH_DIR, "projects");
 
-mock.module("node:os", () => ({
-	homedir: () => TEST_HOME_DIR,
-	tmpdir,
-}));
-
-const { createProjectRegistryService } = await import(
-	"@/lib/services/project-registry/implementation.ts"
-);
-const { REGISTRY_VERSION } = await import("@/lib/services/project-registry/types.ts");
+function getTestConfig(): ProjectRegistryConfig {
+	return {
+		globalDir: TEST_RALPH_DIR,
+		registryPath: TEST_REGISTRY_PATH,
+		projectsDir: TEST_PROJECTS_DIR,
+	};
+}
 
 describe("ProjectRegistryService", () => {
 	beforeEach(() => {
@@ -35,7 +36,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("loadRegistry", () => {
 		test("returns empty registry when no file exists", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const registry = service.loadRegistry();
 
@@ -68,7 +69,7 @@ describe("ProjectRegistryService", () => {
 
 			writeFileSync(TEST_REGISTRY_PATH, JSON.stringify(existingRegistry));
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registry = service.loadRegistry();
 
 			expect(registry.version).toBe(REGISTRY_VERSION);
@@ -83,7 +84,7 @@ describe("ProjectRegistryService", () => {
 			mkdirSync(TEST_RALPH_DIR, { recursive: true });
 			writeFileSync(TEST_REGISTRY_PATH, "not valid json");
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registry = service.loadRegistry();
 
 			expect(registry.version).toBe(REGISTRY_VERSION);
@@ -94,7 +95,7 @@ describe("ProjectRegistryService", () => {
 			mkdirSync(TEST_RALPH_DIR, { recursive: true });
 			writeFileSync(TEST_REGISTRY_PATH, JSON.stringify({ invalid: "structure" }));
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registry = service.loadRegistry();
 
 			expect(registry.version).toBe(REGISTRY_VERSION);
@@ -104,7 +105,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("saveRegistry", () => {
 		test("creates directory and saves registry", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registry = {
 				version: REGISTRY_VERSION,
 				projects: {},
@@ -117,7 +118,7 @@ describe("ProjectRegistryService", () => {
 		});
 
 		test("saves registry with projects", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registry = {
 				version: REGISTRY_VERSION,
 				projects: {
@@ -149,7 +150,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("ensureProjectsDir", () => {
 		test("creates projects directory", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			service.ensureProjectsDir();
 
@@ -158,7 +159,7 @@ describe("ProjectRegistryService", () => {
 
 		test("does not throw if directory already exists", () => {
 			mkdirSync(TEST_PROJECTS_DIR, { recursive: true });
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			expect(() => service.ensureProjectsDir()).not.toThrow();
 		});
@@ -170,7 +171,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			expect(identifier.type).toBe("path");
@@ -191,7 +192,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir, {
 				displayName: "My Custom Project",
 			});
@@ -206,7 +207,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir, {
 				customId: "my-custom-id",
 			});
@@ -221,7 +222,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier1 = service.registerProject(testProjectDir);
 
 			const registry1 = service.loadRegistry();
@@ -239,7 +240,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("resolveCurrentProject", () => {
 		test("returns null when project is not registered", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const result = service.resolveCurrentProject("/nonexistent/path");
 
@@ -251,7 +252,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registeredIdentifier = service.registerProject(testProjectDir);
 
 			const resolvedIdentifier = service.resolveCurrentProject(testProjectDir);
@@ -265,7 +266,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const registeredIdentifier = service.registerProject(testProjectDir);
 
 			const registry = service.loadRegistry();
@@ -282,7 +283,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("getProjectDir", () => {
 		test("returns null when no project is registered for current directory", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const result = service.getProjectDir();
 
@@ -294,7 +295,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			const projectDir = service.getProjectDir(identifier);
@@ -305,7 +306,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("getProjectFilePath", () => {
 		test("returns null when no project is registered", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const result = service.getProjectFilePath("prd.json");
 
@@ -317,7 +318,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			const filePath = service.getProjectFilePath("prd.json", identifier);
@@ -330,7 +331,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			const filePath = service.getProjectFilePath("logs/session.log", identifier);
@@ -341,7 +342,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("listProjects", () => {
 		test("returns empty array when no projects registered", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const projects = service.listProjects();
 
@@ -349,7 +350,7 @@ describe("ProjectRegistryService", () => {
 		});
 
 		test("returns all registered projects", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const dir1 = join(TEST_HOME_DIR, "project1");
 			const dir2 = join(TEST_HOME_DIR, "project2");
@@ -371,7 +372,7 @@ describe("ProjectRegistryService", () => {
 		});
 
 		test("returns projects sorted by lastAccessedAt descending", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const dir1 = join(TEST_HOME_DIR, "project1");
 			const dir2 = join(TEST_HOME_DIR, "project2");
@@ -394,7 +395,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("getProjectMetadata", () => {
 		test("returns null for non-existent project", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const fakeIdentifier = {
 				type: "path" as const,
 				value: "abc123",
@@ -411,7 +412,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir, {
 				displayName: "Test Project",
 			});
@@ -430,7 +431,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			const metadata1 = service.getProjectMetadata(identifier);
@@ -445,7 +446,7 @@ describe("ProjectRegistryService", () => {
 		});
 
 		test("does nothing for non-existent project", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const fakeIdentifier = {
 				type: "path" as const,
 				value: "abc123",
@@ -458,7 +459,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("isProjectInitialized", () => {
 		test("returns false when project is not registered", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const result = service.isProjectInitialized("/nonexistent/path");
 
@@ -470,7 +471,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			service.registerProject(testProjectDir);
 
@@ -484,7 +485,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			const projectDir = service.getProjectDir(identifier);
@@ -501,7 +502,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("removeProject", () => {
 		test("returns false when project does not exist", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const fakeIdentifier = {
 				type: "path" as const,
 				value: "abc123",
@@ -518,7 +519,7 @@ describe("ProjectRegistryService", () => {
 
 			mkdirSync(testProjectDir, { recursive: true });
 
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 			const identifier = service.registerProject(testProjectDir);
 
 			const result = service.removeProject(identifier);
@@ -534,7 +535,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("getRegistryPath", () => {
 		test("returns the registry file path", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const path = service.getRegistryPath();
 
@@ -544,7 +545,7 @@ describe("ProjectRegistryService", () => {
 
 	describe("getProjectsDir", () => {
 		test("returns the projects directory path", () => {
-			const service = createProjectRegistryService();
+			const service = createProjectRegistryService(getTestConfig());
 
 			const path = service.getProjectsDir();
 

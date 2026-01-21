@@ -11,14 +11,21 @@ import {
 	type ProjectIdentifier,
 	type ProjectMetadata,
 	type ProjectRegistry,
+	type ProjectRegistryConfig,
 	type ProjectRegistryService,
 	REGISTRY_VERSION,
 	type RegisterProjectOptions,
 } from "./types.ts";
 
-const GLOBAL_RALPH_DIR = join(homedir(), ".ralph");
-const REGISTRY_PATH = join(GLOBAL_RALPH_DIR, "registry.json");
-const PROJECTS_DIR = join(GLOBAL_RALPH_DIR, "projects");
+function getDefaultConfig(): ProjectRegistryConfig {
+	const globalDir = join(homedir(), ".ralph");
+
+	return {
+		globalDir,
+		registryPath: join(globalDir, "registry.json"),
+		projectsDir: join(globalDir, "projects"),
+	};
+}
 
 function createEmptyRegistry(): ProjectRegistry {
 	return {
@@ -44,30 +51,34 @@ function isProjectRegistry(value: unknown): value is ProjectRegistry {
 	);
 }
 
-export function createProjectRegistryService(): ProjectRegistryService {
+export function createProjectRegistryService(
+	maybeConfig?: ProjectRegistryConfig,
+): ProjectRegistryService {
+	const config = maybeConfig ?? getDefaultConfig();
+
 	function ensureGlobalDir(): void {
-		if (!existsSync(GLOBAL_RALPH_DIR)) {
-			mkdirSync(GLOBAL_RALPH_DIR, { recursive: true });
+		if (!existsSync(config.globalDir)) {
+			mkdirSync(config.globalDir, { recursive: true });
 		}
 	}
 
 	function ensureProjectsDir(): void {
 		ensureGlobalDir();
 
-		if (!existsSync(PROJECTS_DIR)) {
-			mkdirSync(PROJECTS_DIR, { recursive: true });
+		if (!existsSync(config.projectsDir)) {
+			mkdirSync(config.projectsDir, { recursive: true });
 		}
 	}
 
 	function loadRegistry(): ProjectRegistry {
 		ensureGlobalDir();
 
-		if (!existsSync(REGISTRY_PATH)) {
+		if (!existsSync(config.registryPath)) {
 			return createEmptyRegistry();
 		}
 
 		try {
-			const content = readFileSync(REGISTRY_PATH, "utf-8");
+			const content = readFileSync(config.registryPath, "utf-8");
 			const parsed: unknown = JSON.parse(content);
 
 			if (!isProjectRegistry(parsed)) {
@@ -82,7 +93,7 @@ export function createProjectRegistryService(): ProjectRegistryService {
 
 	function saveRegistry(registry: ProjectRegistry): void {
 		ensureGlobalDir();
-		writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, "\t"));
+		writeFileSync(config.registryPath, JSON.stringify(registry, null, "\t"));
 	}
 
 	function resolveCurrentProject(cwd: string = process.cwd()): ProjectIdentifier | null {
@@ -135,7 +146,7 @@ export function createProjectRegistryService(): ProjectRegistryService {
 			identifier = createPathProjectIdentifier(cwd);
 		}
 
-		const projectDir = join(PROJECTS_DIR, identifier.folderName);
+		const projectDir = join(config.projectsDir, identifier.folderName);
 
 		if (!existsSync(projectDir)) {
 			mkdirSync(projectDir, { recursive: true });
@@ -169,7 +180,7 @@ export function createProjectRegistryService(): ProjectRegistryService {
 			return null;
 		}
 
-		return join(PROJECTS_DIR, identifier.folderName);
+		return join(config.projectsDir, identifier.folderName);
 	}
 
 	function getProjectFilePath(
@@ -249,11 +260,11 @@ export function createProjectRegistryService(): ProjectRegistryService {
 	}
 
 	function getRegistryPath(): string {
-		return REGISTRY_PATH;
+		return config.registryPath;
 	}
 
 	function getProjectsDir(): string {
-		return PROJECTS_DIR;
+		return config.projectsDir;
 	}
 
 	return {

@@ -5,6 +5,12 @@ import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
 import type { PrdService } from "./prd/types.ts";
+import { createProjectRegistryService } from "./project-registry/implementation.ts";
+import type {
+	ProjectIdentifier,
+	ProjectRegistry,
+	ProjectRegistryService,
+} from "./project-registry/types.ts";
 import { createSessionService } from "./session/implementation.ts";
 import type { SessionService } from "./session/types.ts";
 import { createSessionMemoryService } from "./session-memory/implementation.ts";
@@ -12,6 +18,7 @@ import type { SessionMemoryService } from "./session-memory/types.ts";
 
 export function bootstrapServices(): void {
 	initializeServices({
+		projectRegistry: createProjectRegistryService(),
 		config: createConfigService(),
 		guardrails: createGuardrailsService(),
 		prd: createPrdService(),
@@ -21,11 +28,47 @@ export function bootstrapServices(): void {
 }
 
 export interface TestServiceOverrides {
+	projectRegistry?: Partial<ProjectRegistryService>;
 	config?: Partial<ConfigService>;
 	guardrails?: Partial<GuardrailsService>;
 	prd?: Partial<PrdService>;
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
+}
+
+function createMockProjectRegistryService(
+	overrides: Partial<ProjectRegistryService> = {},
+): ProjectRegistryService {
+	const testIdentifier: ProjectIdentifier = {
+		type: "path",
+		value: "/tmp/test-project",
+		folderName: "path--test-project",
+	};
+
+	const emptyRegistry: ProjectRegistry = {
+		version: 1,
+		projects: {},
+		pathCache: {},
+	};
+
+	return {
+		loadRegistry: () => emptyRegistry,
+		saveRegistry: () => {},
+		ensureProjectsDir: () => {},
+		resolveCurrentProject: () => testIdentifier,
+		registerProject: () => testIdentifier,
+		getProjectDir: () => "/tmp/ralph-test/projects/path--test-project",
+		getProjectFilePath: (relativePath: string) =>
+			`/tmp/ralph-test/projects/path--test-project/${relativePath}`,
+		listProjects: () => [],
+		getProjectMetadata: () => null,
+		updateLastAccessed: () => {},
+		isProjectInitialized: () => true,
+		removeProject: () => true,
+		getRegistryPath: () => "/tmp/ralph-test/registry.json",
+		getProjectsDir: () => "/tmp/ralph-test/projects",
+		...overrides,
+	};
 }
 
 function createMockConfigService(overrides: Partial<ConfigService> = {}): ConfigService {
@@ -217,6 +260,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 	resetServices();
 
 	const testContainer: ServiceContainer = {
+		projectRegistry: createMockProjectRegistryService(overrides.projectRegistry),
 		config: createMockConfigService(overrides.config),
 		guardrails: createMockGuardrailsService(overrides.guardrails),
 		prd: createMockPrdService(overrides.prd),

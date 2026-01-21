@@ -85,7 +85,7 @@
 				"Update bootstrapTestServices() to include the mock projectRegistry",
 				"Export ProjectRegistryService type and getProjectRegistryService from src/lib/services/index.ts"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Convert path constants to registry-based functions",

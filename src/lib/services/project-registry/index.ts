@@ -14,6 +14,7 @@ export type {
 	ProjectIdType,
 	ProjectMetadata,
 	ProjectRegistry,
+	ProjectRegistryConfig,
 	ProjectRegistryService,
 	RegisterProjectOptions,
 } from "./types.ts";

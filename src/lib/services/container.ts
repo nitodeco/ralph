@@ -1,10 +1,12 @@
 import type { ConfigService } from "./config/types.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import type { PrdService } from "./prd/types.ts";
+import type { ProjectRegistryService } from "./project-registry/types.ts";
 import type { SessionService } from "./session/types.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
 
 export interface ServiceContainer {
+	projectRegistry: ProjectRegistryService;
 	config: ConfigService;
 	guardrails: GuardrailsService;
 	prd: PrdService;
@@ -58,4 +60,8 @@ export function getSessionService(): SessionService {
 
 export function getGuardrailsService(): GuardrailsService {
 	return getServices().guardrails;
+}
+
+export function getProjectRegistryService(): ProjectRegistryService {
+	return getServices().projectRegistry;
 }

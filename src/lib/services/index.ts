@@ -47,6 +47,7 @@ export {
 	getConfigService,
 	getGuardrailsService,
 	getPrdService,
+	getProjectRegistryService,
 	getServices,
 	getSessionMemoryService,
 	getSessionService,
@@ -81,6 +82,17 @@ export type {
 	TaskWithIndex,
 } from "./prd/types.ts";
 export { isPrd, isPrdTask } from "./prd/validation.ts";
+export { createProjectRegistryService } from "./project-registry/implementation.ts";
+export type {
+	ProjectIdentifier,
+	ProjectIdType,
+	ProjectMetadata,
+	ProjectRegistry,
+	ProjectRegistryConfig,
+	ProjectRegistryService,
+	RegisterProjectOptions,
+} from "./project-registry/types.ts";
+export { REGISTRY_VERSION } from "./project-registry/types.ts";
 export type {
 	IterationTiming,
 	Session,

@@ -28,6 +28,12 @@ export interface RegisterProjectOptions {
 	customId?: string;
 }
 
+export interface ProjectRegistryConfig {
+	globalDir: string;
+	registryPath: string;
+	projectsDir: string;
+}
+
 export interface ProjectRegistryService {
 	loadRegistry(): ProjectRegistry;
 	saveRegistry(registry: ProjectRegistry): void;
