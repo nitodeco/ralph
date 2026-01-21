@@ -158,3 +158,9 @@ export function ensureLogsDirExists(): void {
 		mkdirSync(LOGS_DIR, { recursive: true });
 	}
 }
+
+export function isGitRepository(directory: string = process.cwd()): boolean {
+	const gitDir = join(directory, ".git");
+
+	return existsSync(gitDir);
+}

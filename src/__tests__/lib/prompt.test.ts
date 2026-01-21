@@ -71,6 +71,28 @@ describe("buildPrompt", () => {
 		expect(prompt).toContain("buildable state");
 		expect(prompt).toContain("If the build fails, fix it");
 	});
+
+	test("includes commit instructions when in git repository", () => {
+		const prompt = buildPrompt({ isGitRepository: true });
+
+		expect(prompt).toContain("6. Stage and commit your changes with a meaningful commit message");
+		expect(prompt).toContain("If the build fails, fix it before committing");
+		expect(prompt).not.toContain("this is not a git repository");
+	});
+
+	test("excludes commit instructions when not in git repository", () => {
+		const prompt = buildPrompt({ isGitRepository: false });
+
+		expect(prompt).toContain("this is not a git repository, so no commit is needed");
+		expect(prompt).not.toContain("Stage and commit your changes with a meaningful commit message");
+		expect(prompt).not.toContain("If the build fails, fix it before committing");
+	});
+
+	test("defaults to including commit instructions", () => {
+		const prompt = buildPrompt();
+
+		expect(prompt).toContain("6. Stage and commit your changes with a meaningful commit message");
+	});
 });
 
 describe("buildPrdGenerationPrompt", () => {

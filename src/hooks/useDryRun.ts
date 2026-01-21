@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { validateConfig } from "@/lib/config.ts";
+import { isGitRepository } from "@/lib/paths.ts";
 import { loadPrd } from "@/lib/prd.ts";
 import type { Prd, PrdTask, RalphConfig } from "@/types.ts";
 
@@ -79,6 +80,12 @@ export function useDryRun(
 				logs.push(`Completed: ${completedCount}, Pending: ${pendingCount}`);
 			} else {
 				errors.push("No PRD found. Run 'ralph init' first.");
+			}
+
+			if (!isGitRepository()) {
+				warnings.push(
+					"Not in a git repository. Commits will be skipped. Initialize git with 'git init' if you want automatic commits.",
+				);
 			}
 
 			setState((prev) => ({

@@ -15,10 +15,17 @@ export interface BuildPromptOptions {
 	specificTask?: string | null;
 	includeGuardrails?: boolean;
 	includeMemory?: boolean;
+	isGitRepository?: boolean;
 }
 
 export function buildPrompt(options: BuildPromptOptions = {}): string {
-	const { instructions, specificTask, includeGuardrails = true, includeMemory = true } = options;
+	const {
+		instructions,
+		specificTask,
+		includeGuardrails = true,
+		includeMemory = true,
+		isGitRepository = true,
+	} = options;
 
 	const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
 
@@ -42,6 +49,12 @@ export function buildPrompt(options: BuildPromptOptions = {}): string {
 	const taskSelectionInstruction = specificTask
 		? `2. Work on the SPECIFIED task: "${specificTask}"`
 		: "2. Find the next most important task to work on";
+
+	const commitStep = isGitRepository
+		? "6. Stage and commit your changes with a meaningful commit message"
+		: "6. Verify all changes are complete (note: this is not a git repository, so no commit is needed)";
+
+	const commitRule = isGitRepository ? "- If the build fails, fix it before committing" : "";
 
 	const decompositionInstructions = `
 ## Task Decomposition
@@ -74,13 +87,12 @@ ${taskSelectionInstruction}
 3. Implement ONLY that task
 4. Verify your implementation
 5. Update .ralph/progress.txt and set the task as done in .ralph/prd.json
-6. Stage and commit your changes with a meaningful commit message
+${commitStep}
 
 ## Rules
 - ONLY work on ONE task at a time
 - Always leave the codebase in a buildable state
-- If the build fails, fix it before committing
-- Ensure you are using the proper tools in this project
+${commitRule}${commitRule ? "\n" : ""}- Ensure you are using the proper tools in this project
 ${instructionsSection}${guardrailsSection ? `\n${guardrailsSection}` : ""}${memorySection ? `\n${memorySection}` : ""}${decompositionInstructions}
 
 IMPORTANT:

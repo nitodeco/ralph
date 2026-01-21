@@ -6,6 +6,7 @@ import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
+import { isGitRepository } from "@/lib/paths.ts";
 import { loadInstructions } from "@/lib/prd.ts";
 import { buildPrompt } from "@/lib/prompt.ts";
 import { AgentProcessManager } from "@/lib/services/index.ts";
@@ -72,7 +73,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const config = loadConfig();
 		const logger = getLogger({ logFilePath: config.logFilePath });
 		const instructions = loadInstructions();
-		const prompt = buildPrompt({ instructions, specificTask });
+		const isInGitRepo = isGitRepository();
+		const prompt = buildPrompt({ instructions, specificTask, isGitRepository: isInGitRepo });
 		const outputThrottleMs = 100;
 
 		const agentRunner = new AgentRunner({

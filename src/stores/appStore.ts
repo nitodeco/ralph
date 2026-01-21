@@ -4,7 +4,7 @@ import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
-import { RALPH_DIR } from "@/lib/paths.ts";
+import { isGitRepository, RALPH_DIR } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
 	findPrdFile,
@@ -50,6 +50,7 @@ interface AppStoreState {
 	updateAvailable: boolean;
 	latestVersion: string | null;
 	updateBannerDismissed: boolean;
+	isInGitRepository: boolean;
 }
 
 interface RefreshStateResult {
@@ -119,6 +120,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	updateAvailable: false,
 	latestVersion: null,
 	updateBannerDismissed: false,
+	isInGitRepository: true,
 
 	setAppState: (appState: AppState) => {
 		set({ appState });
@@ -162,10 +164,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
 
 		set({
 			config: loadedConfig,
 			prd: loadedPrd,
+			isInGitRepository: isInGitRepo,
 		});
 
 		const sessionService = getSessionService();
@@ -201,11 +205,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
 
 		set({
 			config: loadedConfig,
 			prd: loadedPrd,
 			validationWarning: null,
+			isInGitRepository: isInGitRepo,
 		});
 
 		getSessionService().delete();
@@ -253,6 +259,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
 
 		if (!loadedPrd) {
 			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
@@ -296,6 +303,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			validationWarning: null,
 			manualNextTask: task.title,
 			singleTaskMode: true,
+			isInGitRepository: isInGitRepo,
 		});
 
 		getSessionService().delete();
@@ -343,11 +351,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
 
 		set({
 			config: loadedConfig,
 			prd: loadedPrd,
 			validationWarning: null,
+			isInGitRepository: isInGitRepo,
 		});
 
 		const { session: resumedSession, remainingIterations } = orchestrator.resumeSession(
@@ -416,6 +426,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const loadedConfig = loadConfig();
 		const loadedPrd = loadPrd();
+		const isInGitRepo = isGitRepository();
 
 		set({
 			config: loadedConfig,
@@ -423,6 +434,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			validationWarning: null,
 			appState: "idle",
 			elapsedTime: 0,
+			isInGitRepository: isInGitRepo,
 		});
 
 		useAgentStore.getState().reset();

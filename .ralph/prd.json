@@ -45,7 +45,7 @@
 				"Update dry-run validation in src/hooks/useDryRun.ts to warn when not in a git repository",
 				"Add tests for the new isGitRepository() function"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Create project registry types and resolution logic",
