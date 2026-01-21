@@ -7,5 +7,12 @@
 - All functions follow immutable patterns (return new Prd objects)
 - Added comprehensive unit tests for all three functions in src/__tests__/lib/prd.test.ts
 
+### Task 2: Create TasksView component with read-only interactive list
+- Created `src/components/views/TasksView.tsx` with list display and keyboard navigation (↑/↓ arrow keys)
+- Displays task title, done status (✓/○), and step count for each task
+- Shows full task details (description, steps) for the selected task in a bordered panel
+- Added keyboard hints at the bottom of the view (↑/↓ Navigate | q/Esc Close)
+- Exported TasksView from `src/components/views/index.ts`
+
 ## Next Task
-Task 2: Create TasksView component with read-only interactive list
+Task 3: Wire up /tasks command and view routing

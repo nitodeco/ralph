@@ -7,3 +7,4 @@ export { MemoryView } from "./MemoryView.tsx";
 export { NotInitializedView } from "./NotInitializedView.tsx";
 export { ResumePromptView } from "./ResumePromptView.tsx";
 export { StatusView } from "./StatusView.tsx";
+export { TasksView } from "./TasksView.tsx";

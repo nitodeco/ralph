@@ -22,7 +22,7 @@
 				"Add keyboard hints at the bottom of the view",
 				"Export TasksView from src/components/views/index.ts"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Wire up /tasks command and view routing",
