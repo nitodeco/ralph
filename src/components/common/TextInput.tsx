@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { Text, useInput } from "ink";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface PastedTextSegment {
 	readonly id: number;
@@ -111,6 +111,17 @@ export function TextInput({
 
 	const { cursorOffset, cursorWidth } = state;
 
+	const valueRef = useRef(originalValue);
+	const cursorOffsetRef = useRef(cursorOffset);
+
+	useEffect(() => {
+		valueRef.current = originalValue;
+	}, [originalValue]);
+
+	useEffect(() => {
+		cursorOffsetRef.current = cursorOffset;
+	}, [cursorOffset]);
+
 	useEffect(() => {
 		setState((previousState) => {
 			if (!focus || !showCursor) {
@@ -188,16 +199,19 @@ export function TextInput({
 				return;
 			}
 
+			const currentValue = valueRef.current;
+			const currentCursorOffset = cursorOffsetRef.current;
+
 			if (key.return) {
 				if (onSubmit) {
-					onSubmit(originalValue);
+					onSubmit(currentValue);
 				}
 
 				return;
 			}
 
-			let nextCursorOffset = cursorOffset;
-			let nextValue = originalValue;
+			let nextCursorOffset = currentCursorOffset;
+			let nextValue = currentValue;
 			let nextCursorWidth = 0;
 
 			if (key.leftArrow) {
@@ -205,7 +219,7 @@ export function TextInput({
 					nextCursorOffset--;
 				}
 			} else if (key.rightArrow) {
-				const isAtEnd = cursorOffset >= originalValue.length;
+				const isAtEnd = currentCursorOffset >= currentValue.length;
 
 				if (isAtEnd && onArrowRight) {
 					onArrowRight();
@@ -217,10 +231,10 @@ export function TextInput({
 					nextCursorOffset++;
 				}
 			} else if (key.backspace || key.delete) {
-				if (cursorOffset > 0) {
+				if (currentCursorOffset > 0) {
 					nextValue =
-						originalValue.slice(0, cursorOffset - 1) +
-						originalValue.slice(cursorOffset, originalValue.length);
+						currentValue.slice(0, currentCursorOffset - 1) +
+						currentValue.slice(currentCursorOffset, currentValue.length);
 					nextCursorOffset--;
 				}
 			} else {
@@ -239,15 +253,15 @@ export function TextInput({
 					onPaste(segment);
 
 					nextValue =
-						originalValue.slice(0, cursorOffset) +
+						currentValue.slice(0, currentCursorOffset) +
 						placeholderText +
-						originalValue.slice(cursorOffset, originalValue.length);
+						currentValue.slice(currentCursorOffset, currentValue.length);
 					nextCursorOffset += placeholderText.length;
 				} else {
 					nextValue =
-						originalValue.slice(0, cursorOffset) +
+						currentValue.slice(0, currentCursorOffset) +
 						input +
-						originalValue.slice(cursorOffset, originalValue.length);
+						currentValue.slice(currentCursorOffset, currentValue.length);
 					nextCursorOffset += input.length;
 
 					if (isPaste) {
@@ -264,12 +278,15 @@ export function TextInput({
 				nextCursorOffset = nextValue.length;
 			}
 
+			valueRef.current = nextValue;
+			cursorOffsetRef.current = nextCursorOffset;
+
 			setState({
 				cursorOffset: nextCursorOffset,
 				cursorWidth: nextCursorWidth,
 			});
 
-			if (nextValue !== originalValue) {
+			if (nextValue !== currentValue) {
 				onChange(nextValue);
 			}
 		},
