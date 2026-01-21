@@ -12,7 +12,7 @@ import { getProjectRegistryService, isPrd } from "@/lib/services/index.ts";
 import type { AgentType, Prd, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
-import { TextInput } from "./common/TextInput.tsx";
+import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
 
 interface InitWizardProps {
@@ -117,6 +117,11 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	});
 
 	const [inputValue, setInputValue] = useState("");
+	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
+
+	const handlePaste = (segment: PastedTextSegment) => {
+		setPastedSegments((prev) => [...prev, segment]);
+	};
 
 	const handleConfirmOverwritePrd = (item: { value: boolean }) => {
 		if (!item.value) {
@@ -148,12 +153,14 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	};
 
 	const handleDescriptionSubmit = async (value: string) => {
-		const description = value.trim();
+		const expandedValue = expandPastedSegments(value, pastedSegments);
+		const description = expandedValue.trim();
 
 		if (!description) {
 			return;
 		}
 
+		setPastedSegments([]);
 		setState((prev) => ({
 			...prev,
 			description,
@@ -273,6 +280,9 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 								onChange={setInputValue}
 								onSubmit={handleDescriptionSubmit}
 								placeholder="I want to build a..."
+								collapsePastedText
+								pastedSegments={pastedSegments}
+								onPaste={handlePaste}
 							/>
 						</Box>
 					</Box>

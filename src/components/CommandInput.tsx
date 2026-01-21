@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 import { useState } from "react";
-import { TextInput } from "./common/TextInput.tsx";
+import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
 
 export type SlashCommand =
 	| "init"
@@ -143,14 +143,20 @@ export function CommandInput({
 	isRunning = false,
 }: CommandInputProps): React.ReactElement {
 	const [inputValue, setInputValue] = useState("");
+	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
 	const [error, setError] = useState<string | null>(null);
+
+	const handlePaste = (segment: PastedTextSegment) => {
+		setPastedSegments((prev) => [...prev, segment]);
+	};
 
 	const handleSubmit = (value: string) => {
 		if (!value.trim()) {
 			return;
 		}
 
-		const parsed = parseSlashCommand(value);
+		const expandedValue = expandPastedSegments(value, pastedSegments);
+		const parsed = parseSlashCommand(expandedValue);
 
 		if (parsed) {
 			if (isRunning && !RUNNING_COMMANDS.includes(parsed.command)) {
@@ -158,16 +164,19 @@ export function CommandInput({
 					`Command /${parsed.command} not available while agent is running. Use /stop, /quit, or /help`,
 				);
 				setInputValue("");
+				setPastedSegments([]);
 
 				return;
 			}
 
 			setError(null);
 			setInputValue("");
+			setPastedSegments([]);
 			onCommand(parsed.command, parsed.args);
 		} else {
-			setError(`Unknown command: ${value}`);
+			setError(`Unknown command: ${expandedValue}`);
 			setInputValue("");
+			setPastedSegments([]);
 		}
 	};
 
@@ -188,6 +197,9 @@ export function CommandInput({
 						onChange={setInputValue}
 						onSubmit={handleSubmit}
 						placeholder={placeholder}
+						collapsePastedText
+						pastedSegments={pastedSegments}
+						onPaste={handlePaste}
 					/>
 				</Box>
 				{error && (

@@ -9,7 +9,7 @@ import { isPrdTask } from "@/lib/services/index.ts";
 import type { Prd, PrdTask } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
-import { TextInput } from "./common/TextInput.tsx";
+import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
 
 interface AddTaskWizardProps {
@@ -86,9 +86,15 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 	});
 
 	const [inputValue, setInputValue] = useState("");
+	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
+
+	const handlePaste = (segment: PastedTextSegment) => {
+		setPastedSegments((prev) => [...prev, segment]);
+	};
 
 	const handleDescriptionSubmit = async (value: string) => {
-		const description = value.trim();
+		const expandedValue = expandPastedSegments(value, pastedSegments);
+		const description = expandedValue.trim();
 
 		if (!description) {
 			return;
@@ -104,6 +110,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 			return;
 		}
 
+		setPastedSegments([]);
 		setState((prev) => ({
 			...prev,
 			description,
@@ -194,6 +201,9 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 									onChange={setInputValue}
 									onSubmit={handleDescriptionSubmit}
 									placeholder="I want to add..."
+									collapsePastedText
+									pastedSegments={pastedSegments}
+									onPaste={handlePaste}
 								/>
 							</Box>
 						</Box>

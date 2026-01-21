@@ -3,15 +3,84 @@ import { Text, useInput } from "ink";
 import type React from "react";
 import { useEffect, useState } from "react";
 
+export interface PastedTextSegment {
+	readonly id: number;
+	readonly content: string;
+	readonly placeholder: string;
+}
+
+const PASTE_THRESHOLD_CHARS = 80;
+
+export function isPasteLongEnough(text: string): boolean {
+	return text.includes("\n") || text.length > PASTE_THRESHOLD_CHARS;
+}
+
+export function expandPastedSegments(
+	displayValue: string,
+	segments: readonly PastedTextSegment[],
+): string {
+	let result = displayValue;
+
+	for (const segment of segments) {
+		result = result.replace(segment.placeholder, segment.content);
+	}
+
+	return result;
+}
+
 export interface TextInputProps {
 	readonly placeholder?: string;
 	readonly focus?: boolean;
 	readonly mask?: string;
 	readonly showCursor?: boolean;
 	readonly highlightPastedText?: boolean;
+	readonly collapsePastedText?: boolean;
+	readonly pastedSegments?: readonly PastedTextSegment[];
+	readonly onPaste?: (segment: PastedTextSegment) => void;
 	readonly value: string;
 	readonly onChange: (value: string) => void;
 	readonly onSubmit?: (value: string) => void;
+}
+
+function renderValueWithPlaceholders(
+	value: string,
+	pastedSegments: readonly PastedTextSegment[],
+	cursorOffset: number,
+	cursorActualWidth: number,
+): string {
+	let result = "";
+	let index = 0;
+
+	for (const segment of pastedSegments) {
+		const placeholderIndex = value.indexOf(segment.placeholder);
+
+		if (placeholderIndex === -1) {
+			continue;
+		}
+
+		for (let i = index; i < placeholderIndex; i++) {
+			const char = value[i] ?? "";
+			const isHighlighted = i >= cursorOffset - cursorActualWidth && i <= cursorOffset;
+
+			result += isHighlighted ? chalk.inverse(char) : char;
+		}
+
+		result += chalk.dim.cyan(segment.placeholder);
+		index = placeholderIndex + segment.placeholder.length;
+	}
+
+	for (let i = index; i < value.length; i++) {
+		const char = value[i] ?? "";
+		const isHighlighted = i >= cursorOffset - cursorActualWidth && i <= cursorOffset;
+
+		result += isHighlighted ? chalk.inverse(char) : char;
+	}
+
+	if (value.length > 0 && cursorOffset === value.length) {
+		result += chalk.inverse(" ");
+	}
+
+	return result;
 }
 
 export function TextInput({
@@ -20,6 +89,9 @@ export function TextInput({
 	focus = true,
 	mask,
 	highlightPastedText = false,
+	collapsePastedText = false,
+	pastedSegments = [],
+	onPaste,
 	showCursor = true,
 	onChange,
 	onSubmit,
@@ -60,19 +132,27 @@ export function TextInput({
 			placeholder.length > 0
 				? chalk.inverse(placeholder[0]) + chalk.grey(placeholder.slice(1))
 				: chalk.inverse(" ");
-		renderedValue = value.length > 0 ? "" : chalk.inverse(" ");
-		let index = 0;
 
-		for (const char of value) {
-			renderedValue +=
-				index >= cursorOffset - cursorActualWidth && index <= cursorOffset
-					? chalk.inverse(char)
-					: char;
-			index++;
-		}
+		if (collapsePastedText && pastedSegments.length > 0) {
+			renderedValue =
+				value.length > 0
+					? renderValueWithPlaceholders(value, pastedSegments, cursorOffset, cursorActualWidth)
+					: chalk.inverse(" ");
+		} else {
+			renderedValue = value.length > 0 ? "" : chalk.inverse(" ");
+			let index = 0;
 
-		if (value.length > 0 && cursorOffset === value.length) {
-			renderedValue += chalk.inverse(" ");
+			for (const char of value) {
+				renderedValue +=
+					index >= cursorOffset - cursorActualWidth && index <= cursorOffset
+						? chalk.inverse(char)
+						: char;
+				index++;
+			}
+
+			if (value.length > 0 && cursorOffset === value.length) {
+				renderedValue += chalk.inverse(" ");
+			}
 		}
 	}
 
@@ -116,14 +196,35 @@ export function TextInput({
 					nextCursorOffset--;
 				}
 			} else {
-				nextValue =
-					originalValue.slice(0, cursorOffset) +
-					input +
-					originalValue.slice(cursorOffset, originalValue.length);
-				nextCursorOffset += input.length;
+				const isPaste = input.length > 1;
+				const shouldCollapsePaste = collapsePastedText && isPaste && isPasteLongEnough(input);
 
-				if (input.length > 1) {
-					nextCursorWidth = input.length;
+				if (shouldCollapsePaste && onPaste) {
+					const nextId = pastedSegments.length + 1;
+					const placeholderText = `[Pasted text #${nextId}]`;
+					const segment: PastedTextSegment = {
+						id: nextId,
+						content: input,
+						placeholder: placeholderText,
+					};
+
+					onPaste(segment);
+
+					nextValue =
+						originalValue.slice(0, cursorOffset) +
+						placeholderText +
+						originalValue.slice(cursorOffset, originalValue.length);
+					nextCursorOffset += placeholderText.length;
+				} else {
+					nextValue =
+						originalValue.slice(0, cursorOffset) +
+						input +
+						originalValue.slice(cursorOffset, originalValue.length);
+					nextCursorOffset += input.length;
+
+					if (isPaste) {
+						nextCursorWidth = input.length;
+					}
 				}
 			}
 

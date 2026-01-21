@@ -172,7 +172,7 @@
 				"Update InitWizard.tsx and AddTaskWizard.tsx TextInput usages to support paste placeholders where appropriate (description fields)",
 				"Add unit tests for isPasteLongEnough and expandPastedSegments utilities"
 			],
-			"done": false
+			"done": true
 		},
 		{
 			"title": "Add /plan command for AI-powered PRD generation from spec",
