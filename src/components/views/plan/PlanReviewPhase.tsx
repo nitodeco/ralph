@@ -22,10 +22,10 @@ export function PlanReviewPhase({
 }: PlanReviewPhaseProps): React.ReactElement {
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
-	const newCount = diffTasks.filter((d) => d.status === "new").length;
-	const modifiedCount = diffTasks.filter((d) => d.status === "modified").length;
-	const removedCount = diffTasks.filter((d) => d.status === "removed").length;
-	const unchangedCount = diffTasks.filter((d) => d.status === "unchanged").length;
+	const newCount = diffTasks.filter((diffTask) => diffTask.status === "new").length;
+	const modifiedCount = diffTasks.filter((diffTask) => diffTask.status === "modified").length;
+	const removedCount = diffTasks.filter((diffTask) => diffTask.status === "removed").length;
+	const unchangedCount = diffTasks.filter((diffTask) => diffTask.status === "unchanged").length;
 
 	useInput((input, key) => {
 		if (key.upArrow) {

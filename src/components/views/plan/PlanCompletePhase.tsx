@@ -14,7 +14,7 @@ export function PlanCompletePhase({ prd, onClose }: PlanCompletePhaseProps): Rea
 		}
 	});
 
-	const doneCount = prd.tasks.filter((t) => t.done).length;
+	const doneCount = prd.tasks.filter((task) => task.done).length;
 	const pendingCount = prd.tasks.length - doneCount;
 
 	return (

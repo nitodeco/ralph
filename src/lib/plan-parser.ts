@@ -73,18 +73,24 @@ export function computeTaskDiff(existingPrd: Prd | null, generatedPrd: Prd): Pla
 		let bestMatchSimilarity = 0;
 
 		if (existingPrd) {
-			existingPrd.tasks.forEach((existingTask, index) => {
-				if (matchedExistingIndices.has(index)) {
-					return;
+			for (let taskIndex = 0; taskIndex < existingPrd.tasks.length; taskIndex++) {
+				if (matchedExistingIndices.has(taskIndex)) {
+					continue;
+				}
+
+				const existingTask = existingPrd.tasks.at(taskIndex);
+
+				if (!existingTask) {
+					continue;
 				}
 
 				const similarity = computeTitleSimilarity(generatedTask.title, existingTask.title);
 
 				if (similarity > bestMatchSimilarity && similarity >= WORD_OVERLAP_THRESHOLD) {
 					bestMatchSimilarity = similarity;
-					bestMatchIndex = index;
+					bestMatchIndex = taskIndex;
 				}
-			});
+			}
 		}
 
 		if (bestMatchIndex >= 0 && existingPrd) {
@@ -119,15 +125,19 @@ export function computeTaskDiff(existingPrd: Prd | null, generatedPrd: Prd): Pla
 	}
 
 	if (existingPrd) {
-		existingPrd.tasks.forEach((existingTask, index) => {
-			if (!matchedExistingIndices.has(index)) {
-				diffTasks.push({
-					task: existingTask,
-					status: "removed",
-					originalTask: existingTask,
-				});
+		for (let taskIndex = 0; taskIndex < existingPrd.tasks.length; taskIndex++) {
+			if (!matchedExistingIndices.has(taskIndex)) {
+				const existingTask = existingPrd.tasks.at(taskIndex);
+
+				if (existingTask) {
+					diffTasks.push({
+						task: existingTask,
+						status: "removed",
+						originalTask: existingTask,
+					});
+				}
 			}
-		});
+		}
 	}
 
 	return diffTasks;

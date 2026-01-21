@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import { useState } from "react";
+import { match } from "ts-pattern";
 import { Header } from "@/components/Header.tsx";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
@@ -121,42 +122,26 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 		handleExit();
 	};
 
-	const renderPhase = () => {
-		switch (state.phase) {
-			case "input":
-				return (
-					<PlanInputPhase existingPrd={state.existingPrd} onSubmit={handleSpecificationSubmit} />
-				);
-
-			case "generating":
-				return <PlanGeneratingPhase agentOutput={state.agentOutput} />;
-
-			case "review":
-				return (
-					<PlanReviewPhase
-						diffTasks={state.diffTasks}
-						onAccept={handleAccept}
-						onCancel={handleCancel}
-					/>
-				);
-
-			case "complete":
-				return state.finalPrd ? (
-					<PlanCompletePhase prd={state.finalPrd} onClose={handleExit} />
-				) : null;
-
-			case "error":
-				return (
-					<PlanErrorPhase
-						errorMessage={state.errorMessage ?? "Unknown error"}
-						onClose={handleExit}
-					/>
-				);
-
-			default:
-				return null;
-		}
-	};
+	const renderPhase = (): React.ReactNode =>
+		match(state.phase)
+			.with("input", () => (
+				<PlanInputPhase existingPrd={state.existingPrd} onSubmit={handleSpecificationSubmit} />
+			))
+			.with("generating", () => <PlanGeneratingPhase agentOutput={state.agentOutput} />)
+			.with("review", () => (
+				<PlanReviewPhase
+					diffTasks={state.diffTasks}
+					onAccept={handleAccept}
+					onCancel={handleCancel}
+				/>
+			))
+			.with("complete", () =>
+				state.finalPrd ? <PlanCompletePhase prd={state.finalPrd} onClose={handleExit} /> : null,
+			)
+			.with("error", () => (
+				<PlanErrorPhase errorMessage={state.errorMessage ?? "Unknown error"} onClose={handleExit} />
+			))
+			.exhaustive();
 
 	return (
 		<Box flexDirection="column" padding={1}>

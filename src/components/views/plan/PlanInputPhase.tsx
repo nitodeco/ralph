@@ -38,7 +38,7 @@ export function PlanInputPhase({ existingPrd, onSubmit }: PlanInputPhaseProps): 
 					<Text dimColor>Existing project: {existingPrd.project}</Text>
 					<Text dimColor>
 						Current tasks: {existingPrd.tasks.length} (
-						{existingPrd.tasks.filter((t) => t.done).length} done)
+						{existingPrd.tasks.filter((task) => task.done).length} done)
 					</Text>
 				</>
 			)}
