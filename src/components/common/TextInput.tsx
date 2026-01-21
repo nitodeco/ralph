@@ -203,6 +203,10 @@ export function TextInput({
 			const currentCursorOffset = cursorOffsetRef.current;
 
 			if (key.return) {
+				if (key.ctrl || key.meta) {
+					return;
+				}
+
 				if (onSubmit) {
 					onSubmit(currentValue);
 				}
