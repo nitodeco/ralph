@@ -1,7 +1,14 @@
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { useState } from "react";
-import { invalidateConfigCache, loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
+import {
+	invalidateConfigCache,
+	loadConfig,
+	loadGlobalConfig,
+	loadProjectConfigRaw,
+	saveConfig,
+	saveGlobalConfig,
+} from "@/lib/config.ts";
 import type { AgentType } from "@/types.ts";
 
 interface AgentSelectViewProps {
@@ -22,7 +29,7 @@ const AGENT_DISPLAY_NAMES: Record<AgentType, string> = {
 };
 
 export function AgentSelectView({ version, onClose }: AgentSelectViewProps): React.ReactElement {
-	const existingConfig = loadGlobalConfig();
+	const effectiveConfig = loadConfig();
 	const [message, setMessage] = useState<{
 		type: "success" | "error";
 		text: string;
@@ -35,12 +42,25 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
 	});
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
-		const updatedConfig = {
-			...existingConfig,
+		const globalConfig = loadGlobalConfig();
+		const projectConfigRaw = loadProjectConfigRaw();
+
+		const updatedGlobalConfig = {
+			...globalConfig,
 			agent: item.value,
 		};
 
-		saveGlobalConfig(updatedConfig);
+		saveGlobalConfig(updatedGlobalConfig);
+
+		if (projectConfigRaw !== null) {
+			const updatedProjectConfig = {
+				...effectiveConfig,
+				agent: item.value,
+			};
+
+			saveConfig(updatedProjectConfig);
+		}
+
 		invalidateConfigCache();
 
 		setMessage({
@@ -66,14 +86,14 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
 					<Text bold color="yellow">
 						Which AI agent do you want to use?
 					</Text>
-					<Text dimColor>Current: {AGENT_DISPLAY_NAMES[existingConfig.agent]}</Text>
+					<Text dimColor>Current: {AGENT_DISPLAY_NAMES[effectiveConfig.agent]}</Text>
 				</Box>
 
 				<Box marginTop={1}>
 					<SelectInput
 						items={AGENT_CHOICES}
 						initialIndex={AGENT_CHOICES.findIndex(
-							(choice) => choice.value === existingConfig.agent,
+							(choice) => choice.value === effectiveConfig.agent,
 						)}
 						onSelect={handleAgentSelect}
 					/>
