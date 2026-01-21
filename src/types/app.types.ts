@@ -20,7 +20,8 @@ export type ActiveView =
 	| "guardrails"
 	| "analyze"
 	| "memory"
-	| "agent";
+	| "agent"
+	| "tasks";
 
 export interface ValidationWarning {
 	message: string;

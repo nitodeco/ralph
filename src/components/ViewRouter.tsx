@@ -16,6 +16,7 @@ import {
 	NotInitializedView,
 	ResumePromptView,
 	StatusView,
+	TasksView,
 } from "./views/index.ts";
 
 interface ViewRouterProps {
@@ -91,6 +92,10 @@ export function ViewRouter({
 
 	if (activeView === "agent") {
 		return <AgentSelectView version={version} onClose={onViewComplete} />;
+	}
+
+	if (activeView === "tasks") {
+		return <TasksView version={version} onClose={onHelpClose} />;
 	}
 
 	if (dryRun) {
