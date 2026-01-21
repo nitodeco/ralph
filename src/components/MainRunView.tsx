@@ -3,7 +3,9 @@ import type { Prd, RalphConfig } from "@/types.ts";
 import { AgentOutput } from "./AgentOutput.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
 import { CommandInput } from "./CommandInput.tsx";
+import { FixedLayout } from "./common/FixedLayout.tsx";
 import { Message } from "./common/Message.tsx";
+import { ScrollableContent } from "./common/ScrollableContent.tsx";
 import { Header } from "./Header.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
 import { StatusBar } from "./StatusBar.tsx";
@@ -35,82 +37,82 @@ interface MainRunViewProps {
 	updateBannerDismissed: boolean;
 }
 
-export function MainRunView({
+interface MessageDisplayProps {
+	message: SlashCommandMessage | null;
+}
+
+function MessageDisplay({ message }: MessageDisplayProps): React.ReactElement | null {
+	if (!message) {
+		return null;
+	}
+
+	return (
+		<Box paddingX={1} marginY={1}>
+			<Message type={message.type === "success" ? "success" : "error"}>{message.text}</Message>
+		</Box>
+	);
+}
+
+interface HeaderSectionProps {
+	version: string;
+	config: RalphConfig | null;
+	prd: Prd | null;
+	showUpdateBanner: boolean;
+	latestVersion: string | null;
+}
+
+function HeaderSection({
 	version,
 	config,
 	prd,
-	appState,
-	iterationCurrent,
-	iterationTotal,
-	agentIsStreaming,
+	showUpdateBanner,
+	latestVersion,
+}: HeaderSectionProps): React.ReactElement {
+	return (
+		<Box flexDirection="column">
+			<Header version={version} agent={config?.agent} projectName={prd?.project} />
+			{showUpdateBanner && latestVersion && (
+				<UpdateBanner currentVersion={version} latestVersion={latestVersion} />
+			)}
+		</Box>
+	);
+}
+
+interface ContentSectionProps {
+	nextTaskMessage: SlashCommandMessage | null;
+	guardrailMessage: SlashCommandMessage | null;
+	memoryMessage: SlashCommandMessage | null;
+	refreshMessage: SlashCommandMessage | null;
+	clearMessage: SlashCommandMessage | null;
+	taskMessage: SlashCommandMessage | null;
+	appState: string;
+	iterationCurrent: number;
+	iterationTotal: number;
+}
+
+function ContentSection({
 	nextTaskMessage,
 	guardrailMessage,
 	memoryMessage,
 	refreshMessage,
 	clearMessage,
 	taskMessage,
-	onCommand,
-	updateAvailable,
-	latestVersion,
-	updateBannerDismissed,
-}: MainRunViewProps): React.ReactElement {
-	const showUpdateBanner = updateAvailable && latestVersion && !updateBannerDismissed;
-
+	appState,
+	iterationCurrent,
+	iterationTotal,
+}: ContentSectionProps): React.ReactElement {
 	return (
-		<Box flexDirection="column" minHeight={20}>
-			<Header version={version} agent={config?.agent} projectName={prd?.project} />
-			{showUpdateBanner && <UpdateBanner currentVersion={version} latestVersion={latestVersion} />}
+		<ScrollableContent>
 			<TaskList />
 			<IterationProgress />
 			<AgentOutput />
 
-			{nextTaskMessage && (
-				<Box paddingX={1} marginY={1}>
-					<Message type={nextTaskMessage.type === "success" ? "success" : "error"}>
-						{nextTaskMessage.text}
-					</Message>
-				</Box>
-			)}
-
-			{guardrailMessage && (
-				<Box paddingX={1} marginY={1}>
-					<Message type={guardrailMessage.type === "success" ? "success" : "error"}>
-						{guardrailMessage.text}
-					</Message>
-				</Box>
-			)}
-
-			{memoryMessage && (
-				<Box paddingX={1} marginY={1}>
-					<Message type={memoryMessage.type === "success" ? "success" : "error"}>
-						{memoryMessage.text}
-					</Message>
-				</Box>
-			)}
-
-			{refreshMessage && (
-				<Box paddingX={1} marginY={1}>
-					<Message type={refreshMessage.type === "success" ? "success" : "error"}>
-						{refreshMessage.text}
-					</Message>
-				</Box>
-			)}
-
-			{clearMessage && (
-				<Box paddingX={1} marginY={1}>
-					<Message type={clearMessage.type === "success" ? "success" : "error"}>
-						{clearMessage.text}
-					</Message>
-				</Box>
-			)}
-
-			{taskMessage && (
-				<Box paddingX={1} marginY={1}>
-					<Message type={taskMessage.type === "success" ? "success" : "error"}>
-						{taskMessage.text}
-					</Message>
-				</Box>
-			)}
+			<MessageDisplay message={nextTaskMessage} />
+			<MessageDisplay message={guardrailMessage} />
+			<MessageDisplay message={memoryMessage} />
+			<MessageDisplay message={refreshMessage} />
+			<MessageDisplay message={clearMessage} />
+			<MessageDisplay message={taskMessage} />
 
 			{appState === "idle" && (
 				<Box paddingX={1} marginY={1}>
@@ -142,9 +144,70 @@ export function MainRunView({
 					</Message>
 				</Box>
 			)}
+		</ScrollableContent>
+	);
+}
 
+interface FooterSectionProps {
+	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
+	agentIsStreaming: boolean;
+}
+
+function FooterSection({ onCommand, agentIsStreaming }: FooterSectionProps): React.ReactElement {
+	return (
+		<Box flexDirection="column">
 			<CommandInput onCommand={onCommand} isRunning={agentIsStreaming} />
 			<StatusBar />
 		</Box>
+	);
+}
+
+export function MainRunView({
+	version,
+	config,
+	prd,
+	appState,
+	iterationCurrent,
+	iterationTotal,
+	agentIsStreaming,
+	nextTaskMessage,
+	guardrailMessage,
+	memoryMessage,
+	refreshMessage,
+	clearMessage,
+	taskMessage,
+	onCommand,
+	updateAvailable,
+	latestVersion,
+	updateBannerDismissed,
+}: MainRunViewProps): React.ReactElement {
+	const showUpdateBanner = Boolean(updateAvailable && latestVersion && !updateBannerDismissed);
+
+	return (
+		<FixedLayout
+			header={
+				<HeaderSection
+					version={version}
+					config={config}
+					prd={prd}
+					showUpdateBanner={showUpdateBanner}
+					latestVersion={latestVersion}
+				/>
+			}
+			content={
+				<ContentSection
+					nextTaskMessage={nextTaskMessage}
+					guardrailMessage={guardrailMessage}
+					memoryMessage={memoryMessage}
+					refreshMessage={refreshMessage}
+					clearMessage={clearMessage}
+					taskMessage={taskMessage}
+					appState={appState}
+					iterationCurrent={iterationCurrent}
+					iterationTotal={iterationTotal}
+				/>
+			}
+			footer={<FooterSection onCommand={onCommand} agentIsStreaming={agentIsStreaming} />}
+		/>
 	);
 }
