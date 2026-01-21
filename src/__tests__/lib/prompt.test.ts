@@ -24,10 +24,9 @@ describe("buildPrompt", () => {
 	test("generates basic prompt without options", () => {
 		const prompt = buildPrompt();
 
-		expect(prompt).toContain("@.ralph/prd.json");
-		expect(prompt).toContain("@.ralph/progress.txt");
 		expect(prompt).toContain("coding agent");
-		expect(prompt).toContain("Find the next most important task");
+		expect(prompt).toContain("ralph progress");
+		expect(prompt).toContain("ralph task current");
 		expect(prompt).toContain(COMPLETION_MARKER);
 	});
 
@@ -35,7 +34,7 @@ describe("buildPrompt", () => {
 		const prompt = buildPrompt({ specificTask: "Implement login" });
 
 		expect(prompt).toContain('Work on the SPECIFIED task: "Implement login"');
-		expect(prompt).not.toContain("Find the next most important task");
+		expect(prompt).not.toContain("2. Run 'ralph task current'");
 	});
 
 	test("includes instructions when provided", () => {
@@ -56,11 +55,13 @@ describe("buildPrompt", () => {
 	test("includes all workflow steps", () => {
 		const prompt = buildPrompt();
 
-		expect(prompt).toContain("1. Get oriented by reading");
+		expect(prompt).toContain("1. Get oriented by running 'ralph progress' and 'ralph task list'");
+		expect(prompt).toContain("2. Run 'ralph task current'");
 		expect(prompt).toContain("3. Implement ONLY that task");
 		expect(prompt).toContain("4. Verify your implementation");
-		expect(prompt).toContain("5. Update .ralph/progress.txt");
-		expect(prompt).toContain("6. Stage and commit");
+		expect(prompt).toContain("5. Record your progress by running: ralph progress add");
+		expect(prompt).toContain("6. Mark the task as done by running: ralph task done");
+		expect(prompt).toContain("7. Stage and commit");
 	});
 
 	test("includes rules section", () => {
@@ -75,7 +76,7 @@ describe("buildPrompt", () => {
 	test("includes commit instructions when in git repository", () => {
 		const prompt = buildPrompt({ isGitRepository: true });
 
-		expect(prompt).toContain("6. Stage and commit your changes with a meaningful commit message");
+		expect(prompt).toContain("7. Stage and commit your changes with a meaningful commit message");
 		expect(prompt).toContain("If the build fails, fix it before committing");
 		expect(prompt).not.toContain("this is not a git repository");
 	});
@@ -91,7 +92,7 @@ describe("buildPrompt", () => {
 	test("defaults to including commit instructions", () => {
 		const prompt = buildPrompt();
 
-		expect(prompt).toContain("6. Stage and commit your changes with a meaningful commit message");
+		expect(prompt).toContain("7. Stage and commit your changes with a meaningful commit message");
 	});
 });
 

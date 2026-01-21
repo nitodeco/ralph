@@ -48,11 +48,11 @@ export function buildPrompt(options: BuildPromptOptions = {}): string {
 
 	const taskSelectionInstruction = specificTask
 		? `2. Work on the SPECIFIED task: "${specificTask}"`
-		: "2. Find the next most important task to work on";
+		: "2. Run 'ralph task current' to see the next task to work on";
 
 	const commitStep = isGitRepository
-		? "6. Stage and commit your changes with a meaningful commit message"
-		: "6. Verify all changes are complete (note: this is not a git repository, so no commit is needed)";
+		? "7. Stage and commit your changes with a meaningful commit message"
+		: "7. Verify all changes are complete (note: this is not a git repository, so no commit is needed)";
 
 	const commitRule = isGitRepository ? "- If the build fails, fix it before committing" : "";
 
@@ -78,15 +78,14 @@ ${DECOMPOSITION_OUTPUT_START}
 }
 ${DECOMPOSITION_OUTPUT_END}`;
 
-	return `@.ralph/prd.json @.ralph/progress.txt
-
-You are a coding agent working on a long running project.
+	return `You are a coding agent working on a long running project.
 Your workflow is as follows:
-1. Get oriented by reading .ralph/progress.txt and .ralph/prd.json
+1. Get oriented by running 'ralph progress' and 'ralph task list'
 ${taskSelectionInstruction}
 3. Implement ONLY that task
 4. Verify your implementation
-5. Update .ralph/progress.txt and set the task as done in .ralph/prd.json
+5. Record your progress by running: ralph progress add <summary of what you did>
+6. Mark the task as done by running: ralph task done <task-number>
 ${commitStep}
 
 ## Rules
@@ -96,7 +95,12 @@ ${commitRule}${commitRule ? "\n" : ""}- Ensure you are using the proper tools in
 ${instructionsSection}${guardrailsSection ? `\n${guardrailsSection}` : ""}${memorySection ? `\n${memorySection}` : ""}${decompositionInstructions}
 
 IMPORTANT:
-If all tasks in .ralph/prd.json are marked as done, output EXACTLY this: <promise>COMPLETE</promise>
+- Use 'ralph progress' to see previous progress notes
+- Use 'ralph progress add <text>' to record your progress
+- Use 'ralph task list' to see all tasks and their status
+- Use 'ralph task current' to see the next pending task
+- Use 'ralph task done <n>' to mark task n as complete (1-based index)
+- If 'ralph task current' shows "All tasks complete!", output EXACTLY this: <promise>COMPLETE</promise>
 `;
 }
 

@@ -45,8 +45,10 @@ export type {
 	GuardrailsSubcommand,
 	MemorySubcommand,
 	ParsedArgs,
+	ProgressSubcommand,
 	ProjectsSubcommand,
 	TaskListOutput,
+	TaskSubcommand,
 } from "./cli.types.ts";
 export type { CheckResult, VerificationResult } from "./config.types.ts";
 export type {

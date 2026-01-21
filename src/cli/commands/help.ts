@@ -14,6 +14,8 @@ Commands:
   status            Show current session state, progress, and recent logs
   stop              Stop a running Ralph process gracefully
   list              Display all PRD tasks and their completion status
+  task              Manage task completion (for agent use)
+  progress          View and manage progress notes (for agent use)
   config            View current configuration with validation
   archive           Archive completed tasks and progress file
   clear             Clear session data (archives first, then resets session)
@@ -40,6 +42,17 @@ Projects Subcommands:
   projects          List all registered projects (default)
   projects current  Show details about the current project
   projects prune    Remove projects with invalid paths
+
+Task Subcommands:
+  task              List all tasks with status (default)
+  task done <id>    Mark a task as done (by number or title)
+  task undone <id>  Mark a task as not done
+  task current      Show the next pending task
+
+Progress Subcommands:
+  progress          Show progress notes (default)
+  progress add <text>  Add a progress note
+  progress clear    Clear all progress notes
 
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)

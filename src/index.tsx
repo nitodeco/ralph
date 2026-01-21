@@ -11,21 +11,28 @@ import {
 	handleMemoryClear,
 	handleMemoryExport,
 	handleMigrateCommand,
+	handleProgressAdd,
+	handleProgressClear,
 	handleProjectsPrune,
 	handleStopCommand,
+	handleTaskDone,
+	handleTaskUndone,
 	parseArgs,
 	printAnalyze,
 	printArchive,
 	printClear,
 	printConfig,
 	printCurrentProject,
+	printCurrentTask,
 	printGuardrails,
 	printHelp,
 	printList,
 	printMemory,
+	printProgress,
 	printProjects,
 	printStats,
 	printStatus,
+	printTaskList,
 	printVersion,
 } from "@/cli/index.ts";
 import { InitWizard } from "@/components/InitWizard.tsx";
@@ -142,6 +149,10 @@ function main(): void {
 		analyzeSubcommand,
 		memorySubcommand,
 		projectsSubcommand,
+		taskSubcommand,
+		taskIdentifier,
+		progressSubcommand,
+		progressText,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -314,6 +325,39 @@ function main(): void {
 					break;
 				default:
 					printProjects(VERSION, json);
+					break;
+			}
+
+			break;
+
+		case "task":
+			switch (taskSubcommand) {
+				case "done":
+					handleTaskDone(taskIdentifier ?? "", json);
+					break;
+				case "undone":
+					handleTaskUndone(taskIdentifier ?? "", json);
+					break;
+				case "current":
+					printCurrentTask(json);
+					break;
+				default:
+					printTaskList(json);
+					break;
+			}
+
+			break;
+
+		case "progress":
+			switch (progressSubcommand) {
+				case "add":
+					handleProgressAdd(progressText ?? "", json);
+					break;
+				case "clear":
+					handleProgressClear(json);
+					break;
+				default:
+					printProgress(json);
 					break;
 			}
 

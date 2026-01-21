@@ -5,13 +5,17 @@ import type {
 	GuardrailsSubcommand,
 	MemorySubcommand,
 	ParsedArgs,
+	ProgressSubcommand,
 	ProjectsSubcommand,
+	TaskSubcommand,
 } from "@/types.ts";
 
 const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "remove", "toggle"];
 const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
 const VALID_MEMORY_SUBCOMMANDS: MemorySubcommand[] = ["list", "clear", "export"];
 const VALID_PROJECTS_SUBCOMMANDS: ProjectsSubcommand[] = ["list", "current", "prune"];
+const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = ["list", "done", "undone", "current"];
+const VALID_PROGRESS_SUBCOMMANDS: ProgressSubcommand[] = ["show", "add", "clear"];
 
 export function parseArgs(args: string[]): ParsedArgs {
 	const relevantArgs = args.slice(2);
@@ -127,6 +131,43 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let taskSubcommand: TaskSubcommand | undefined;
+	let taskIdentifier: string | undefined;
+
+	if (command === "task") {
+		const subcommand = filteredArgs[1] as TaskSubcommand | undefined;
+
+		if (subcommand && VALID_TASK_SUBCOMMANDS.includes(subcommand)) {
+			taskSubcommand = subcommand;
+
+			if (subcommand === "done" || subcommand === "undone") {
+				taskIdentifier = filteredArgs.slice(2).join(" ");
+			}
+		} else {
+			taskSubcommand = "list";
+		}
+	}
+
+	let progressSubcommand: ProgressSubcommand | undefined;
+	let progressText: string | undefined;
+
+	if (command === "progress") {
+		const subcommand = filteredArgs[1] as ProgressSubcommand | undefined;
+
+		if (subcommand && VALID_PROGRESS_SUBCOMMANDS.includes(subcommand)) {
+			progressSubcommand = subcommand;
+
+			if (subcommand === "add") {
+				progressText = filteredArgs.slice(2).join(" ");
+			}
+		} else if (subcommand && !subcommand.startsWith("-")) {
+			progressSubcommand = "add";
+			progressText = filteredArgs.slice(1).join(" ");
+		} else {
+			progressSubcommand = "show";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -142,5 +183,9 @@ export function parseArgs(args: string[]): ParsedArgs {
 		analyzeSubcommand,
 		memorySubcommand,
 		projectsSubcommand,
+		taskSubcommand,
+		taskIdentifier,
+		progressSubcommand,
+		progressText,
 	};
 }

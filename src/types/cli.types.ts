@@ -16,6 +16,8 @@ export type Command =
 	| "memory"
 	| "migrate"
 	| "projects"
+	| "task"
+	| "progress"
 	| "help"
 	| "version"
 	| "-v"
@@ -27,6 +29,8 @@ export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle";
 export type AnalyzeSubcommand = "patterns" | "export" | "clear";
 export type MemorySubcommand = "list" | "clear" | "export";
 export type ProjectsSubcommand = "list" | "current" | "prune";
+export type TaskSubcommand = "list" | "done" | "undone" | "current";
+export type ProgressSubcommand = "show" | "add" | "clear";
 
 export interface ParsedArgs {
 	command: Command;
@@ -43,6 +47,10 @@ export interface ParsedArgs {
 	analyzeSubcommand?: AnalyzeSubcommand;
 	memorySubcommand?: MemorySubcommand;
 	projectsSubcommand?: ProjectsSubcommand;
+	taskSubcommand?: TaskSubcommand;
+	taskIdentifier?: string;
+	progressSubcommand?: ProgressSubcommand;
+	progressText?: string;
 }
 
 export interface TaskListOutput {
