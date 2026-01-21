@@ -49,7 +49,7 @@ import {
 	writePidFile,
 } from "@/lib/daemon.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
-import { bootstrapServices } from "@/lib/services/index.ts";
+import { bootstrapServices, getSleepPreventionService } from "@/lib/services/index.ts";
 import { orchestrator, useAgentStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
@@ -157,6 +157,7 @@ function main(): void {
 
 	setShutdownHandler({
 		onShutdown: () => {
+			getSleepPreventionService().stop();
 			orchestrator.cleanup();
 			const agentStore = useAgentStore.getState();
 
@@ -199,6 +200,7 @@ function main(): void {
 
 	switch (command) {
 		case "run":
+			getSleepPreventionService().start();
 			render(
 				<RunWithSetup
 					version={VERSION}
@@ -213,6 +215,7 @@ function main(): void {
 			break;
 
 		case "resume":
+			getSleepPreventionService().start();
 			render(
 				<RunWithSetup
 					version={VERSION}

@@ -51,6 +51,7 @@ export {
 	getServices,
 	getSessionMemoryService,
 	getSessionService,
+	getSleepPreventionService,
 	initializeServices,
 	isInitialized,
 	resetServices,
@@ -93,6 +94,10 @@ export type {
 	RegisterProjectOptions,
 } from "./project-registry/types.ts";
 export { REGISTRY_VERSION } from "./project-registry/types.ts";
+export {
+	createSleepPreventionService,
+	type SleepPreventionService,
+} from "./SleepPreventionService.ts";
 export type {
 	IterationTiming,
 	Session,

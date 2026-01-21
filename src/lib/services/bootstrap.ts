@@ -11,6 +11,10 @@ import type {
 	ProjectRegistry,
 	ProjectRegistryService,
 } from "./project-registry/types.ts";
+import {
+	createSleepPreventionService,
+	type SleepPreventionService,
+} from "./SleepPreventionService.ts";
 import { createSessionService } from "./session/implementation.ts";
 import type { SessionService } from "./session/types.ts";
 import { createSessionMemoryService } from "./session-memory/implementation.ts";
@@ -24,6 +28,7 @@ export function bootstrapServices(): void {
 		prd: createPrdService(),
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
+		sleepPrevention: createSleepPreventionService(),
 	});
 }
 
@@ -34,6 +39,7 @@ export interface TestServiceOverrides {
 	prd?: Partial<PrdService>;
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
+	sleepPrevention?: Partial<SleepPreventionService>;
 }
 
 function createMockProjectRegistryService(
@@ -258,6 +264,17 @@ function createMockGuardrailsService(
 	};
 }
 
+function createMockSleepPreventionService(
+	overrides: Partial<SleepPreventionService> = {},
+): SleepPreventionService {
+	return {
+		start: () => {},
+		stop: () => {},
+		isActive: () => false,
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -268,6 +285,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		prd: createMockPrdService(overrides.prd),
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 		session: createMockSessionService(overrides.session),
+		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 	};
 
 	initializeServices(testContainer);

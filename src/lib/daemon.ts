@@ -6,7 +6,7 @@ import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureProjectDirExists } from "./paths.ts";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
-import { getSessionService } from "./services/index.ts";
+import { getSessionService, getSleepPreventionService } from "./services/index.ts";
 
 export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";
 
@@ -299,6 +299,7 @@ function handleShutdownSignal(signal: ShutdownSignal): void {
 		}
 	}
 
+	getSleepPreventionService().stop();
 	deletePidFile();
 	logger.info("Shutdown complete", { signal });
 
