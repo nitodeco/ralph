@@ -147,10 +147,37 @@ export function applyDiffToPrd(
 	existingPrd: Prd | null,
 	diffTasks: PlanDiffTask[],
 	projectName: string,
+	acceptedIndices: Set<number>,
 ): Prd {
-	const tasks = diffTasks
-		.filter((diffTask) => diffTask.status !== "removed")
-		.map((diffTask) => diffTask.task);
+	const tasks: PrdTask[] = [];
+
+	for (let taskIndex = 0; taskIndex < diffTasks.length; taskIndex++) {
+		const diffTask = diffTasks.at(taskIndex);
+
+		if (!diffTask) {
+			continue;
+		}
+
+		const isAccepted = acceptedIndices.has(taskIndex);
+
+		if (diffTask.status === "removed") {
+			if (isAccepted && diffTask.originalTask) {
+				continue;
+			}
+
+			if (!isAccepted && diffTask.originalTask) {
+				tasks.push(diffTask.originalTask);
+			}
+		} else if (diffTask.status === "modified") {
+			if (isAccepted) {
+				tasks.push(diffTask.task);
+			} else if (diffTask.originalTask) {
+				tasks.push(diffTask.originalTask);
+			}
+		} else if (isAccepted) {
+			tasks.push(diffTask.task);
+		}
+	}
 
 	return {
 		project: existingPrd?.project ?? projectName,

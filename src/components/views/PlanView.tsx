@@ -105,9 +105,14 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 		}
 	};
 
-	const handleAccept = () => {
+	const handleAccept = (acceptedIndices: Set<number>) => {
 		const projectName = state.generatedPrd?.project ?? "Untitled Project";
-		const finalPrd = applyDiffToPrd(state.existingPrd, state.diffTasks, projectName);
+		const finalPrd = applyDiffToPrd(
+			state.existingPrd,
+			state.diffTasks,
+			projectName,
+			acceptedIndices,
+		);
 
 		savePrd(finalPrd);
 

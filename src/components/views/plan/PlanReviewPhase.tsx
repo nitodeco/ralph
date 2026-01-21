@@ -4,7 +4,7 @@ import type { PlanDiffTask } from "@/types.ts";
 
 interface PlanReviewPhaseProps {
 	diffTasks: PlanDiffTask[];
-	onAccept: () => void;
+	onAccept: (acceptedIndices: Set<number>) => void;
 	onCancel: () => void;
 }
 
@@ -15,25 +15,58 @@ const STATUS_INDICATOR_BY_STATUS = {
 	unchanged: { symbol: " ", color: "gray" },
 } as const;
 
+function buildInitialAcceptedIndices(diffTasks: PlanDiffTask[]): Set<number> {
+	const initialAccepted = new Set<number>();
+
+	for (let taskIndex = 0; taskIndex < diffTasks.length; taskIndex++) {
+		const diffTask = diffTasks.at(taskIndex);
+
+		if (diffTask && diffTask.status !== "removed") {
+			initialAccepted.add(taskIndex);
+		}
+	}
+
+	return initialAccepted;
+}
+
 export function PlanReviewPhase({
 	diffTasks,
 	onAccept,
 	onCancel,
 }: PlanReviewPhaseProps): React.ReactElement {
 	const [selectedIndex, setSelectedIndex] = useState(0);
+	const [acceptedIndices, setAcceptedIndices] = useState<Set<number>>(() =>
+		buildInitialAcceptedIndices(diffTasks),
+	);
 
 	const newCount = diffTasks.filter((diffTask) => diffTask.status === "new").length;
 	const modifiedCount = diffTasks.filter((diffTask) => diffTask.status === "modified").length;
 	const removedCount = diffTasks.filter((diffTask) => diffTask.status === "removed").length;
 	const unchangedCount = diffTasks.filter((diffTask) => diffTask.status === "unchanged").length;
 
+	const handleToggleAccepted = (index: number) => {
+		setAcceptedIndices((prev) => {
+			const next = new Set(prev);
+
+			if (next.has(index)) {
+				next.delete(index);
+			} else {
+				next.add(index);
+			}
+
+			return next;
+		});
+	};
+
 	useInput((input, key) => {
 		if (key.upArrow) {
 			setSelectedIndex((prev) => Math.max(0, prev - 1));
 		} else if (key.downArrow) {
 			setSelectedIndex((prev) => Math.min(diffTasks.length - 1, prev + 1));
+		} else if (input === " ") {
+			handleToggleAccepted(selectedIndex);
 		} else if (key.return || input === "y") {
-			onAccept();
+			onAccept(acceptedIndices);
 		} else if (key.escape || input === "q") {
 			onCancel();
 		}
@@ -64,10 +97,14 @@ export function PlanReviewPhase({
 					{diffTasks.map((diffTask, index) => {
 						const indicator = STATUS_INDICATOR_BY_STATUS[diffTask.status];
 						const isSelected = index === selectedIndex;
+						const isAccepted = acceptedIndices.has(index);
+						const checkboxSymbol = isAccepted ? "✓" : "○";
+						const checkboxColor = isAccepted ? "green" : "gray";
 
 						return (
 							<Box key={diffTask.task.title} gap={1}>
 								<Text color={indicator.color}>{indicator.symbol}</Text>
+								<Text color={checkboxColor}>{checkboxSymbol}</Text>
 								<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
 									{isSelected ? "▸ " : "  "}
 									{diffTask.task.title}
@@ -138,6 +175,7 @@ export function PlanReviewPhase({
 
 			<Box marginTop={1} gap={2}>
 				<Text dimColor>↑/↓ Navigate</Text>
+				<Text dimColor>Space Toggle</Text>
 				<Text dimColor>Enter/y Accept</Text>
 				<Text dimColor>q/Esc Cancel</Text>
 			</Box>
