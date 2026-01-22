@@ -16,14 +16,36 @@ function isStringArray(value: unknown): value is string[] {
 	return Array.isArray(value) && value.every((item) => isString(item));
 }
 
+function isNumber(value: unknown): value is number {
+	return typeof value === "number" && !Number.isNaN(value);
+}
+
+function isOptionalString(value: unknown): boolean {
+	return value === undefined || isString(value);
+}
+
+function isOptionalStringArray(value: unknown): boolean {
+	return value === undefined || isStringArray(value);
+}
+
+function isOptionalNumber(value: unknown): boolean {
+	return value === undefined || isNumber(value);
+}
+
 export function isPrdTask(value: unknown): value is PrdTask {
 	if (!isObject(value)) {
 		return false;
 	}
 
-	const { title, description, steps, done } = value;
+	const { id, title, description, steps, done, dependsOn, priority } = value;
 
-	return isString(title) && isString(description) && isStringArray(steps) && isBoolean(done);
+	const hasRequiredFields =
+		isString(title) && isString(description) && isStringArray(steps) && isBoolean(done);
+
+	const hasValidOptionalFields =
+		isOptionalString(id) && isOptionalStringArray(dependsOn) && isOptionalNumber(priority);
+
+	return hasRequiredFields && hasValidOptionalFields;
 }
 
 export function isPrd(value: unknown): value is Prd {

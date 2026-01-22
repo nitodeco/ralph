@@ -1,8 +1,11 @@
 export interface PrdTask {
+	id?: string;
 	title: string;
 	description: string;
 	steps: string[];
 	done: boolean;
+	dependsOn?: string[];
+	priority?: number;
 }
 
 export interface Prd {
@@ -16,9 +19,12 @@ export interface LoadPrdResult {
 }
 
 export interface DecompositionSubtask {
+	id?: string;
 	title: string;
 	description: string;
 	steps: string[];
+	dependsOn?: string[];
+	priority?: number;
 }
 
 export interface DecompositionRequest {

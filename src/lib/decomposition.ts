@@ -80,6 +80,26 @@ function isValidDecompositionRequest(value: unknown): value is DecompositionRequ
 	return true;
 }
 
+function isOptionalString(value: unknown): boolean {
+	return value === undefined || typeof value === "string";
+}
+
+function isOptionalStringArray(value: unknown): boolean {
+	if (value === undefined) {
+		return true;
+	}
+
+	if (!Array.isArray(value)) {
+		return false;
+	}
+
+	return value.every((item) => typeof item === "string");
+}
+
+function isOptionalNumber(value: unknown): boolean {
+	return value === undefined || (typeof value === "number" && !Number.isNaN(value));
+}
+
 function isValidSubtask(value: unknown): value is DecompositionSubtask {
 	if (typeof value !== "object" || value === null) {
 		return false;
@@ -105,7 +125,12 @@ function isValidSubtask(value: unknown): value is DecompositionSubtask {
 		}
 	}
 
-	return true;
+	const hasValidOptionalFields =
+		isOptionalString(obj.id) &&
+		isOptionalStringArray(obj.dependsOn) &&
+		isOptionalNumber(obj.priority);
+
+	return hasValidOptionalFields;
 }
 
 export interface ApplyDecompositionResult {
@@ -144,10 +169,13 @@ export function applyDecomposition(
 	}
 
 	const newSubtasks: PrdTask[] = request.suggestedSubtasks.map((subtask) => ({
+		...(subtask.id !== undefined && { id: subtask.id }),
 		title: subtask.title,
 		description: subtask.description,
 		steps: subtask.steps,
 		done: false,
+		...(subtask.dependsOn !== undefined && { dependsOn: subtask.dependsOn }),
+		...(subtask.priority !== undefined && { priority: subtask.priority }),
 	}));
 
 	const updatedTasks = [
