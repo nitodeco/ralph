@@ -12,6 +12,8 @@ export type SlashCommand =
 	| "help"
 	| "quit"
 	| "exit"
+	| "q"
+	| "e"
 	| "add"
 	| "start"
 	| "resume"
@@ -85,6 +87,8 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 	help: { description: "Show help message" },
 	quit: { description: "Exit the application" },
 	exit: { description: "Exit the application" },
+	q: { description: "Exit the application (alias for /quit)" },
+	e: { description: "Exit the application (alias for /exit)" },
 	projects: { description: "Manage projects" },
 	migrate: { description: "Migrate project data" },
 	plan: { description: "View the current plan" },
@@ -96,7 +100,7 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 
 const VALID_COMMANDS = Object.keys(COMMAND_HINTS) as SlashCommand[];
 const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = ["done", "undone", "current", "list"];
-const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "help", "status"];
+const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "q", "e", "help", "status"];
 
 interface AutocompleteResult {
 	type: "suggestions" | "argument-hint" | "default";

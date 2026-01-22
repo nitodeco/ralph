@@ -247,9 +247,14 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 									<Text>Show this help message</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/quit</Text>
-									{"             "}
+									<Text dimColor>/quit, /q</Text>
+									{"         "}
 									<Text>Exit the application</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/exit, /e</Text>
+									{"         "}
+									<Text>Exit the application (alias)</Text>
 								</Text>
 							</Box>
 						</Box>

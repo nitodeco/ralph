@@ -422,7 +422,7 @@ export function useSlashCommands({
 						setTimeout(() => setRefreshMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 				})
-				.with("quit", "exit", () => {
+				.with("quit", "exit", "q", "e", () => {
 					handleShutdownSignal("SIGTERM");
 				})
 				.exhaustive();
