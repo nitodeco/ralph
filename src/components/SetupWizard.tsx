@@ -1,6 +1,7 @@
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { useState } from "react";
+import { match } from "ts-pattern";
 import {
 	DEFAULT_ENABLE_GC_HINTS,
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
@@ -282,188 +283,164 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 	});
 
 	const renderStep = () => {
-		switch (state.step) {
-			case "setup_mode":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">How would you like to configure Ralph?</Text>
-						<Text dimColor>
-							Default uses sensible settings, Advanced lets you customize everything
-						</Text>
-						<SelectInput items={SETUP_MODE_CHOICES} onSelect={handleSetupModeSelect} />
-					</Box>
-				);
-
-			case "agent_type":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Which AI agent do you want to use?</Text>
-						<SelectInput
-							items={AGENT_CHOICES}
-							initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
-							onSelect={handleAgentSelect}
+		return match(state.step)
+			.with("setup_mode", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">How would you like to configure Ralph?</Text>
+					<Text dimColor>
+						Default uses sensible settings, Advanced lets you customize everything
+					</Text>
+					<SelectInput items={SETUP_MODE_CHOICES} onSelect={handleSetupModeSelect} />
+				</Box>
+			))
+			.with("agent_type", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Which AI agent do you want to use?</Text>
+					<SelectInput
+						items={AGENT_CHOICES}
+						initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
+						onSelect={handleAgentSelect}
+					/>
+				</Box>
+			))
+			.with("max_retries", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">How many times should Ralph retry on agent failures?</Text>
+					<SelectInput
+						items={MAX_RETRIES_CHOICES}
+						initialIndex={MAX_RETRIES_CHOICES.findIndex(
+							(choice) => choice.value === state.maxRetries,
+						)}
+						onSelect={handleMaxRetriesSelect}
+					/>
+				</Box>
+			))
+			.with("retry_delay", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">How long should Ralph wait before retrying?</Text>
+					<Text dimColor>(Uses exponential backoff - this is the base delay)</Text>
+					<SelectInput
+						items={RETRY_DELAY_CHOICES}
+						initialIndex={RETRY_DELAY_CHOICES.findIndex(
+							(choice) => choice.value === state.retryDelayMs,
+						)}
+						onSelect={handleRetryDelaySelect}
+					/>
+				</Box>
+			))
+			.with("agent_timeout", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Maximum time for agent execution?</Text>
+					<Text dimColor>(Agent will be killed and retried if it exceeds this time)</Text>
+					<SelectInput
+						items={AGENT_TIMEOUT_CHOICES}
+						initialIndex={AGENT_TIMEOUT_CHOICES.findIndex(
+							(choice) => choice.value === state.agentTimeoutMs,
+						)}
+						onSelect={handleAgentTimeoutSelect}
+					/>
+				</Box>
+			))
+			.with("stuck_threshold", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">How long to wait before considering agent stuck?</Text>
+					<Text dimColor>(Agent will be killed if no output for this duration)</Text>
+					<SelectInput
+						items={STUCK_THRESHOLD_CHOICES}
+						initialIndex={STUCK_THRESHOLD_CHOICES.findIndex(
+							(choice) => choice.value === state.stuckThresholdMs,
+						)}
+						onSelect={handleStuckThresholdSelect}
+					/>
+				</Box>
+			))
+			.with("memory_buffer_size", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Maximum size for agent output buffer?</Text>
+					<Text dimColor>(Larger values use more memory but preserve more output history)</Text>
+					<SelectInput
+						items={MEMORY_BUFFER_SIZE_CHOICES}
+						initialIndex={MEMORY_BUFFER_SIZE_CHOICES.findIndex(
+							(choice) =>
+								choice.value ===
+								(state.memory.maxOutputBufferBytes ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES),
+						)}
+						onSelect={handleMemoryBufferSizeSelect}
+					/>
+				</Box>
+			))
+			.with("memory_warning_threshold", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Memory usage warning threshold?</Text>
+					<Text dimColor>(Log warnings when heap usage exceeds this value)</Text>
+					<SelectInput
+						items={MEMORY_WARNING_THRESHOLD_CHOICES}
+						initialIndex={MEMORY_WARNING_THRESHOLD_CHOICES.findIndex(
+							(choice) =>
+								choice.value ===
+								(state.memory.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB),
+						)}
+						onSelect={handleMemoryWarningThresholdSelect}
+					/>
+				</Box>
+			))
+			.with("memory_gc_hints", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Enable garbage collection hints?</Text>
+					<Text dimColor>(Suggest GC between iterations to reduce memory usage)</Text>
+					<SelectInput
+						items={YES_NO_CHOICES}
+						initialIndex={
+							(state.memory.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS) ? 0 : 1
+						}
+						onSelect={handleMemoryGcHintsSelect}
+					/>
+				</Box>
+			))
+			.with("notification_system", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Enable macOS system notifications?</Text>
+					<Text dimColor>(Get notified when tasks complete, fail, or reach max iterations)</Text>
+					<SelectInput
+						items={YES_NO_CHOICES}
+						initialIndex={state.notifications.systemNotification ? 0 : 1}
+						onSelect={handleSystemNotificationSelect}
+					/>
+				</Box>
+			))
+			.with("notification_webhook", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Webhook URL for notifications (optional):</Text>
+					<Text dimColor>(Leave empty to skip. POST requests will be sent on events)</Text>
+					<Box>
+						<Text color="gray">URL: </Text>
+						<TextInput
+							value={state.webhookUrlInput}
+							onChange={(value) => setState((prev) => ({ ...prev, webhookUrlInput: value }))}
+							onSubmit={handleWebhookUrlSubmit}
+							placeholder="https://example.com/webhook"
 						/>
 					</Box>
-				);
-
-			case "max_retries":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">How many times should Ralph retry on agent failures?</Text>
-						<SelectInput
-							items={MAX_RETRIES_CHOICES}
-							initialIndex={MAX_RETRIES_CHOICES.findIndex(
-								(choice) => choice.value === state.maxRetries,
-							)}
-							onSelect={handleMaxRetriesSelect}
+					<Text dimColor>Press Enter to continue</Text>
+				</Box>
+			))
+			.with("notification_marker", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Marker file path for notifications (optional):</Text>
+					<Text dimColor>(Leave empty to skip. A JSON file will be written on events)</Text>
+					<Box>
+						<Text color="gray">Path: </Text>
+						<TextInput
+							value={state.markerFilePathInput}
+							onChange={(value) => setState((prev) => ({ ...prev, markerFilePathInput: value }))}
+							onSubmit={handleMarkerFilePathSubmit}
+							placeholder="/path/to/marker.json"
 						/>
 					</Box>
-				);
-
-			case "retry_delay":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">How long should Ralph wait before retrying?</Text>
-						<Text dimColor>(Uses exponential backoff - this is the base delay)</Text>
-						<SelectInput
-							items={RETRY_DELAY_CHOICES}
-							initialIndex={RETRY_DELAY_CHOICES.findIndex(
-								(choice) => choice.value === state.retryDelayMs,
-							)}
-							onSelect={handleRetryDelaySelect}
-						/>
-					</Box>
-				);
-
-			case "agent_timeout":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Maximum time for agent execution?</Text>
-						<Text dimColor>(Agent will be killed and retried if it exceeds this time)</Text>
-						<SelectInput
-							items={AGENT_TIMEOUT_CHOICES}
-							initialIndex={AGENT_TIMEOUT_CHOICES.findIndex(
-								(choice) => choice.value === state.agentTimeoutMs,
-							)}
-							onSelect={handleAgentTimeoutSelect}
-						/>
-					</Box>
-				);
-
-			case "stuck_threshold":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">How long to wait before considering agent stuck?</Text>
-						<Text dimColor>(Agent will be killed if no output for this duration)</Text>
-						<SelectInput
-							items={STUCK_THRESHOLD_CHOICES}
-							initialIndex={STUCK_THRESHOLD_CHOICES.findIndex(
-								(choice) => choice.value === state.stuckThresholdMs,
-							)}
-							onSelect={handleStuckThresholdSelect}
-						/>
-					</Box>
-				);
-
-			case "memory_buffer_size":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Maximum size for agent output buffer?</Text>
-						<Text dimColor>(Larger values use more memory but preserve more output history)</Text>
-						<SelectInput
-							items={MEMORY_BUFFER_SIZE_CHOICES}
-							initialIndex={MEMORY_BUFFER_SIZE_CHOICES.findIndex(
-								(choice) =>
-									choice.value ===
-									(state.memory.maxOutputBufferBytes ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES),
-							)}
-							onSelect={handleMemoryBufferSizeSelect}
-						/>
-					</Box>
-				);
-
-			case "memory_warning_threshold":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Memory usage warning threshold?</Text>
-						<Text dimColor>(Log warnings when heap usage exceeds this value)</Text>
-						<SelectInput
-							items={MEMORY_WARNING_THRESHOLD_CHOICES}
-							initialIndex={MEMORY_WARNING_THRESHOLD_CHOICES.findIndex(
-								(choice) =>
-									choice.value ===
-									(state.memory.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB),
-							)}
-							onSelect={handleMemoryWarningThresholdSelect}
-						/>
-					</Box>
-				);
-
-			case "memory_gc_hints":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Enable garbage collection hints?</Text>
-						<Text dimColor>(Suggest GC between iterations to reduce memory usage)</Text>
-						<SelectInput
-							items={YES_NO_CHOICES}
-							initialIndex={
-								(state.memory.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS) ? 0 : 1
-							}
-							onSelect={handleMemoryGcHintsSelect}
-						/>
-					</Box>
-				);
-
-			case "notification_system":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Enable macOS system notifications?</Text>
-						<Text dimColor>(Get notified when tasks complete, fail, or reach max iterations)</Text>
-						<SelectInput
-							items={YES_NO_CHOICES}
-							initialIndex={state.notifications.systemNotification ? 0 : 1}
-							onSelect={handleSystemNotificationSelect}
-						/>
-					</Box>
-				);
-
-			case "notification_webhook":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Webhook URL for notifications (optional):</Text>
-						<Text dimColor>(Leave empty to skip. POST requests will be sent on events)</Text>
-						<Box>
-							<Text color="gray">URL: </Text>
-							<TextInput
-								value={state.webhookUrlInput}
-								onChange={(value) => setState((prev) => ({ ...prev, webhookUrlInput: value }))}
-								onSubmit={handleWebhookUrlSubmit}
-								placeholder="https://example.com/webhook"
-							/>
-						</Box>
-						<Text dimColor>Press Enter to continue</Text>
-					</Box>
-				);
-
-			case "notification_marker":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Marker file path for notifications (optional):</Text>
-						<Text dimColor>(Leave empty to skip. A JSON file will be written on events)</Text>
-						<Box>
-							<Text color="gray">Path: </Text>
-							<TextInput
-								value={state.markerFilePathInput}
-								onChange={(value) => setState((prev) => ({ ...prev, markerFilePathInput: value }))}
-								onSubmit={handleMarkerFilePathSubmit}
-								placeholder="/path/to/marker.json"
-							/>
-						</Box>
-						<Text dimColor>Press Enter to continue</Text>
-					</Box>
-				);
-
-			case "complete": {
+					<Text dimColor>Press Enter to continue</Text>
+				</Box>
+			))
+			.with("complete", () => {
 				const agentNameMap: Record<AgentType, string> = {
 					cursor: "Cursor",
 					claude: "Claude Code",
@@ -576,11 +553,8 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 						)}
 					</Box>
 				);
-			}
-
-			default:
-				return null;
-		}
+			})
+			.exhaustive();
 	};
 
 	return (

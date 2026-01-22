@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { match } from "ts-pattern";
 import { isPendingOperator, processNormalModeInput } from "./actions.ts";
 import type { UndoEntry, VimMode, VimState } from "./types.ts";
 
@@ -79,8 +80,8 @@ export function useVimMode({
 				state,
 			});
 
-			switch (action.type) {
-				case "mode_change":
+			return match(action.type)
+				.with("mode_change", () => {
 					setState((previousState) => ({
 						...previousState,
 						mode: action.newMode ?? previousState.mode,
@@ -92,8 +93,8 @@ export function useVimMode({
 					}
 
 					return true;
-
-				case "cursor_move":
+				})
+				.with("cursor_move", () => {
 					setState((previousState) => ({
 						...previousState,
 						pendingOperator: null,
@@ -104,8 +105,8 @@ export function useVimMode({
 					}
 
 					return true;
-
-				case "delete":
+				})
+				.with("delete", () => {
 					if (action.shouldRecordUndo) {
 						recordUndo();
 					}
@@ -125,8 +126,8 @@ export function useVimMode({
 					}
 
 					return true;
-
-				case "undo": {
+				})
+				.with("undo", () => {
 					const maybeLastEntry = state.undoStack.at(-1);
 
 					if (!maybeLastEntry) {
@@ -142,19 +143,16 @@ export function useVimMode({
 					onCursorChange(maybeLastEntry.cursorOffset);
 
 					return true;
-				}
-
-				case "noop":
+				})
+				.with("noop", () => {
 					setState((previousState) => ({
 						...previousState,
 						pendingOperator: null,
 					}));
 
 					return true;
-
-				default:
-					return false;
-			}
+				})
+				.otherwise(() => false);
 		},
 		[enabled, state, value, cursorOffset, onChange, onCursorChange, recordUndo],
 	);

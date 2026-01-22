@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { match } from "ts-pattern";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 
 export const LOCAL_RALPH_DIR = ".ralph";
@@ -118,18 +119,16 @@ export function getShellConfigPath(): string | null {
 	const shellName = shell.split("/").pop() || "";
 	const home = homedir();
 
-	switch (shellName) {
-		case "zsh":
-			return join(home, ".zshrc");
-		case "bash":
+	return match(shellName)
+		.with("zsh", () => join(home, ".zshrc"))
+		.with("bash", () => {
 			if (existsSync(join(home, ".bash_profile"))) {
 				return join(home, ".bash_profile");
 			}
 
 			return join(home, ".bashrc");
-		default:
-			return null;
-	}
+		})
+		.otherwise(() => null);
 }
 
 export function prependToShellConfig(): string | null {

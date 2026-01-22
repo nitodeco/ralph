@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { match } from "ts-pattern";
 import { loadConfig, saveConfig } from "./config.ts";
 import {
 	getDefaultInstallDir,
@@ -29,27 +30,23 @@ export interface MigrationResult {
 export function getArchitecture(): string {
 	const arch = process.arch;
 
-	switch (arch) {
-		case "x64":
-			return "x64";
-		case "arm64":
-			return "arm64";
-		default:
+	return match(arch)
+		.with("x64", () => "x64")
+		.with("arm64", () => "arm64")
+		.otherwise(() => {
 			throw new Error(`Unsupported architecture: ${arch}`);
-	}
+		});
 }
 
 export function getOperatingSystem(): string {
 	const platform = process.platform;
 
-	switch (platform) {
-		case "darwin":
-			return "darwin";
-		case "linux":
-			return "linux";
-		default:
+	return match(platform)
+		.with("darwin", () => "darwin")
+		.with("linux", () => "linux")
+		.otherwise(() => {
 			throw new Error(`Unsupported OS: ${platform}. Ralph currently supports macOS and Linux.`);
-	}
+		});
 }
 
 export async function fetchLatestVersion(): Promise<string> {

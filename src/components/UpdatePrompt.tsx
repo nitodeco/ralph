@@ -1,6 +1,7 @@
 import { Box, Text, useApp } from "ink";
 import SelectInput from "ink-select-input";
 import { useCallback, useEffect, useState } from "react";
+import { match } from "ts-pattern";
 import { loadConfig, saveConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import {
@@ -108,24 +109,21 @@ export function UpdatePrompt({
 	}, [version]);
 
 	const handleUpdateAction = async (item: { value: UpdateAction }) => {
-		switch (item.value) {
-			case "update":
+		await match(item.value)
+			.with("update", async () => {
 				await performUpdate();
-
-				break;
-			case "skip":
+			})
+			.with("skip", async () => {
 				if (latestVersion) {
 					skipVersion(latestVersion);
 				}
 
 				setState("complete");
-
-				break;
-			case "remind":
+			})
+			.with("remind", async () => {
 				setState("complete");
-
-				break;
-		}
+			})
+			.exhaustive();
 	};
 
 	const performUpdate = async () => {
@@ -187,111 +185,93 @@ export function UpdatePrompt({
 	}, [state, handleExit, updatePerformed, migrationResult]);
 
 	const renderContent = () => {
-		switch (state) {
-			case "checking":
-				return <Spinner label="Checking for updates..." />;
-
-			case "up_to_date":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="success">Ralph is up to date!</Message>
+		return match(state)
+			.with("checking", () => <Spinner label="Checking for updates..." />)
+			.with("up_to_date", () => (
+				<Box flexDirection="column" gap={1}>
+					<Message type="success">Ralph is up to date!</Message>
+					<Text dimColor>Current version: {version}</Text>
+				</Box>
+			))
+			.with("update_available", () => (
+				<Box flexDirection="column" gap={1}>
+					<Box flexDirection="column">
+						<Text>
+							A new version of Ralph is available:{" "}
+							<Text color="green" bold>
+								{latestVersion}
+							</Text>
+						</Text>
 						<Text dimColor>Current version: {version}</Text>
 					</Box>
-				);
-
-			case "update_available":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Box flexDirection="column">
-							<Text>
-								A new version of Ralph is available:{" "}
-								<Text color="green" bold>
-									{latestVersion}
-								</Text>
-							</Text>
-							<Text dimColor>Current version: {version}</Text>
-						</Box>
-						<Box marginTop={1} flexDirection="column">
-							<Text color="cyan">Would you like to update?</Text>
-							<SelectInput items={UPDATE_CHOICES} onSelect={handleUpdateAction} />
-						</Box>
+					<Box marginTop={1} flexDirection="column">
+						<Text color="cyan">Would you like to update?</Text>
+						<SelectInput items={UPDATE_CHOICES} onSelect={handleUpdateAction} />
 					</Box>
-				);
-
-			case "downloading":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Spinner label={`Downloading ${latestVersion}...`} />
-						<ProgressBar
-							current={downloadedBytes}
-							total={totalBytes}
-							label={`ralph-${getOperatingSystem()}-${getArchitecture()}`}
-						/>
+				</Box>
+			))
+			.with("downloading", () => (
+				<Box flexDirection="column" gap={1}>
+					<Spinner label={`Downloading ${latestVersion}...`} />
+					<ProgressBar
+						current={downloadedBytes}
+						total={totalBytes}
+						label={`ralph-${getOperatingSystem()}-${getArchitecture()}`}
+					/>
+				</Box>
+			))
+			.with("installing", () => <Spinner label="Installing..." />)
+			.with("migrated", () => (
+				<Box flexDirection="column" gap={1}>
+					<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
+					<Box flexDirection="column" marginTop={1}>
+						<Text color="yellow" bold>
+							Installation location has changed
+						</Text>
+						<Text>Ralph has been moved to: {migrationResult?.newPath}</Text>
 					</Box>
-				);
-
-			case "installing":
-				return <Spinner label="Installing..." />;
-
-			case "migrated":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
+					{migrationResult?.shellConfigPath && (
 						<Box flexDirection="column" marginTop={1}>
-							<Text color="yellow" bold>
-								Installation location has changed
+							<Text>PATH has been updated in: {migrationResult.shellConfigPath}</Text>
+							<Text dimColor>
+								Restart your terminal or run: source {migrationResult.shellConfigPath}
 							</Text>
-							<Text>Ralph has been moved to: {migrationResult?.newPath}</Text>
 						</Box>
-						{migrationResult?.shellConfigPath && (
-							<Box flexDirection="column" marginTop={1}>
-								<Text>PATH has been updated in: {migrationResult.shellConfigPath}</Text>
-								<Text dimColor>
-									Restart your terminal or run: source {migrationResult.shellConfigPath}
+					)}
+					{migrationResult?.oldPath && (
+						<Box flexDirection="column" marginTop={1}>
+							<Text color="yellow">Please remove the old installation:</Text>
+							<Box marginTop={1}>
+								<Text color="cyan" bold>
+									{getRemoveOldBinaryCommand(migrationResult.oldPath)}
 								</Text>
 							</Box>
-						)}
-						{migrationResult?.oldPath && (
-							<Box flexDirection="column" marginTop={1}>
-								<Text color="yellow">Please remove the old installation:</Text>
-								<Box marginTop={1}>
-									<Text color="cyan" bold>
-										{getRemoveOldBinaryCommand(migrationResult.oldPath)}
-									</Text>
-								</Box>
-							</Box>
-						)}
-						<Box marginTop={1}>
-							<Text dimColor>Press Ctrl+C to exit, then restart your terminal.</Text>
 						</Box>
+					)}
+					<Box marginTop={1}>
+						<Text dimColor>Press Ctrl+C to exit, then restart your terminal.</Text>
 					</Box>
-				);
-
-			case "complete":
-				return (
-					<Box flexDirection="column" gap={1}>
-						{updatePerformed ? (
-							<>
-								<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
-								<Text dimColor>Restarting...</Text>
-							</>
-						) : (
-							<Text dimColor>You can update later by running 'ralph update'.</Text>
-						)}
-					</Box>
-				);
-
-			case "error":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="error">Update failed</Message>
-						{error && <Text dimColor>{error}</Text>}
-					</Box>
-				);
-
-			default:
-				return null;
-		}
+				</Box>
+			))
+			.with("complete", () => (
+				<Box flexDirection="column" gap={1}>
+					{updatePerformed ? (
+						<>
+							<Message type="success">Ralph updated successfully to {latestVersion}!</Message>
+							<Text dimColor>Restarting...</Text>
+						</>
+					) : (
+						<Text dimColor>You can update later by running 'ralph update'.</Text>
+					)}
+				</Box>
+			))
+			.with("error", () => (
+				<Box flexDirection="column" gap={1}>
+					<Message type="error">Update failed</Message>
+					{error && <Text dimColor>{error}</Text>}
+				</Box>
+			))
+			.exhaustive();
 	};
 
 	return (

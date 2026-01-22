@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { match } from "ts-pattern";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { handleShutdownSignal } from "@/lib/daemon.ts";
@@ -85,17 +86,17 @@ export function useSlashCommands({
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
-			switch (command) {
-				case "start":
+			match(command)
+				.with("start", () => {
 					startIterations(args?.iterations, args?.full);
-					break;
-				case "resume":
+				})
+				.with("resume", () => {
 					resumeSession();
-					break;
-				case "stop":
+				})
+				.with("stop", () => {
 					stopAgent();
-					break;
-				case "next":
+				})
+				.with("next", () => {
 					if (args?.taskIdentifier) {
 						const result = setManualNextTask(args.taskIdentifier);
 
@@ -116,9 +117,8 @@ export function useSlashCommands({
 						setNextTaskMessage({ type: "error", text: "Usage: /next <task number or title>" });
 						setTimeout(() => setNextTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
-
-					break;
-				case "guardrail":
+				})
+				.with("guardrail", () => {
 					if (args?.guardrailInstruction) {
 						try {
 							const guardrail = getGuardrailsService().add({
@@ -144,14 +144,13 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setGuardrailMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
-
-					break;
-				case "guardrails":
+				})
+				.with("guardrails", () => {
 					agentStop();
 					iterationPause();
 					setActiveView("guardrails");
-					break;
-				case "rule":
+				})
+				.with("rule", () => {
 					if (args?.ruleInstruction) {
 						try {
 							const rule = getRulesService().add({
@@ -177,14 +176,13 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setRuleMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
-
-					break;
-				case "rules":
+				})
+				.with("rules", () => {
 					agentStop();
 					iterationPause();
 					setActiveView("rules");
-					break;
-				case "learn":
+				})
+				.with("learn", () => {
 					if (args?.lesson) {
 						try {
 							getSessionMemoryService().addLesson(args.lesson);
@@ -207,9 +205,8 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setMemoryMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
-
-					break;
-				case "note":
+				})
+				.with("note", () => {
 					if (args?.note) {
 						const taskTitle = getCurrentTaskTitle?.();
 
@@ -241,19 +238,19 @@ export function useSlashCommands({
 						});
 						setTimeout(() => setMemoryMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
-
-					break;
-				case "memory":
+				})
+				.with("memory", () => {
 					agentStop();
 					iterationPause();
 					setActiveView("memory");
-					break;
-				case "task":
+				})
+				.with("task", () => {
 					if (args?.taskSubcommand === "list") {
 						agentStop();
 						iterationPause();
 						setActiveView("tasks");
-						break;
+
+						return;
 					}
 
 					if (args?.taskSubcommand === "current") {
@@ -262,7 +259,8 @@ export function useSlashCommands({
 						if (!prd) {
 							setTaskMessage({ type: "error", text: "No PRD found" });
 							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-							break;
+
+							return;
 						}
 
 						const nextPendingIndex = prd.tasks.findIndex((task) => !task.done);
@@ -279,7 +277,8 @@ export function useSlashCommands({
 						}
 
 						setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-						break;
+
+						return;
 					}
 
 					if (args?.taskSubcommand === "done" || args?.taskSubcommand === "undone") {
@@ -291,7 +290,8 @@ export function useSlashCommands({
 								text: `Usage: /task ${args.taskSubcommand} <task number or title>`,
 							});
 							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-							break;
+
+							return;
 						}
 
 						const prd = loadPrd();
@@ -299,7 +299,8 @@ export function useSlashCommands({
 						if (!prd) {
 							setTaskMessage({ type: "error", text: "No PRD found" });
 							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-							break;
+
+							return;
 						}
 
 						const trimmedIdentifier = args.taskIdentifier.trim();
@@ -325,7 +326,8 @@ export function useSlashCommands({
 								text: `Task not found: "${trimmedIdentifier}"`,
 							});
 							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-							break;
+
+							return;
 						}
 
 						const task = prd.tasks.at(taskIndex);
@@ -336,7 +338,8 @@ export function useSlashCommands({
 								text: `Task not found: "${trimmedIdentifier}"`,
 							});
 							setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-							break;
+
+							return;
 						}
 
 						const isAlreadyInState = isDone ? task.done : !task.done;
@@ -361,36 +364,38 @@ export function useSlashCommands({
 						}
 
 						setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
-						break;
 					}
-
-					break;
-				case "init":
-				case "setup":
-				case "update":
-				case "help":
-				case "add":
-				case "status":
-				case "archive":
-				case "analyze":
-				case "agent":
-				case "tasks":
-				case "projects":
-				case "plan":
-				case "usage":
-					agentStop();
-					iterationPause();
-					setActiveView(getViewForCommand(command));
-					break;
-				case "dismiss-update":
+				})
+				.with(
+					"init",
+					"setup",
+					"update",
+					"help",
+					"add",
+					"status",
+					"archive",
+					"analyze",
+					"agent",
+					"tasks",
+					"projects",
+					"plan",
+					"usage",
+					"migrate",
+					() => {
+						agentStop();
+						iterationPause();
+						setActiveView(getViewForCommand(command));
+					},
+				)
+				.with("dismiss-update", () => {
 					dismissUpdateBanner?.();
-					break;
-				case "clear":
+				})
+				.with("clear", () => {
 					agentStop();
 					iterationPause();
 					setActiveView("confirm-clear");
-					break;
-				case "refresh":
+				})
+				.with("refresh", () => {
 					if (refreshState) {
 						const result = refreshState();
 
@@ -413,13 +418,11 @@ export function useSlashCommands({
 
 						setTimeout(() => setRefreshMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
-
-					break;
-				case "quit":
-				case "exit":
+				})
+				.with("quit", "exit", () => {
 					handleShutdownSignal("SIGTERM");
-					break;
-			}
+				})
+				.exhaustive();
 		},
 		[
 			agentStop,

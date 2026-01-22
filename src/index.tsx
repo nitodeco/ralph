@@ -2,6 +2,7 @@
 
 import { type Instance, render } from "ink";
 import { useState } from "react";
+import { match } from "ts-pattern";
 import {
 	handleAnalyzeClear,
 	handleAnalyzeExport,
@@ -240,8 +241,8 @@ function main(): void {
 
 	const autoStart = isDaemonProcess() || dryRun;
 
-	switch (command) {
-		case "run":
+	match(command)
+		.with("run", () => {
 			getSleepPreventionService().start();
 			maybeInkInstance = render(
 				<RunWithSetup
@@ -254,9 +255,8 @@ function main(): void {
 					skipVerification={skipVerification}
 				/>,
 			);
-			break;
-
-		case "resume":
+		})
+		.with("resume", () => {
 			getSleepPreventionService().start();
 			maybeInkInstance = render(
 				<RunWithSetup
@@ -270,261 +270,145 @@ function main(): void {
 					skipVerification={skipVerification}
 				/>,
 			);
-			break;
-
-		case "init":
+		})
+		.with("init", () => {
 			maybeInkInstance = render(<InitWizard version={VERSION} />);
-			break;
-
-		case "setup":
+		})
+		.with("setup", () => {
 			maybeInkInstance = render(<SetupWizard version={VERSION} />);
-			break;
-
-		case "update":
+		})
+		.with("update", () => {
 			maybeInkInstance = render(<UpdatePrompt version={VERSION} forceCheck />);
-			break;
-
-		case "status":
+		})
+		.with("status", () => {
 			printStatus(VERSION, verbose);
-			break;
-
-		case "stats":
+		})
+		.with("stats", () => {
 			printStats(VERSION);
-			break;
-
-		case "list":
+		})
+		.with("list", () => {
 			printList(VERSION, json, verbose);
-			break;
-
-		case "config":
+		})
+		.with("config", () => {
 			printConfig(VERSION, json, verbose);
-			break;
-
-		case "archive":
+		})
+		.with("archive", () => {
 			printArchive(VERSION);
-			break;
-
-		case "clear":
+		})
+		.with("clear", () => {
 			printClear(VERSION, force);
-			break;
-
-		case "guardrails":
-			switch (guardrailsSubcommand) {
-				case "add":
-					handleGuardrailsAdd(guardrailsArg ?? "");
-					break;
-				case "remove":
-					handleGuardrailsRemove(guardrailsArg ?? "");
-					break;
-				case "toggle":
-					handleGuardrailsToggle(guardrailsArg ?? "");
-					break;
-				case "generate":
-					handleGuardrailsGenerate(guardrailsGenerateOptions ?? {}, json);
-					break;
-				default:
-					printGuardrails(VERSION, json);
-					break;
-			}
-
-			break;
-
-		case "rules":
-			switch (rulesSubcommand) {
-				case "add":
-					handleRulesAdd(rulesArg ?? "");
-					break;
-				case "remove":
-					handleRulesRemove(rulesArg ?? "");
-					break;
-				default:
-					printRules(VERSION, json);
-					break;
-			}
-
-			break;
-
-		case "analyze":
-			switch (analyzeSubcommand) {
-				case "export":
-					handleAnalyzeExport();
-					break;
-				case "clear":
-					handleAnalyzeClear();
-					break;
-				default:
-					printAnalyze(json);
-					break;
-			}
-
-			break;
-
-		case "memory":
-			switch (memorySubcommand) {
-				case "export":
-					handleMemoryExport();
-					break;
-				case "clear":
-					handleMemoryClear(force);
-					break;
-				default:
-					printMemory(json);
-					break;
-			}
-
-			break;
-
-		case "migrate":
+		})
+		.with("guardrails", () => {
+			match(guardrailsSubcommand)
+				.with("add", () => handleGuardrailsAdd(guardrailsArg ?? ""))
+				.with("remove", () => handleGuardrailsRemove(guardrailsArg ?? ""))
+				.with("toggle", () => handleGuardrailsToggle(guardrailsArg ?? ""))
+				.with("generate", () => handleGuardrailsGenerate(guardrailsGenerateOptions ?? {}, json))
+				.otherwise(() => printGuardrails(VERSION, json));
+		})
+		.with("rules", () => {
+			match(rulesSubcommand)
+				.with("add", () => handleRulesAdd(rulesArg ?? ""))
+				.with("remove", () => handleRulesRemove(rulesArg ?? ""))
+				.otherwise(() => printRules(VERSION, json));
+		})
+		.with("analyze", () => {
+			match(analyzeSubcommand)
+				.with("export", () => handleAnalyzeExport())
+				.with("clear", () => handleAnalyzeClear())
+				.otherwise(() => printAnalyze(json));
+		})
+		.with("memory", () => {
+			match(memorySubcommand)
+				.with("export", () => handleMemoryExport())
+				.with("clear", () => handleMemoryClear(force))
+				.otherwise(() => printMemory(json));
+		})
+		.with("migrate", () => {
 			handleMigrateCommand(VERSION);
-			break;
-
-		case "projects":
-			switch (projectsSubcommand) {
-				case "current":
-					printCurrentProject(json);
-					break;
-				case "prune":
-					handleProjectsPrune(json);
-					break;
-				default:
-					printProjects(VERSION, json);
-					break;
-			}
-
-			break;
-
-		case "task":
-			switch (taskSubcommand) {
-				case "add":
+		})
+		.with("projects", () => {
+			match(projectsSubcommand)
+				.with("current", () => printCurrentProject(json))
+				.with("prune", () => handleProjectsPrune(json))
+				.otherwise(() => printProjects(VERSION, json));
+		})
+		.with("task", () => {
+			match(taskSubcommand)
+				.with("add", () => {
 					handleTaskAdd(taskAddOptions ?? {}, json).catch((error) => {
 						console.error("Failed to add task:", error);
 						process.exit(1);
 					});
-					break;
-				case "edit":
+				})
+				.with("edit", () => {
 					handleTaskEdit(taskIdentifier ?? "", taskEditOptions ?? {}, json).catch((error) => {
 						console.error("Failed to edit task:", error);
 						process.exit(1);
 					});
-					break;
-				case "remove":
-					handleTaskRemove(taskIdentifier ?? "", json);
-					break;
-				case "show":
-					printTaskShow(taskIdentifier ?? "", json);
-					break;
-				case "done":
-					handleTaskDone(taskIdentifier ?? "", json);
-					break;
-				case "undone":
-					handleTaskUndone(taskIdentifier ?? "", json);
-					break;
-				case "current":
-					printCurrentTask(json);
-					break;
-				default:
-					printTaskList(json);
-					break;
-			}
-
-			break;
-
-		case "progress":
-			switch (progressSubcommand) {
-				case "add":
-					handleProgressAdd(progressText ?? "", json);
-					break;
-				case "clear":
-					handleProgressClear(json);
-					break;
-				default:
-					printProgress(json);
-					break;
-			}
-
-			break;
-
-		case "dependency":
-			switch (dependencySubcommand) {
-				case "validate":
-					printDependencyValidate(json);
-					break;
-				case "ready":
-					printDependencyReady(json);
-					break;
-				case "blocked":
-					printDependencyBlocked(json);
-					break;
-				case "order":
-					printDependencyOrder(json);
-					break;
-				case "show":
-					printDependencyShow(dependencySetOptions?.taskIdentifier ?? "", json);
-					break;
-				case "set":
+				})
+				.with("remove", () => handleTaskRemove(taskIdentifier ?? "", json))
+				.with("show", () => printTaskShow(taskIdentifier ?? "", json))
+				.with("done", () => handleTaskDone(taskIdentifier ?? "", json))
+				.with("undone", () => handleTaskUndone(taskIdentifier ?? "", json))
+				.with("current", () => printCurrentTask(json))
+				.otherwise(() => printTaskList(json));
+		})
+		.with("progress", () => {
+			match(progressSubcommand)
+				.with("add", () => handleProgressAdd(progressText ?? "", json))
+				.with("clear", () => handleProgressClear(json))
+				.otherwise(() => printProgress(json));
+		})
+		.with("dependency", () => {
+			match(dependencySubcommand)
+				.with("validate", () => printDependencyValidate(json))
+				.with("ready", () => printDependencyReady(json))
+				.with("blocked", () => printDependencyBlocked(json))
+				.with("order", () => printDependencyOrder(json))
+				.with("show", () => printDependencyShow(dependencySetOptions?.taskIdentifier ?? "", json))
+				.with("set", () =>
 					handleDependencySet(
 						dependencySetOptions?.taskIdentifier ?? "",
 						dependencySetOptions?.dependencies ?? [],
 						json,
-					);
-					break;
-				case "add":
+					),
+				)
+				.with("add", () =>
 					handleDependencyAdd(
 						dependencyModifyOptions?.taskIdentifier ?? "",
 						dependencyModifyOptions?.dependencyId ?? "",
 						json,
-					);
-					break;
-				case "remove":
+					),
+				)
+				.with("remove", () =>
 					handleDependencyRemove(
 						dependencyModifyOptions?.taskIdentifier ?? "",
 						dependencyModifyOptions?.dependencyId ?? "",
 						json,
-					);
-					break;
-				default:
-					printDependencyGraph(json);
-					break;
-			}
-
-			break;
-
-		case "usage":
-			switch (usageSubcommand) {
-				case "summary":
-					printUsageSummary(json);
-					break;
-				case "sessions":
-					printRecentSessions(usageLimit ?? 10, json);
-					break;
-				case "daily":
-					printDailyUsage(usageLimit ?? 7, json);
-					break;
-				default:
-					printUsage(json);
-					break;
-			}
-
-			break;
-
-		case "stop":
+					),
+				)
+				.otherwise(() => printDependencyGraph(json));
+		})
+		.with("usage", () => {
+			match(usageSubcommand)
+				.with("summary", () => printUsageSummary(json))
+				.with("sessions", () => printRecentSessions(usageLimit ?? 10, json))
+				.with("daily", () => printDailyUsage(usageLimit ?? 7, json))
+				.otherwise(() => printUsage(json));
+		})
+		.with("stop", () => {
 			handleStopCommand(VERSION).catch((error) => {
 				console.error("Failed to stop:", error);
 				process.exit(1);
 			});
-
-			return;
-
-		case "version":
-		case "-v":
-		case "--version":
+		})
+		.with("version", "-v", "--version", () => {
 			printVersion(VERSION);
-			break;
-
-		default:
+		})
+		.otherwise(() => {
 			printHelp(VERSION);
-			break;
-	}
+		});
 }
 
 main();

@@ -1,3 +1,4 @@
+import { match } from "ts-pattern";
 import {
 	findFirstNonWhitespace,
 	findNextWordStart,
@@ -32,83 +33,55 @@ function createDeleteAction(newValue: string, newCursorOffset: number): VimActio
 function handleMotion(input: string, context: ActionContext): VimAction | null {
 	const { value, cursorOffset } = context;
 
-	switch (input) {
-		case "h":
-			return createMoveAction(Math.max(0, cursorOffset - 1));
-
-		case "l":
-			return createMoveAction(Math.min(value.length - 1, cursorOffset + 1));
-
-		case "w":
-			return createMoveAction(findNextWordStart(value, cursorOffset));
-
-		case "b":
-			return createMoveAction(findPreviousWordStart(value, cursorOffset));
-
-		case "e":
-			return createMoveAction(findWordEnd(value, cursorOffset));
-
-		case "0":
-			return createMoveAction(0);
-
-		case "$":
-			return createMoveAction(Math.max(0, value.length - 1));
-
-		case "^":
-			return createMoveAction(findFirstNonWhitespace(value));
-
-		default:
-			return null;
-	}
+	return match(input)
+		.with("h", () => createMoveAction(Math.max(0, cursorOffset - 1)))
+		.with("l", () => createMoveAction(Math.min(value.length - 1, cursorOffset + 1)))
+		.with("w", () => createMoveAction(findNextWordStart(value, cursorOffset)))
+		.with("b", () => createMoveAction(findPreviousWordStart(value, cursorOffset)))
+		.with("e", () => createMoveAction(findWordEnd(value, cursorOffset)))
+		.with("0", () => createMoveAction(0))
+		.with("$", () => createMoveAction(Math.max(0, value.length - 1)))
+		.with("^", () => createMoveAction(findFirstNonWhitespace(value)))
+		.otherwise(() => null);
 }
 
 function handleDeleteWithMotion(motion: string, context: ActionContext): VimAction {
 	const { value, cursorOffset } = context;
 
-	switch (motion) {
-		case "w": {
+	return match(motion)
+		.with("w", () => {
 			const endPosition = findNextWordStart(value, cursorOffset);
 			const newValue = value.slice(0, cursorOffset) + value.slice(endPosition);
 			const newCursorOffset = Math.min(cursorOffset, Math.max(0, newValue.length - 1));
 
 			return createDeleteAction(newValue, newCursorOffset);
-		}
-
-		case "b": {
+		})
+		.with("b", () => {
 			const startPosition = findPreviousWordStart(value, cursorOffset);
 			const newValue = value.slice(0, startPosition) + value.slice(cursorOffset);
 
 			return createDeleteAction(newValue, startPosition);
-		}
-
-		case "e": {
+		})
+		.with("e", () => {
 			const endPosition = findWordEnd(value, cursorOffset) + 1;
 			const newValue = value.slice(0, cursorOffset) + value.slice(endPosition);
 			const newCursorOffset = Math.min(cursorOffset, Math.max(0, newValue.length - 1));
 
 			return createDeleteAction(newValue, newCursorOffset);
-		}
-
-		case "0": {
+		})
+		.with("0", () => {
 			const newValue = value.slice(cursorOffset);
 
 			return createDeleteAction(newValue, 0);
-		}
-
-		case "$": {
+		})
+		.with("$", () => {
 			const newValue = value.slice(0, cursorOffset);
 			const newCursorOffset = Math.max(0, newValue.length - 1);
 
 			return createDeleteAction(newValue, newCursorOffset);
-		}
-
-		case "d": {
-			return createDeleteAction("", 0);
-		}
-
-		default:
-			return createNoopAction();
-	}
+		})
+		.with("d", () => createDeleteAction("", 0))
+		.otherwise(() => createNoopAction());
 }
 
 export function processNormalModeInput(input: string, context: ActionContext): VimAction {
@@ -124,32 +97,24 @@ export function processNormalModeInput(input: string, context: ActionContext): V
 		return motionAction;
 	}
 
-	switch (input) {
-		case "i":
-			return { type: "mode_change", newMode: "insert" };
-
-		case "a":
-			return {
-				type: "mode_change",
-				newMode: "insert",
-				newCursorOffset: Math.min(cursorOffset + 1, value.length),
-			};
-
-		case "A":
-			return {
-				type: "mode_change",
-				newMode: "insert",
-				newCursorOffset: value.length,
-			};
-
-		case "I":
-			return {
-				type: "mode_change",
-				newMode: "insert",
-				newCursorOffset: findFirstNonWhitespace(value),
-			};
-
-		case "x":
+	return match(input)
+		.with("i", () => ({ type: "mode_change" as const, newMode: "insert" as const }))
+		.with("a", () => ({
+			type: "mode_change" as const,
+			newMode: "insert" as const,
+			newCursorOffset: Math.min(cursorOffset + 1, value.length),
+		}))
+		.with("A", () => ({
+			type: "mode_change" as const,
+			newMode: "insert" as const,
+			newCursorOffset: value.length,
+		}))
+		.with("I", () => ({
+			type: "mode_change" as const,
+			newMode: "insert" as const,
+			newCursorOffset: findFirstNonWhitespace(value),
+		}))
+		.with("x", () => {
 			if (value.length === 0) {
 				return createNoopAction();
 			}
@@ -158,8 +123,8 @@ export function processNormalModeInput(input: string, context: ActionContext): V
 				value.slice(0, cursorOffset) + value.slice(cursorOffset + 1),
 				Math.min(cursorOffset, Math.max(0, value.length - 2)),
 			);
-
-		case "X":
+		})
+		.with("X", () => {
 			if (cursorOffset === 0) {
 				return createNoopAction();
 			}
@@ -168,28 +133,18 @@ export function processNormalModeInput(input: string, context: ActionContext): V
 				value.slice(0, cursorOffset - 1) + value.slice(cursorOffset),
 				cursorOffset - 1,
 			);
-
-		case "d":
-			return { type: "noop" };
-
-		case "D":
-			return handleDeleteWithMotion("$", context);
-
-		case "C":
-			return {
-				type: "delete",
-				newValue: value.slice(0, cursorOffset),
-				newCursorOffset: cursorOffset,
-				newMode: "insert",
-				shouldRecordUndo: true,
-			};
-
-		case "u":
-			return { type: "undo" };
-
-		default:
-			return createNoopAction();
-	}
+		})
+		.with("d", () => ({ type: "noop" as const }))
+		.with("D", () => handleDeleteWithMotion("$", context))
+		.with("C", () => ({
+			type: "delete" as const,
+			newValue: value.slice(0, cursorOffset),
+			newCursorOffset: cursorOffset,
+			newMode: "insert" as const,
+			shouldRecordUndo: true,
+		}))
+		.with("u", () => ({ type: "undo" as const }))
+		.otherwise(() => createNoopAction());
 }
 
 export function isPendingOperator(input: string): boolean {

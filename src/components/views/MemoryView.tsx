@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { match } from "ts-pattern";
 import { ConfirmationDialog } from "@/components/common/index.ts";
 import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
@@ -104,8 +105,8 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 	});
 
 	const renderTabContent = () => {
-		switch (activeTab) {
-			case "lessons":
+		return match(activeTab)
+			.with("lessons", () => {
 				if (memory.lessonsLearned.length === 0) {
 					return <Text dimColor>No lessons recorded yet. Use /learn to add lessons.</Text>;
 				}
@@ -117,8 +118,8 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 						))}
 					</Box>
 				);
-
-			case "patterns":
+			})
+			.with("patterns", () => {
 				if (memory.successfulPatterns.length === 0) {
 					return <Text dimColor>No successful patterns recorded yet.</Text>;
 				}
@@ -130,8 +131,8 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 						))}
 					</Box>
 				);
-
-			case "failed":
+			})
+			.with("failed", () => {
 				if (memory.failedApproaches.length === 0) {
 					return <Text dimColor>No failed approaches recorded yet.</Text>;
 				}
@@ -143,8 +144,8 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 						))}
 					</Box>
 				);
-
-			case "notes": {
+			})
+			.with("notes", () => {
 				const taskTitles = Object.keys(memory.taskNotes);
 
 				if (taskTitles.length === 0) {
@@ -165,8 +166,8 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 						))}
 					</Box>
 				);
-			}
-		}
+			})
+			.exhaustive();
 	};
 
 	return (

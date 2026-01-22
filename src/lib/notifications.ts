@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { platform } from "node:os";
+import { match } from "ts-pattern";
 import type { NotificationConfig, NotificationEvent } from "@/types.ts";
 
 interface NotificationPayload {
@@ -12,39 +13,36 @@ interface NotificationPayload {
 }
 
 function getEventTitle(event: NotificationEvent): string {
-	switch (event) {
-		case "complete":
-			return "Ralph - All Tasks Complete";
-		case "max_iterations":
-			return "Ralph - Max Iterations Reached";
-		case "fatal_error":
-			return "Ralph - Fatal Error";
-		case "input_required":
-			return "Ralph - Input Required";
-		case "session_paused":
-			return "Ralph - Session Paused";
-		case "verification_failed":
-			return "Ralph - Verification Failed";
-	}
+	return match(event)
+		.with("complete", () => "Ralph - All Tasks Complete")
+		.with("max_iterations", () => "Ralph - Max Iterations Reached")
+		.with("fatal_error", () => "Ralph - Fatal Error")
+		.with("input_required", () => "Ralph - Input Required")
+		.with("session_paused", () => "Ralph - Session Paused")
+		.with("verification_failed", () => "Ralph - Verification Failed")
+		.exhaustive();
 }
 
 function getEventMessage(event: NotificationEvent, projectName?: string): string {
 	const projectPrefix = projectName ? `[${projectName}] ` : "";
 
-	switch (event) {
-		case "complete":
-			return `${projectPrefix}All tasks have been completed successfully!`;
-		case "max_iterations":
-			return `${projectPrefix}Maximum iterations reached. PRD is not yet complete.`;
-		case "fatal_error":
-			return `${projectPrefix}A fatal error occurred. Check logs for details.`;
-		case "input_required":
-			return `${projectPrefix}Waiting for your input to continue.`;
-		case "session_paused":
-			return `${projectPrefix}Session has been paused. Use /resume to continue.`;
-		case "verification_failed":
-			return `${projectPrefix}Verification failed. Review required before continuing.`;
-	}
+	return match(event)
+		.with("complete", () => `${projectPrefix}All tasks have been completed successfully!`)
+		.with(
+			"max_iterations",
+			() => `${projectPrefix}Maximum iterations reached. PRD is not yet complete.`,
+		)
+		.with("fatal_error", () => `${projectPrefix}A fatal error occurred. Check logs for details.`)
+		.with("input_required", () => `${projectPrefix}Waiting for your input to continue.`)
+		.with(
+			"session_paused",
+			() => `${projectPrefix}Session has been paused. Use /resume to continue.`,
+		)
+		.with(
+			"verification_failed",
+			() => `${projectPrefix}Verification failed. Review required before continuing.`,
+		)
+		.exhaustive();
 }
 
 export async function sendSystemNotification(

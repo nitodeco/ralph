@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { match } from "ts-pattern";
 import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { getUsageStatisticsService } from "@/lib/services/index.ts";
@@ -83,8 +84,8 @@ export const UsageView: React.FC<UsageViewProps> = ({ version, onClose }) => {
 	});
 
 	const renderTabContent = () => {
-		switch (activeTab) {
-			case "summary":
+		return match(activeTab)
+			.with("summary", () => {
 				if (!hasUsage || summary.totalSessions === 0) {
 					return (
 						<Text dimColor>No usage data recorded yet. Run some sessions to see statistics.</Text>
@@ -163,8 +164,8 @@ export const UsageView: React.FC<UsageViewProps> = ({ version, onClose }) => {
 						)}
 					</Box>
 				);
-
-			case "sessions":
+			})
+			.with("sessions", () => {
 				if (recentSessions.length === 0) {
 					return <Text dimColor>No sessions recorded yet.</Text>;
 				}
@@ -198,8 +199,8 @@ export const UsageView: React.FC<UsageViewProps> = ({ version, onClose }) => {
 						})}
 					</Box>
 				);
-
-			case "daily":
+			})
+			.with("daily", () => {
 				if (dailyUsage.length === 0) {
 					return <Text dimColor>No daily usage data recorded yet.</Text>;
 				}
@@ -219,7 +220,8 @@ export const UsageView: React.FC<UsageViewProps> = ({ version, onClose }) => {
 						))}
 					</Box>
 				);
-		}
+			})
+			.exhaustive();
 	};
 
 	return (

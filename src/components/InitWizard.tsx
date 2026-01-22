@@ -2,6 +2,7 @@ import { existsSync, writeFileSync } from "node:fs";
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { useRef, useState } from "react";
+import { match } from "ts-pattern";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
@@ -261,78 +262,66 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 	});
 
 	const renderStep = () => {
-		switch (state.step) {
-			case "check_existing_prd":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="yellow">
-							A PRD file already exists ({state.existingPrdPath}). Overwrite it?
-						</Text>
-						<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwritePrd} />
-					</Box>
-				);
-
-			case "check_existing_progress":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="yellow">{progressFilePath} already exists. Overwrite it?</Text>
-						<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwriteProgress} />
-					</Box>
-				);
-
-			case "agent_type":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Which AI agent do you want to use?</Text>
-						<SelectInput
-							items={AGENT_CHOICES}
-							initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
-							onSelect={handleAgentSelect}
+		return match(state.step)
+			.with("check_existing_prd", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="yellow">
+						A PRD file already exists ({state.existingPrdPath}). Overwrite it?
+					</Text>
+					<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwritePrd} />
+				</Box>
+			))
+			.with("check_existing_progress", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="yellow">{progressFilePath} already exists. Overwrite it?</Text>
+					<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwriteProgress} />
+				</Box>
+			))
+			.with("agent_type", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Which AI agent do you want to use?</Text>
+					<SelectInput
+						items={AGENT_CHOICES}
+						initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
+						onSelect={handleAgentSelect}
+					/>
+				</Box>
+			))
+			.with("description", () => (
+				<Box flexDirection="column" gap={1}>
+					<Text color="cyan">Describe what you want to build:</Text>
+					<Text dimColor>Be as detailed as possible. The AI will break this down into tasks.</Text>
+					<Box marginTop={1}>
+						<Text color="green">❯ </Text>
+						<TextInput
+							value={inputValue}
+							onChange={setInputValue}
+							onSubmit={handleDescriptionSubmit}
+							placeholder="I want to build a..."
+							collapsePastedText
+							pastedSegments={pastedSegments}
+							onPaste={handlePaste}
 						/>
 					</Box>
-				);
-
-			case "description":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Text color="cyan">Describe what you want to build:</Text>
-						<Text dimColor>
-							Be as detailed as possible. The AI will break this down into tasks.
-						</Text>
-						<Box marginTop={1}>
-							<Text color="green">❯ </Text>
-							<TextInput
-								value={inputValue}
-								onChange={setInputValue}
-								onSubmit={handleDescriptionSubmit}
-								placeholder="I want to build a..."
-								collapsePastedText
-								pastedSegments={pastedSegments}
-								onPaste={handlePaste}
-							/>
-						</Box>
-					</Box>
-				);
-
-			case "generating":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Spinner label="Generating PRD from your description..." />
-						{state.agentOutput && (
-							<Box marginTop={1} flexDirection="column">
-								<Text dimColor>Agent output:</Text>
-								<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-									<Text dimColor>{state.agentOutput.slice(-500)}</Text>
-								</Box>
+				</Box>
+			))
+			.with("generating", () => (
+				<Box flexDirection="column" gap={1}>
+					<Spinner label="Generating PRD from your description..." />
+					{state.agentOutput && (
+						<Box marginTop={1} flexDirection="column">
+							<Text dimColor>Agent output:</Text>
+							<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
+								<Text dimColor>{state.agentOutput.slice(-500)}</Text>
 							</Box>
-						)}
-						<Box marginTop={1}>
-							<Text dimColor>q/Esc Cancel</Text>
 						</Box>
+					)}
+					<Box marginTop={1}>
+						<Text dimColor>q/Esc Cancel</Text>
 					</Box>
-				);
-
-			case "complete": {
+				</Box>
+			))
+			.with("complete", () => {
 				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
 				const registeredPrdPath = getPrdJsonPath();
 				const registeredProgressPath = getProgressFilePath();
@@ -368,27 +357,20 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 						<Text dimColor>Press Enter to exit</Text>
 					</Box>
 				);
-			}
-
-			case "error":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="error">Error: {state.errorMessage}</Message>
-						<Text dimColor>Press Enter to exit</Text>
-					</Box>
-				);
-
-			case "aborted":
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="warning">Aborted.</Message>
-						<Text dimColor>Press Enter to exit</Text>
-					</Box>
-				);
-
-			default:
-				return null;
-		}
+			})
+			.with("error", () => (
+				<Box flexDirection="column" gap={1}>
+					<Message type="error">Error: {state.errorMessage}</Message>
+					<Text dimColor>Press Enter to exit</Text>
+				</Box>
+			))
+			.with("aborted", () => (
+				<Box flexDirection="column" gap={1}>
+					<Message type="warning">Aborted.</Message>
+					<Text dimColor>Press Enter to exit</Text>
+				</Box>
+			))
+			.exhaustive();
 	};
 
 	return (
