@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { createConfigService } from "./config/implementation.ts";
 import type { ConfigService } from "./config/types.ts";
 import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
+import { createGitBranchService } from "./git-branch/implementation.ts";
+import type { GitBranchService } from "./git-branch/types.ts";
 import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
@@ -37,6 +39,7 @@ export function bootstrapServices(): void {
 		session: createSessionService(),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
+		gitBranch: createGitBranchService(),
 	});
 }
 
@@ -50,6 +53,7 @@ export interface TestServiceOverrides {
 	session?: Partial<SessionService>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
+	gitBranch?: Partial<GitBranchService>;
 }
 
 function createMockProjectRegistryService(
@@ -400,6 +404,78 @@ function createMockUsageStatisticsService(
 	};
 }
 
+function createMockGitBranchService(overrides: Partial<GitBranchService> = {}): GitBranchService {
+	return {
+		getCurrentBranch: () => "main",
+		getBaseBranch: () => "main",
+		hasRemote: () => true,
+		getRemoteName: () => "origin",
+		getWorkingDirectoryStatus: () => ({
+			isClean: true,
+			hasUncommittedChanges: false,
+			hasUntrackedFiles: false,
+			modifiedFiles: [],
+			untrackedFiles: [],
+		}),
+		isWorkingDirectoryClean: () => true,
+		createBranch: (branchName) => ({
+			status: "success",
+			message: `Created branch: ${branchName}`,
+			branchName,
+		}),
+		checkoutBranch: (branchName) => ({
+			status: "success",
+			message: `Checked out branch: ${branchName}`,
+			branchName,
+		}),
+		deleteBranch: (branchName) => ({
+			status: "success",
+			message: `Deleted branch: ${branchName}`,
+			branchName,
+		}),
+		createAndCheckoutTaskBranch: (taskTitle, taskIndex) => {
+			const branchName = `ralph/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`;
+
+			return {
+				status: "success",
+				message: `Created and checked out branch: ${branchName}`,
+				branchName,
+			};
+		},
+		commitChanges: () => ({
+			status: "success",
+			message: "Changes committed successfully",
+		}),
+		pushBranch: (branchName) => ({
+			status: "success",
+			message: `Pushed branch: ${branchName}`,
+			branchName,
+		}),
+		returnToBaseBranch: (baseBranch) => ({
+			status: "success",
+			message: `Returned to branch: ${baseBranch}`,
+			branchName: baseBranch,
+		}),
+		generateBranchName: (taskTitle, taskIndex, prefix = "ralph") =>
+			`${prefix}/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`,
+		getBranchInfo: () => ({
+			currentBranch: "main",
+			baseBranch: "main",
+			hasRemote: true,
+			remoteName: "origin",
+		}),
+		stashChanges: () => ({
+			status: "success",
+			message: "Changes stashed successfully",
+		}),
+		popStash: () => ({
+			status: "success",
+			message: "Stash popped successfully",
+		}),
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -413,6 +489,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		session: createMockSessionService(overrides.session),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
+		gitBranch: createMockGitBranchService(overrides.gitBranch),
 	};
 
 	initializeServices(testContainer);

@@ -1,4 +1,4 @@
-import type { AgentType, RalphConfig, VerificationConfig } from "./types.ts";
+import type { AgentType, BranchModeConfig, RalphConfig, VerificationConfig } from "./types.ts";
 
 export const DEFAULTS = {
 	agent: "cursor" as const,
@@ -20,6 +20,13 @@ export const DEFAULTS = {
 export const DEFAULT_VERIFICATION: VerificationConfig = {
 	enabled: false,
 	failOnWarning: false,
+};
+
+export const DEFAULT_BRANCH_MODE: BranchModeConfig = {
+	enabled: false,
+	branchPrefix: "ralph",
+	pushAfterCommit: true,
+	returnToBaseBranch: true,
 };
 
 export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
@@ -48,6 +55,8 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 	},
 	maxDecompositionsPerTask: DEFAULTS.maxDecompositionsPerTask,
 	learningEnabled: DEFAULTS.learningEnabled,
+	workflowMode: "standard",
+	branchMode: DEFAULT_BRANCH_MODE,
 };
 
 export const DEFAULT_CONFIG: RalphConfig = {

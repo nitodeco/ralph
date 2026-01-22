@@ -325,6 +325,74 @@ function createMockServices(
 			getDailyUsage: () => [],
 			formatForDisplay: () => "",
 		},
+		gitBranch: {
+			getCurrentBranch: () => "main",
+			getBaseBranch: () => "main",
+			hasRemote: () => true,
+			getRemoteName: () => "origin",
+			getWorkingDirectoryStatus: () => ({
+				isClean: true,
+				hasUncommittedChanges: false,
+				hasUntrackedFiles: false,
+				modifiedFiles: [],
+				untrackedFiles: [],
+			}),
+			isWorkingDirectoryClean: () => true,
+			createBranch: (branchName: string) => ({
+				status: "success" as const,
+				message: `Created branch: ${branchName}`,
+				branchName,
+			}),
+			checkoutBranch: (branchName: string) => ({
+				status: "success" as const,
+				message: `Checked out branch: ${branchName}`,
+				branchName,
+			}),
+			deleteBranch: (branchName: string) => ({
+				status: "success" as const,
+				message: `Deleted branch: ${branchName}`,
+				branchName,
+			}),
+			createAndCheckoutTaskBranch: (taskTitle: string, taskIndex: number) => {
+				const branchName = `ralph/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`;
+
+				return {
+					status: "success" as const,
+					message: `Created and checked out branch: ${branchName}`,
+					branchName,
+				};
+			},
+			commitChanges: () => ({
+				status: "success" as const,
+				message: "Changes committed successfully",
+			}),
+			pushBranch: (branchName: string) => ({
+				status: "success" as const,
+				message: `Pushed branch: ${branchName}`,
+				branchName,
+			}),
+			returnToBaseBranch: (baseBranch: string) => ({
+				status: "success" as const,
+				message: `Returned to branch: ${baseBranch}`,
+				branchName: baseBranch,
+			}),
+			generateBranchName: (taskTitle: string, taskIndex: number, prefix = "ralph") =>
+				`${prefix}/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`,
+			getBranchInfo: () => ({
+				currentBranch: "main",
+				baseBranch: "main",
+				hasRemote: true,
+				remoteName: "origin",
+			}),
+			stashChanges: () => ({
+				status: "success" as const,
+				message: "Changes stashed successfully",
+			}),
+			popStash: () => ({
+				status: "success" as const,
+				message: "Stash popped successfully",
+			}),
+		},
 	};
 }
 

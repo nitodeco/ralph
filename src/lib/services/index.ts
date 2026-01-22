@@ -10,6 +10,7 @@ export {
 	AGENT_COMMANDS,
 	CONFIG_DEFAULTS,
 	DEFAULT_AGENT_TIMEOUT_MS,
+	DEFAULT_BRANCH_MODE,
 	DEFAULT_CONFIG,
 	DEFAULT_ENABLE_GC_HINTS,
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
@@ -33,6 +34,7 @@ export {
 } from "./config/implementation.ts";
 export type {
 	AgentType,
+	BranchModeConfig,
 	ConfigService,
 	ConfigValidationError,
 	ConfigValidationResult,
@@ -43,10 +45,12 @@ export type {
 	TechnicalDebtReviewConfig,
 	TechnicalDebtSeverity,
 	VerificationConfig,
+	WorkflowMode,
 } from "./config/types.ts";
 export { isPartialRalphConfig, isRalphConfig, validateConfig } from "./config/validation.ts";
 export {
 	getConfigService,
+	getGitBranchService,
 	getGuardrailsService,
 	getPrdService,
 	getProjectRegistryService,
@@ -61,6 +65,14 @@ export {
 	resetServices,
 	type ServiceContainer,
 } from "./container.ts";
+export { createGitBranchService } from "./git-branch/implementation.ts";
+export type {
+	BranchInfo,
+	BranchOperationResult,
+	BranchOperationStatus,
+	GitBranchService,
+	WorkingDirectoryStatus,
+} from "./git-branch/types.ts";
 export { createDefaultGuardrails } from "./guardrails/defaults.ts";
 export { formatGuardrailsForPrompt } from "./guardrails/formatters.ts";
 export { createGuardrailsService } from "./guardrails/implementation.ts";

@@ -611,11 +611,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 }));
 
+export interface SetupIterationCallbacksResult {
+	success: boolean;
+	error?: string;
+	branchModeEnabled?: boolean;
+}
+
 export function setupIterationCallbacks(
 	iterations: number,
 	maxRuntimeMs?: number,
 	skipVerification?: boolean,
-) {
+): SetupIterationCallbacksResult {
 	const loadedConfig = loadConfig();
 	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
 
@@ -626,4 +632,18 @@ export function setupIterationCallbacks(
 		skipVerification,
 	});
 	orchestrator.setupIterationCallbacks();
+
+	if (orchestrator.isBranchModeEnabled()) {
+		const branchInitResult = orchestrator.initializeBranchMode();
+
+		if (!branchInitResult.isValid) {
+			return {
+				success: false,
+				error: branchInitResult.error,
+				branchModeEnabled: true,
+			};
+		}
+	}
+
+	return { success: true, branchModeEnabled: orchestrator.isBranchModeEnabled() };
 }

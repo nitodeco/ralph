@@ -27,7 +27,9 @@ import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
+import type { BranchModeConfig } from "@/lib/services/config/types.ts";
 import {
+	getGitBranchService,
 	getSessionMemoryService,
 	getSessionService,
 	getUsageStatisticsService,
@@ -137,6 +139,11 @@ class SessionOrchestrator {
 	private currentGroupIndex = 0;
 	private parallelTaskResults: Map<string, ParallelTaskResult> = new Map();
 
+	private branchModeEnabled = false;
+	private branchModeConfig: BranchModeConfig | null = null;
+	private baseBranch: string | null = null;
+	private currentTaskBranch: string | null = null;
+
 	initialize(options: OrchestratorConfig): void {
 		if (this.initialized) {
 			this.cleanup();
@@ -154,6 +161,12 @@ class SessionOrchestrator {
 		this.parallelExecutionGroups = [];
 		this.currentGroupIndex = 0;
 		this.parallelTaskResults.clear();
+
+		this.branchModeEnabled =
+			options.config.workflowMode === "branches" || (options.config.branchMode?.enabled ?? false);
+		this.branchModeConfig = options.config.branchMode ?? null;
+		this.baseBranch = null;
+		this.currentTaskBranch = null;
 		this.decompositionHandler = new DecompositionHandler({
 			config: options.config,
 			onPrdUpdate: (prd) => {
@@ -189,6 +202,145 @@ class SessionOrchestrator {
 
 	getIsVerifying(): boolean {
 		return this.verificationHandler?.getIsRunning() ?? false;
+	}
+
+	isBranchModeEnabled(): boolean {
+		return this.branchModeEnabled;
+	}
+
+	getBranchModeConfig(): BranchModeConfig | null {
+		return this.branchModeConfig;
+	}
+
+	getCurrentTaskBranch(): string | null {
+		return this.currentTaskBranch;
+	}
+
+	getBaseBranch(): string | null {
+		return this.baseBranch;
+	}
+
+	initializeBranchMode(): { isValid: boolean; error?: string } {
+		if (!this.branchModeEnabled) {
+			return { isValid: true };
+		}
+
+		const loadedConfig = loadConfig();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const gitBranchService = getGitBranchService();
+		const workingStatus = gitBranchService.getWorkingDirectoryStatus();
+
+		if (!workingStatus.isClean) {
+			const errorMessage =
+				"Working directory has uncommitted changes. Please commit or stash changes before using branch mode.";
+
+			logger.warn("Branch mode initialization failed: dirty working directory", {
+				modifiedFiles: workingStatus.modifiedFiles,
+				untrackedFiles: workingStatus.untrackedFiles,
+			});
+
+			return { isValid: false, error: errorMessage };
+		}
+
+		const branchInfo = gitBranchService.getBranchInfo();
+
+		this.baseBranch = branchInfo.currentBranch;
+
+		logger.info("Branch mode initialized", {
+			baseBranch: this.baseBranch,
+			hasRemote: branchInfo.hasRemote,
+		});
+
+		appendProgress(`=== Branch Mode Enabled ===\nBase branch: ${this.baseBranch}\n`);
+
+		return { isValid: true };
+	}
+
+	createTaskBranch(taskTitle: string, taskIndex: number): { success: boolean; error?: string } {
+		if (!this.branchModeEnabled || !this.branchModeConfig) {
+			return { success: true };
+		}
+
+		const loadedConfig = loadConfig();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const gitBranchService = getGitBranchService();
+		const result = gitBranchService.createAndCheckoutTaskBranch(
+			taskTitle,
+			taskIndex,
+			this.branchModeConfig,
+		);
+
+		if (result.status === "error") {
+			logger.error("Failed to create task branch", {
+				taskTitle,
+				taskIndex,
+				error: result.error,
+			});
+
+			return { success: false, error: result.error };
+		}
+
+		this.currentTaskBranch = result.branchName ?? null;
+
+		logger.info("Created and checked out task branch", {
+			taskTitle,
+			taskIndex,
+			branchName: this.currentTaskBranch,
+		});
+
+		appendProgress(`Switched to branch: ${this.currentTaskBranch}\n`);
+
+		return { success: true };
+	}
+
+	completeTaskBranch(): { success: boolean; error?: string } {
+		if (!this.branchModeEnabled || !this.branchModeConfig || !this.currentTaskBranch) {
+			return { success: true };
+		}
+
+		const loadedConfig = loadConfig();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const gitBranchService = getGitBranchService();
+		const branchName = this.currentTaskBranch;
+		const shouldPush = this.branchModeConfig.pushAfterCommit ?? true;
+		const shouldReturn = this.branchModeConfig.returnToBaseBranch ?? true;
+
+		if (shouldPush) {
+			const pushResult = gitBranchService.pushBranch(branchName);
+
+			if (pushResult.status === "error") {
+				logger.warn("Failed to push branch", {
+					branchName,
+					error: pushResult.error,
+				});
+				appendProgress(`Warning: Failed to push branch ${branchName}: ${pushResult.error}\n`);
+			} else if (pushResult.status === "success") {
+				logger.info("Pushed branch", { branchName });
+				appendProgress(`Pushed branch: ${branchName}\n`);
+			} else {
+				appendProgress(`Skipped push: ${pushResult.message}\n`);
+			}
+		}
+
+		if (shouldReturn && this.baseBranch) {
+			const returnResult = gitBranchService.returnToBaseBranch(this.baseBranch);
+
+			if (returnResult.status === "error") {
+				logger.error("Failed to return to base branch", {
+					baseBranch: this.baseBranch,
+					error: returnResult.error,
+				});
+
+				return { success: false, error: returnResult.error };
+			}
+
+			logger.info("Returned to base branch", { baseBranch: this.baseBranch });
+			appendProgress(`Returned to base branch: ${this.baseBranch}\n`);
+		}
+
+		this.currentTaskBranch = null;
+
+		return { success: true };
 	}
 
 	isParallelModeEnabled(): boolean {
@@ -715,6 +867,16 @@ class SessionOrchestrator {
 					agentType: loadedConfig.agent,
 				});
 
+				if (this.branchModeEnabled && taskWithIndex) {
+					const branchResult = this.createTaskBranch(taskWithIndex.title, taskWithIndex.index);
+
+					if (!branchResult.success) {
+						logger.error("Failed to create task branch, continuing without branch mode", {
+							error: branchResult.error,
+						});
+					}
+				}
+
 				const specificTask = appState.getEffectiveNextTask();
 
 				if (specificTask && appState.manualNextTask) {
@@ -840,6 +1002,16 @@ class SessionOrchestrator {
 					logger.warn("Failed to complete iteration log", {
 						error: getErrorMessage(logError),
 					});
+				}
+
+				if (this.branchModeEnabled && wasSuccessful && agentStore.isComplete) {
+					const branchResult = this.completeTaskBranch();
+
+					if (!branchResult.success) {
+						logger.error("Failed to complete task branch workflow", {
+							error: branchResult.error,
+						});
+					}
 				}
 
 				agentStore.reset();
@@ -1093,6 +1265,11 @@ class SessionOrchestrator {
 		this.parallelExecutionGroups = [];
 		this.currentGroupIndex = 0;
 		this.parallelTaskResults.clear();
+
+		this.branchModeEnabled = false;
+		this.branchModeConfig = null;
+		this.baseBranch = null;
+		this.currentTaskBranch = null;
 
 		useIterationStore.getState().clearCallbacks();
 

@@ -41,6 +41,15 @@ export interface TechnicalDebtReviewConfig {
 	analyzePerformance?: boolean;
 }
 
+export type WorkflowMode = "standard" | "branches";
+
+export interface BranchModeConfig {
+	enabled: boolean;
+	branchPrefix?: string;
+	pushAfterCommit?: boolean;
+	returnToBaseBranch?: boolean;
+}
+
 export interface RalphConfig {
 	agent: AgentType;
 	lastUpdateCheck?: number;
@@ -59,6 +68,8 @@ export interface RalphConfig {
 	technicalDebtReview?: TechnicalDebtReviewConfig;
 	maxDecompositionsPerTask?: number;
 	learningEnabled?: boolean;
+	workflowMode?: WorkflowMode;
+	branchMode?: BranchModeConfig;
 }
 
 export interface ConfigValidationError {
