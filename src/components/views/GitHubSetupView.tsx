@@ -1,33 +1,38 @@
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { match } from "ts-pattern";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import { invalidateConfigCache, loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
 import { TRANSITION_DELAY_MS } from "@/lib/constants/ui.ts";
+import type { DeviceCodeResponse } from "@/lib/services/github-oauth/index.ts";
+import { createGitHubOAuthService } from "@/lib/services/github-oauth/index.ts";
 
 interface GitHubSetupViewProps {
 	version: string;
 	onClose: () => void;
 }
 
-type GitHubSetupStep = "menu" | "token" | "auto_pr" | "pr_draft" | "complete";
+type GitHubSetupStep = "menu" | "oauth" | "token" | "auto_pr" | "pr_draft" | "complete";
 
 interface GitHubSetupState {
 	step: GitHubSetupStep;
 	token: string;
 	autoCreatePr: boolean;
 	prDraft: boolean;
-	message: { type: "success" | "error"; text: string } | null;
+	message: { type: "success" | "error" | "info"; text: string } | null;
+	oauthDeviceCode: DeviceCodeResponse | null;
+	isPolling: boolean;
 }
 
 const MENU_CHOICES = [
-	{ label: "Set GitHub Token", value: "token" as const },
+	{ label: "Login with GitHub (OAuth)", value: "oauth" as const },
+	{ label: "Set Personal Access Token (legacy)", value: "token" as const },
 	{ label: "Toggle Auto-Create PR", value: "auto_pr" as const },
 	{ label: "Toggle PR Draft Mode", value: "pr_draft" as const },
-	{ label: "Clear GitHub Token", value: "clear" as const },
+	{ label: "Logout / Clear credentials", value: "clear" as const },
 	{ label: "Cancel", value: "cancel" as const },
 ];
 
@@ -47,7 +52,10 @@ function GitHubSetupHeader({ version }: { version: string }): React.ReactElement
 }
 
 function GitHubSetupFooter({ step }: { step: GitHubSetupStep }): React.ReactElement {
-	const footerText = step === "menu" ? "Press Escape or 'q' to close" : "Press Escape to go back";
+	const footerText = match(step)
+		.with("menu", () => "Press Escape or 'q' to close")
+		.with("oauth", () => "Waiting for browser authorization...")
+		.otherwise(() => "Press Escape to go back");
 
 	return (
 		<Box paddingX={1}>
@@ -67,10 +75,18 @@ function maskToken(token: string): string {
 	return `${firstFour}...${lastFour}`;
 }
 
+const SLEEP_BUFFER_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): React.ReactElement {
 	const globalConfig = loadGlobalConfig();
 	const gitProvider = globalConfig.gitProvider;
 	const existingToken = gitProvider?.github?.token;
+	const existingOAuth = gitProvider?.github?.oauth;
+	const hasOAuth = existingOAuth?.accessToken !== undefined;
 
 	const [state, setState] = useState<GitHubSetupState>({
 		step: "menu",
@@ -78,15 +94,119 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 		autoCreatePr: gitProvider?.autoCreatePr ?? false,
 		prDraft: gitProvider?.prDraft ?? true,
 		message: null,
+		oauthDeviceCode: null,
+		isPolling: false,
 	});
 
 	useInput((input, key) => {
 		if (state.step === "menu" && (key.escape || input === "q")) {
 			onClose();
-		} else if (state.step !== "menu" && state.step !== "complete" && key.escape) {
+		} else if (
+			state.step !== "menu" &&
+			state.step !== "complete" &&
+			state.step !== "oauth" &&
+			key.escape
+		) {
 			setState((prev) => ({ ...prev, step: "menu", message: null }));
+		} else if (state.step === "oauth" && key.escape && !state.isPolling) {
+			setState((prev) => ({
+				...prev,
+				step: "menu",
+				message: null,
+				oauthDeviceCode: null,
+			}));
 		}
 	});
+
+	useEffect(() => {
+		if (state.step !== "oauth" || !state.oauthDeviceCode || state.isPolling) {
+			return;
+		}
+
+		const oauthService = createGitHubOAuthService();
+		const deviceCode = state.oauthDeviceCode;
+		let isCancelled = false;
+
+		setState((prev) => ({ ...prev, isPolling: true }));
+
+		const pollForToken = async () => {
+			const expiresAt = Date.now() + deviceCode.expiresInSeconds * 1_000;
+			const pollIntervalMs = deviceCode.pollingIntervalSeconds * 1_000 + SLEEP_BUFFER_MS;
+
+			while (Date.now() < expiresAt && !isCancelled) {
+				await sleep(pollIntervalMs);
+
+				if (isCancelled) {
+					break;
+				}
+
+				const result = await oauthService.pollForAccessToken(
+					deviceCode.deviceCode,
+					deviceCode.pollingIntervalSeconds,
+				);
+
+				if (result.status === "success") {
+					const currentConfig = loadGlobalConfig();
+					const updatedConfig = {
+						...currentConfig,
+						gitProvider: {
+							...currentConfig.gitProvider,
+							github: {
+								...currentConfig.gitProvider?.github,
+								token: undefined,
+								oauth: {
+									accessToken: result.token.accessToken,
+									tokenType: result.token.tokenType,
+									scope: result.token.scope,
+									createdAt: new Date().toISOString(),
+								},
+							},
+						},
+					};
+
+					saveGlobalConfig(updatedConfig);
+					invalidateConfigCache();
+					setState((prev) => ({
+						...prev,
+						step: "complete",
+						message: { type: "success", text: "Successfully authenticated with GitHub!" },
+						isPolling: false,
+					}));
+					setTimeout(() => onClose(), TRANSITION_DELAY_MS);
+
+					return;
+				}
+
+				if (result.status === "error") {
+					setState((prev) => ({
+						...prev,
+						step: "menu",
+						message: { type: "error", text: `Authentication failed: ${result.error}` },
+						oauthDeviceCode: null,
+						isPolling: false,
+					}));
+
+					return;
+				}
+			}
+
+			if (!isCancelled) {
+				setState((prev) => ({
+					...prev,
+					step: "menu",
+					message: { type: "error", text: "Authorization timed out. Please try again." },
+					oauthDeviceCode: null,
+					isPolling: false,
+				}));
+			}
+		};
+
+		pollForToken();
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [state.step, state.oauthDeviceCode, state.isPolling, onClose]);
 
 	const saveAndClose = (message: string) => {
 		setState((prev) => ({
@@ -97,8 +217,34 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 		setTimeout(() => onClose(), TRANSITION_DELAY_MS);
 	};
 
+	const startOAuthFlow = async () => {
+		const oauthService = createGitHubOAuthService();
+
+		try {
+			const deviceCodeResponse = await oauthService.requestDeviceCode();
+
+			setState((prev) => ({
+				...prev,
+				step: "oauth",
+				oauthDeviceCode: deviceCodeResponse,
+				message: null,
+			}));
+		} catch (error) {
+			setState((prev) => ({
+				...prev,
+				message: {
+					type: "error",
+					text: `Failed to start OAuth flow: ${error instanceof Error ? error.message : "Unknown error"}`,
+				},
+			}));
+		}
+	};
+
 	const handleMenuSelect = (item: { value: string }) => {
 		match(item.value)
+			.with("oauth", () => {
+				startOAuthFlow();
+			})
 			.with("token", () => {
 				setState((prev) => ({ ...prev, step: "token", message: null }));
 			})
@@ -113,13 +259,17 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 					...globalConfig,
 					gitProvider: {
 						...globalConfig.gitProvider,
-						github: { ...globalConfig.gitProvider?.github, token: undefined },
+						github: {
+							...globalConfig.gitProvider?.github,
+							token: undefined,
+							oauth: undefined,
+						},
 					},
 				};
 
 				saveGlobalConfig(updatedConfig);
 				invalidateConfigCache();
-				saveAndClose("GitHub token cleared");
+				saveAndClose("GitHub credentials cleared");
 			})
 			.with("cancel", () => {
 				onClose();
@@ -180,6 +330,18 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 		saveAndClose(`PR draft mode ${item.value ? "enabled" : "disabled"}`);
 	};
 
+	const getAuthStatus = (): string => {
+		if (hasOAuth) {
+			return "OAuth (authenticated)";
+		}
+
+		if (existingToken) {
+			return `PAT: ${maskToken(existingToken)}`;
+		}
+
+		return "not configured";
+	};
+
 	const renderContent = () => {
 		return match(state.step)
 			.with("menu", () => (
@@ -188,18 +350,50 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 						<Text bold color="yellow">
 							GitHub Integration Settings
 						</Text>
-						<Text dimColor>
-							Token: {existingToken ? maskToken(existingToken) : "not configured"}
-						</Text>
+						<Text dimColor>Auth: {getAuthStatus()}</Text>
 						<Text dimColor>
 							Auto-Create PR: {gitProvider?.autoCreatePr ? "enabled" : "disabled"}
 						</Text>
 						<Text dimColor>PR Draft Mode: {gitProvider?.prDraft ? "enabled" : "disabled"}</Text>
 					</Box>
 
+					{state.message && (
+						<Text color={state.message.type === "error" ? "red" : "green"}>
+							{state.message.text}
+						</Text>
+					)}
+
 					<Box marginTop={1}>
 						<SelectInput items={MENU_CHOICES} onSelect={handleMenuSelect} />
 					</Box>
+				</Box>
+			))
+			.with("oauth", () => (
+				<Box flexDirection="column" gap={1}>
+					<Box flexDirection="column">
+						<Text bold color="yellow">
+							GitHub OAuth Login
+						</Text>
+						{state.oauthDeviceCode ? (
+							<>
+								<Text>To authenticate, visit:</Text>
+								<Text color="cyan">{state.oauthDeviceCode.verificationUri}</Text>
+								<Box marginTop={1}>
+									<Text>And enter this code:</Text>
+								</Box>
+								<Text bold color="white">
+									{state.oauthDeviceCode.userCode}
+								</Text>
+								<Box marginTop={1}>
+									<Text dimColor>Waiting for authorization...</Text>
+								</Box>
+							</>
+						) : (
+							<Text dimColor>Initializing OAuth flow...</Text>
+						)}
+					</Box>
+
+					{state.message?.type === "error" && <Text color="red">{state.message.text}</Text>}
 				</Box>
 			))
 			.with("token", () => (

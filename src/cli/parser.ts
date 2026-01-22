@@ -1,6 +1,7 @@
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import type {
 	AnalyzeSubcommand,
+	AuthSubcommand,
 	Command,
 	DependencyModifyOptions,
 	DependencySetOptions,
@@ -54,6 +55,7 @@ const VALID_DEPENDENCY_SUBCOMMANDS: DependencySubcommand[] = [
 const VALID_RULES_SUBCOMMANDS: RulesSubcommand[] = ["list", "add", "remove"];
 const VALID_USAGE_SUBCOMMANDS: UsageSubcommand[] = ["show", "summary", "sessions", "daily"];
 const VALID_GITHUB_SUBCOMMANDS: GitHubSubcommand[] = ["show", "set-token", "clear-token"];
+const VALID_AUTH_SUBCOMMANDS: AuthSubcommand[] = ["login", "logout", "status"];
 
 function parseTaskAddOptions(args: string[]): TaskAddOptions {
 	const options: TaskAddOptions = {};
@@ -390,6 +392,18 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let authSubcommand: AuthSubcommand | undefined;
+
+	if (command === "auth") {
+		const subcommand = filteredArgs.at(1) as AuthSubcommand | undefined;
+
+		if (subcommand && VALID_AUTH_SUBCOMMANDS.includes(subcommand)) {
+			authSubcommand = subcommand;
+		} else {
+			authSubcommand = "status";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -423,5 +437,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 		usageLimit,
 		githubSubcommand,
 		githubToken,
+		authSubcommand,
 	};
 }

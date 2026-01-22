@@ -1,6 +1,8 @@
 export {
 	handleAnalyzeClear,
 	handleAnalyzeExport,
+	handleAuthLogin,
+	handleAuthLogout,
 	handleDependencyAdd,
 	handleDependencyRemove,
 	handleDependencySet,
@@ -26,6 +28,7 @@ export {
 	handleTaskUndone,
 	printAnalyze,
 	printArchive,
+	printAuthStatus,
 	printClear,
 	printConfig,
 	printCurrentProject,

@@ -44,6 +44,7 @@ export type {
 } from "./app.types.ts";
 export type {
 	AnalyzeSubcommand,
+	AuthSubcommand,
 	Command,
 	ConfigOutput,
 	DependencyModifyOptions,

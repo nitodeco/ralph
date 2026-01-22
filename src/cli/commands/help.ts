@@ -17,6 +17,7 @@ Commands:
   task              Manage task completion (for agent use)
   progress          View and manage progress notes (for agent use)
   config            View current configuration with validation
+  auth              Authenticate with GitHub using OAuth device flow
   github            View and manage GitHub integration settings
   archive           Archive completed tasks and progress file
   clear             Clear session data (archives first, then resets session)
@@ -64,10 +65,15 @@ Guardrails Subcommands:
   guardrails generate      Auto-generate guardrails from codebase analysis
   guardrails generate --apply  Generate and immediately add guardrails
 
+Auth Subcommands:
+  auth                     Show authentication status (default)
+  auth login               Authenticate with GitHub via OAuth device flow
+  auth logout              Disconnect from GitHub and clear credentials
+
 GitHub Subcommands:
   github                   Show GitHub integration status (default)
-  github set-token <token> Set GitHub personal access token
-  github clear-token       Remove GitHub token
+  github set-token <token> Set GitHub personal access token (legacy)
+  github clear-token       Remove GitHub credentials
 
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)

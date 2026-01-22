@@ -38,6 +38,7 @@ export type SlashCommand =
 	| "plan"
 	| "usage"
 	| "config"
+	| "auth"
 	| "github";
 
 export interface CommandArgs {
@@ -89,6 +90,7 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 	plan: { description: "View the current plan" },
 	usage: { description: "View usage statistics" },
 	config: { description: "View configuration settings" },
+	auth: { description: "Authenticate with GitHub via OAuth" },
 	github: { description: "Configure GitHub integration" },
 };
 

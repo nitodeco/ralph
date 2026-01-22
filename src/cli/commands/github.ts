@@ -20,12 +20,21 @@ function maskToken(token: string): string {
 export function printGitHubConfig(version: string, jsonOutput: boolean): void {
 	const { effective } = getEffectiveConfig();
 	const gitProvider = effective.gitProvider;
-	const hasToken = gitProvider?.github?.token !== undefined;
+	const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
+	const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
+	const isConfigured = hasOAuth || hasPat;
 
 	if (jsonOutput) {
 		const output = {
-			configured: hasToken,
-			token: hasToken ? maskToken(gitProvider?.github?.token ?? "") : null,
+			configured: isConfigured,
+			authMethod: hasOAuth ? "oauth" : hasPat ? "pat" : null,
+			oauth: hasOAuth
+				? {
+						scope: gitProvider?.github?.oauth?.scope,
+						createdAt: gitProvider?.github?.oauth?.createdAt,
+					}
+				: null,
+			pat: hasPat ? { token: maskToken(gitProvider?.github?.token ?? "") } : null,
 			autoCreatePr: gitProvider?.autoCreatePr ?? false,
 			prDraft: gitProvider?.prDraft ?? true,
 			prLabels: gitProvider?.prLabels ?? [],
@@ -39,9 +48,16 @@ export function printGitHubConfig(version: string, jsonOutput: boolean): void {
 
 	console.log(`◆ ralph v${version} - GitHub Configuration\n`);
 	console.log("GitHub Integration:");
-	console.log(
-		`  Token:          ${hasToken ? maskToken(gitProvider?.github?.token ?? "") : "(not configured)"}`,
-	);
+
+	if (hasOAuth) {
+		console.log(`  Auth:           OAuth (authenticated)`);
+		console.log(`  Scope:          ${gitProvider?.github?.oauth?.scope ?? "repo"}`);
+	} else if (hasPat) {
+		console.log(`  Auth:           PAT ${maskToken(gitProvider?.github?.token ?? "")}`);
+	} else {
+		console.log(`  Auth:           (not configured)`);
+	}
+
 	console.log(`  Auto-Create PR: ${gitProvider?.autoCreatePr ? "enabled" : "disabled"}`);
 	console.log(`  PR Draft Mode:  ${gitProvider?.prDraft ? "enabled" : "disabled"}`);
 
@@ -55,16 +71,22 @@ export function printGitHubConfig(version: string, jsonOutput: boolean): void {
 
 	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
 
-	if (hasToken) {
-		console.log("\n\x1b[32m✓\x1b[0m GitHub integration configured");
+	if (hasOAuth) {
+		console.log("\n\x1b[32m✓\x1b[0m GitHub integration configured via OAuth");
 		console.log("\nCommands:");
-		console.log("  ralph github set-token <token>  Update token");
-		console.log("  ralph github clear-token        Remove token");
+		console.log("  ralph auth logout               Disconnect from GitHub");
+		console.log("  ralph auth status               Show auth status");
+	} else if (hasPat) {
+		console.log("\n\x1b[33m!\x1b[0m GitHub integration configured via PAT (legacy)");
+		console.log("\n  Consider migrating to OAuth for improved security:");
+		console.log("  ralph auth login");
+		console.log("\nCommands:");
+		console.log("  ralph github set-token <token>  Update PAT");
+		console.log("  ralph github clear-token        Remove PAT");
 	} else {
-		console.log("\nGitHub token not configured.");
-		console.log("Set token with: ralph github set-token <token>");
-		console.log("Create a token at: https://github.com/settings/tokens");
-		console.log("Required scope: 'repo' for PR operations");
+		console.log("\nGitHub not configured. Authenticate using:");
+		console.log("  ralph auth login                OAuth (recommended)");
+		console.log("  ralph github set-token <token>  PAT (legacy)");
 	}
 }
 
@@ -105,7 +127,11 @@ export function handleGitHubClearToken(jsonOutput: boolean): void {
 		...globalConfig,
 		gitProvider: {
 			...globalConfig.gitProvider,
-			github: { ...globalConfig.gitProvider?.github, token: undefined },
+			github: {
+				...globalConfig.gitProvider?.github,
+				token: undefined,
+				oauth: undefined,
+			},
 		},
 	};
 
@@ -113,8 +139,8 @@ export function handleGitHubClearToken(jsonOutput: boolean): void {
 	invalidateConfigCache();
 
 	if (jsonOutput) {
-		console.log(JSON.stringify({ success: true, message: "GitHub token cleared" }));
+		console.log(JSON.stringify({ success: true, message: "GitHub credentials cleared" }));
 	} else {
-		console.log("\x1b[32m✓\x1b[0m GitHub token cleared");
+		console.log("\x1b[32m✓\x1b[0m GitHub credentials cleared");
 	}
 }

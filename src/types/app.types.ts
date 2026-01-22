@@ -30,7 +30,8 @@ export type ActiveView =
 	| "confirm-clear"
 	| "usage"
 	| "config"
-	| "github";
+	| "github"
+	| "auth";
 
 export interface ValidationWarning {
 	message: string;

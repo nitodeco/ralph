@@ -9,6 +9,7 @@ export type Command =
 	| "stop"
 	| "list"
 	| "config"
+	| "auth"
 	| "github"
 	| "archive"
 	| "clear"
@@ -30,6 +31,8 @@ export type Command =
 	| "--help";
 
 export type GitHubSubcommand = "show" | "set-token" | "clear-token";
+
+export type AuthSubcommand = "login" | "logout" | "status";
 
 export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle" | "generate";
 
@@ -121,6 +124,7 @@ export interface ParsedArgs {
 	usageLimit?: number;
 	githubSubcommand?: GitHubSubcommand;
 	githubToken?: string;
+	authSubcommand?: AuthSubcommand;
 }
 
 export interface TaskListOutput {

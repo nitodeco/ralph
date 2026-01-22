@@ -50,8 +50,16 @@ export interface BranchModeConfig {
 	returnToBaseBranch?: boolean;
 }
 
+export interface GitHubOAuthTokens {
+	accessToken: string;
+	tokenType: string;
+	scope: string;
+	createdAt: string;
+}
+
 export interface GitProviderAuthConfig {
 	token?: string;
+	oauth?: GitHubOAuthTokens;
 	apiUrl?: string;
 }
 

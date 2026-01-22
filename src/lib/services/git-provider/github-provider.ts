@@ -63,13 +63,22 @@ async function parseGitHubError(response: Response): Promise<string> {
 	}
 }
 
+function getEffectiveToken(config: GitProviderConfig): string | undefined {
+	if (config.oauth?.accessToken) {
+		return config.oauth.accessToken;
+	}
+
+	return config.token;
+}
+
 export function createGitHubProvider(
 	remoteInfo: RemoteInfo,
 	config: GitProviderConfig,
 ): GitProvider {
 	const { owner, repo } = remoteInfo;
 	const apiBaseUrl = config.apiUrl ?? "https://api.github.com";
-	const isConfigured = config.token !== undefined && config.token.length > 0;
+	const effectiveToken = getEffectiveToken(config);
+	const isConfigured = effectiveToken !== undefined && effectiveToken.length > 0;
 
 	function getHeaders(): Record<string, string> {
 		const headers: Record<string, string> = {
@@ -77,8 +86,8 @@ export function createGitHubProvider(
 			"X-GitHub-Api-Version": "2022-11-28",
 		};
 
-		if (config.token) {
-			headers.Authorization = `Bearer ${config.token}`;
+		if (effectiveToken) {
+			headers.Authorization = `Bearer ${effectiveToken}`;
 		}
 
 		return headers;

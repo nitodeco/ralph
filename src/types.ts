@@ -6,6 +6,7 @@ export type {
 	AgentType,
 	AnalyzeSubcommand,
 	AppState,
+	AuthSubcommand,
 	CheckResult,
 	Command,
 	ConfigOutput,

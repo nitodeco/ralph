@@ -130,7 +130,7 @@ export function ViewRouter({
 		return <ConfigView version={version} onClose={onHelpClose} />;
 	}
 
-	if (activeView === "github") {
+	if (activeView === "github" || activeView === "auth") {
 		return <GitHubSetupView version={version} onClose={onHelpClose} />;
 	}
 

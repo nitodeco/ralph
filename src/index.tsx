@@ -6,6 +6,8 @@ import { match } from "ts-pattern";
 import {
 	handleAnalyzeClear,
 	handleAnalyzeExport,
+	handleAuthLogin,
+	handleAuthLogout,
 	handleDependencyAdd,
 	handleDependencyRemove,
 	handleDependencySet,
@@ -32,6 +34,7 @@ import {
 	parseArgs,
 	printAnalyze,
 	printArchive,
+	printAuthStatus,
 	printClear,
 	printConfig,
 	printCurrentProject,
@@ -207,6 +210,7 @@ function main(): void {
 		usageLimit,
 		githubSubcommand,
 		githubToken,
+		authSubcommand,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -303,6 +307,22 @@ function main(): void {
 		})
 		.with("config", () => {
 			printConfig(VERSION, json, verbose);
+		})
+		.with("auth", () => {
+			match(authSubcommand)
+				.with("login", () => {
+					handleAuthLogin(json).catch((error) => {
+						console.error("Auth login failed:", error);
+						process.exit(1);
+					});
+				})
+				.with("logout", () => {
+					handleAuthLogout(json).catch((error) => {
+						console.error("Auth logout failed:", error);
+						process.exit(1);
+					});
+				})
+				.otherwise(() => printAuthStatus(VERSION, json));
 		})
 		.with("github", () => {
 			match(githubSubcommand)

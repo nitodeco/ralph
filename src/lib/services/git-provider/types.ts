@@ -44,8 +44,16 @@ export interface RemoteInfo {
 	hostname: string;
 }
 
+export interface GitProviderOAuthTokens {
+	accessToken: string;
+	tokenType: string;
+	scope: string;
+	createdAt: string;
+}
+
 export interface GitProviderConfig {
 	token?: string;
+	oauth?: GitProviderOAuthTokens;
 	apiUrl?: string;
 }
 

@@ -1,5 +1,6 @@
 export { handleAnalyzeClear, handleAnalyzeExport, printAnalyze } from "./analyze.ts";
 export { printArchive } from "./archive.ts";
+export { handleAuthLogin, handleAuthLogout, printAuthStatus } from "./auth.ts";
 export { printClear } from "./clear.ts";
 export { printConfig } from "./config.ts";
 export {

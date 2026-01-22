@@ -383,6 +383,7 @@ export function useSlashCommands({
 					"migrate",
 					"config",
 					"github",
+					"auth",
 					() => {
 						agentStop();
 						iterationPause();

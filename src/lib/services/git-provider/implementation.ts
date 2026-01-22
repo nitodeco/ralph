@@ -117,7 +117,15 @@ function isProviderConfigured(providerType: GitProviderType): boolean {
 
 	const providerConfig = getProviderConfig(providerType);
 
-	return providerConfig?.token !== undefined && providerConfig.token.length > 0;
+	if (!providerConfig) {
+		return false;
+	}
+
+	const hasOAuthToken =
+		providerConfig.oauth?.accessToken !== undefined && providerConfig.oauth.accessToken.length > 0;
+	const hasPatToken = providerConfig.token !== undefined && providerConfig.token.length > 0;
+
+	return hasOAuthToken || hasPatToken;
 }
 
 export type ProviderFactory = (remoteInfo: RemoteInfo, config: GitProviderConfig) => GitProvider;
