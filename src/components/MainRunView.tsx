@@ -105,6 +105,8 @@ interface ContentSectionProps {
 	version: string;
 }
 
+const STATES_WITH_PROGRESS_BAR = new Set(["running", "complete", "max_iterations", "max_runtime"]);
+
 function ContentSection({
 	nextTaskMessage,
 	guardrailMessage,
@@ -119,12 +121,14 @@ function ContentSection({
 	helpVisible,
 	version,
 }: ContentSectionProps): React.ReactElement {
+	const showIterationProgress = STATES_WITH_PROGRESS_BAR.has(appState);
+
 	return (
 		<ScrollableContent>
 			{helpVisible && <InlineHelpContent version={version} />}
 
 			<TaskList />
-			<IterationProgress />
+			{showIterationProgress && <IterationProgress />}
 			<AgentStatus />
 
 			<MessageDisplay message={nextTaskMessage} />
