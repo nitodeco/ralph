@@ -5,7 +5,8 @@ import type { ConfigService } from "./config/types.ts";
 import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
 import { createGitBranchService } from "./git-branch/implementation.ts";
 import type { GitBranchService } from "./git-branch/types.ts";
-import { createGitProviderService } from "./git-provider/implementation.ts";
+import { createGitHubProvider } from "./git-provider/github-provider.ts";
+import { createGitProviderService, registerProvider } from "./git-provider/implementation.ts";
 import type { GitProviderService } from "./git-provider/types.ts";
 import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
@@ -31,6 +32,8 @@ import { createUsageStatisticsService } from "./usage-statistics/implementation.
 import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
 export function bootstrapServices(): void {
+	registerProvider("github", createGitHubProvider);
+
 	initializeServices({
 		projectRegistry: createProjectRegistryService(),
 		config: createConfigService(),

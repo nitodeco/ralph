@@ -1,3 +1,4 @@
+export { createGitHubProvider } from "./github-provider.ts";
 export {
 	createGitProviderService,
 	type ProviderFactory,
