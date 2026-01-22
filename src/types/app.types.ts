@@ -28,7 +28,9 @@ export type ActiveView =
 	| "projects"
 	| "plan"
 	| "confirm-clear"
-	| "usage";
+	| "usage"
+	| "config"
+	| "github";
 
 export interface ValidationWarning {
 	message: string;

@@ -5,6 +5,7 @@ import type {
 	DependencyModifyOptions,
 	DependencySetOptions,
 	DependencySubcommand,
+	GitHubSubcommand,
 	GuardrailsGenerateOptions,
 	GuardrailsSubcommand,
 	MemorySubcommand,
@@ -52,6 +53,7 @@ const VALID_DEPENDENCY_SUBCOMMANDS: DependencySubcommand[] = [
 ];
 const VALID_RULES_SUBCOMMANDS: RulesSubcommand[] = ["list", "add", "remove"];
 const VALID_USAGE_SUBCOMMANDS: UsageSubcommand[] = ["show", "summary", "sessions", "daily"];
+const VALID_GITHUB_SUBCOMMANDS: GitHubSubcommand[] = ["show", "set-token", "clear-token"];
 
 function parseTaskAddOptions(args: string[]): TaskAddOptions {
 	const options: TaskAddOptions = {};
@@ -371,6 +373,23 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let githubSubcommand: GitHubSubcommand | undefined;
+	let githubToken: string | undefined;
+
+	if (command === "github") {
+		const subcommand = filteredArgs.at(1) as GitHubSubcommand | undefined;
+
+		if (subcommand && VALID_GITHUB_SUBCOMMANDS.includes(subcommand)) {
+			githubSubcommand = subcommand;
+
+			if (subcommand === "set-token") {
+				githubToken = filteredArgs.at(2);
+			}
+		} else {
+			githubSubcommand = "show";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -402,5 +421,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 		rulesGlobal,
 		usageSubcommand,
 		usageLimit,
+		githubSubcommand,
+		githubToken,
 	};
 }

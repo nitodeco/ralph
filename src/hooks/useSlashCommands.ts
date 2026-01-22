@@ -381,6 +381,8 @@ export function useSlashCommands({
 					"plan",
 					"usage",
 					"migrate",
+					"config",
+					"github",
 					() => {
 						agentStop();
 						iterationPause();

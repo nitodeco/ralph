@@ -14,6 +14,11 @@ export {
 	printDependencyValidate,
 } from "./dependency.ts";
 export {
+	handleGitHubClearToken,
+	handleGitHubSetToken,
+	printGitHubConfig,
+} from "./github.ts";
+export {
 	handleGuardrailsAdd,
 	handleGuardrailsGenerate,
 	handleGuardrailsRemove,

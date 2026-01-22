@@ -49,6 +49,7 @@ export type {
 	DependencyModifyOptions,
 	DependencySetOptions,
 	DependencySubcommand,
+	GitHubSubcommand,
 	GuardrailsGenerateOptions,
 	GuardrailsSubcommand,
 	MemorySubcommand,

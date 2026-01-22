@@ -11,8 +11,10 @@ import {
 	AnalyzeView,
 	ArchiveView,
 	type ClearResult,
+	ConfigView,
 	ConfirmClearView,
 	DryRunView,
+	GitHubSetupView,
 	GuardrailsView,
 	MemoryView,
 	NotInitializedView,
@@ -122,6 +124,14 @@ export function ViewRouter({
 
 	if (activeView === "usage") {
 		return <UsageView version={version} onClose={onHelpClose} />;
+	}
+
+	if (activeView === "config") {
+		return <ConfigView version={version} onClose={onHelpClose} />;
+	}
+
+	if (activeView === "github") {
+		return <GitHubSetupView version={version} onClose={onHelpClose} />;
 	}
 
 	if (activeView === "confirm-clear" && onClearConfirm && onClearCancel) {

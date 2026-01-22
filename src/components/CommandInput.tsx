@@ -36,7 +36,9 @@ export type SlashCommand =
 	| "projects"
 	| "migrate"
 	| "plan"
-	| "usage";
+	| "usage"
+	| "config"
+	| "github";
 
 export interface CommandArgs {
 	iterations?: number;
@@ -86,6 +88,8 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 	migrate: { description: "Migrate project data" },
 	plan: { description: "View the current plan" },
 	usage: { description: "View usage statistics" },
+	config: { description: "View configuration settings" },
+	github: { description: "Configure GitHub integration" },
 };
 
 const VALID_COMMANDS = Object.keys(COMMAND_HINTS) as SlashCommand[];

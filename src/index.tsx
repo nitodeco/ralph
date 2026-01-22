@@ -9,6 +9,8 @@ import {
 	handleDependencyAdd,
 	handleDependencyRemove,
 	handleDependencySet,
+	handleGitHubClearToken,
+	handleGitHubSetToken,
 	handleGuardrailsAdd,
 	handleGuardrailsGenerate,
 	handleGuardrailsRemove,
@@ -41,6 +43,7 @@ import {
 	printDependencyReady,
 	printDependencyShow,
 	printDependencyValidate,
+	printGitHubConfig,
 	printGuardrails,
 	printHelp,
 	printList,
@@ -202,6 +205,8 @@ function main(): void {
 		rulesGlobal,
 		usageSubcommand,
 		usageLimit,
+		githubSubcommand,
+		githubToken,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -298,6 +303,12 @@ function main(): void {
 		})
 		.with("config", () => {
 			printConfig(VERSION, json, verbose);
+		})
+		.with("github", () => {
+			match(githubSubcommand)
+				.with("set-token", () => handleGitHubSetToken(githubToken, json))
+				.with("clear-token", () => handleGitHubClearToken(json))
+				.otherwise(() => printGitHubConfig(VERSION, json));
 		})
 		.with("archive", () => {
 			printArchive(VERSION);

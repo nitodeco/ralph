@@ -17,6 +17,7 @@ Commands:
   task              Manage task completion (for agent use)
   progress          View and manage progress notes (for agent use)
   config            View current configuration with validation
+  github            View and manage GitHub integration settings
   archive           Archive completed tasks and progress file
   clear             Clear session data (archives first, then resets session)
   guardrails        View and manage prompt guardrails
@@ -63,6 +64,11 @@ Guardrails Subcommands:
   guardrails generate      Auto-generate guardrails from codebase analysis
   guardrails generate --apply  Generate and immediately add guardrails
 
+GitHub Subcommands:
+  github                   Show GitHub integration status (default)
+  github set-token <token> Set GitHub personal access token
+  github clear-token       Remove GitHub token
+
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)
   --dry-run              Simulate agent execution without running agents (validates PRD/config)
@@ -90,6 +96,8 @@ Slash Commands (in-app):
   /learn <lesson>   Add a lesson to session memory
   /note <note>      Add a note about the current task
   /memory           View and manage session memory
+  /config           View current configuration
+  /github           Configure GitHub integration
   /usage            View usage statistics
   /projects         View and manage all registered projects
   /migrate          Migrate local .ralph to global storage

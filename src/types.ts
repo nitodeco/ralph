@@ -19,6 +19,7 @@ export type {
 	FailureHistory,
 	FailureHistoryEntry,
 	FailurePattern,
+	GitHubSubcommand,
 	GuardrailCategory,
 	GuardrailsGenerateOptions,
 	GuardrailsSubcommand,
