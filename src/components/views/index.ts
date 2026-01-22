@@ -12,3 +12,4 @@ export { ResumePromptView } from "./ResumePromptView.tsx";
 export { RulesView } from "./RulesView.tsx";
 export { StatusView } from "./StatusView.tsx";
 export { TasksView } from "./TasksView.tsx";
+export { UsageView } from "./UsageView.tsx";

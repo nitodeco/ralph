@@ -22,6 +22,7 @@ import {
 	RulesView,
 	StatusView,
 	TasksView,
+	UsageView,
 } from "./views/index.ts";
 
 interface ViewRouterProps {
@@ -117,6 +118,10 @@ export function ViewRouter({
 
 	if (activeView === "plan") {
 		return <PlanView version={version} onClose={onViewComplete} />;
+	}
+
+	if (activeView === "usage") {
+		return <UsageView version={version} onClose={onHelpClose} />;
 	}
 
 	if (activeView === "confirm-clear" && onClearConfirm && onClearCancel) {

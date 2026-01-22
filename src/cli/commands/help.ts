@@ -22,6 +22,7 @@ Commands:
   guardrails        View and manage prompt guardrails
   analyze           Analyze failure patterns and get suggestions
   memory            View and manage session memory (lessons, patterns, notes)
+  usage             View usage statistics (sessions, iterations, tasks)
   projects          View and manage all registered Ralph projects
   migrate           Migrate local .ralph directory to global storage
   setup             Configure global preferences (agent, PRD format)
@@ -89,6 +90,7 @@ Slash Commands (in-app):
   /learn <lesson>   Add a lesson to session memory
   /note <note>      Add a note about the current task
   /memory           View and manage session memory
+  /usage            View usage statistics
   /projects         View and manage all registered projects
   /migrate          Migrate local .ralph to global storage
   /setup            Configure global preferences

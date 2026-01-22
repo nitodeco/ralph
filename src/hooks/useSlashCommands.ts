@@ -377,6 +377,7 @@ export function useSlashCommands({
 				case "tasks":
 				case "projects":
 				case "plan":
+				case "usage":
 					agentStop();
 					iterationPause();
 					setActiveView(getViewForCommand(command));
