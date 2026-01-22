@@ -602,6 +602,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	clearSession: () => {
+		useIterationStore.getState().reset();
 		set({
 			pendingSession: null,
 			currentSession: null,
