@@ -67,6 +67,48 @@ function getLineLength(text: string, lineIndex: number): number {
 	return line.length;
 }
 
+function isWordCharacter(char: string): boolean {
+	return /\w/.test(char);
+}
+
+function getPreviousWordBoundary(text: string, cursorOffset: number): number {
+	if (cursorOffset <= 0) {
+		return 0;
+	}
+
+	let position = cursorOffset - 1;
+
+	while (position > 0 && !isWordCharacter(text[position - 1] ?? "")) {
+		position--;
+	}
+
+	while (position > 0 && isWordCharacter(text[position - 1] ?? "")) {
+		position--;
+	}
+
+	return position;
+}
+
+function getNextWordBoundary(text: string, cursorOffset: number): number {
+	const textLength = text.length;
+
+	if (cursorOffset >= textLength) {
+		return textLength;
+	}
+
+	let position = cursorOffset;
+
+	while (position < textLength && !isWordCharacter(text[position] ?? "")) {
+		position++;
+	}
+
+	while (position < textLength && isWordCharacter(text[position] ?? "")) {
+		position++;
+	}
+
+	return position;
+}
+
 export interface PastedTextSegment {
 	readonly id: number;
 	readonly content: string;
@@ -372,6 +414,30 @@ export function TextInput({
 				const { lineIndex } = getLinePosition(currentValue, currentCursorOffset);
 				const lineLength = getLineLength(currentValue, lineIndex);
 				const newOffset = getCursorOffsetFromLinePosition(currentValue, lineIndex, lineLength);
+
+				valueRef.current = currentValue;
+				cursorOffsetRef.current = newOffset;
+				setState({ cursorOffset: newOffset, cursorWidth: 0 });
+
+				return;
+			}
+
+			if (key.ctrl && key.leftArrow) {
+				const currentValue = valueRef.current;
+				const currentCursorOffset = cursorOffsetRef.current;
+				const newOffset = getPreviousWordBoundary(currentValue, currentCursorOffset);
+
+				valueRef.current = currentValue;
+				cursorOffsetRef.current = newOffset;
+				setState({ cursorOffset: newOffset, cursorWidth: 0 });
+
+				return;
+			}
+
+			if (key.ctrl && key.rightArrow) {
+				const currentValue = valueRef.current;
+				const currentCursorOffset = cursorOffsetRef.current;
+				const newOffset = getNextWordBoundary(currentValue, currentCursorOffset);
 
 				valueRef.current = currentValue;
 				cursorOffsetRef.current = newOffset;
