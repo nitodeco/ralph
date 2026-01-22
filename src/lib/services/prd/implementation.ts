@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createError, ErrorCode, formatError } from "../../errors.ts";
+import { writeFileIdempotent } from "../../idempotency.ts";
 import { getInstructionsFilePath, getPrdJsonPath } from "../../paths.ts";
 import type {
 	CanWorkResult,
@@ -110,7 +111,7 @@ export function createPrdService(): PrdService {
 			const prdPath = findPrdFile();
 			const targetPath = prdPath ?? getPrdJsonPath();
 
-			writeFileSync(targetPath, JSON.stringify(prd, null, "\t"));
+			writeFileIdempotent(targetPath, JSON.stringify(prd, null, "\t"));
 
 			this.invalidate();
 		},

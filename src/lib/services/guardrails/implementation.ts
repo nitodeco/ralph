@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { writeFileIdempotent } from "@/lib/idempotency.ts";
 import { ensureProjectDirExists, getGuardrailsFilePath } from "@/lib/paths.ts";
 import { createDefaultGuardrails } from "./defaults.ts";
 import { formatGuardrailsForPrompt } from "./formatters.ts";
@@ -51,7 +52,7 @@ export function createGuardrailsService(): GuardrailsService {
 		ensureProjectDirExists();
 		const data: GuardrailsFile = { guardrails };
 
-		writeFileSync(getGuardrailsFilePath(), JSON.stringify(data, null, "\t"), "utf-8");
+		writeFileIdempotent(getGuardrailsFilePath(), JSON.stringify(data, null, "\t"));
 		cachedGuardrails = guardrails;
 	}
 

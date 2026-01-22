@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { writeFileIdempotent } from "@/lib/idempotency.ts";
 import { ensureProjectDirExists, getSessionFilePath } from "@/lib/paths.ts";
 import type {
 	ActiveTaskExecution,
@@ -96,7 +97,7 @@ export function createSessionService(): SessionService {
 
 	function save(session: Session): void {
 		ensureProjectDirExists();
-		writeFileSync(getSessionFilePath(), JSON.stringify(session, null, 2));
+		writeFileIdempotent(getSessionFilePath(), JSON.stringify(session, null, 2));
 	}
 
 	function deleteSession(): void {

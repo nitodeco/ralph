@@ -1,11 +1,4 @@
-import {
-	existsSync,
-	readdirSync,
-	readFileSync,
-	statSync,
-	unlinkSync,
-	writeFileSync,
-} from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type {
 	AgentType,
@@ -18,6 +11,7 @@ import type {
 	IterationLogTask,
 	IterationLogVerification,
 } from "@/types.ts";
+import { writeFileIdempotent } from "./idempotency.ts";
 import { formatTimestamp } from "./logging-utils.ts";
 import { ensureLogsDirExists, getLogsDir } from "./paths.ts";
 import { isIterationLog, isIterationLogsIndex } from "./type-guards.ts";
@@ -54,7 +48,7 @@ export function initializeLogsIndex(sessionId: string, projectName: string): voi
 		iterations: [],
 	};
 
-	writeFileSync(getIndexFilePath(), JSON.stringify(index, null, 2));
+	writeFileIdempotent(getIndexFilePath(), JSON.stringify(index, null, 2));
 }
 
 export function loadIterationLogsIndex(): IterationLogsIndex | null {
@@ -100,7 +94,7 @@ function updateLogsIndex(iteration: number, status: IterationLogStatus): void {
 	}
 
 	index.lastUpdatedAt = formatTimestamp();
-	writeFileSync(getIndexFilePath(), JSON.stringify(index, null, 2));
+	writeFileIdempotent(getIndexFilePath(), JSON.stringify(index, null, 2));
 }
 
 export interface StartIterationLogOptions {
@@ -132,7 +126,7 @@ export function startIterationLog(options: StartIterationLogOptions): void {
 		errors: [],
 	};
 
-	writeFileSync(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
+	writeFileIdempotent(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
 	updateLogsIndex(iteration, "running");
 }
 
@@ -215,7 +209,7 @@ export function completeIterationLog(options: CompleteIterationLogOptions): void
 		log.task.wasCompleted = taskWasCompleted;
 	}
 
-	writeFileSync(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
+	writeFileIdempotent(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
 	updateLogsIndex(iteration, status);
 }
 
@@ -237,7 +231,7 @@ export function appendIterationError(
 	};
 
 	log.errors.push(errorEntry);
-	writeFileSync(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
+	writeFileIdempotent(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
 }
 
 export function updateIterationAgentInfo(
@@ -258,7 +252,7 @@ export function updateIterationAgentInfo(
 		log.agent.outputLength = updates.outputLength;
 	}
 
-	writeFileSync(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
+	writeFileIdempotent(getIterationFilePath(iteration), JSON.stringify(log, null, 2));
 }
 
 export function cleanupOldLogs(maxAgeDays: number): number {
@@ -304,7 +298,7 @@ export function cleanupOldLogs(maxAgeDays: number): number {
 					return existsSync(filePath);
 				});
 				index.lastUpdatedAt = formatTimestamp();
-				writeFileSync(getIndexFilePath(), JSON.stringify(index, null, 2));
+				writeFileIdempotent(getIndexFilePath(), JSON.stringify(index, null, 2));
 			}
 		}
 	} catch {

@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { analyzeFailure } from "@/lib/failure-analyzer.ts";
+import { writeFileIdempotent } from "@/lib/idempotency.ts";
 import { ensureProjectDirExists, getFailureHistoryFilePath } from "@/lib/paths.ts";
 import { isFailureHistory } from "@/lib/type-guards.ts";
 import type {
@@ -47,7 +48,7 @@ export function loadFailureHistory(): FailureHistory {
 
 export function saveFailureHistory(history: FailureHistory): void {
 	ensureProjectDirExists();
-	writeFileSync(getFailureHistoryFilePath(), JSON.stringify(history, null, "\t"), "utf-8");
+	writeFileIdempotent(getFailureHistoryFilePath(), JSON.stringify(history, null, "\t"));
 }
 
 export interface RecordFailureOptions {

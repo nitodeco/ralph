@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { writeFileIdempotent } from "@/lib/idempotency.ts";
 import { ensureProjectDirExists, getSessionMemoryFilePath } from "@/lib/paths.ts";
 import { exportAsMarkdown, formatForPrompt, formatForTask } from "./formatters.ts";
 import {
@@ -55,7 +56,7 @@ export function createSessionMemoryService(): SessionMemoryService {
 	function save(memory: SessionMemory): void {
 		ensureProjectDirExists();
 		memory.lastUpdated = new Date().toISOString();
-		writeFileSync(getSessionMemoryFilePath(), JSON.stringify(memory, null, "\t"), "utf-8");
+		writeFileIdempotent(getSessionMemoryFilePath(), JSON.stringify(memory, null, "\t"));
 		cachedMemory = memory;
 	}
 

@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { writeFileIdempotent } from "../../idempotency.ts";
 import {
 	ensureGlobalRalphDirExists,
 	ensureProjectDirExists,
@@ -177,14 +178,14 @@ export function createConfigService(): ConfigService {
 
 		saveGlobal(config: RalphConfig): void {
 			ensureGlobalRalphDirExists();
-			writeFileSync(GLOBAL_CONFIG_PATH, JSON.stringify(config, null, 2));
+			writeFileIdempotent(GLOBAL_CONFIG_PATH, JSON.stringify(config, null, 2));
 			cachedGlobalConfig = null;
 			cachedConfig = null;
 		},
 
 		saveProject(config: RalphConfig): void {
 			ensureProjectDirExists();
-			writeFileSync(getProjectConfigPath(), JSON.stringify(config, null, 2));
+			writeFileIdempotent(getProjectConfigPath(), JSON.stringify(config, null, 2));
 			cachedConfig = null;
 		},
 

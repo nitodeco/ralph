@@ -1,6 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { writeFileIdempotent } from "@/lib/idempotency.ts";
 
 function normalizePath(path: string): string {
 	try {
@@ -102,7 +103,7 @@ export function createProjectRegistryService(
 
 	function saveRegistry(registry: ProjectRegistry): void {
 		ensureGlobalDir();
-		writeFileSync(config.registryPath, JSON.stringify(registry, null, "\t"));
+		writeFileIdempotent(config.registryPath, JSON.stringify(registry, null, "\t"));
 	}
 
 	function resolveCurrentProject(cwd: string = process.cwd()): ProjectIdentifier | null {
