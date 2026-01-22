@@ -57,11 +57,12 @@ import {
 	printUsageSummary,
 	printVersion,
 } from "@/cli/index.ts";
+import { ConsentWarning } from "@/components/ConsentWarning.tsx";
 import { InitWizard } from "@/components/InitWizard.tsx";
 import { RunApp } from "@/components/RunApp.tsx";
 import { SetupWizard } from "@/components/SetupWizard.tsx";
 import { UpdatePrompt } from "@/components/UpdatePrompt.tsx";
-import { globalConfigExists, loadConfig } from "@/lib/config.ts";
+import { globalConfigExists, hasAcknowledgedWarning, loadConfig } from "@/lib/config.ts";
 import {
 	isBackgroundProcessRunning,
 	isDaemonProcess,
@@ -114,7 +115,12 @@ function RunWithSetup({
 	maxRuntimeMs,
 	skipVerification = false,
 }: RunWithSetupProps): React.ReactElement {
+	const [consentGiven, setConsentGiven] = useState(hasAcknowledgedWarning());
 	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
+
+	if (!consentGiven) {
+		return <ConsentWarning version={version} onAccept={() => setConsentGiven(true)} />;
+	}
 
 	if (!setupComplete) {
 		return <SetupWizard version={version} onComplete={() => setSetupComplete(true)} />;

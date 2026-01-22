@@ -69,3 +69,15 @@ export function getEffectiveConfig() {
 export function invalidateConfigCache(): void {
 	getConfigService().invalidateAll();
 }
+
+export function hasAcknowledgedWarning(): boolean {
+	const rawConfig = getConfigService().loadGlobalRaw();
+
+	return rawConfig?.hasAcknowledgedWarning === true;
+}
+
+export function acknowledgeWarning(): void {
+	const config = getConfigService().loadGlobal();
+
+	getConfigService().saveGlobal({ ...config, hasAcknowledgedWarning: true });
+}

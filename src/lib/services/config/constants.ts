@@ -40,7 +40,9 @@ export const DEFAULT_GIT_PROVIDER: GitProviderConfig = {
 	prDraft: true,
 };
 
-export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
+export const CONFIG_DEFAULTS: Required<
+	Omit<RalphConfig, "lastUpdateCheck" | "skipVersion" | "hasAcknowledgedWarning">
+> = {
 	agent: DEFAULTS.agent,
 	maxRetries: DEFAULTS.maxRetries,
 	retryDelayMs: DEFAULTS.retryDelayMs,

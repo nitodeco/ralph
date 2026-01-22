@@ -86,6 +86,7 @@ export interface RalphConfig {
 	workflowMode?: WorkflowMode;
 	branchMode?: BranchModeConfig;
 	gitProvider?: GitProviderConfig;
+	hasAcknowledgedWarning?: boolean;
 }
 
 export interface ConfigValidationError {
