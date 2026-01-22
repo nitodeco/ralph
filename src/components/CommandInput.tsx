@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { addCommandToHistory, getCommandHistoryList } from "@/lib/command-history.ts";
 import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
 
 export type TaskSubcommand = "done" | "undone" | "current" | "list";
@@ -260,7 +261,15 @@ export function CommandInput({
 	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedHintIndex, setSelectedHintIndex] = useState(0);
+	const [commandHistory, setCommandHistory] = useState<string[]>([]);
+	const [historyIndex, setHistoryIndex] = useState<number | null>(null);
+	const [savedInputValue, setSavedInputValue] = useState("");
 
+	useEffect(() => {
+		setCommandHistory(getCommandHistoryList());
+	}, []);
+
+	const isNavigatingHistory = historyIndex !== null;
 	const autocomplete = getAutocompleteHint(inputValue, isRunning);
 	const suggestions = autocomplete.type === "suggestions" ? (autocomplete.suggestions ?? []) : [];
 	const hasSuggestions = suggestions.length > 0;
@@ -268,6 +277,11 @@ export function CommandInput({
 	const handleInputChange = (value: string) => {
 		setInputValue(value);
 		setSelectedHintIndex(0);
+
+		if (isNavigatingHistory) {
+			setHistoryIndex(null);
+			setSavedInputValue("");
+		}
 	};
 
 	const handlePaste = (segment: PastedTextSegment) => {
@@ -347,19 +361,49 @@ export function CommandInput({
 	};
 
 	const handleArrowUp = () => {
-		if (!hasSuggestions) {
+		if (hasSuggestions) {
+			setSelectedHintIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+
 			return;
 		}
 
-		setSelectedHintIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+		if (commandHistory.length === 0) {
+			return;
+		}
+
+		if (historyIndex === null) {
+			setSavedInputValue(inputValue);
+			setHistoryIndex(commandHistory.length - 1);
+			setInputValue(commandHistory.at(-1) ?? "");
+		} else if (historyIndex > 0) {
+			const newIndex = historyIndex - 1;
+
+			setHistoryIndex(newIndex);
+			setInputValue(commandHistory[newIndex] ?? "");
+		}
 	};
 
 	const handleArrowDown = () => {
-		if (!hasSuggestions) {
+		if (hasSuggestions) {
+			setSelectedHintIndex((prev) => (prev >= suggestions.length - 1 ? 0 : prev + 1));
+
 			return;
 		}
 
-		setSelectedHintIndex((prev) => (prev >= suggestions.length - 1 ? 0 : prev + 1));
+		if (historyIndex === null) {
+			return;
+		}
+
+		if (historyIndex >= commandHistory.length - 1) {
+			setHistoryIndex(null);
+			setInputValue(savedInputValue);
+			setSavedInputValue("");
+		} else {
+			const newIndex = historyIndex + 1;
+
+			setHistoryIndex(newIndex);
+			setInputValue(commandHistory[newIndex] ?? "");
+		}
 	};
 
 	const handleSubmit = (value: string) => {
@@ -381,10 +425,14 @@ export function CommandInput({
 				return;
 			}
 
+			addCommandToHistory(expandedValue);
+			setCommandHistory(getCommandHistoryList());
 			setError(null);
 			setInputValue("");
 			setPastedSegments([]);
 			setSelectedHintIndex(0);
+			setHistoryIndex(null);
+			setSavedInputValue("");
 			onCommand(parsed.command, parsed.args);
 		} else {
 			setError(`Unknown command: ${expandedValue}`);
@@ -403,6 +451,14 @@ export function CommandInput({
 	const maxSuggestions = 5;
 
 	const renderHint = (): React.ReactElement => {
+		if (isNavigatingHistory && historyIndex !== null) {
+			const positionText = `${historyIndex + 1}/${commandHistory.length}`;
+
+			return (
+				<Text dimColor>History ({positionText}) — ↑↓ navigate, Enter to use, type to exit</Text>
+			);
+		}
+
 		if (autocomplete.type === "argument-hint" && autocomplete.argumentHint) {
 			return <Text dimColor>{autocomplete.argumentHint}</Text>;
 		}

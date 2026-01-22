@@ -72,6 +72,10 @@ export function getSessionMemoryFilePath(): string {
 	return getProjectFilePath("session-memory.json");
 }
 
+export function getCommandHistoryFilePath(): string {
+	return getProjectFilePath("command-history.json");
+}
+
 export function getLogsDir(): string {
 	return getProjectFilePath("logs");
 }
