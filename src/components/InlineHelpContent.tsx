@@ -24,7 +24,7 @@ interface HelpItemProps {
 }
 
 function HelpItem({ command, description }: HelpItemProps): React.ReactElement {
-	const padding = Math.max(0, 18 - command.length);
+	const padding = Math.max(0, 24 - command.length);
 
 	return (
 		<Text>
@@ -59,11 +59,15 @@ export function InlineHelpContent({ version }: InlineHelpContentProps): React.Re
 			<Box flexDirection="column" gap={1}>
 				<HelpSection title="Session Control">
 					<HelpItem
-						command="/start [n|full]"
+						command="/session start [n|full]"
 						description="Start agent loop (default: 10, full: all tasks)"
 					/>
-					<HelpItem command="/stop" description="Stop the running agent" />
-					<HelpItem command="/resume" description="Resume interrupted session" />
+					<HelpItem command="/session stop" description="Stop the running agent" />
+					<HelpItem command="/session resume" description="Resume interrupted session" />
+					<HelpItem command="/session pause" description="Pause the current session" />
+					<HelpItem command="/session clear" description="Clear session data" />
+					<HelpItem command="/session refresh" description="Reload PRD from disk" />
+					<HelpItem command="/session archive" description="Archive completed tasks" />
 				</HelpSection>
 
 				<HelpSection title="Task Management">
@@ -97,12 +101,9 @@ export function InlineHelpContent({ version }: InlineHelpContentProps): React.Re
 					<HelpItem command="/rule <text>" description="Add a rule instruction" />
 					<HelpItem command="/learn <lesson>" description="Add a lesson to memory" />
 					<HelpItem command="/note <note>" description="Add a note about current task" />
-					<HelpItem command="/refresh" description="Reload PRD from disk" />
 				</HelpSection>
 
-				<HelpSection title="Session Management">
-					<HelpItem command="/archive" description="Archive completed tasks and progress" />
-					<HelpItem command="/clear" description="Clear session data" />
+				<HelpSection title="Application">
 					<HelpItem command="/quit, /q" description="Exit the application" />
 					<HelpItem command="/exit, /e" description="Exit (alias)" />
 				</HelpSection>

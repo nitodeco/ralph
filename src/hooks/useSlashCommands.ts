@@ -90,14 +90,57 @@ export function useSlashCommands({
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
 			match(command)
-				.with("start", () => {
-					startIterations(args?.iterations, args?.full);
-				})
-				.with("resume", () => {
-					resumeSession();
-				})
-				.with("stop", () => {
-					stopAgent();
+				.with("session", () => {
+					match(args?.sessionSubcommand)
+						.with("start", () => {
+							startIterations(args?.iterations, args?.full);
+						})
+						.with("stop", () => {
+							stopAgent();
+						})
+						.with("resume", () => {
+							resumeSession();
+						})
+						.with("pause", () => {
+							agentStop();
+							iterationPause();
+						})
+						.with("clear", () => {
+							agentStop();
+							iterationPause();
+							setActiveView("confirm-clear");
+						})
+						.with("refresh", () => {
+							if (refreshState) {
+								const refreshResult = refreshState();
+
+								if (refreshResult.success) {
+									const taskDisplay =
+										refreshResult.currentTaskIndex >= 0
+											? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
+											: `${refreshResult.taskCount} tasks (all done)`;
+
+									setRefreshMessage({
+										type: "success",
+										text: `Refreshed: ${taskDisplay}`,
+									});
+								} else {
+									setRefreshMessage({
+										type: "error",
+										text: refreshResult.error ?? "Failed to refresh state",
+									});
+								}
+
+								setTimeout(() => setRefreshMessage(null), UI_MESSAGE_TIMEOUT_MS);
+							}
+						})
+						.with("archive", () => {
+							agentStop();
+							iterationPause();
+							setActiveView("archive");
+						})
+						.with(undefined, () => {})
+						.exhaustive();
 				})
 				.with("next", () => {
 					if (args?.taskIdentifier) {
@@ -378,7 +421,6 @@ export function useSlashCommands({
 					"update",
 					"add",
 					"status",
-					"archive",
 					"analyze",
 					"agent",
 					"tasks",
@@ -397,35 +439,6 @@ export function useSlashCommands({
 				)
 				.with("dismiss-update", () => {
 					dismissUpdateBanner?.();
-				})
-				.with("clear", () => {
-					agentStop();
-					iterationPause();
-					setActiveView("confirm-clear");
-				})
-				.with("refresh", () => {
-					if (refreshState) {
-						const refreshResult = refreshState();
-
-						if (refreshResult.success) {
-							const taskDisplay =
-								refreshResult.currentTaskIndex >= 0
-									? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
-									: `${refreshResult.taskCount} tasks (all done)`;
-
-							setRefreshMessage({
-								type: "success",
-								text: `Refreshed: ${taskDisplay}`,
-							});
-						} else {
-							setRefreshMessage({
-								type: "error",
-								text: refreshResult.error ?? "Failed to refresh state",
-							});
-						}
-
-						setTimeout(() => setRefreshMessage(null), UI_MESSAGE_TIMEOUT_MS);
-					}
 				})
 				.with("quit", "exit", "q", "e", () => {
 					handleShutdownSignal("SIGTERM");

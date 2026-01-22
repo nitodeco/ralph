@@ -109,152 +109,206 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 
 						<Box flexDirection="column" marginTop={1}>
 							<Text bold color="yellow">
-								Slash Commands (in-app):
+								Session Control:
 							</Text>
 							<Box flexDirection="column" paddingLeft={2}>
 								<Text>
-									<Text dimColor>/start [n|full]</Text>
-									{"   "}
-									<Text>Start the agent loop (default: 10, full: all tasks)</Text>
+									<Text dimColor>/session start [n|full]</Text> <Text>Start agent loop</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/stop</Text>
-									{"             "}
+									<Text dimColor>/session stop</Text>
+									{"          "}
 									<Text>Stop the running agent</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/resume</Text>
-									{"           "}
-									<Text>Resume a previously interrupted session</Text>
+									<Text dimColor>/session resume</Text>
+									{"        "}
+									<Text>Resume interrupted session</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/init</Text>
-									{"             "}
-									<Text>Initialize a new PRD project (AI-generated)</Text>
+									<Text dimColor>/session pause</Text>
+									{"         "}
+									<Text>Pause the current session</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/add</Text>
-									{"              "}
-									<Text>Add a new task to the PRD (AI-generated)</Text>
+									<Text dimColor>/session clear</Text>
+									{"         "}
+									<Text>Clear session data</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/next [n|title]</Text>
-									{"   "}
-									<Text>Set the next task to work on (by number or title)</Text>
+									<Text dimColor>/session refresh</Text>
+									{"       "}
+									<Text>Reload PRD from disk</Text>
 								</Text>
+								<Text>
+									<Text dimColor>/session archive</Text>
+									{"       "}
+									<Text>Archive completed tasks</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Task Management:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
 								<Text>
 									<Text dimColor>/task done {"<id>"}</Text>
-									{"   "}
-									<Text>Mark a task as done (by number or title)</Text>
+									{"        "}
+									<Text>Mark task as done</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/task undone {"<id>"}</Text>{" "}
-									<Text>Mark a task as pending (by number or title)</Text>
+									<Text dimColor>/task undone {"<id>"}</Text>
+									{"      "}
+									<Text>Mark task as pending</Text>
 								</Text>
 								<Text>
 									<Text dimColor>/task current</Text>
-									{"     "}
-									<Text>Show the next pending task</Text>
-								</Text>
-								<Text>
-									<Text dimColor>/task list</Text>
-									{"        "}
-									<Text>Open the tasks view</Text>
+									{"          "}
+									<Text>Show next pending task</Text>
 								</Text>
 								<Text>
 									<Text dimColor>/tasks</Text>
-									{"            "}
-									<Text>Open the tasks view (alias)</Text>
+									{"                 "}
+									<Text>Open the tasks view</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/next [n|title]</Text>
+									{"        "}
+									<Text>Set next task to work on</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/add</Text>
+									{"                   "}
+									<Text>Add a new task (AI-generated)</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Project Setup:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>/init</Text>
+									{"                  "}
+									<Text>Initialize a new PRD project</Text>
 								</Text>
 								<Text>
 									<Text dimColor>/setup</Text>
-									{"            "}
+									{"                 "}
 									<Text>Configure global preferences</Text>
 								</Text>
 								<Text>
 									<Text dimColor>/agent</Text>
-									{"            "}
+									{"                 "}
 									<Text>Switch coding agent</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/update</Text>
-									{"           "}
-									<Text>Check for updates</Text>
+									<Text dimColor>/projects</Text>
+									{"              "}
+									<Text>View all projects</Text>
 								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Views & Info:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
 								<Text>
 									<Text dimColor>/status</Text>
-									{"           "}
+									{"                "}
 									<Text>Show session and project status</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/archive</Text>
-									{"          "}
-									<Text>Archive completed tasks and progress file</Text>
-								</Text>
-								<Text>
-									<Text dimColor>/clear</Text>
-									{"            "}
-									<Text>Clear session data (archives first, then resets)</Text>
-								</Text>
-								<Text>
-									<Text dimColor>/guardrail {"<text>"}</Text>
-									{"  "}
-									<Text>Add a new guardrail instruction</Text>
-								</Text>
-								<Text>
 									<Text dimColor>/guardrails</Text>
-									{"       "}
+									{"            "}
 									<Text>View and manage guardrails</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/analyze</Text>
-									{"          "}
-									<Text>View failure pattern analysis</Text>
-								</Text>
-								<Text>
-									<Text dimColor>/learn {"<lesson>"}</Text>
-									{"   "}
-									<Text>Add a lesson to session memory</Text>
-								</Text>
-								<Text>
-									<Text dimColor>/note {"<note>"}</Text>
-									{"      "}
-									<Text>Add a note about the current task</Text>
+									<Text dimColor>/rules</Text>
+									{"                 "}
+									<Text>View and manage rules</Text>
 								</Text>
 								<Text>
 									<Text dimColor>/memory</Text>
-									{"           "}
+									{"                "}
 									<Text>View and manage session memory</Text>
 								</Text>
 								<Text>
+									<Text dimColor>/analyze</Text>
+									{"               "}
+									<Text>View failure pattern analysis</Text>
+								</Text>
+								<Text>
 									<Text dimColor>/usage</Text>
-									{"            "}
+									{"                 "}
 									<Text>View usage statistics</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/dismiss-update</Text>
-									{"   "}
-									<Text>Dismiss the update notification banner</Text>
+									<Text dimColor>/config</Text>
+									{"                "}
+									<Text>View effective configuration</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Quick Actions:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>/guardrail {"<text>"}</Text>
+									{"       "}
+									<Text>Add a guardrail instruction</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/refresh</Text>
-									{"          "}
-									<Text>Reload PRD from disk and update UI state</Text>
+									<Text dimColor>/rule {"<text>"}</Text>
+									{"            "}
+									<Text>Add a rule instruction</Text>
 								</Text>
+								<Text>
+									<Text dimColor>/learn {"<lesson>"}</Text>
+									{"        "}
+									<Text>Add a lesson to memory</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/note {"<note>"}</Text>
+									{"           "}
+									<Text>Add a note about current task</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Application:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
 								<Text>
 									<Text dimColor>/help</Text>
-									{"             "}
+									{"                  "}
 									<Text>Show this help message</Text>
 								</Text>
 								<Text>
+									<Text dimColor>/update</Text>
+									{"                "}
+									<Text>Check for updates</Text>
+								</Text>
+								<Text>
 									<Text dimColor>/quit, /q</Text>
-									{"         "}
+									{"              "}
 									<Text>Exit the application</Text>
 								</Text>
 								<Text>
 									<Text dimColor>/exit, /e</Text>
-									{"         "}
-									<Text>Exit the application (alias)</Text>
+									{"              "}
+									<Text>Exit (alias)</Text>
 								</Text>
 							</Box>
 						</Box>

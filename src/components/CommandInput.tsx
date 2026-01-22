@@ -4,6 +4,14 @@ import { addCommandToHistory, getCommandHistoryList } from "@/lib/command-histor
 import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
 
 export type TaskSubcommand = "done" | "undone" | "current" | "list";
+export type SessionSubcommand =
+	| "start"
+	| "stop"
+	| "resume"
+	| "pause"
+	| "clear"
+	| "refresh"
+	| "archive";
 
 export type SlashCommand =
 	| "init"
@@ -15,13 +23,9 @@ export type SlashCommand =
 	| "q"
 	| "e"
 	| "add"
-	| "start"
-	| "resume"
-	| "stop"
+	| "session"
 	| "next"
 	| "status"
-	| "archive"
-	| "clear"
 	| "guardrail"
 	| "guardrails"
 	| "rule"
@@ -31,7 +35,6 @@ export type SlashCommand =
 	| "note"
 	| "memory"
 	| "dismiss-update"
-	| "refresh"
 	| "agent"
 	| "task"
 	| "tasks"
@@ -52,6 +55,7 @@ export interface CommandArgs {
 	lesson?: string;
 	note?: string;
 	taskSubcommand?: TaskSubcommand;
+	sessionSubcommand?: SessionSubcommand;
 }
 
 interface CommandHint {
@@ -60,9 +64,10 @@ interface CommandHint {
 }
 
 const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
-	start: { description: "Start the agent loop", args: "[n|full]" },
-	stop: { description: "Stop the running agent" },
-	resume: { description: "Resume a previously interrupted session" },
+	session: {
+		description: "Session control",
+		args: "<start|stop|resume|pause|clear|refresh|archive> [n|full]",
+	},
 	init: { description: "Initialize a new PRD project" },
 	add: { description: "Add a new task to the PRD" },
 	next: { description: "Set the next task to work on", args: "[n|title]" },
@@ -72,8 +77,6 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 	agent: { description: "Switch coding agent" },
 	update: { description: "Check for updates" },
 	status: { description: "Show session and project status" },
-	archive: { description: "Archive completed tasks and progress" },
-	clear: { description: "Clear session data" },
 	guardrail: { description: "Add a new guardrail instruction", args: "<text>" },
 	guardrails: { description: "View and manage guardrails" },
 	rule: { description: "Add a new custom rule", args: "<text>" },
@@ -83,7 +86,6 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 	note: { description: "Add a note about the current task", args: "<note>" },
 	memory: { description: "View and manage session memory" },
 	"dismiss-update": { description: "Dismiss the update notification" },
-	refresh: { description: "Reload PRD from disk" },
 	help: { description: "Show help message" },
 	quit: { description: "Exit the application" },
 	exit: { description: "Exit the application" },
@@ -100,7 +102,16 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 
 const VALID_COMMANDS = Object.keys(COMMAND_HINTS) as SlashCommand[];
 const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = ["done", "undone", "current", "list"];
-const RUNNING_COMMANDS: SlashCommand[] = ["stop", "quit", "exit", "q", "e", "help", "status"];
+const VALID_SESSION_SUBCOMMANDS: SessionSubcommand[] = [
+	"start",
+	"stop",
+	"resume",
+	"pause",
+	"clear",
+	"refresh",
+	"archive",
+];
+const RUNNING_COMMANDS: SlashCommand[] = ["session", "quit", "exit", "q", "e", "help", "status"];
 
 interface AutocompleteResult {
 	type: "suggestions" | "argument-hint" | "default";
@@ -215,16 +226,30 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 		return null;
 	}
 
-	if (commandName === "start" && secondPart) {
-		if (secondPart.toLowerCase() === "full") {
-			return { command: commandName, args: { full: true } };
+	if (commandName === "session") {
+		const subcommand = secondPart?.toLowerCase() as SessionSubcommand | undefined;
+
+		if (!subcommand || !VALID_SESSION_SUBCOMMANDS.includes(subcommand)) {
+			return null;
 		}
 
-		const iterations = Number.parseInt(secondPart, 10);
+		if (subcommand === "start") {
+			const [, , thirdPart] = parts;
 
-		if (!Number.isNaN(iterations) && iterations > 0) {
-			return { command: commandName, args: { iterations } };
+			if (thirdPart) {
+				if (thirdPart.toLowerCase() === "full") {
+					return { command: commandName, args: { sessionSubcommand: subcommand, full: true } };
+				}
+
+				const iterations = Number.parseInt(thirdPart, 10);
+
+				if (!Number.isNaN(iterations) && iterations > 0) {
+					return { command: commandName, args: { sessionSubcommand: subcommand, iterations } };
+				}
+			}
 		}
+
+		return { command: commandName, args: { sessionSubcommand: subcommand } };
 	}
 
 	if (commandName === "next" && parts.length > 1) {

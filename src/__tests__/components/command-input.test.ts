@@ -19,7 +19,7 @@ describe("getCommonPrefix", () => {
 	});
 
 	test("returns shortest common prefix for multiple commands", () => {
-		expect(getCommonPrefix(["start", "stop", "status"])).toBe("st");
+		expect(getCommonPrefix(["session", "status", "setup"])).toBe("s");
 	});
 
 	test("handles commands that are prefixes of each other", () => {
@@ -31,7 +31,7 @@ describe("getCommonPrefix", () => {
 	});
 
 	test("handles single character common prefix", () => {
-		expect(getCommonPrefix(["agent", "add", "archive", "analyze"])).toBe("a");
+		expect(getCommonPrefix(["agent", "add", "analyze", "auth"])).toBe("a");
 	});
 });
 
@@ -50,20 +50,19 @@ describe("getAutocompleteHint", () => {
 		});
 
 		test("returns suggestions for partial command", () => {
-			const result = getAutocompleteHint("/st", false);
+			const result = getAutocompleteHint("/se", false);
 
 			expect(result.type).toBe("suggestions");
 			expect(result.suggestions?.length).toBeGreaterThan(0);
-			expect(result.suggestions?.some((s) => s.command === "start")).toBe(true);
-			expect(result.suggestions?.some((s) => s.command === "stop")).toBe(true);
-			expect(result.suggestions?.some((s) => s.command === "status")).toBe(true);
+			expect(result.suggestions?.some((s) => s.command === "session")).toBe(true);
+			expect(result.suggestions?.some((s) => s.command === "setup")).toBe(true);
 		});
 
 		test("includes common prefix in suggestions result", () => {
-			const result = getAutocompleteHint("/st", false);
+			const result = getAutocompleteHint("/se", false);
 
 			expect(result.type).toBe("suggestions");
-			expect(result.commonPrefix).toBe("st");
+			expect(result.commonPrefix).toBe("se");
 		});
 
 		test("returns suggestions for guardrail prefix (before exact match)", () => {
@@ -84,11 +83,11 @@ describe("getAutocompleteHint", () => {
 		});
 
 		test("returns argument hint for exact command with args", () => {
-			const result = getAutocompleteHint("/start", false);
+			const result = getAutocompleteHint("/session", false);
 
 			expect(result.type).toBe("argument-hint");
-			expect(result.argumentHint).toContain("/start");
-			expect(result.argumentHint).toContain("[n|full]");
+			expect(result.argumentHint).toContain("/session");
+			expect(result.argumentHint).toContain("<start|stop|resume|pause|clear|refresh|archive>");
 		});
 
 		test("returns default for exact command without args", () => {
@@ -98,13 +97,13 @@ describe("getAutocompleteHint", () => {
 		});
 
 		test("returns default for exact command when args already entered", () => {
-			const result = getAutocompleteHint("/start 5", false);
+			const result = getAutocompleteHint("/session start", false);
 
 			expect(result.type).toBe("default");
 		});
 
 		test("returns default for command with args already entered", () => {
-			const result = getAutocompleteHint("/start 10", false);
+			const result = getAutocompleteHint("/session start 10", false);
 
 			expect(result.type).toBe("default");
 		});
@@ -119,7 +118,7 @@ describe("getAutocompleteHint", () => {
 		});
 
 		test("is case insensitive", () => {
-			const result = getAutocompleteHint("/START", false);
+			const result = getAutocompleteHint("/SESSION", false);
 
 			expect(result.type).toBe("argument-hint");
 		});
@@ -133,15 +132,16 @@ describe("getAutocompleteHint", () => {
 
 	describe("when running", () => {
 		test("only shows running commands for partial match", () => {
-			const result = getAutocompleteHint("/st", true);
+			const result = getAutocompleteHint("/se", true);
 
 			expect(result.type).toBe("suggestions");
-			expect(result.suggestions?.every((s) => ["stop", "status"].includes(s.command))).toBe(true);
-			expect(result.suggestions?.some((s) => s.command === "start")).toBe(false);
+			expect(result.suggestions?.every((s) => ["session", "status"].includes(s.command))).toBe(
+				true,
+			);
 		});
 
 		test("returns default for non-running command", () => {
-			const result = getAutocompleteHint("/star", true);
+			const result = getAutocompleteHint("/add", true);
 
 			expect(result.type).toBe("default");
 		});
@@ -175,7 +175,7 @@ describe("getAutocompleteHint", () => {
 		});
 
 		test("handles command with extra whitespace", () => {
-			const result = getAutocompleteHint("  /start  ", false);
+			const result = getAutocompleteHint("  /session  ", false);
 
 			expect(result.type).toBe("argument-hint");
 		});

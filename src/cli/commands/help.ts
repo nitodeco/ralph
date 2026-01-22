@@ -85,34 +85,37 @@ Options:
   --skip-verification    Skip verification checks after each iteration
 
 Slash Commands (in-app):
-  /start [n|full]   Start the agent loop (default: 10 iterations, full: all tasks)
-  /stop             Stop the running agent
-  /resume           Resume a previously interrupted session
-  /next <task>      Set next task to work on (by number or title)
-  /task done <id>   Mark a task as done (by number or title)
-  /task undone <id> Mark a task as pending (by number or title)
-  /task current     Show the next pending task
-  /task list        Open the tasks view
-  /tasks            Open the tasks view
-  /init             Initialize a new PRD project
-  /add              Add a new task to the PRD (AI-generated from description)
-  /guardrail <text> Add a new guardrail instruction
-  /guardrails       View and manage guardrails
-  /analyze          View failure pattern analysis
-  /learn <lesson>   Add a lesson to session memory
-  /note <note>      Add a note about the current task
-  /memory           View and manage session memory
-  /config           View current configuration
-  /github           Configure GitHub integration
-  /usage            View usage statistics
-  /projects         View and manage all registered projects
-  /migrate          Migrate local .ralph to global storage
-  /setup            Configure global preferences
-  /update           Check for updates
-  /archive          Archive completed tasks and progress file
-  /clear            Clear session data (archives first, then resets session)
-  /help             Show help message
-  /quit             Exit the application
+  /session start [n|full]  Start agent loop (default: 10, full: all tasks)
+  /session stop            Stop the running agent
+  /session resume          Resume interrupted session
+  /session pause           Pause the current session
+  /session clear           Clear session data
+  /session refresh         Reload PRD from disk
+  /session archive         Archive completed tasks
+  /next <task>             Set next task to work on (by number or title)
+  /task done <id>          Mark a task as done (by number or title)
+  /task undone <id>        Mark a task as pending (by number or title)
+  /task current            Show the next pending task
+  /task list               Open the tasks view
+  /tasks                   Open the tasks view
+  /init                    Initialize a new PRD project
+  /add                     Add a new task to the PRD (AI-generated)
+  /guardrail <text>        Add a new guardrail instruction
+  /guardrails              View and manage guardrails
+  /analyze                 View failure pattern analysis
+  /learn <lesson>          Add a lesson to session memory
+  /note <note>             Add a note about the current task
+  /memory                  View and manage session memory
+  /config                  View current configuration
+  /github                  Configure GitHub integration
+  /usage                   View usage statistics
+  /projects                View and manage all registered projects
+  /migrate                 Migrate local .ralph to global storage
+  /setup                   Configure global preferences
+  /update                  Check for updates
+  /help                    Show help message
+  /quit, /q                Exit the application
+  /exit, /e                Exit (alias)
 `);
 }
 
