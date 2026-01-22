@@ -20,6 +20,7 @@ export type Command =
 	| "task"
 	| "progress"
 	| "dependency"
+	| "usage"
 	| "help"
 	| "version"
 	| "-v"
@@ -62,6 +63,7 @@ export interface TaskEditOptions {
 	stdin?: boolean;
 }
 export type ProgressSubcommand = "show" | "add" | "clear";
+export type UsageSubcommand = "show" | "summary" | "sessions" | "daily";
 export type DependencySubcommand =
 	| "graph"
 	| "validate"
@@ -111,6 +113,8 @@ export interface ParsedArgs {
 	dependencyModifyOptions?: DependencyModifyOptions;
 	rulesSubcommand?: RulesSubcommand;
 	rulesArg?: string;
+	usageSubcommand?: UsageSubcommand;
+	usageLimit?: number;
 }
 
 export interface TaskListOutput {

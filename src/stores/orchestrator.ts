@@ -27,7 +27,11 @@ import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
-import { getSessionMemoryService, getSessionService } from "@/lib/services/index.ts";
+import {
+	getSessionMemoryService,
+	getSessionService,
+	getUsageStatisticsService,
+} from "@/lib/services/index.ts";
 import type { PrdTask } from "@/lib/services/prd/types.ts";
 import {
 	calculateStatisticsFromLogs,
@@ -85,6 +89,32 @@ interface ParallelTaskResult {
 	taskTitle: string;
 	success: boolean;
 	error: string | null;
+}
+
+function recordUsageStatistics(
+	session: Session,
+	prd: Prd | null,
+	status: "completed" | "stopped" | "failed",
+): void {
+	const usageStatisticsService = getUsageStatisticsService();
+	const completedTasks = prd?.tasks.filter((task) => task.done).length ?? 0;
+	const attemptedTasks = prd?.tasks.length ?? 0;
+	const durationMs = Date.now() - session.startTime;
+
+	usageStatisticsService.initialize(prd?.project ?? "Unknown Project");
+	usageStatisticsService.recordSession({
+		sessionId: `session-${session.startTime}`,
+		startedAt: new Date(session.startTime).toISOString(),
+		completedAt: new Date().toISOString(),
+		durationMs,
+		totalIterations: session.statistics.totalIterations,
+		completedIterations: session.statistics.completedIterations,
+		successfulIterations: session.statistics.successfulIterations,
+		failedIterations: session.statistics.failedIterations,
+		tasksCompleted: completedTasks,
+		tasksAttempted: attemptedTasks,
+		status,
+	});
 }
 
 class SessionOrchestrator {
@@ -862,6 +892,8 @@ class SessionOrchestrator {
 						}
 					}
 
+					recordUsageStatistics(appState.currentSession, currentPrd, "completed");
+
 					const completedSession = sessionService.updateStatus(
 						appState.currentSession,
 						"completed",
@@ -892,6 +924,8 @@ class SessionOrchestrator {
 				});
 
 				if (appState.currentSession) {
+					recordUsageStatistics(appState.currentSession, currentPrd, "stopped");
+
 					const sessionService = getSessionService();
 					const stoppedSession = sessionService.updateStatus(appState.currentSession, "stopped");
 
@@ -923,6 +957,8 @@ class SessionOrchestrator {
 				});
 
 				if (appState.currentSession) {
+					recordUsageStatistics(appState.currentSession, currentPrd, "stopped");
+
 					const sessionService = getSessionService();
 					const stoppedSession = sessionService.updateStatus(appState.currentSession, "stopped");
 
@@ -1010,6 +1046,8 @@ class SessionOrchestrator {
 		eventBus.emit("session:stop", { reason: "fatal_error" });
 
 		if (currentSession) {
+			recordUsageStatistics(currentSession, prd, "failed");
+
 			const sessionService = getSessionService();
 			const stoppedSession = sessionService.updateStatus(currentSession, "stopped");
 

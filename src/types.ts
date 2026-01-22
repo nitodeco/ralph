@@ -61,6 +61,7 @@ export type {
 	TaskSubcommand,
 	TechnicalDebtReviewConfig,
 	TechnicalDebtSeverity,
+	UsageSubcommand,
 	ValidationWarning,
 	VerificationConfig,
 	VerificationResult,

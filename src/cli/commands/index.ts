@@ -40,3 +40,4 @@ export {
 	printTaskList,
 	printTaskShow,
 } from "./task.ts";
+export { printDailyUsage, printRecentSessions, printUsage, printUsageSummary } from "./usage.ts";

@@ -6,6 +6,7 @@ import type { RulesService } from "./rules/types.ts";
 import type { SleepPreventionService } from "./SleepPreventionService.ts";
 import type { SessionService } from "./session/types.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
+import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
 export interface ServiceContainer {
 	projectRegistry: ProjectRegistryService;
@@ -16,6 +17,7 @@ export interface ServiceContainer {
 	sessionMemory: SessionMemoryService;
 	session: SessionService;
 	sleepPrevention: SleepPreventionService;
+	usageStatistics: UsageStatisticsService;
 }
 
 let container: ServiceContainer | null = null;
@@ -76,4 +78,8 @@ export function getProjectRegistryService(): ProjectRegistryService {
 
 export function getSleepPreventionService(): SleepPreventionService {
 	return getServices().sleepPrevention;
+}
+
+export function getUsageStatisticsService(): UsageStatisticsService {
+	return getServices().usageStatistics;
 }

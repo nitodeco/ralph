@@ -55,6 +55,7 @@ export {
 	getSessionMemoryService,
 	getSessionService,
 	getSleepPreventionService,
+	getUsageStatisticsService,
 	initializeServices,
 	isInitialized,
 	resetServices,
@@ -119,3 +120,14 @@ export type {
 	SessionMemoryStats,
 } from "./session-memory/types.ts";
 export { SESSION_MEMORY_CONSTANTS } from "./session-memory/types.ts";
+export { createUsageStatisticsService } from "./usage-statistics/implementation.ts";
+export type {
+	DailyUsage,
+	RecordSessionOptions,
+	SessionRecord,
+	UsageStatistics,
+	UsageStatisticsService,
+	UsageStatisticsSummary,
+} from "./usage-statistics/types.ts";
+export { USAGE_STATISTICS_CONSTANTS } from "./usage-statistics/types.ts";
+export { isDailyUsage, isSessionRecord, isUsageStatistics } from "./usage-statistics/validation.ts";

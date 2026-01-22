@@ -28,6 +28,7 @@ export {
 	printConfig,
 	printCurrentProject,
 	printCurrentTask,
+	printDailyUsage,
 	printDependencyBlocked,
 	printDependencyGraph,
 	printDependencyOrder,
@@ -40,11 +41,14 @@ export {
 	printMemory,
 	printProgress,
 	printProjects,
+	printRecentSessions,
 	printRules,
 	printStats,
 	printStatus,
 	printTaskList,
 	printTaskShow,
+	printUsage,
+	printUsageSummary,
 	printVersion,
 } from "./commands/index.ts";
 export { formatBytes, formatConfigValue, formatDuration, formatElapsedTime } from "./formatters.ts";

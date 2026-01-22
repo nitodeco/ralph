@@ -15,6 +15,7 @@ import type {
 	TaskAddOptions,
 	TaskEditOptions,
 	TaskSubcommand,
+	UsageSubcommand,
 } from "@/types.ts";
 
 const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = [
@@ -50,6 +51,7 @@ const VALID_DEPENDENCY_SUBCOMMANDS: DependencySubcommand[] = [
 	"remove",
 ];
 const VALID_RULES_SUBCOMMANDS: RulesSubcommand[] = ["list", "add", "remove"];
+const VALID_USAGE_SUBCOMMANDS: UsageSubcommand[] = ["show", "summary", "sessions", "daily"];
 
 function parseTaskAddOptions(args: string[]): TaskAddOptions {
 	const options: TaskAddOptions = {};
@@ -342,6 +344,29 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let usageSubcommand: UsageSubcommand | undefined;
+	let usageLimit: number | undefined;
+
+	if (command === "usage") {
+		const subcommand = filteredArgs[1] as UsageSubcommand | undefined;
+
+		if (subcommand && VALID_USAGE_SUBCOMMANDS.includes(subcommand)) {
+			usageSubcommand = subcommand;
+
+			const limitArg = filteredArgs.at(2);
+
+			if (limitArg) {
+				const parsed = Number.parseInt(limitArg, 10);
+
+				if (!Number.isNaN(parsed) && parsed > 0) {
+					usageLimit = parsed;
+				}
+			}
+		} else {
+			usageSubcommand = "show";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -370,5 +395,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 		dependencyModifyOptions,
 		rulesSubcommand,
 		rulesArg,
+		usageSubcommand,
+		usageLimit,
 	};
 }

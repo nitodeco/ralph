@@ -33,6 +33,7 @@ import {
 	printConfig,
 	printCurrentProject,
 	printCurrentTask,
+	printDailyUsage,
 	printDependencyBlocked,
 	printDependencyGraph,
 	printDependencyOrder,
@@ -45,11 +46,14 @@ import {
 	printMemory,
 	printProgress,
 	printProjects,
+	printRecentSessions,
 	printRules,
 	printStats,
 	printStatus,
 	printTaskList,
 	printTaskShow,
+	printUsage,
+	printUsageSummary,
 	printVersion,
 } from "@/cli/index.ts";
 import { InitWizard } from "@/components/InitWizard.tsx";
@@ -188,6 +192,8 @@ function main(): void {
 		dependencyModifyOptions,
 		rulesSubcommand,
 		rulesArg,
+		usageSubcommand,
+		usageLimit,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -478,6 +484,24 @@ function main(): void {
 					break;
 				default:
 					printDependencyGraph(json);
+					break;
+			}
+
+			break;
+
+		case "usage":
+			switch (usageSubcommand) {
+				case "summary":
+					printUsageSummary(json);
+					break;
+				case "sessions":
+					printRecentSessions(usageLimit ?? 10, json);
+					break;
+				case "daily":
+					printDailyUsage(usageLimit ?? 7, json);
+					break;
+				default:
+					printUsage(json);
 					break;
 			}
 

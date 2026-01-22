@@ -60,6 +60,7 @@ export type {
 	TaskEditOptions,
 	TaskListOutput,
 	TaskSubcommand,
+	UsageSubcommand,
 } from "./cli.types.ts";
 export type { CheckResult, VerificationResult } from "./config.types.ts";
 export type {

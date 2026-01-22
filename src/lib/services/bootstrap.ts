@@ -21,6 +21,8 @@ import { createSessionService } from "./session/implementation.ts";
 import type { SessionService } from "./session/types.ts";
 import { createSessionMemoryService } from "./session-memory/implementation.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
+import { createUsageStatisticsService } from "./usage-statistics/implementation.ts";
+import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
 export function bootstrapServices(): void {
 	initializeServices({
@@ -32,6 +34,7 @@ export function bootstrapServices(): void {
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
 		sleepPrevention: createSleepPreventionService(),
+		usageStatistics: createUsageStatisticsService(),
 	});
 }
 
@@ -44,6 +47,7 @@ export interface TestServiceOverrides {
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
 	sleepPrevention?: Partial<SleepPreventionService>;
+	usageStatistics?: Partial<UsageStatisticsService>;
 }
 
 function createMockProjectRegistryService(
@@ -327,6 +331,57 @@ function createMockSleepPreventionService(
 	};
 }
 
+function createMockUsageStatisticsService(
+	overrides: Partial<UsageStatisticsService> = {},
+): UsageStatisticsService {
+	const emptyStatistics = {
+		version: 1,
+		projectName: "Test Project",
+		createdAt: new Date().toISOString(),
+		lastUpdatedAt: new Date().toISOString(),
+		lifetime: {
+			totalSessions: 0,
+			totalIterations: 0,
+			totalTasksCompleted: 0,
+			totalTasksAttempted: 0,
+			totalDurationMs: 0,
+			successfulIterations: 0,
+			failedIterations: 0,
+			averageIterationsPerSession: 0,
+			averageTasksPerSession: 0,
+			averageSessionDurationMs: 0,
+			overallSuccessRate: 0,
+		},
+		recentSessions: [],
+		dailyUsage: [],
+	};
+
+	return {
+		get: () => emptyStatistics,
+		load: () => emptyStatistics,
+		save: () => {},
+		exists: () => false,
+		initialize: () => emptyStatistics,
+		invalidate: () => {},
+		recordSession: () => {},
+		getSummary: () => ({
+			totalSessions: 0,
+			totalIterations: 0,
+			totalTasksCompleted: 0,
+			totalDurationMs: 0,
+			overallSuccessRate: 0,
+			averageSessionDurationMs: 0,
+			averageIterationsPerSession: 0,
+			lastSessionAt: null,
+			streakDays: 0,
+		}),
+		getRecentSessions: () => [],
+		getDailyUsage: () => [],
+		formatForDisplay: () => "",
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -339,6 +394,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 		session: createMockSessionService(overrides.session),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
+		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 	};
 
 	initializeServices(testContainer);

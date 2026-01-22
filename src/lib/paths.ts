@@ -80,6 +80,10 @@ export function getRulesFilePath(): string {
 	return getProjectFilePath("rules.json");
 }
 
+export function getUsageStatisticsFilePath(): string {
+	return getProjectFilePath("usage-statistics.json");
+}
+
 export function getLogsDir(): string {
 	return getProjectFilePath("logs");
 }
