@@ -77,8 +77,10 @@ const PHASE_PATTERNS: PatternMatch[] = [
 	},
 ];
 
+import { PHASE_DETECTION_OUTPUT_WINDOW_CHARS } from "@/lib/constants/ui.ts";
+
 export function detectPhaseFromOutput(output: string): AgentPhase {
-	const recentOutput = output.slice(-2000);
+	const recentOutput = output.slice(-PHASE_DETECTION_OUTPUT_WINDOW_CHARS);
 
 	for (const { pattern, phase } of PHASE_PATTERNS) {
 		if (pattern.test(recentOutput)) {

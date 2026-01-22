@@ -1,3 +1,4 @@
+import { TASK_LIST_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
 import { loadPrd } from "@/lib/prd.ts";
 import type { TaskListOutput } from "@/types.ts";
@@ -67,7 +68,7 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 	}
 
 	console.log("Tasks:");
-	console.log("─".repeat(70));
+	console.log("─".repeat(TASK_LIST_SEPARATOR_WIDTH));
 
 	for (const [taskIndex, task] of prd.tasks.entries()) {
 		let statusIcon: string;
@@ -89,7 +90,7 @@ export function printList(version: string, jsonOutput: boolean, verbose = false)
 		);
 	}
 
-	console.log("─".repeat(70));
+	console.log("─".repeat(TASK_LIST_SEPARATOR_WIDTH));
 
 	const summaryParts = [`${completedTasks} completed`];
 

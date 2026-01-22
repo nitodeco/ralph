@@ -6,6 +6,7 @@ import {
 	getProjectConfigPath,
 	validateConfig,
 } from "@/lib/config.ts";
+import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import type { ConfigOutput } from "@/types.ts";
 import { formatBytes, formatDuration } from "../formatters.ts";
 
@@ -44,7 +45,7 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 	console.log(`  Global:  ${getGlobalConfigPath()} ${globalConfig ? "(exists)" : "(not found)"}`);
 	console.log(`  Project: ${getProjectConfigPath()} ${projectConfig ? "(exists)" : "(not found)"}`);
 
-	console.log(`\n${"─".repeat(60)}`);
+	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
 	console.log("\nEffective Configuration:\n");
 
 	console.log("  Agent Settings:");
@@ -98,7 +99,7 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 		console.log("    (using defaults)");
 	}
 
-	console.log(`\n${"─".repeat(60)}`);
+	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
 
 	if (!validation.valid || validation.warnings.length > 0) {
 		console.log("");

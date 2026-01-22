@@ -1,5 +1,9 @@
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
+import {
+	PROGRESS_COLOR_THRESHOLD_COMPLETE,
+	PROGRESS_COLOR_THRESHOLD_MEDIUM,
+} from "@/lib/constants/ui.ts";
 import { useAppStore, useIterationStore } from "@/stores/index.ts";
 import { ProgressBar } from "./common/ProgressBar.tsx";
 import { useResponsive } from "./common/ResponsiveLayout.tsx";
@@ -88,7 +92,12 @@ export function IterationProgress(): React.ReactElement {
 
 	const percentage = total > 0 ? Math.min(Math.round((current / total) * 100), 100) : 0;
 	const etaMs = estimateTimeRemaining(current, total, elapsedMs);
-	const progressColor = percentage >= 100 ? "green" : percentage >= 50 ? "cyan" : "yellow";
+	const progressColor =
+		percentage >= PROGRESS_COLOR_THRESHOLD_COMPLETE
+			? "green"
+			: percentage >= PROGRESS_COLOR_THRESHOLD_MEDIUM
+				? "cyan"
+				: "yellow";
 
 	const progressBarWidth = isNarrow
 		? PROGRESS_BAR_WIDTH_NARROW

@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
+import { AGENT_OUTPUT_PREVIEW_MAX_CHARS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { ensureProjectDirExists, getPrdJsonPath, getProgressFilePath } from "@/lib/paths.ts";
 import { findPrdFile, savePrd } from "@/lib/prd.ts";
@@ -312,7 +313,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 						<Box marginTop={1} flexDirection="column">
 							<Text dimColor>Agent output:</Text>
 							<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-								<Text dimColor>{state.agentOutput.slice(-500)}</Text>
+								<Text dimColor>{state.agentOutput.slice(-AGENT_OUTPUT_PREVIEW_MAX_CHARS)}</Text>
 							</Box>
 						</Box>
 					)}

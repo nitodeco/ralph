@@ -3,6 +3,7 @@ import SelectInput from "ink-select-input";
 import { useCallback, useEffect, useState } from "react";
 import { match } from "ts-pattern";
 import { loadConfig, saveConfig } from "@/lib/config.ts";
+import { RESTART_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import {
 	compareVersions,
@@ -178,7 +179,7 @@ export function UpdatePrompt({
 				} else {
 					handleExit();
 				}
-			}, 2000);
+			}, RESTART_MESSAGE_TIMEOUT_MS);
 
 			return () => clearTimeout(timeout);
 		}

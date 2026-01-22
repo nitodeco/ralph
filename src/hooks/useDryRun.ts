@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { validateConfig } from "@/lib/config.ts";
+import {
+	DRY_RUN_CONFIG_VALIDATION_DELAY_MS,
+	DRY_RUN_ITERATION_DELAY_MS,
+	DRY_RUN_PRD_LOAD_DELAY_MS,
+	DRY_RUN_SEPARATOR_WIDTH,
+	DRY_RUN_TASK_DELAY_MS,
+} from "@/lib/constants/ui.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import { loadPrd } from "@/lib/prd.ts";
 import type { Prd, PrdTask, RalphConfig } from "@/types.ts";
@@ -47,7 +54,7 @@ export function useDryRun(
 				logs: ["Validating configuration..."],
 			}));
 
-			await new Promise((resolve) => setTimeout(resolve, 500));
+			await new Promise((resolve) => setTimeout(resolve, DRY_RUN_CONFIG_VALIDATION_DELAY_MS));
 
 			if (config) {
 				const validation = validateConfig(config);
@@ -67,7 +74,7 @@ export function useDryRun(
 				errors.push("No configuration found. Run 'ralph setup' first.");
 			}
 
-			await new Promise((resolve) => setTimeout(resolve, 300));
+			await new Promise((resolve) => setTimeout(resolve, DRY_RUN_PRD_LOAD_DELAY_MS));
 
 			const currentPrd = loadPrd();
 
@@ -117,7 +124,7 @@ export function useDryRun(
 			);
 
 			logs.push(`\nSimulating ${simulationIterations} iteration(s)...`);
-			logs.push("─".repeat(50));
+			logs.push("─".repeat(DRY_RUN_SEPARATOR_WIDTH));
 
 			for (let iterationIndex = 1; iterationIndex <= simulationIterations; iterationIndex++) {
 				setState((prev) => ({
@@ -126,7 +133,7 @@ export function useDryRun(
 					logs: [...prev.logs, `\n[Iteration ${iterationIndex}/${simulationIterations}]`],
 				}));
 
-				await new Promise((resolve) => setTimeout(resolve, 800));
+				await new Promise((resolve) => setTimeout(resolve, DRY_RUN_ITERATION_DELAY_MS));
 
 				const nextTask = getNextPendingTask(prdForSimulation);
 
@@ -136,7 +143,7 @@ export function useDryRun(
 						logs: [...prev.logs, `  → Would work on: "${nextTask.title}"`],
 					}));
 
-					await new Promise((resolve) => setTimeout(resolve, 500));
+					await new Promise((resolve) => setTimeout(resolve, DRY_RUN_TASK_DELAY_MS));
 
 					setState((prev) => ({
 						...prev,
@@ -147,7 +154,7 @@ export function useDryRun(
 						],
 					}));
 
-					await new Promise((resolve) => setTimeout(resolve, 500));
+					await new Promise((resolve) => setTimeout(resolve, DRY_RUN_TASK_DELAY_MS));
 
 					setState((prev) => ({
 						...prev,
@@ -169,7 +176,7 @@ export function useDryRun(
 				status: "complete",
 				logs: [
 					...prev.logs,
-					"\n─".repeat(50),
+					`\n${"─".repeat(DRY_RUN_SEPARATOR_WIDTH)}`,
 					"Dry-run simulation complete.",
 					"No changes were made to your project.",
 				],

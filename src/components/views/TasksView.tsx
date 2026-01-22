@@ -2,6 +2,7 @@ import { Box, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { STATUS_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { deleteTask, savePrd, toggleTaskDone } from "@/lib/prd.ts";
 import { getPrdService, type Prd } from "@/lib/services/index.ts";
 
@@ -41,7 +42,7 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 
 	useEffect(() => {
 		if (statusMessage) {
-			const timeout = setTimeout(() => setStatusMessage(null), 2000);
+			const timeout = setTimeout(() => setStatusMessage(null), STATUS_MESSAGE_TIMEOUT_MS);
 
 			return () => clearTimeout(timeout);
 		}

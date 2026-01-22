@@ -2,6 +2,7 @@ import { Box, Text, useInput } from "ink";
 import { useState } from "react";
 import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { MESSAGE_DISMISS_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import {
 	clearFailureHistory,
 	formatPatternReport,
@@ -51,7 +52,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({ version, onClose }) =>
 		if (input === "c") {
 			clearFailureHistory();
 			setMessage({ type: "success", text: "Failure history cleared" });
-			setTimeout(() => setMessage(null), 3000);
+			setTimeout(() => setMessage(null), MESSAGE_DISMISS_TIMEOUT_MS);
 		}
 
 		if (suggestedGuardrails.length > 0) {
@@ -81,7 +82,7 @@ export const AnalyzeView: React.FC<AnalyzeViewProps> = ({ version, onClose }) =>
 					setMessage({ type: "error", text: "Failed to add guardrail" });
 				}
 
-				setTimeout(() => setMessage(null), 3000);
+				setTimeout(() => setMessage(null), MESSAGE_DISMISS_TIMEOUT_MS);
 			}
 		}
 	});

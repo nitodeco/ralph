@@ -1,4 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
+import {
+	CATEGORY_NAME_PAD_WIDTH,
+	FAILURE_CATEGORY_THRESHOLD_PERCENTAGE,
+	MIN_TASK_FAILURES_FOR_RECOMMENDATION,
+	PERCENTAGE_BAR_SCALE_DIVISOR,
+	SIMILARITY_THRESHOLD,
+} from "@/lib/constants/ui.ts";
 import { analyzeFailure } from "@/lib/failure-analyzer.ts";
 import { writeFileIdempotent } from "@/lib/idempotency.ts";
 import { ensureProjectDirExists, getFailureHistoryFilePath } from "@/lib/paths.ts";
@@ -147,7 +154,7 @@ function groupEntriesByPattern(entries: FailureHistoryEntry[]): Map<string, Fail
 			const otherNormalized = normalizeErrorForPattern(otherEntry.error);
 			const similarity = calculateStringSimilarity(normalizedError, otherNormalized);
 
-			if (similarity > 0.7) {
+			if (similarity > SIMILARITY_THRESHOLD) {
 				group.push(otherEntry);
 				processedIndices.add(comparisonIndex);
 			}
@@ -292,7 +299,7 @@ export function generatePatternReport(): PatternReport {
 
 	const topCategory = categoryBreakdown.at(0);
 
-	if (topCategory && topCategory.percentage > 40) {
+	if (topCategory && topCategory.percentage > FAILURE_CATEGORY_THRESHOLD_PERCENTAGE) {
 		recommendations.push(
 			`${topCategory.category.replace(/_/g, " ")} accounts for ${topCategory.percentage}% of failures. Consider adding specific guardrails for this issue.`,
 		);
@@ -300,7 +307,7 @@ export function generatePatternReport(): PatternReport {
 
 	const topFailingTask = taskFailureRates.at(0);
 
-	if (topFailingTask && topFailingTask.failures >= 5) {
+	if (topFailingTask && topFailingTask.failures >= MIN_TASK_FAILURES_FOR_RECOMMENDATION) {
 		recommendations.push(
 			`Task "${topFailingTask.task}" has ${topFailingTask.failures} failures. Consider breaking it into smaller subtasks.`,
 		);
@@ -345,10 +352,10 @@ export function formatPatternReport(report: PatternReport): string {
 		lines.push("─── Category Breakdown ───");
 
 		for (const category of report.categoryBreakdown) {
-			const bar = "█".repeat(Math.ceil(category.percentage / 5));
+			const bar = "█".repeat(Math.ceil(category.percentage / PERCENTAGE_BAR_SCALE_DIVISOR));
 
 			lines.push(
-				`  ${category.category.padEnd(18)} ${bar} ${category.percentage}% (${category.count})`,
+				`  ${category.category.padEnd(CATEGORY_NAME_PAD_WIDTH)} ${bar} ${category.percentage}% (${category.count})`,
 			);
 		}
 

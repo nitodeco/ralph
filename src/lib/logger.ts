@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { LOG_LEVEL_TAG_WIDTH } from "@/lib/constants/ui.ts";
 import { checkAndRotateFile, formatTimestamp } from "./logging-utils.ts";
 import { ensureProjectDirExists } from "./paths.ts";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
@@ -56,7 +57,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 };
 
 function formatLogEntry(entry: LogEntry): string {
-	const levelTag = `[${entry.level.toUpperCase()}]`.padEnd(7);
+	const levelTag = `[${entry.level.toUpperCase()}]`.padEnd(LOG_LEVEL_TAG_WIDTH);
 	const contextStr = entry.context ? ` ${JSON.stringify(entry.context)}` : "";
 
 	return `${entry.timestamp} ${levelTag} ${entry.message}${contextStr}`;

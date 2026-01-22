@@ -1,3 +1,4 @@
+import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import { type CustomRule, getRulesService } from "@/lib/services/index.ts";
 
 interface RulesOutput {
@@ -43,7 +44,7 @@ export function printRules(version: string, jsonOutput: boolean): void {
 		console.log(`    \x1b[90mid: ${rule.id}\x1b[0m`);
 	}
 
-	console.log(`\n${"─".repeat(60)}`);
+	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
 	console.log("\nCommands:");
 	console.log("  ralph rules add <instruction>  Add a new rule");
 	console.log("  ralph rules remove <id>        Remove a rule");

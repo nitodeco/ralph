@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
+import { AGENT_OUTPUT_PREVIEW_MAX_CHARS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { loadPrd, savePrd } from "@/lib/prd.ts";
 import { buildAddTaskPrompt, TASK_OUTPUT_END, TASK_OUTPUT_START } from "@/lib/prompt.ts";
@@ -240,7 +241,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 						<Box marginTop={1} flexDirection="column">
 							<Text dimColor>Agent output:</Text>
 							<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-								<Text dimColor>{state.agentOutput.slice(-500)}</Text>
+								<Text dimColor>{state.agentOutput.slice(-AGENT_OUTPUT_PREVIEW_MAX_CHARS)}</Text>
 							</Box>
 						</Box>
 					)}

@@ -4,6 +4,7 @@ import { match } from "ts-pattern";
 import { ConfirmationDialog } from "@/components/common/index.ts";
 import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { MESSAGE_DISMISS_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { getSessionMemoryService } from "@/lib/services/index.ts";
 import { Header } from "../Header.tsx";
 
@@ -59,7 +60,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				setMemory(sessionMemoryService.get());
 				setMessage({ type: "success", text: "Session memory cleared" });
 				setViewMode("view");
-				setTimeout(() => setMessage(null), 3000);
+				setTimeout(() => setMessage(null), MESSAGE_DISMISS_TIMEOUT_MS);
 			}
 
 			return;
@@ -81,7 +82,7 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				stats.taskNotesCount === 0
 			) {
 				setMessage({ type: "error", text: "Session memory is already empty" });
-				setTimeout(() => setMessage(null), 3000);
+				setTimeout(() => setMessage(null), MESSAGE_DISMISS_TIMEOUT_MS);
 			} else {
 				setViewMode("confirm-clear");
 			}

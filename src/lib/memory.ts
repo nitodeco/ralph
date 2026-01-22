@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { OUTPUT_BUFFER_END_RATIO } from "@/lib/constants/ui.ts";
 import { eventBus } from "./events.ts";
 import { getLogger } from "./logger.ts";
 import { AgentProcessManager } from "./services/AgentProcessManager.ts";
@@ -104,7 +105,7 @@ export function truncateOutputBuffer(
 		return truncationMessage;
 	}
 
-	const keepFromEndBytes = Math.floor(availableBytes * 0.7);
+	const keepFromEndBytes = Math.floor(availableBytes * OUTPUT_BUFFER_END_RATIO);
 	const keepFromStartBytes = availableBytes - keepFromEndBytes;
 
 	const startPart = bytes.slice(0, keepFromStartBytes);

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { ITERATION_FILENAME_PADDING } from "@/lib/constants/ui.ts";
 import type {
 	AgentType,
 	IterationLog,
@@ -19,7 +20,7 @@ import { isIterationLog, isIterationLogsIndex } from "./type-guards.ts";
 const INDEX_FILE = "index.json";
 
 function getIterationFilename(iteration: number): string {
-	return `iteration-${String(iteration).padStart(3, "0")}.json`;
+	return `iteration-${String(iteration).padStart(ITERATION_FILENAME_PADDING, "0")}.json`;
 }
 
 function getIterationFilePath(iteration: number): string {

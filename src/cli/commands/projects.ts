@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { DAYS_PER_MONTH, MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from "@/lib/constants/ui.ts";
 import { getProjectRegistryService } from "@/lib/services/index.ts";
 import type { ProjectMetadata } from "@/lib/services/project-registry/types.ts";
 
@@ -33,23 +34,25 @@ interface PruneOutput {
 function formatRelativeTime(timestamp: number): string {
 	const now = Date.now();
 	const diffInMs = now - timestamp;
-	const diffInMinutes = Math.floor(diffInMs / 60_000);
-	const diffInHours = Math.floor(diffInMs / 3_600_000);
-	const diffInDays = Math.floor(diffInMs / 86_400_000);
+	const diffInMinutes = Math.floor(diffInMs / MS_PER_MINUTE);
+	const diffInHours = Math.floor(diffInMs / MS_PER_HOUR);
+	const diffInDays = Math.floor(diffInMs / MS_PER_DAY);
+	const minutesPerHour = 60;
+	const hoursPerDay = 24;
 
 	if (diffInMinutes < 1) {
 		return "just now";
 	}
 
-	if (diffInMinutes < 60) {
+	if (diffInMinutes < minutesPerHour) {
 		return `${diffInMinutes}m ago`;
 	}
 
-	if (diffInHours < 24) {
+	if (diffInHours < hoursPerDay) {
 		return `${diffInHours}h ago`;
 	}
 
-	if (diffInDays < 30) {
+	if (diffInDays < DAYS_PER_MONTH) {
 		return `${diffInDays}d ago`;
 	}
 

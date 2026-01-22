@@ -2,7 +2,11 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_DAEMON_STOP_TIMEOUT_MS, FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
+import {
+	DEFAULT_DAEMON_STOP_TIMEOUT_MS,
+	FORCE_KILL_TIMEOUT_MS,
+	PROCESS_POLL_INTERVAL_MS,
+} from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureProjectDirExists } from "./paths.ts";
@@ -216,12 +220,11 @@ export async function stopDaemonProcess(
 		};
 	}
 
-	const pollIntervalMs = 100;
-	const maxAttempts = Math.ceil(timeoutMs / pollIntervalMs);
+	const maxAttempts = Math.ceil(timeoutMs / PROCESS_POLL_INTERVAL_MS);
 	let attempts = 0;
 
 	while (attempts < maxAttempts) {
-		await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+		await new Promise((resolve) => setTimeout(resolve, PROCESS_POLL_INTERVAL_MS));
 		attempts++;
 
 		if (!isProcessRunning(pid)) {

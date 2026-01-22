@@ -3,6 +3,7 @@ import { AgentRunner } from "@/lib/agent.ts";
 import { detectPhaseFromOutput } from "@/lib/agent-phase.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
+import { GIT_STATS_POLL_INTERVAL_MS, OUTPUT_THROTTLE_MS } from "@/lib/constants/ui.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { getGitStatusStats } from "@/lib/git-stats.ts";
@@ -87,7 +88,6 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const instructions = loadInstructions();
 		const isInGitRepo = isGitRepository();
 		const prompt = buildPrompt({ instructions, specificTask, isGitRepository: isInGitRepo });
-		const outputThrottleMs = 100;
 
 		const agentRunner = new AgentRunner({
 			agentType: config.agent,
@@ -96,7 +96,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			maxRetries: config.maxRetries ?? DEFAULTS.maxRetries,
 			retryDelayMs: config.retryDelayMs ?? DEFAULTS.retryDelayMs,
 			retryWithContext: config.retryWithContext ?? DEFAULTS.retryWithContext,
-			outputThrottleMs,
+			outputThrottleMs: OUTPUT_THROTTLE_MS,
 			logFilePath: config.logFilePath,
 			onOutput: get().setOutput,
 			onRetry: (count, max, delay) => {
@@ -113,7 +113,6 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			emitEvents: true,
 		});
 
-		const GIT_STATS_POLL_INTERVAL_MS = 5_000;
 		const gitStatsInterval = setInterval(() => {
 			const stats = getGitStatusStats();
 

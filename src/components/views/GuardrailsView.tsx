@@ -4,6 +4,7 @@ import { ConfirmationDialog } from "@/components/common/ConfirmationDialog.tsx";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
+import { MESSAGE_DISMISS_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
 
 interface GuardrailsViewProps {
@@ -58,7 +59,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 
 	const showMessage = (type: "success" | "error", text: string) => {
 		setMessage({ type, text });
-		setTimeout(() => setMessage(null), 3000);
+		setTimeout(() => setMessage(null), MESSAGE_DISMISS_TIMEOUT_MS);
 	};
 
 	useInput((input, key) => {

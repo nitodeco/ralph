@@ -3,6 +3,7 @@ import {
 	formatAnalysisReport,
 	generateAnalysisReport,
 } from "@/lib/codebase-analyzer.ts";
+import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
 import type { GuardrailsGenerateOptions } from "@/types.ts";
 
@@ -57,7 +58,7 @@ export function printGuardrails(version: string, jsonOutput: boolean): void {
 		console.log(`    \x1b[90mid: ${guardrail.id}\x1b[0m`);
 	}
 
-	console.log(`\n${"─".repeat(60)}`);
+	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
 	console.log("\nCommands:");
 	console.log("  ralph guardrails add <instruction>  Add a new guardrail");
 	console.log("  ralph guardrails remove <id>        Remove a guardrail");

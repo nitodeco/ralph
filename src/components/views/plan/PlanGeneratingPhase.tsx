@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { Spinner } from "@/components/common/Spinner.tsx";
+import { AGENT_OUTPUT_PREVIEW_MAX_CHARS } from "@/lib/constants/ui.ts";
 
 interface PlanGeneratingPhaseProps {
 	agentOutput: string;
@@ -23,7 +24,7 @@ export function PlanGeneratingPhase({
 				<Box marginTop={1} flexDirection="column">
 					<Text dimColor>Agent output:</Text>
 					<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-						<Text dimColor>{agentOutput.slice(-500)}</Text>
+						<Text dimColor>{agentOutput.slice(-AGENT_OUTPUT_PREVIEW_MAX_CHARS)}</Text>
 					</Box>
 				</Box>
 			)}

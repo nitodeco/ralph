@@ -11,6 +11,7 @@ import {
 	saveConfig,
 	saveGlobalConfig,
 } from "@/lib/config.ts";
+import { TRANSITION_DELAY_MS } from "@/lib/constants/ui.ts";
 import type { AgentType } from "@/types.ts";
 
 interface AgentSelectViewProps {
@@ -90,7 +91,7 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
 
 		setTimeout(() => {
 			onClose();
-		}, 800);
+		}, TRANSITION_DELAY_MS);
 	};
 
 	return (

@@ -1,4 +1,9 @@
 import { Box, Text } from "ink";
+import {
+	PROGRESS_COLOR_THRESHOLD_COMPLETE,
+	PROGRESS_COLOR_THRESHOLD_HIGH,
+	PROGRESS_COLOR_THRESHOLD_MEDIUM,
+} from "@/lib/constants/ui.ts";
 
 type ProgressBarStyle = "default" | "minimal" | "detailed" | "compact";
 type ProgressBarColor = "cyan" | "green" | "yellow" | "red" | "magenta" | "blue" | "auto";
@@ -17,15 +22,15 @@ interface ProgressBarProps {
 }
 
 function getAutoColor(percentage: number): string {
-	if (percentage >= 100) {
+	if (percentage >= PROGRESS_COLOR_THRESHOLD_COMPLETE) {
 		return "green";
 	}
 
-	if (percentage >= 75) {
+	if (percentage >= PROGRESS_COLOR_THRESHOLD_HIGH) {
 		return "cyan";
 	}
 
-	if (percentage >= 50) {
+	if (percentage >= PROGRESS_COLOR_THRESHOLD_MEDIUM) {
 		return "yellow";
 	}
 
