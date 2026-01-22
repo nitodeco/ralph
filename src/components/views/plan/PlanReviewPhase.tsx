@@ -1,9 +1,12 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import type { PlanDiffTask, PrdTask } from "@/types.ts";
 
 const TASK_DETAIL_HEIGHT = 12;
+const DEFAULT_MAX_VISIBLE_TASKS = 8;
+const CONDENSED_MAX_VISIBLE_TASKS = 5;
 
 type EditField = "title" | "description" | "steps";
 
@@ -66,17 +69,56 @@ function getTaskForIndex(
 	return diffTasks.at(index)?.task;
 }
 
+interface VisibleRange {
+	startIndex: number;
+	endIndex: number;
+	hasMoreAbove: boolean;
+	hasMoreBelow: boolean;
+}
+
+function getVisibleRange(
+	selectedIndex: number,
+	totalItems: number,
+	maxVisible: number,
+): VisibleRange {
+	if (totalItems <= maxVisible) {
+		return {
+			startIndex: 0,
+			endIndex: totalItems,
+			hasMoreAbove: false,
+			hasMoreBelow: false,
+		};
+	}
+
+	const halfWindow = Math.floor(maxVisible / 2);
+	const rawStartIndex = selectedIndex - halfWindow;
+	const clampedStartIndex = Math.max(0, Math.min(rawStartIndex, totalItems - maxVisible));
+	const clampedEndIndex = Math.min(totalItems, clampedStartIndex + maxVisible);
+
+	return {
+		startIndex: clampedStartIndex,
+		endIndex: clampedEndIndex,
+		hasMoreAbove: clampedStartIndex > 0,
+		hasMoreBelow: clampedEndIndex < totalItems,
+	};
+}
+
 export function PlanReviewPhase({
 	diffTasks,
 	onAccept,
 	onCancel,
 }: PlanReviewPhaseProps): React.ReactElement {
+	const { isNarrow } = useResponsive();
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [acceptedIndices, setAcceptedIndices] = useState<Set<number>>(() =>
 		buildInitialAcceptedIndices(diffTasks),
 	);
 	const [editedTasks, setEditedTasks] = useState<Map<number, PrdTask>>(new Map());
 	const [editState, setEditState] = useState<EditState>(getInitialEditState);
+
+	const maxVisibleTasks = isNarrow ? CONDENSED_MAX_VISIBLE_TASKS : DEFAULT_MAX_VISIBLE_TASKS;
+	const visibleRange = getVisibleRange(selectedIndex, diffTasks.length, maxVisibleTasks);
+	const visibleTasks = diffTasks.slice(visibleRange.startIndex, visibleRange.endIndex);
 
 	const newCount = diffTasks.filter((diffTask) => diffTask.status === "new").length;
 	const modifiedCount = diffTasks.filter((diffTask) => diffTask.status === "modified").length;
@@ -265,7 +307,14 @@ export function PlanReviewPhase({
 			</Box>
 
 			<Box flexDirection="column" marginTop={1}>
-				<Text dimColor>Tasks:</Text>
+				<Text dimColor>
+					Tasks:{" "}
+					{diffTasks.length > maxVisibleTasks && (
+						<Text>
+							({selectedIndex + 1}/{diffTasks.length})
+						</Text>
+					)}
+				</Text>
 				<Box
 					flexDirection="column"
 					borderStyle="round"
@@ -273,13 +322,17 @@ export function PlanReviewPhase({
 					paddingX={1}
 					marginTop={1}
 				>
-					{diffTasks.map((diffTask, index) => {
-						const maybeEditedTask = editedTasks.get(index);
+					{visibleRange.hasMoreAbove && (
+						<Text dimColor>↑ {visibleRange.startIndex} more above</Text>
+					)}
+					{visibleTasks.map((diffTask, visibleIndex) => {
+						const actualIndex = visibleRange.startIndex + visibleIndex;
+						const maybeEditedTask = editedTasks.get(actualIndex);
 						const taskToDisplay = maybeEditedTask ?? diffTask.task;
 						const isEdited = maybeEditedTask !== undefined;
 						const indicator = STATUS_INDICATOR_BY_STATUS[diffTask.status];
-						const isSelected = index === selectedIndex;
-						const isAccepted = acceptedIndices.has(index);
+						const isSelected = actualIndex === selectedIndex;
+						const isAccepted = acceptedIndices.has(actualIndex);
 						const checkboxSymbol = isAccepted ? "✓" : "○";
 						const checkboxColor = isAccepted ? "green" : "gray";
 
@@ -296,6 +349,9 @@ export function PlanReviewPhase({
 							</Box>
 						);
 					})}
+					{visibleRange.hasMoreBelow && (
+						<Text dimColor>↓ {diffTasks.length - visibleRange.endIndex} more below</Text>
+					)}
 				</Box>
 			</Box>
 
