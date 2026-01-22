@@ -1,10 +1,40 @@
 export type SessionStatus = "running" | "paused" | "stopped" | "completed";
 
+export type TaskExecutionStatus = "pending" | "running" | "completed" | "failed";
+
 export interface IterationTiming {
 	iteration: number;
 	startTime: number;
 	endTime: number | null;
 	durationMs: number | null;
+}
+
+export interface ActiveTaskExecution {
+	taskId: string;
+	taskTitle: string;
+	taskIndex: number;
+	status: TaskExecutionStatus;
+	startTime: number;
+	endTime: number | null;
+	processId: string;
+	retryCount: number;
+	lastError: string | null;
+}
+
+export interface ParallelExecutionGroup {
+	groupIndex: number;
+	startTime: number;
+	endTime: number | null;
+	taskExecutions: ActiveTaskExecution[];
+	isComplete: boolean;
+}
+
+export interface ParallelSessionState {
+	isParallelMode: boolean;
+	currentGroupIndex: number;
+	executionGroups: ParallelExecutionGroup[];
+	activeExecutions: ActiveTaskExecution[];
+	maxConcurrentTasks: number;
 }
 
 export interface SessionStatistics {
@@ -27,6 +57,7 @@ export interface Session {
 	status: SessionStatus;
 	elapsedTimeSeconds: number;
 	statistics: SessionStatistics;
+	parallelState?: ParallelSessionState;
 }
 
 export const VALID_SESSION_STATUSES: SessionStatus[] = [
@@ -35,6 +66,20 @@ export const VALID_SESSION_STATUSES: SessionStatus[] = [
 	"stopped",
 	"completed",
 ];
+
+export const VALID_TASK_EXECUTION_STATUSES: TaskExecutionStatus[] = [
+	"pending",
+	"running",
+	"completed",
+	"failed",
+];
+
+export interface TaskExecutionInfo {
+	taskId: string;
+	taskTitle: string;
+	taskIndex: number;
+	processId: string;
+}
 
 export interface SessionService {
 	load(): Session | null;
@@ -53,4 +98,22 @@ export interface SessionService {
 	): Session;
 	updateStatus(session: Session, status: SessionStatus): Session;
 	isResumable(session: Session | null): boolean;
+
+	enableParallelMode(session: Session, maxConcurrentTasks: number): Session;
+	disableParallelMode(session: Session): Session;
+	isParallelMode(session: Session): boolean;
+
+	startParallelGroup(session: Session, groupIndex: number): Session;
+	completeParallelGroup(session: Session, groupIndex: number): Session;
+	getCurrentParallelGroup(session: Session): ParallelExecutionGroup | null;
+
+	startTaskExecution(session: Session, taskInfo: TaskExecutionInfo): Session;
+	completeTaskExecution(session: Session, taskId: string, wasSuccessful: boolean): Session;
+	failTaskExecution(session: Session, taskId: string, error: string): Session;
+	retryTaskExecution(session: Session, taskId: string): Session;
+
+	getActiveExecutions(session: Session): ActiveTaskExecution[];
+	getTaskExecution(session: Session, taskId: string): ActiveTaskExecution | null;
+	isTaskExecuting(session: Session, taskId: string): boolean;
+	getActiveExecutionCount(session: Session): number;
 }

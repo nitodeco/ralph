@@ -14,6 +14,28 @@ export interface IterationLogTask {
 	wasCompleted: boolean;
 }
 
+export interface ParallelTaskExecution {
+	taskId: string;
+	taskTitle: string;
+	taskIndex: number;
+	startedAt: string;
+	completedAt: string | null;
+	durationMs: number | null;
+	status: "running" | "completed" | "failed";
+	exitCode: number | null;
+	retryCount: number;
+	error: string | null;
+}
+
+export interface IterationLogParallelGroup {
+	groupIndex: number;
+	startedAt: string;
+	completedAt: string | null;
+	durationMs: number | null;
+	taskExecutions: ParallelTaskExecution[];
+	allSucceeded: boolean;
+}
+
 export interface IterationLogRetryContext {
 	attemptNumber: number;
 	failureCategory: string;
@@ -65,6 +87,8 @@ export interface IterationLog {
 	errors: IterationLogError[];
 	verification?: IterationLogVerification;
 	decomposition?: IterationLogDecomposition;
+	isParallelExecution?: boolean;
+	parallelGroup?: IterationLogParallelGroup;
 }
 
 export interface IterationLogsIndexEntry {

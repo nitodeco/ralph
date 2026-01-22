@@ -180,6 +180,33 @@ function createMockServices(
 			}),
 			updateStatus: (s, status) => ({ ...s, status, lastUpdateTime: Date.now() }),
 			isResumable: () => false,
+			enableParallelMode: (s, max) => ({
+				...s,
+				parallelState: {
+					isParallelMode: true,
+					currentGroupIndex: -1,
+					executionGroups: [],
+					activeExecutions: [],
+					maxConcurrentTasks: max,
+				},
+			}),
+			disableParallelMode: (s) => {
+				const { parallelState: _, ...rest } = s;
+
+				return rest;
+			},
+			isParallelMode: (s) => s.parallelState?.isParallelMode ?? false,
+			startParallelGroup: (s) => s,
+			completeParallelGroup: (s) => s,
+			getCurrentParallelGroup: () => null,
+			startTaskExecution: (s) => s,
+			completeTaskExecution: (s) => s,
+			failTaskExecution: (s) => s,
+			retryTaskExecution: (s) => s,
+			getActiveExecutions: () => [],
+			getTaskExecution: () => null,
+			isTaskExecuting: () => false,
+			getActiveExecutionCount: () => 0,
 		},
 		sleepPrevention: {
 			start: () => {},

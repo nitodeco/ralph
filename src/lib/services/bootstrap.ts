@@ -221,6 +221,34 @@ function createMockSessionService(overrides: Partial<SessionService> = {}): Sess
 		}),
 		updateStatus: (session, status) => ({ ...session, status, lastUpdateTime: Date.now() }),
 		isResumable: () => false,
+		enableParallelMode: (session, maxConcurrentTasks) => ({
+			...session,
+			lastUpdateTime: Date.now(),
+			parallelState: {
+				isParallelMode: true,
+				currentGroupIndex: -1,
+				executionGroups: [],
+				activeExecutions: [],
+				maxConcurrentTasks,
+			},
+		}),
+		disableParallelMode: (session) => {
+			const { parallelState: _, ...rest } = session;
+
+			return { ...rest, lastUpdateTime: Date.now() };
+		},
+		isParallelMode: (session) => session.parallelState?.isParallelMode ?? false,
+		startParallelGroup: (session) => session,
+		completeParallelGroup: (session) => session,
+		getCurrentParallelGroup: () => null,
+		startTaskExecution: (session) => session,
+		completeTaskExecution: (session) => session,
+		failTaskExecution: (session) => session,
+		retryTaskExecution: (session) => session,
+		getActiveExecutions: () => [],
+		getTaskExecution: () => null,
+		isTaskExecuting: () => false,
+		getActiveExecutionCount: () => 0,
 		...overrides,
 	};
 }
