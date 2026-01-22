@@ -12,16 +12,17 @@ const RALPH_DIR = `${TEST_DIR}/.ralph`;
 
 function getFirstCallArg(spy: ReturnType<typeof spyOn>): string {
 	const calls = spy.mock.calls;
+	const [firstCall] = calls;
 
-	if (calls.length === 0 || !calls[0]) {
+	if (calls.length === 0 || !firstCall) {
 		throw new Error("Expected spy to have been called");
 	}
 
-	return calls[0][0] as string;
+	return firstCall.at(0) as string;
 }
 
 function getAllCallArgs(spy: ReturnType<typeof spyOn>): string[] {
-	return spy.mock.calls.map((call: unknown[]) => (call ? (call[0] as string) : ""));
+	return spy.mock.calls.map((call: unknown[]) => (call ? (call.at(0) as string) : ""));
 }
 
 describe("CLI commands", () => {

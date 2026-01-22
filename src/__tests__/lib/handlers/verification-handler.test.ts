@@ -45,8 +45,8 @@ describe("VerificationHandler", () => {
 		expect(handler.getLastResult()?.passed).toBe(true);
 		expect(handler.getIsRunning()).toBe(false);
 		expect(stateChanges.length).toBe(2);
-		expect(stateChanges[0]).toEqual({ isVerifying: true, result: null });
-		expect(stateChanges[1]?.isVerifying).toBe(false);
-		expect(stateChanges[1]?.result?.passed).toBe(true);
+		expect(stateChanges.at(0)).toEqual({ isVerifying: true, result: null });
+		expect(stateChanges.at(1)?.isVerifying).toBe(false);
+		expect(stateChanges.at(1)?.result?.passed).toBe(true);
 	});
 });

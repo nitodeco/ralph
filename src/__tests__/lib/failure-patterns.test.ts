@@ -56,7 +56,7 @@ describe("failure-patterns functions", () => {
 			const loaded = loadFailureHistory();
 
 			expect(loaded.entries).toHaveLength(1);
-			expect(loaded.entries[0]?.error).toBe("Build failed");
+			expect(loaded.entries.at(0)?.error).toBe("Build failed");
 		});
 
 		test("handles corrupted JSON gracefully", () => {
@@ -105,7 +105,7 @@ describe("failure-patterns functions", () => {
 			const history = loadFailureHistory();
 
 			expect(history.entries.length).toBeLessThanOrEqual(100);
-			expect(history.entries[0]?.error).not.toBe("Error 0");
+			expect(history.entries.at(0)?.error).not.toBe("Error 0");
 		});
 
 		test("categorizes errors correctly", () => {
@@ -159,7 +159,7 @@ describe("failure-patterns functions", () => {
 			const patterns = analyzePatterns();
 
 			expect(patterns.length).toBeGreaterThan(0);
-			expect(patterns[0]?.occurrences).toBe(2);
+			expect(patterns.at(0)?.occurrences).toBe(2);
 		});
 
 		test("tracks affected tasks", () => {
@@ -180,8 +180,8 @@ describe("failure-patterns functions", () => {
 			const patterns = analyzePatterns();
 
 			if (patterns.length > 0) {
-				expect(patterns[0]?.affectedTasks).toContain("Task 1");
-				expect(patterns[0]?.affectedTasks).toContain("Task 2");
+				expect(patterns.at(0)?.affectedTasks).toContain("Task 1");
+				expect(patterns.at(0)?.affectedTasks).toContain("Task 2");
 			}
 		});
 
@@ -192,7 +192,9 @@ describe("failure-patterns functions", () => {
 			const patterns = analyzePatterns();
 
 			if (patterns.length >= 2) {
-				expect(patterns[0]?.occurrences).toBeGreaterThanOrEqual(patterns[1]?.occurrences ?? 0);
+				expect(patterns.at(0)?.occurrences).toBeGreaterThanOrEqual(
+					patterns.at(1)?.occurrences ?? 0,
+				);
 			}
 		});
 
@@ -234,8 +236,8 @@ describe("failure-patterns functions", () => {
 			const suggestions = getSuggestedGuardrails();
 
 			expect(suggestions.length).toBeGreaterThan(0);
-			expect(suggestions[0]?.enabled).toBe(false);
-			expect(suggestions[0]?.instruction).toBeDefined();
+			expect(suggestions.at(0)?.enabled).toBe(false);
+			expect(suggestions.at(0)?.instruction).toBeDefined();
 		});
 
 		test("includes pattern information in addedAfterFailure", () => {
@@ -252,7 +254,7 @@ describe("failure-patterns functions", () => {
 			const suggestions = getSuggestedGuardrails();
 
 			if (suggestions.length > 0) {
-				expect(suggestions[0]?.addedAfterFailure).toContain("Pattern detected");
+				expect(suggestions.at(0)?.addedAfterFailure).toContain("Pattern detected");
 			}
 		});
 	});

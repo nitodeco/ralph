@@ -14,7 +14,7 @@ describe("validateConfig", () => {
 
 		expect(result.valid).toBe(false);
 		expect(result.errors).toHaveLength(1);
-		expect(result.errors[0]?.field).toBe("config");
+		expect(result.errors.at(0)?.field).toBe("config");
 	});
 
 	test("returns error when config is undefined", () => {
@@ -22,14 +22,14 @@ describe("validateConfig", () => {
 
 		expect(result.valid).toBe(false);
 		expect(result.errors).toHaveLength(1);
-		expect(result.errors[0]?.field).toBe("config");
+		expect(result.errors.at(0)?.field).toBe("config");
 	});
 
 	test("returns error when config is not an object", () => {
 		const result = validateConfig("invalid");
 
 		expect(result.valid).toBe(false);
-		expect(result.errors[0]?.message).toBe("Configuration must be an object");
+		expect(result.errors.at(0)?.message).toBe("Configuration must be an object");
 	});
 
 	test("returns error when agent is missing", () => {

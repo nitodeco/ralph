@@ -181,7 +181,7 @@ function generateGuardrailSuggestion(category: string, entries: FailureHistoryEn
 
 	const commonErrors = entries.map((entry) => entry.rootCause).slice(0, 3);
 
-	return `Address common issue: ${commonErrors[0] || "unknown error"}`;
+	return `Address common issue: ${commonErrors.at(0) ?? "unknown error"}`;
 }
 
 export function analyzePatterns(): FailurePattern[] {
@@ -194,8 +194,8 @@ export function analyzePatterns(): FailurePattern[] {
 			continue;
 		}
 
-		const firstEntry = entries[0];
-		const lastEntry = entries[entries.length - 1];
+		const firstEntry = entries.at(0);
+		const lastEntry = entries.at(-1);
 
 		if (!firstEntry || !lastEntry) {
 			continue;
@@ -290,7 +290,7 @@ export function generatePatternReport(): PatternReport {
 
 	const recommendations: string[] = [];
 
-	const topCategory = categoryBreakdown[0];
+	const topCategory = categoryBreakdown.at(0);
 
 	if (topCategory && topCategory.percentage > 40) {
 		recommendations.push(
@@ -298,7 +298,7 @@ export function generatePatternReport(): PatternReport {
 		);
 	}
 
-	const topFailingTask = taskFailureRates[0];
+	const topFailingTask = taskFailureRates.at(0);
 
 	if (topFailingTask && topFailingTask.failures >= 5) {
 		recommendations.push(
@@ -408,8 +408,8 @@ export function getFailureHistoryStats(): {
 	newestEntry: string | null;
 } {
 	const history = loadFailureHistory();
-	const firstEntry = history.entries[0];
-	const lastEntry = history.entries[history.entries.length - 1];
+	const firstEntry = history.entries.at(0);
+	const lastEntry = history.entries.at(-1);
 
 	return {
 		totalEntries: history.entries.length,

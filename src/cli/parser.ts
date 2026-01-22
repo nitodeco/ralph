@@ -165,7 +165,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 			(taskIndex === -1 || argIndex !== taskIndex + 1) &&
 			(maxRuntimeIndex === -1 || argIndex !== maxRuntimeIndex + 1),
 	);
-	const command = (filteredArgs[0] ?? "run") as Command;
+	const command = (filteredArgs.at(0) ?? "run") as Command;
 
 	let iterations: number = DEFAULTS.iterations;
 
@@ -186,7 +186,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let guardrailsGenerateOptions: GuardrailsGenerateOptions | undefined;
 
 	if (command === "guardrails") {
-		const subcommand = filteredArgs[1] as GuardrailsSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as GuardrailsSubcommand | undefined;
 
 		if (subcommand && VALID_GUARDRAILS_SUBCOMMANDS.includes(subcommand)) {
 			guardrailsSubcommand = subcommand;
@@ -209,7 +209,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let analyzeSubcommand: AnalyzeSubcommand | undefined;
 
 	if (command === "analyze") {
-		const subcommand = filteredArgs[1] as AnalyzeSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as AnalyzeSubcommand | undefined;
 
 		if (subcommand && VALID_ANALYZE_SUBCOMMANDS.includes(subcommand)) {
 			analyzeSubcommand = subcommand;
@@ -221,7 +221,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let memorySubcommand: MemorySubcommand | undefined;
 
 	if (command === "memory") {
-		const subcommand = filteredArgs[1] as MemorySubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as MemorySubcommand | undefined;
 
 		if (subcommand && VALID_MEMORY_SUBCOMMANDS.includes(subcommand)) {
 			memorySubcommand = subcommand;
@@ -233,7 +233,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let projectsSubcommand: ProjectsSubcommand | undefined;
 
 	if (command === "projects") {
-		const subcommand = filteredArgs[1] as ProjectsSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as ProjectsSubcommand | undefined;
 
 		if (subcommand && VALID_PROJECTS_SUBCOMMANDS.includes(subcommand)) {
 			projectsSubcommand = subcommand;
@@ -248,7 +248,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let taskEditOptions: TaskEditOptions | undefined;
 
 	if (command === "task") {
-		const subcommand = filteredArgs[1] as TaskSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as TaskSubcommand | undefined;
 
 		if (subcommand && VALID_TASK_SUBCOMMANDS.includes(subcommand)) {
 			taskSubcommand = subcommand;
@@ -272,7 +272,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let progressText: string | undefined;
 
 	if (command === "progress") {
-		const subcommand = filteredArgs[1] as ProgressSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as ProgressSubcommand | undefined;
 
 		if (subcommand && VALID_PROGRESS_SUBCOMMANDS.includes(subcommand)) {
 			progressSubcommand = subcommand;
@@ -293,7 +293,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let dependencyModifyOptions: DependencyModifyOptions | undefined;
 
 	if (command === "dependency") {
-		const subcommand = filteredArgs[1] as DependencySubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as DependencySubcommand | undefined;
 
 		if (subcommand && VALID_DEPENDENCY_SUBCOMMANDS.includes(subcommand)) {
 			dependencySubcommand = subcommand;
@@ -331,7 +331,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let rulesArg: string | undefined;
 
 	if (command === "rules") {
-		const subcommand = filteredArgs[1] as RulesSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as RulesSubcommand | undefined;
 
 		if (subcommand && VALID_RULES_SUBCOMMANDS.includes(subcommand)) {
 			rulesSubcommand = subcommand;
@@ -348,7 +348,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	let usageLimit: number | undefined;
 
 	if (command === "usage") {
-		const subcommand = filteredArgs[1] as UsageSubcommand | undefined;
+		const subcommand = filteredArgs.at(1) as UsageSubcommand | undefined;
 
 		if (subcommand && VALID_USAGE_SUBCOMMANDS.includes(subcommand)) {
 			usageSubcommand = subcommand;

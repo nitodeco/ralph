@@ -96,8 +96,8 @@ describe("DecompositionHandler", () => {
 		const updatedPrdSnapshot = updatedPrd as unknown as Prd;
 
 		expect(updatedPrdSnapshot.tasks.length).toBe(2);
-		expect(updatedPrdSnapshot.tasks[0]?.title).toBe("Subtask A");
-		expect(updatedPrdSnapshot.tasks[1]?.title).toBe("Subtask B");
+		expect(updatedPrdSnapshot.tasks.at(0)?.title).toBe("Subtask A");
+		expect(updatedPrdSnapshot.tasks.at(1)?.title).toBe("Subtask B");
 
 		const secondAttempt = handler.handle(request, currentPrd);
 

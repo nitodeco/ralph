@@ -114,7 +114,7 @@ describe("getAutocompleteHint", () => {
 
 			expect(result.type).toBe("suggestions");
 			expect(result.suggestions?.length).toBe(1);
-			expect(result.suggestions?.[0]?.command).toBe("help");
+			expect(result.suggestions?.at(0)?.command).toBe("help");
 			expect(result.commonPrefix).toBe("help");
 		});
 

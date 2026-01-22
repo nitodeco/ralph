@@ -105,7 +105,7 @@ export function getCommonPrefix(commands: readonly string[]): string {
 	}
 
 	if (commands.length === 1) {
-		return commands[0] ?? "";
+		return commands.at(0) ?? "";
 	}
 
 	const [firstCommand, ...restCommands] = commands;
@@ -193,7 +193,7 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 	}
 
 	const parts = trimmed.slice(1).split(/\s+/);
-	const firstPart = parts[0];
+	const [firstPart, secondPart] = parts;
 
 	if (!firstPart) {
 		return null;
@@ -205,12 +205,12 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 		return null;
 	}
 
-	if (commandName === "start" && parts[1]) {
-		if (parts[1].toLowerCase() === "full") {
+	if (commandName === "start" && secondPart) {
+		if (secondPart.toLowerCase() === "full") {
 			return { command: commandName, args: { full: true } };
 		}
 
-		const iterations = Number.parseInt(parts[1], 10);
+		const iterations = Number.parseInt(secondPart, 10);
 
 		if (!Number.isNaN(iterations) && iterations > 0) {
 			return { command: commandName, args: { iterations } };
@@ -248,7 +248,7 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 	}
 
 	if (commandName === "task") {
-		const subcommand = parts[1]?.toLowerCase() as TaskSubcommand | undefined;
+		const subcommand = secondPart?.toLowerCase() as TaskSubcommand | undefined;
 
 		if (!subcommand || !VALID_TASK_SUBCOMMANDS.includes(subcommand)) {
 			return null;
@@ -317,7 +317,7 @@ export function CommandInput({
 
 		const parts = trimmed.slice(1).split(/\s+/);
 
-		return parts[0]?.toLowerCase() ?? "";
+		return parts.at(0)?.toLowerCase() ?? "";
 	};
 
 	const handleTabComplete = (direction: "forward" | "backward") => {
@@ -330,7 +330,7 @@ export function CommandInput({
 		const isCommonPrefixComplete = currentPartial === commonPrefix.toLowerCase();
 
 		if (suggestions.length === 1) {
-			const selectedSuggestion = suggestions[0];
+			const [selectedSuggestion] = suggestions;
 
 			if (selectedSuggestion) {
 				setInputValue(getCompletedValue(selectedSuggestion.command));

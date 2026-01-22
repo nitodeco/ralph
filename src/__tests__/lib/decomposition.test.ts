@@ -249,9 +249,9 @@ describe("applyDecomposition", () => {
 		expect(result.updatedPrd).not.toBeNull();
 		expect(result.subtasksCreated).toBe(2);
 		expect(result.updatedPrd?.tasks).toHaveLength(3);
-		expect(result.updatedPrd?.tasks[0]?.title).toBe("Subtask 1");
-		expect(result.updatedPrd?.tasks[1]?.title).toBe("Subtask 2");
-		expect(result.updatedPrd?.tasks[2]?.title).toBe("Task 2");
+		expect(result.updatedPrd?.tasks.at(0)?.title).toBe("Subtask 1");
+		expect(result.updatedPrd?.tasks.at(1)?.title).toBe("Subtask 2");
+		expect(result.updatedPrd?.tasks.at(2)?.title).toBe("Task 2");
 	});
 
 	test("preserves tasks before and after replaced task", () => {
@@ -271,9 +271,9 @@ describe("applyDecomposition", () => {
 		const result = applyDecomposition(prd, request);
 
 		expect(result.success).toBe(true);
-		expect(result.updatedPrd?.tasks[0]?.title).toBe("Before Task");
-		expect(result.updatedPrd?.tasks[1]?.title).toBe("Subtask");
-		expect(result.updatedPrd?.tasks[2]?.title).toBe("After Task");
+		expect(result.updatedPrd?.tasks.at(0)?.title).toBe("Before Task");
+		expect(result.updatedPrd?.tasks.at(1)?.title).toBe("Subtask");
+		expect(result.updatedPrd?.tasks.at(2)?.title).toBe("After Task");
 	});
 
 	test("sets all subtasks as not done", () => {
@@ -289,7 +289,7 @@ describe("applyDecomposition", () => {
 		const result = applyDecomposition(prd, request);
 
 		expect(result.success).toBe(true);
-		expect(result.updatedPrd?.tasks[0]?.done).toBe(false);
+		expect(result.updatedPrd?.tasks.at(0)?.done).toBe(false);
 	});
 
 	test("preserves project name and other PRD fields", () => {

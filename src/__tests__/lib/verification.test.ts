@@ -98,7 +98,7 @@ describe("runVerification", () => {
 		const result = await runVerification(config);
 
 		expect(result.checks).toHaveLength(1);
-		expect(result.checks[0]?.name).toBe("build");
+		expect(result.checks.at(0)?.name).toBe("build");
 		expect(result.passed).toBe(true);
 	});
 
@@ -111,7 +111,7 @@ describe("runVerification", () => {
 		const result = await runVerification(config);
 
 		expect(result.checks).toHaveLength(1);
-		expect(result.checks[0]?.name).toBe("lint");
+		expect(result.checks.at(0)?.name).toBe("lint");
 	});
 
 	test("runs test command when provided", async () => {
@@ -123,7 +123,7 @@ describe("runVerification", () => {
 		const result = await runVerification(config);
 
 		expect(result.checks).toHaveLength(1);
-		expect(result.checks[0]?.name).toBe("test");
+		expect(result.checks.at(0)?.name).toBe("test");
 	});
 
 	test("runs all commands when provided", async () => {
@@ -151,8 +151,8 @@ describe("runVerification", () => {
 		const result = await runVerification(config);
 
 		expect(result.checks).toHaveLength(2);
-		expect(result.checks[0]?.name).toBe("custom-1");
-		expect(result.checks[1]?.name).toBe("custom-2");
+		expect(result.checks.at(0)?.name).toBe("custom-1");
+		expect(result.checks.at(1)?.name).toBe("custom-2");
 	});
 
 	test("marks as failed when check fails", async () => {

@@ -112,7 +112,7 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
 	const logger = getLogger({ logFilePath });
 
 	const execPath = process.execPath;
-	const scriptPath = process.argv[1];
+	const scriptPath = process.argv.at(1);
 
 	if (!scriptPath) {
 		return null;

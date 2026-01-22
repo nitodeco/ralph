@@ -55,7 +55,7 @@ export class LearningHandler {
 			if (significantPatterns.length > 0) {
 				logger.info("Recurring failure patterns detected", {
 					patternCount: significantPatterns.length,
-					topPattern: significantPatterns[0]?.category,
+					topPattern: significantPatterns.at(0)?.category,
 				});
 			}
 

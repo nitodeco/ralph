@@ -86,9 +86,9 @@ describe("TechnicalDebtHandler", () => {
 			expect(handler.getLastReport()?.sessionId).toBe("test-session");
 			expect(handler.getIsRunning()).toBe(false);
 			expect(stateChanges.length).toBe(2);
-			expect(stateChanges[0]).toEqual({ isReviewing: true, report: null });
-			expect(stateChanges[1]?.isReviewing).toBe(false);
-			expect(stateChanges[1]?.report?.sessionId).toBe("test-session");
+			expect(stateChanges.at(0)).toEqual({ isReviewing: true, report: null });
+			expect(stateChanges.at(1)?.isReviewing).toBe(false);
+			expect(stateChanges.at(1)?.report?.sessionId).toBe("test-session");
 		});
 
 		test("resets handler state", () => {

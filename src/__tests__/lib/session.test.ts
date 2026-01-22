@@ -477,10 +477,10 @@ describe("session functions", () => {
 
 			expect(updated.lastUpdateTime).toBeGreaterThanOrEqual(session.lastUpdateTime);
 			expect(updated.statistics.iterationTimings).toHaveLength(1);
-			expect(updated.statistics.iterationTimings[0]?.iteration).toBe(1);
-			expect(updated.statistics.iterationTimings[0]?.startTime).toBeGreaterThan(0);
-			expect(updated.statistics.iterationTimings[0]?.endTime).toBeNull();
-			expect(updated.statistics.iterationTimings[0]?.durationMs).toBeNull();
+			expect(updated.statistics.iterationTimings.at(0)?.iteration).toBe(1);
+			expect(updated.statistics.iterationTimings.at(0)?.startTime).toBeGreaterThan(0);
+			expect(updated.statistics.iterationTimings.at(0)?.endTime).toBeNull();
+			expect(updated.statistics.iterationTimings.at(0)?.durationMs).toBeNull();
 		});
 
 		test("updates existing timing entry if iteration already exists", () => {
@@ -489,8 +489,8 @@ describe("session functions", () => {
 			const updated = sessionService.recordIterationStart(withStart, 1);
 
 			expect(updated.statistics.iterationTimings).toHaveLength(1);
-			expect(updated.statistics.iterationTimings[0]?.startTime).toBeGreaterThanOrEqual(
-				withStart.statistics.iterationTimings[0]?.startTime ?? 0,
+			expect(updated.statistics.iterationTimings.at(0)?.startTime).toBeGreaterThanOrEqual(
+				withStart.statistics.iterationTimings.at(0)?.startTime ?? 0,
 			);
 		});
 
@@ -507,15 +507,15 @@ describe("session functions", () => {
 		test("completes iteration timing and updates statistics", () => {
 			const session = sessionService.create(10, 0);
 			const withStart = sessionService.recordIterationStart(session, 1);
-			const startTime = withStart.statistics.iterationTimings[0]?.startTime ?? 0;
+			const startTime = withStart.statistics.iterationTimings.at(0)?.startTime ?? 0;
 
 			const updated = sessionService.recordIterationEnd(withStart, 1, true);
 
 			expect(updated.statistics.completedIterations).toBe(1);
 			expect(updated.statistics.successfulIterations).toBe(1);
 			expect(updated.statistics.failedIterations).toBe(0);
-			expect(updated.statistics.iterationTimings[0]?.endTime).toBeGreaterThanOrEqual(startTime);
-			expect(updated.statistics.iterationTimings[0]?.durationMs).toBeGreaterThanOrEqual(0);
+			expect(updated.statistics.iterationTimings.at(0)?.endTime).toBeGreaterThanOrEqual(startTime);
+			expect(updated.statistics.iterationTimings.at(0)?.durationMs).toBeGreaterThanOrEqual(0);
 			expect(updated.statistics.successRate).toBe(100);
 		});
 
@@ -548,7 +548,7 @@ describe("session functions", () => {
 			const updated = sessionService.recordIterationEnd(session, 1, true);
 
 			expect(updated.statistics.iterationTimings).toHaveLength(1);
-			expect(updated.statistics.iterationTimings[0]?.durationMs).toBe(0);
+			expect(updated.statistics.iterationTimings.at(0)?.durationMs).toBe(0);
 		});
 
 		test("updates existing timing entry", () => {

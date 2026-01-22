@@ -290,7 +290,7 @@ export function TextInput({
 	if (showCursor && focus) {
 		renderedPlaceholder =
 			placeholder.length > 0
-				? chalk.inverse(placeholder[0]) + chalk.grey(placeholder.slice(1))
+				? chalk.inverse(placeholder.at(0)) + chalk.grey(placeholder.slice(1))
 				: chalk.inverse(" ");
 
 		if (collapsePastedText && pastedSegments.length > 0) {
