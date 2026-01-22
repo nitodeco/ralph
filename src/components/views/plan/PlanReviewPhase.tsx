@@ -3,6 +3,8 @@ import { useState } from "react";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import type { PlanDiffTask, PrdTask } from "@/types.ts";
 
+const TASK_DETAIL_HEIGHT = 12;
+
 type EditField = "title" | "description" | "steps";
 
 interface EditState {
@@ -297,145 +299,149 @@ export function PlanReviewPhase({
 				</Box>
 			</Box>
 
-			{editState.isEditing && editState.editedTask ? (
-				<Box flexDirection="column" marginTop={1}>
-					<Text dimColor>Edit Task:</Text>
-					<Box
-						flexDirection="column"
-						borderStyle="round"
-						borderColor="magenta"
-						paddingX={1}
-						marginTop={1}
-					>
-						<Box>
-							<Text bold color={editState.activeField === "title" ? "cyan" : undefined}>
-								Title:{" "}
-							</Text>
-							<TextInput
-								value={editState.editedTask.title}
-								onChange={(value) => handleEditFieldChange("title", value)}
-								focus={editState.activeField === "title"}
-								placeholder="Task title"
-							/>
-						</Box>
-						<Box>
-							<Text bold color={editState.activeField === "description" ? "cyan" : undefined}>
-								Description:{" "}
-							</Text>
-							<TextInput
-								value={editState.editedTask.description}
-								onChange={(value) => handleEditFieldChange("description", value)}
-								focus={editState.activeField === "description"}
-								placeholder="Task description"
-							/>
-						</Box>
-						{editState.editedTask.steps.length > 0 && (
-							<Box flexDirection="column">
-								<Text bold>Steps:</Text>
-								{editState.editedTask.steps.map((step, stepIndex) => {
-									const isActiveStep =
-										editState.activeField === "steps" && editState.stepIndex === stepIndex;
-									const stepKey = `${editState.taskIndex}-step-${stepIndex}`;
-
-									return (
-										<Box key={stepKey}>
-											<Text bold={isActiveStep} color={isActiveStep ? "cyan" : undefined}>
-												{"  "}
-												{stepIndex + 1}.{" "}
-											</Text>
-											<TextInput
-												value={step}
-												onChange={(value) => handleEditFieldChange("steps", value, stepIndex)}
-												focus={isActiveStep}
-												placeholder={`Step ${stepIndex + 1}`}
-											/>
-										</Box>
-									);
-								})}
-							</Box>
-						)}
-					</Box>
-				</Box>
-			) : (
-				selectedDiffTask &&
-				displayTask && (
-					<Box flexDirection="column" marginTop={1}>
-						<Text dimColor>Details:</Text>
+			<Box flexDirection="column" marginTop={1} height={TASK_DETAIL_HEIGHT}>
+				{editState.isEditing && editState.editedTask ? (
+					<>
+						<Text dimColor>Edit Task:</Text>
 						<Box
 							flexDirection="column"
 							borderStyle="round"
-							borderColor="cyan"
+							borderColor="magenta"
 							paddingX={1}
 							marginTop={1}
 						>
-							<Text>
-								<Text bold>Title:</Text> {displayTask.title}
-							</Text>
-							<Text>
-								<Text bold>Status:</Text>{" "}
-								<Text color={STATUS_INDICATOR_BY_STATUS[selectedDiffTask.status].color}>
-									{selectedDiffTask.status}
+							<Box>
+								<Text bold color={editState.activeField === "title" ? "cyan" : undefined}>
+									Title:{" "}
 								</Text>
-								{editedTasks.has(selectedIndex) && <Text color="magenta"> (edited)</Text>}
-							</Text>
-							<Text>
-								<Text bold>Description:</Text> {displayTask.description}
-							</Text>
-							{displayTask.steps.length > 0 && (
+								<TextInput
+									value={editState.editedTask.title}
+									onChange={(value) => handleEditFieldChange("title", value)}
+									focus={editState.activeField === "title"}
+									placeholder="Task title"
+								/>
+							</Box>
+							<Box>
+								<Text bold color={editState.activeField === "description" ? "cyan" : undefined}>
+									Description:{" "}
+								</Text>
+								<TextInput
+									value={editState.editedTask.description}
+									onChange={(value) => handleEditFieldChange("description", value)}
+									focus={editState.activeField === "description"}
+									placeholder="Task description"
+								/>
+							</Box>
+							{editState.editedTask.steps.length > 0 && (
 								<Box flexDirection="column">
 									<Text bold>Steps:</Text>
-									{displayTask.steps.map((step, stepIndex) => (
-										<Text key={`${displayTask.title}-step-${stepIndex}`}>
-											{"  "}
-											{stepIndex + 1}. {step}
-										</Text>
-									))}
-								</Box>
-							)}
+									{editState.editedTask.steps.map((step, stepIndex) => {
+										const isActiveStep =
+											editState.activeField === "steps" && editState.stepIndex === stepIndex;
+										const stepKey = `${editState.taskIndex}-step-${stepIndex}`;
 
-							{selectedDiffTask.status === "modified" && selectedDiffTask.originalTask && (
-								<Box flexDirection="column" marginTop={1}>
-									<Text bold color="yellow">
-										Original:
-									</Text>
-									<Text dimColor>Description: {selectedDiffTask.originalTask.description}</Text>
-									{selectedDiffTask.originalTask.steps.length > 0 && (
-										<Box flexDirection="column">
-											<Text dimColor>Steps:</Text>
-											{selectedDiffTask.originalTask.steps.map((step, stepIndex) => (
-												<Text
-													key={`${selectedDiffTask.originalTask?.title}-orig-step-${stepIndex}`}
-													dimColor
-												>
+										return (
+											<Box key={stepKey}>
+												<Text bold={isActiveStep} color={isActiveStep ? "cyan" : undefined}>
 													{"  "}
-													{stepIndex + 1}. {step}
+													{stepIndex + 1}.{" "}
 												</Text>
-											))}
-										</Box>
-									)}
+												<TextInput
+													value={step}
+													onChange={(value) => handleEditFieldChange("steps", value, stepIndex)}
+													focus={isActiveStep}
+													placeholder={`Step ${stepIndex + 1}`}
+												/>
+											</Box>
+										);
+									})}
 								</Box>
 							)}
 						</Box>
-					</Box>
-				)
-			)}
+					</>
+				) : (
+					selectedDiffTask &&
+					displayTask && (
+						<>
+							<Text dimColor>Details:</Text>
+							<Box
+								flexDirection="column"
+								borderStyle="round"
+								borderColor="cyan"
+								paddingX={1}
+								marginTop={1}
+							>
+								<Text>
+									<Text bold>Title:</Text> {displayTask.title}
+								</Text>
+								<Text>
+									<Text bold>Status:</Text>{" "}
+									<Text color={STATUS_INDICATOR_BY_STATUS[selectedDiffTask.status].color}>
+										{selectedDiffTask.status}
+									</Text>
+									{editedTasks.has(selectedIndex) && <Text color="magenta"> (edited)</Text>}
+								</Text>
+								<Text>
+									<Text bold>Description:</Text> {displayTask.description}
+								</Text>
+								{displayTask.steps.length > 0 && (
+									<Box flexDirection="column">
+										<Text bold>Steps:</Text>
+										{displayTask.steps.map((step, stepIndex) => (
+											<Text key={`${displayTask.title}-step-${stepIndex}`}>
+												{"  "}
+												{stepIndex + 1}. {step}
+											</Text>
+										))}
+									</Box>
+								)}
 
-			{editState.isEditing ? (
-				<Box marginTop={1} gap={2}>
-					<Text dimColor>Tab Next field</Text>
-					<Text dimColor>Shift+Tab Previous</Text>
-					<Text dimColor>Ctrl+Enter Save</Text>
-					<Text dimColor>Esc Cancel</Text>
-				</Box>
-			) : (
-				<Box marginTop={1} gap={2}>
-					<Text dimColor>↑/↓ Navigate</Text>
-					<Text dimColor>Space Toggle</Text>
-					<Text dimColor>e Edit</Text>
-					<Text dimColor>Enter/y Accept</Text>
-					<Text dimColor>q/Esc Cancel</Text>
-				</Box>
-			)}
+								{selectedDiffTask.status === "modified" && selectedDiffTask.originalTask && (
+									<Box flexDirection="column" marginTop={1}>
+										<Text bold color="yellow">
+											Original:
+										</Text>
+										<Text dimColor>Description: {selectedDiffTask.originalTask.description}</Text>
+										{selectedDiffTask.originalTask.steps.length > 0 && (
+											<Box flexDirection="column">
+												<Text dimColor>Steps:</Text>
+												{selectedDiffTask.originalTask.steps.map((step, stepIndex) => (
+													<Text
+														key={`${selectedDiffTask.originalTask?.title}-orig-step-${stepIndex}`}
+														dimColor
+													>
+														{"  "}
+														{stepIndex + 1}. {step}
+													</Text>
+												))}
+											</Box>
+										)}
+									</Box>
+								)}
+							</Box>
+						</>
+					)
+				)}
+			</Box>
+
+			<Box marginTop={1} gap={2} height={1}>
+				{editState.isEditing ? (
+					<>
+						<Text dimColor>Tab Next field</Text>
+						<Text dimColor>Shift+Tab Previous</Text>
+						<Text dimColor>Ctrl+Enter Save</Text>
+						<Text dimColor>Esc Cancel</Text>
+					</>
+				) : (
+					<>
+						<Text dimColor>↑/↓ Navigate</Text>
+						<Text dimColor>Space Toggle</Text>
+						<Text dimColor>e Edit</Text>
+						<Text dimColor>Enter/y Accept</Text>
+						<Text dimColor>q/Esc Cancel</Text>
+					</>
+				)}
+			</Box>
 		</Box>
 	);
 }
