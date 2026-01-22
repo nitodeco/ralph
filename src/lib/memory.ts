@@ -1,4 +1,5 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { OUTPUT_BUFFER_END_RATIO } from "@/lib/constants/ui.ts";
 import { eventBus } from "./events.ts";
@@ -128,7 +129,7 @@ export function cleanupTempFiles(): number {
 	if (isInitialized()) {
 		maybeProjectDir = getProjectRegistryService().getProjectDir();
 	} else {
-		maybeProjectDir = join(process.cwd(), ".ralph");
+		maybeProjectDir = join(homedir(), ".ralph", "default");
 	}
 
 	if (maybeProjectDir === null) {

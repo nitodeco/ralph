@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createConfigService } from "./config/implementation.ts";
 import type { ConfigService } from "./config/types.ts";
 import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
@@ -65,8 +67,13 @@ function createMockProjectRegistryService(
 		pathCache: {},
 	};
 
-	const baseProjectDir = process.cwd();
-	const projectStorageDir = `${baseProjectDir}/.ralph`;
+	const currentWorkingDir = process.cwd();
+	const isInTempDir =
+		currentWorkingDir.startsWith(tmpdir()) || currentWorkingDir.startsWith("/tmp");
+	const projectStorageDir = isInTempDir
+		? join(currentWorkingDir, ".ralph")
+		: join(tmpdir(), "ralph-mock");
+	const baseMockDir = isInTempDir ? currentWorkingDir : join(tmpdir(), "ralph-mock");
 
 	return {
 		loadRegistry: () => emptyRegistry,
@@ -81,8 +88,8 @@ function createMockProjectRegistryService(
 		updateLastAccessed: () => {},
 		isProjectInitialized: () => true,
 		removeProject: () => true,
-		getRegistryPath: () => "/tmp/ralph-test/registry.json",
-		getProjectsDir: () => "/tmp/ralph-test/projects",
+		getRegistryPath: () => join(baseMockDir, "registry.json"),
+		getProjectsDir: () => join(baseMockDir, "projects"),
 		...overrides,
 	};
 }
