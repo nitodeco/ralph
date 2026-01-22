@@ -18,7 +18,7 @@ export function PlanGeneratingPhase({
 
 	return (
 		<Box flexDirection="column" gap={1}>
-			<Spinner label="Generating PRD from your specification..." />
+			<Spinner variant="thinking" label="Generating PRD from your specification..." />
 			{agentOutput && (
 				<Box marginTop={1} flexDirection="column">
 					<Text dimColor>Agent output:</Text>
