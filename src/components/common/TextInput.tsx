@@ -60,6 +60,13 @@ function getLineCount(text: string): number {
 	return text.split("\n").length;
 }
 
+function getLineLength(text: string, lineIndex: number): number {
+	const lines = text.split("\n");
+	const line = lines[lineIndex] ?? "";
+
+	return line.length;
+}
+
 export interface PastedTextSegment {
 	readonly id: number;
 	readonly content: string;
@@ -342,6 +349,33 @@ export function TextInput({
 				}
 
 				onArrowDown?.();
+
+				return;
+			}
+
+			if (key.home) {
+				const currentValue = valueRef.current;
+				const currentCursorOffset = cursorOffsetRef.current;
+				const { lineIndex } = getLinePosition(currentValue, currentCursorOffset);
+				const newOffset = getCursorOffsetFromLinePosition(currentValue, lineIndex, 0);
+
+				valueRef.current = currentValue;
+				cursorOffsetRef.current = newOffset;
+				setState({ cursorOffset: newOffset, cursorWidth: 0 });
+
+				return;
+			}
+
+			if (key.end) {
+				const currentValue = valueRef.current;
+				const currentCursorOffset = cursorOffsetRef.current;
+				const { lineIndex } = getLinePosition(currentValue, currentCursorOffset);
+				const lineLength = getLineLength(currentValue, lineIndex);
+				const newOffset = getCursorOffsetFromLinePosition(currentValue, lineIndex, lineLength);
+
+				valueRef.current = currentValue;
+				cursorOffsetRef.current = newOffset;
+				setState({ cursorOffset: newOffset, cursorWidth: 0 });
 
 				return;
 			}
