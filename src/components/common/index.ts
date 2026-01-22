@@ -1,5 +1,6 @@
 export type { VimMode } from "@/lib/vim/index.ts";
 export { ConfirmationDialog } from "./ConfirmationDialog.tsx";
+export { DetailPanel } from "./DetailPanel.tsx";
 export { FixedLayout } from "./FixedLayout.tsx";
 export { Message } from "./Message.tsx";
 export type { PhaseIndicatorStyle } from "./PhaseIndicator.tsx";
@@ -12,6 +13,7 @@ export type {
 export { ResponsiveLayout, useResponsive } from "./ResponsiveLayout.tsx";
 export { ScrollableContent } from "./ScrollableContent.tsx";
 export { Select } from "./Select.tsx";
+export { SelectableList } from "./SelectableList.tsx";
 export { Spinner } from "./Spinner.tsx";
 export type { TextInputProps } from "./TextInput.tsx";
 export { TextInput } from "./TextInput.tsx";

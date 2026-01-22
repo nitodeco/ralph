@@ -1,9 +1,12 @@
 import { Box, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog.tsx";
+import { DetailPanel } from "@/components/common/DetailPanel.tsx";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { SelectableList } from "@/components/common/SelectableList.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
-import { STATUS_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
+import { useListNavigation } from "@/hooks/useListNavigation.ts";
 import { deleteTask, savePrd, toggleTaskDone, updateTask } from "@/lib/prd.ts";
 import { getPrdService, type Prd, type PrdTask } from "@/lib/services/index.ts";
 
@@ -62,23 +65,143 @@ function TasksFooter({ viewMode }: TasksFooterProps): React.ReactElement {
 	);
 }
 
+interface TaskItemProps {
+	task: PrdTask;
+	isSelected: boolean;
+}
+
+function TaskItem({ task, isSelected }: TaskItemProps): React.ReactElement {
+	const statusIcon = task.done ? "✓" : "○";
+	const statusColor = task.done ? "green" : "gray";
+	const stepCount = task.steps.length;
+
+	return (
+		<>
+			<Text color={statusColor}>{statusIcon} </Text>
+			<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+				{task.title}
+			</Text>
+			<Text dimColor> ({stepCount} steps)</Text>
+		</>
+	);
+}
+
+interface TaskDetailProps {
+	task: PrdTask;
+}
+
+function TaskDetail({ task }: TaskDetailProps): React.ReactElement {
+	return (
+		<DetailPanel borderColor="gray">
+			<Text bold color="yellow">
+				{task.title}
+			</Text>
+			<Box marginTop={1}>
+				<Text>{task.description}</Text>
+			</Box>
+			{task.steps.length > 0 && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold dimColor>
+						Steps:
+					</Text>
+					{task.steps.map((step) => (
+						<Box key={step} paddingLeft={1}>
+							<Text dimColor>{step}</Text>
+						</Box>
+					))}
+				</Box>
+			)}
+		</DetailPanel>
+	);
+}
+
+interface TaskEditPanelProps {
+	editState: EditState;
+	onFieldChange: (field: EditField, value: string, stepIndex?: number) => void;
+}
+
+function TaskEditPanel({
+	editState,
+	onFieldChange,
+}: TaskEditPanelProps): React.ReactElement | null {
+	if (!editState.editedTask) {
+		return null;
+	}
+
+	return (
+		<DetailPanel borderColor="magenta">
+			<Text bold color="magenta">
+				Edit Task
+			</Text>
+			<Box marginTop={1}>
+				<Text bold color={editState.activeField === "title" ? "cyan" : undefined}>
+					Title:{" "}
+				</Text>
+				<TextInput
+					value={editState.editedTask.title}
+					onChange={(value) => onFieldChange("title", value)}
+					focus={editState.activeField === "title"}
+					placeholder="Task title"
+				/>
+			</Box>
+			<Box>
+				<Text bold color={editState.activeField === "description" ? "cyan" : undefined}>
+					Description:{" "}
+				</Text>
+				<TextInput
+					value={editState.editedTask.description}
+					onChange={(value) => onFieldChange("description", value)}
+					focus={editState.activeField === "description"}
+					placeholder="Task description"
+				/>
+			</Box>
+			{editState.editedTask.steps.length > 0 && (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold>Steps:</Text>
+					{editState.editedTask.steps.map((step, stepIndex) => {
+						const isActiveStep =
+							editState.activeField === "steps" && editState.stepIndex === stepIndex;
+						const stepKey = `step-${stepIndex}`;
+
+						return (
+							<Box key={stepKey} paddingLeft={1}>
+								<Text bold={isActiveStep} color={isActiveStep ? "cyan" : undefined}>
+									{stepIndex + 1}.{" "}
+								</Text>
+								<TextInput
+									value={step}
+									onChange={(value) => onFieldChange("steps", value, stepIndex)}
+									focus={isActiveStep}
+									placeholder={`Step ${stepIndex + 1}`}
+								/>
+							</Box>
+						);
+					})}
+				</Box>
+			)}
+		</DetailPanel>
+	);
+}
+
 export function TasksView({ version, onClose }: TasksViewProps): React.ReactElement {
 	const prdService = getPrdService();
 	const [prd, setPrd] = useState<Prd | null>(() => prdService.get());
-	const [selectedIndex, setSelectedIndex] = useState(0);
-	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 	const [editState, setEditState] = useState<EditState>(getInitialEditState);
 
 	const tasks = prd?.tasks ?? [];
 
-	useEffect(() => {
-		if (statusMessage) {
-			const timeout = setTimeout(() => setStatusMessage(null), STATUS_MESSAGE_TIMEOUT_MS);
+	const { selectedIndex, setSelectedIndex, statusMessage, setStatusMessage } = useListNavigation({
+		itemCount: tasks.length,
+		isActive: viewMode === "list",
+		onClose,
+	});
 
-			return () => clearTimeout(timeout);
+	useEffect(() => {
+		if (selectedIndex >= tasks.length && tasks.length > 0) {
+			setSelectedIndex(Math.max(0, tasks.length - 1));
 		}
-	}, [statusMessage]);
+	}, [tasks.length, selectedIndex, setSelectedIndex]);
 
 	const handleStartEdit = () => {
 		const maybeTask = tasks.at(selectedIndex);
@@ -229,24 +352,6 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 				return;
 			}
 
-			if (key.escape || input === "q") {
-				onClose();
-
-				return;
-			}
-
-			if (key.upArrow && selectedIndex > 0) {
-				setSelectedIndex(selectedIndex - 1);
-
-				return;
-			}
-
-			if (key.downArrow && selectedIndex < tasks.length - 1) {
-				setSelectedIndex(selectedIndex + 1);
-
-				return;
-			}
-
 			if (input === "d" && prd && tasks.length > 0) {
 				const selectedTask = tasks.at(selectedIndex);
 
@@ -305,139 +410,26 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 								Tasks ({completedCount}/{tasks.length} completed):
 							</Text>
 							<Box flexDirection="column" marginTop={1}>
-								{tasks.length === 0 ? (
-									<Text dimColor>No tasks found. Run /init to create a project.</Text>
-								) : (
-									tasks.map((task, index) => {
-										const isSelected = index === selectedIndex;
-										const statusIcon = task.done ? "✓" : "○";
-										const statusColor = task.done ? "green" : "gray";
-										const stepCount = task.steps.length;
-
-										return (
-											<Box key={task.title}>
-												<Text color={isSelected ? "cyan" : undefined}>
-													{isSelected ? "❯ " : "  "}
-												</Text>
-												<Text color={statusColor}>{statusIcon} </Text>
-												<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
-													{task.title}
-												</Text>
-												<Text dimColor> ({stepCount} steps)</Text>
-											</Box>
-										);
-									})
-								)}
+								<SelectableList
+									items={tasks}
+									selectedIndex={selectedIndex}
+									emptyMessage="No tasks found. Run /init to create a project."
+									getItemKey={(task, index) => task.id ?? `task-${index}`}
+									renderItem={(task, _index, isSelected) => (
+										<TaskItem task={task} isSelected={isSelected} />
+									)}
+								/>
 							</Box>
 						</Box>
 
 						{viewMode === "edit" && editState.editedTask ? (
-							<Box
-								flexDirection="column"
-								marginTop={1}
-								borderStyle="single"
-								borderColor="magenta"
-								paddingX={1}
-							>
-								<Text bold color="magenta">
-									Edit Task
-								</Text>
-								<Box marginTop={1}>
-									<Text bold color={editState.activeField === "title" ? "cyan" : undefined}>
-										Title:{" "}
-									</Text>
-									<TextInput
-										value={editState.editedTask.title}
-										onChange={(value) => handleEditFieldChange("title", value)}
-										focus={editState.activeField === "title"}
-										placeholder="Task title"
-									/>
-								</Box>
-								<Box>
-									<Text bold color={editState.activeField === "description" ? "cyan" : undefined}>
-										Description:{" "}
-									</Text>
-									<TextInput
-										value={editState.editedTask.description}
-										onChange={(value) => handleEditFieldChange("description", value)}
-										focus={editState.activeField === "description"}
-										placeholder="Task description"
-									/>
-								</Box>
-								{editState.editedTask.steps.length > 0 && (
-									<Box flexDirection="column" marginTop={1}>
-										<Text bold>Steps:</Text>
-										{editState.editedTask.steps.map((step, stepIndex) => {
-											const isActiveStep =
-												editState.activeField === "steps" && editState.stepIndex === stepIndex;
-											const stepKey = `step-${stepIndex}`;
-
-											return (
-												<Box key={stepKey} paddingLeft={1}>
-													<Text bold={isActiveStep} color={isActiveStep ? "cyan" : undefined}>
-														{stepIndex + 1}.{" "}
-													</Text>
-													<TextInput
-														value={step}
-														onChange={(value) => handleEditFieldChange("steps", value, stepIndex)}
-														focus={isActiveStep}
-														placeholder={`Step ${stepIndex + 1}`}
-													/>
-												</Box>
-											);
-										})}
-									</Box>
-								)}
-							</Box>
+							<TaskEditPanel editState={editState} onFieldChange={handleEditFieldChange} />
 						) : (
-							selectedTask && (
-								<Box
-									flexDirection="column"
-									marginTop={1}
-									borderStyle="single"
-									borderColor="gray"
-									paddingX={1}
-								>
-									<Text bold color="yellow">
-										{selectedTask.title}
-									</Text>
-									<Box marginTop={1}>
-										<Text>{selectedTask.description}</Text>
-									</Box>
-									{selectedTask.steps.length > 0 && (
-										<Box flexDirection="column" marginTop={1}>
-											<Text bold dimColor>
-												Steps:
-											</Text>
-											{selectedTask.steps.map((step) => (
-												<Box key={step} paddingLeft={1}>
-													<Text dimColor>{step}</Text>
-												</Box>
-											))}
-										</Box>
-									)}
-								</Box>
-							)
+							selectedTask && <TaskDetail task={selectedTask} />
 						)}
 
 						{viewMode === "confirm-delete" && selectedTask && (
-							<Box
-								flexDirection="column"
-								marginTop={1}
-								borderStyle="single"
-								borderColor="red"
-								paddingX={1}
-							>
-								<Text bold color="red">
-									Delete task?
-								</Text>
-								<Box marginTop={1}>
-									<Text>"{selectedTask.title}"</Text>
-								</Box>
-								<Box marginTop={1}>
-									<Text dimColor>Press Enter to confirm, Escape to cancel</Text>
-								</Box>
-							</Box>
+							<ConfirmationDialog title="Delete task?" message={`"${selectedTask.title}"`} />
 						)}
 
 						{statusMessage && (
