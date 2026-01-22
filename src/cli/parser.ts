@@ -120,6 +120,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 	const dryRun = relevantArgs.includes("--dry-run");
 	const verbose = relevantArgs.includes("--verbose");
 	const skipVerification = relevantArgs.includes("--skip-verification");
+	const force = relevantArgs.includes("--force") || relevantArgs.includes("-f");
 
 	let task: string | undefined;
 	const taskIndex = relevantArgs.findIndex((arg) => arg === "--task" || arg === "-t");
@@ -155,6 +156,8 @@ export function parseArgs(args: string[]): ParsedArgs {
 			arg !== "--max-runtime" &&
 			arg !== "--max-runtime-ms" &&
 			arg !== "--skip-verification" &&
+			arg !== "--force" &&
+			arg !== "-f" &&
 			(taskIndex === -1 || argIndex !== taskIndex + 1) &&
 			(maxRuntimeIndex === -1 || argIndex !== maxRuntimeIndex + 1),
 	);
@@ -327,6 +330,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 		json,
 		dryRun,
 		verbose,
+		force,
 		task,
 		maxRuntimeMs,
 		skipVerification,

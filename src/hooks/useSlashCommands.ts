@@ -1,14 +1,9 @@
 import { useCallback, useState } from "react";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
-import { performSessionArchive } from "@/lib/archive.ts";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { handleShutdownSignal } from "@/lib/daemon.ts";
 import { loadPrd, savePrd } from "@/lib/prd.ts";
-import {
-	getGuardrailsService,
-	getSessionMemoryService,
-	getSessionService,
-} from "@/lib/services/index.ts";
+import { getGuardrailsService, getSessionMemoryService } from "@/lib/services/index.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types.ts";
 
 interface SlashCommandMessage {
@@ -37,8 +32,15 @@ interface UseSlashCommandsDependencies {
 	clearSession?: () => void;
 }
 
+interface ClearResult {
+	tasksArchived: number;
+	progressArchived: boolean;
+}
+
 interface UseSlashCommandsResult {
 	handleSlashCommand: (command: SlashCommand, args?: CommandArgs) => void;
+	handleClearConfirm: (result: ClearResult) => void;
+	handleClearCancel: () => void;
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
@@ -344,51 +346,9 @@ export function useSlashCommands({
 					dismissUpdateBanner?.();
 					break;
 				case "clear":
-					try {
-						const archiveResult = performSessionArchive();
-
-						getSessionService().delete();
-						clearSession?.();
-
-						const messages: string[] = [];
-
-						if (archiveResult.tasksArchived > 0) {
-							messages.push(
-								`archived ${archiveResult.tasksArchived} task${archiveResult.tasksArchived === 1 ? "" : "s"}`,
-							);
-						}
-
-						if (archiveResult.progressArchived) {
-							messages.push("archived progress");
-						}
-
-						messages.push("session cleared");
-
-						if (refreshState) {
-							const refreshResult = refreshState();
-
-							if (refreshResult.success) {
-								const taskDisplay =
-									refreshResult.currentTaskIndex >= 0
-										? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
-										: `${refreshResult.taskCount} tasks (all done)`;
-
-								messages.push(`refreshed: ${taskDisplay}`);
-							}
-						}
-
-						setClearMessage({
-							type: "success",
-							text: messages.join(", "),
-						});
-					} catch {
-						setClearMessage({
-							type: "error",
-							text: "Failed to clear session",
-						});
-					}
-
-					setTimeout(() => setClearMessage(null), UI_MESSAGE_TIMEOUT_MS);
+					agentStop();
+					iterationPause();
+					setActiveView("confirm-clear");
 					break;
 				case "refresh":
 					if (refreshState) {
@@ -432,12 +392,58 @@ export function useSlashCommands({
 			getCurrentTaskTitle,
 			dismissUpdateBanner,
 			refreshState,
-			clearSession,
 		],
 	);
 
+	const handleClearConfirm = useCallback(
+		(result: ClearResult) => {
+			clearSession?.();
+
+			const messages: string[] = [];
+
+			if (result.tasksArchived > 0) {
+				messages.push(
+					`archived ${result.tasksArchived} task${result.tasksArchived === 1 ? "" : "s"}`,
+				);
+			}
+
+			if (result.progressArchived) {
+				messages.push("archived progress");
+			}
+
+			messages.push("session cleared");
+
+			if (refreshState) {
+				const refreshResult = refreshState();
+
+				if (refreshResult.success) {
+					const taskDisplay =
+						refreshResult.currentTaskIndex >= 0
+							? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
+							: `${refreshResult.taskCount} tasks (all done)`;
+
+					messages.push(`refreshed: ${taskDisplay}`);
+				}
+			}
+
+			setClearMessage({
+				type: "success",
+				text: messages.join(", "),
+			});
+			setActiveView("run");
+			setTimeout(() => setClearMessage(null), UI_MESSAGE_TIMEOUT_MS);
+		},
+		[clearSession, refreshState, setActiveView],
+	);
+
+	const handleClearCancel = useCallback(() => {
+		setActiveView("run");
+	}, [setActiveView]);
+
 	return {
 		handleSlashCommand,
+		handleClearConfirm,
+		handleClearCancel,
 		nextTaskMessage,
 		guardrailMessage,
 		memoryMessage,

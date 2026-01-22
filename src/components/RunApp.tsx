@@ -78,6 +78,8 @@ export function RunApp({
 
 	const {
 		handleSlashCommand,
+		handleClearConfirm,
+		handleClearCancel,
 		nextTaskMessage,
 		guardrailMessage,
 		memoryMessage,
@@ -171,6 +173,8 @@ export function RunApp({
 			onViewComplete={handleViewComplete}
 			onHelpClose={handleHelpClose}
 			onCommand={handleSlashCommand}
+			onClearConfirm={handleClearConfirm}
+			onClearCancel={handleClearCancel}
 		>
 			<MainRunView
 				version={version}

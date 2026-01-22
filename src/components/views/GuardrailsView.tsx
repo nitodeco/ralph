@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
 
@@ -8,7 +9,7 @@ interface GuardrailsViewProps {
 	onClose: () => void;
 }
 
-type ViewMode = "list" | "add";
+type ViewMode = "list" | "add" | "confirm-delete";
 
 export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React.ReactElement {
 	const guardrailsService = getGuardrailsService();
@@ -29,6 +30,33 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 	};
 
 	useInput((input, key) => {
+		if (viewMode === "confirm-delete") {
+			if (key.escape) {
+				setViewMode("list");
+
+				return;
+			}
+
+			if (key.return) {
+				const guardrail = guardrails[selectedIndex];
+
+				if (guardrail) {
+					guardrailsService.remove(guardrail.id);
+					refreshGuardrails();
+
+					if (selectedIndex >= guardrails.length - 1) {
+						setSelectedIndex(Math.max(0, guardrails.length - 2));
+					}
+
+					showMessage("success", "Guardrail removed");
+				}
+
+				setViewMode("list");
+			}
+
+			return;
+		}
+
 		if (viewMode === "add") {
 			if (key.escape) {
 				setViewMode("list");
@@ -67,18 +95,7 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 		}
 
 		if (input === "d" && guardrails.length > 0) {
-			const guardrail = guardrails[selectedIndex];
-
-			if (guardrail) {
-				guardrailsService.remove(guardrail.id);
-				refreshGuardrails();
-
-				if (selectedIndex >= guardrails.length - 1) {
-					setSelectedIndex(Math.max(0, guardrails.length - 2));
-				}
-
-				showMessage("success", "Guardrail removed");
-			}
+			setViewMode("confirm-delete");
 		}
 	});
 
@@ -160,6 +177,13 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 								)}
 							</Box>
 						</Box>
+
+						{viewMode === "confirm-delete" && guardrails[selectedIndex] && (
+							<ConfirmationDialog
+								title="Delete guardrail?"
+								message={`"${guardrails[selectedIndex]?.instruction}"`}
+							/>
+						)}
 
 						{message && (
 							<Box marginTop={1}>

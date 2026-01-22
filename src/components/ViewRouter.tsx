@@ -10,6 +10,8 @@ import {
 	AgentSelectView,
 	AnalyzeView,
 	ArchiveView,
+	type ClearResult,
+	ConfirmClearView,
 	DryRunView,
 	GuardrailsView,
 	MemoryView,
@@ -34,6 +36,8 @@ interface ViewRouterProps {
 	onViewComplete: () => void;
 	onHelpClose: () => void;
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
+	onClearConfirm?: (result: ClearResult) => void;
+	onClearCancel?: () => void;
 	children: React.ReactNode;
 }
 
@@ -50,6 +54,8 @@ export function ViewRouter({
 	onViewComplete,
 	onHelpClose,
 	onCommand,
+	onClearConfirm,
+	onClearCancel,
 	children,
 }: ViewRouterProps): React.ReactElement {
 	if (activeView === "init") {
@@ -106,6 +112,10 @@ export function ViewRouter({
 
 	if (activeView === "plan") {
 		return <PlanView version={version} onClose={onViewComplete} />;
+	}
+
+	if (activeView === "confirm-clear" && onClearConfirm && onClearCancel) {
+		return <ConfirmClearView onConfirm={onClearConfirm} onCancel={onClearCancel} />;
 	}
 
 	if (dryRun) {

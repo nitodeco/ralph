@@ -164,6 +164,7 @@ function main(): void {
 		json,
 		dryRun,
 		verbose,
+		force,
 		task,
 		maxRuntimeMs,
 		skipVerification,
@@ -293,7 +294,7 @@ function main(): void {
 			break;
 
 		case "clear":
-			printClear(VERSION);
+			printClear(VERSION, force);
 			break;
 
 		case "guardrails":
@@ -338,7 +339,7 @@ function main(): void {
 					handleMemoryExport();
 					break;
 				case "clear":
-					handleMemoryClear();
+					handleMemoryClear(force);
 					break;
 				default:
 					printMemory(json);

@@ -1,4 +1,5 @@
 export type { VimMode } from "@/lib/vim/index.ts";
+export { ConfirmationDialog } from "./ConfirmationDialog.tsx";
 export { FixedLayout } from "./FixedLayout.tsx";
 export { Message } from "./Message.tsx";
 export type { PhaseIndicatorStyle } from "./PhaseIndicator.tsx";

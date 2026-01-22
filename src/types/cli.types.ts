@@ -87,6 +87,7 @@ export interface ParsedArgs {
 	json: boolean;
 	dryRun: boolean;
 	verbose: boolean;
+	force: boolean;
 	task?: string;
 	maxRuntimeMs?: number;
 	skipVerification: boolean;

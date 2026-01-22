@@ -1,3 +1,4 @@
+import * as readline from "node:readline";
 import { getSessionMemoryService } from "@/lib/services/index.ts";
 
 export function printMemory(json: boolean): void {
@@ -98,7 +99,19 @@ export function handleMemoryExport(): void {
 	console.log(markdown);
 }
 
-export function handleMemoryClear(): void {
+function executeMemoryClear(): void {
+	const sessionMemoryService = getSessionMemoryService();
+	const stats = sessionMemoryService.getStats();
+
+	sessionMemoryService.clear();
+	console.log("Session memory cleared.");
+	console.log(`  Removed ${stats.lessonsCount} lessons`);
+	console.log(`  Removed ${stats.patternsCount} patterns`);
+	console.log(`  Removed ${stats.failedApproachesCount} failed approaches`);
+	console.log(`  Removed ${stats.taskNotesCount} task notes`);
+}
+
+export function handleMemoryClear(force: boolean): void {
 	const sessionMemoryService = getSessionMemoryService();
 	const stats = sessionMemoryService.getStats();
 
@@ -113,10 +126,32 @@ export function handleMemoryClear(): void {
 		return;
 	}
 
-	sessionMemoryService.clear();
-	console.log("Session memory cleared.");
-	console.log(`  Removed ${stats.lessonsCount} lessons`);
-	console.log(`  Removed ${stats.patternsCount} patterns`);
-	console.log(`  Removed ${stats.failedApproachesCount} failed approaches`);
-	console.log(`  Removed ${stats.taskNotesCount} task notes`);
+	if (force) {
+		executeMemoryClear();
+
+		return;
+	}
+
+	console.log("This will clear all session memory including:");
+	console.log(`  • ${stats.lessonsCount} lessons`);
+	console.log(`  • ${stats.patternsCount} patterns`);
+	console.log(`  • ${stats.failedApproachesCount} failed approaches`);
+	console.log(`  • ${stats.taskNotesCount} task notes\n`);
+
+	const rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+
+	rl.question("\x1b[31mAre you sure you want to clear all memory? (y/N): \x1b[0m", (answer) => {
+		rl.close();
+
+		const isConfirmed = answer.toLowerCase() === "y" || answer.toLowerCase() === "yes";
+
+		if (isConfirmed) {
+			executeMemoryClear();
+		} else {
+			console.log("\nClear cancelled.");
+		}
+	});
 }

@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { ConfirmationDialog } from "@/components/common/index.ts";
 import { getSessionMemoryService } from "@/lib/services/index.ts";
 import { Header } from "../Header.tsx";
 
@@ -9,12 +10,14 @@ interface MemoryViewProps {
 }
 
 type MemoryTab = "lessons" | "patterns" | "failed" | "notes";
+type ViewMode = "view" | "confirm-clear";
 
 export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 	const sessionMemoryService = getSessionMemoryService();
-	const [memory] = useState(() => sessionMemoryService.get());
+	const [memory, setMemory] = useState(() => sessionMemoryService.get());
 	const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 	const [activeTab, setActiveTab] = useState<MemoryTab>("lessons");
+	const [viewMode, setViewMode] = useState<ViewMode>("view");
 	const hasMemory = sessionMemoryService.exists();
 
 	const tabs: { key: MemoryTab; label: string; count: number }[] = [
@@ -25,8 +28,28 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 	];
 
 	useInput((input, key) => {
+		if (viewMode === "confirm-clear") {
+			if (key.escape) {
+				setViewMode("view");
+
+				return;
+			}
+
+			if (key.return) {
+				sessionMemoryService.clear();
+				setMemory(sessionMemoryService.get());
+				setMessage({ type: "success", text: "Session memory cleared" });
+				setViewMode("view");
+				setTimeout(() => setMessage(null), 3000);
+			}
+
+			return;
+		}
+
 		if (key.escape || input === "q") {
 			onClose();
+
+			return;
 		}
 
 		if (input === "c") {
@@ -39,12 +62,12 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 				stats.taskNotesCount === 0
 			) {
 				setMessage({ type: "error", text: "Session memory is already empty" });
+				setTimeout(() => setMessage(null), 3000);
 			} else {
-				sessionMemoryService.clear();
-				setMessage({ type: "success", text: "Session memory cleared" });
+				setViewMode("confirm-clear");
 			}
 
-			setTimeout(() => setMessage(null), 3000);
+			return;
 		}
 
 		if (key.leftArrow) {
@@ -165,6 +188,13 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 			>
 				{renderTabContent()}
 			</Box>
+
+			{viewMode === "confirm-clear" && (
+				<ConfirmationDialog
+					title="Clear all session memory?"
+					message={`This will remove ${memory.lessonsLearned.length} lessons, ${memory.successfulPatterns.length} patterns, ${memory.failedApproaches.length} failed approaches, and ${Object.keys(memory.taskNotes).length} task notes.`}
+				/>
+			)}
 
 			{message && (
 				<Box marginTop={1}>
