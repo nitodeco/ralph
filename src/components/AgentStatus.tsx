@@ -157,7 +157,7 @@ export function AgentStatus(): React.ReactElement | null {
 					<PhaseIndicator
 						currentPhase={currentPhase}
 						completedPhases={completedPhases}
-						style="dots"
+						style="auto"
 					/>
 
 					<FileChangesDisplay

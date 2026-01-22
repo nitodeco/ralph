@@ -1,15 +1,19 @@
 import { Box, Text } from "ink";
 import { useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
 import type { Prd } from "@/types.ts";
+import { useResponsive } from "./common/ResponsiveLayout.tsx";
 
 type AgentStatus = "idle" | "running" | "complete" | "error";
 
-const STATUS_INDICATORS: Record<AgentStatus, { color: string; label: string }> = {
-	idle: { color: "gray", label: "Idle" },
-	running: { color: "yellow", label: "Running" },
-	complete: { color: "green", label: "Complete" },
-	error: { color: "red", label: "Error" },
-};
+type StatusBarVariant = "full" | "compact" | "minimal";
+
+const STATUS_INDICATORS: Record<AgentStatus, { color: string; label: string; shortLabel: string }> =
+	{
+		idle: { color: "gray", label: "Idle", shortLabel: "Idle" },
+		running: { color: "yellow", label: "Running", shortLabel: "Run" },
+		complete: { color: "green", label: "Complete", shortLabel: "Done" },
+		error: { color: "red", label: "Error", shortLabel: "Err" },
+	};
 
 function formatElapsedTime(seconds: number): string {
 	const minutes = Math.floor(seconds / 60);
@@ -43,7 +47,21 @@ function getCurrentTaskIndex(prd: Prd): number {
 	return prd.tasks.findIndex((task) => !task.done);
 }
 
-export function StatusBar(): React.ReactElement {
+function truncateText(text: string, maxLength: number): string {
+	if (text.length <= maxLength) {
+		return text;
+	}
+
+	return `${text.slice(0, maxLength - 1)}…`;
+}
+
+interface StatusBarProps {
+	variant?: StatusBarVariant;
+}
+
+export function StatusBar({ variant: explicitVariant }: StatusBarProps = {}): React.ReactElement {
+	const { isNarrow, isMedium, contentWidth } = useResponsive();
+
 	const appState = useAppStore((state) => state.appState);
 	const elapsedTime = useAppStore((state) => state.elapsedTime);
 	const prd = useAppStore((state) => state.prd);
@@ -84,6 +102,51 @@ export function StatusBar(): React.ReactElement {
 	const timeRemaining = getTimeRemaining();
 	const showTimeRemaining = maxRuntimeMs && timeRemaining !== null && appState === "running";
 
+	const variant = explicitVariant ?? (isNarrow ? "minimal" : isMedium ? "compact" : "full");
+
+	if (variant === "minimal") {
+		const maxTaskLength = Math.max(10, contentWidth - 30);
+		const truncatedTask = currentTask ? truncateText(currentTask, maxTaskLength) : undefined;
+
+		return (
+			<Box borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+				<Box justifyContent="space-between">
+					<Text color={indicator.color}>{indicator.shortLabel}</Text>
+					{elapsedTime !== undefined && <Text dimColor>{formatElapsedTime(elapsedTime)}</Text>}
+				</Box>
+				{truncatedTask && (
+					<Text dimColor wrap="truncate-end">
+						{truncatedTask}
+					</Text>
+				)}
+			</Box>
+		);
+	}
+
+	if (variant === "compact") {
+		const maxTaskLength = Math.max(15, contentWidth - 50);
+		const truncatedTask = currentTask ? truncateText(currentTask, maxTaskLength) : undefined;
+
+		return (
+			<Box borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
+				<Box justifyContent="space-between" gap={1}>
+					<Box gap={1}>
+						<Text color={indicator.color}>{indicator.label}</Text>
+						{truncatedTask && <Text dimColor>{truncatedTask}</Text>}
+					</Box>
+					<Box gap={1}>
+						{showTimeRemaining && (
+							<Text color={timeRemaining < 60_000 ? "yellow" : "gray"}>
+								{formatRemainingTime(timeRemaining)}
+							</Text>
+						)}
+						{elapsedTime !== undefined && <Text dimColor>{formatElapsedTime(elapsedTime)}</Text>}
+					</Box>
+				</Box>
+			</Box>
+		);
+	}
+
 	return (
 		<Box borderStyle="single" borderColor="gray" paddingX={1} justifyContent="space-between">
 			<Box gap={2}>
@@ -100,7 +163,7 @@ export function StatusBar(): React.ReactElement {
 				{showTimeRemaining && (
 					<Text>
 						<Text dimColor>remaining:</Text>{" "}
-						<Text color={timeRemaining < 60000 ? "yellow" : "gray"}>
+						<Text color={timeRemaining < 60_000 ? "yellow" : "gray"}>
 							{formatRemainingTime(timeRemaining)}
 						</Text>
 					</Text>

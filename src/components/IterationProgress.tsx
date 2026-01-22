@@ -2,9 +2,14 @@ import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import { useAppStore, useIterationStore } from "@/stores/index.ts";
 import { ProgressBar } from "./common/ProgressBar.tsx";
+import { useResponsive } from "./common/ResponsiveLayout.tsx";
 import { Spinner } from "./common/Spinner.tsx";
 
 const ETA_UPDATE_INTERVAL_MS = 1_000;
+
+const PROGRESS_BAR_WIDTH_WIDE = 25;
+const PROGRESS_BAR_WIDTH_MEDIUM = 20;
+const PROGRESS_BAR_WIDTH_NARROW = 12;
 
 function formatDuration(durationMs: number): string {
 	const totalSeconds = Math.ceil(durationMs / 1_000);
@@ -26,6 +31,24 @@ function formatDuration(durationMs: number): string {
 	return `${hours}h ${remainingMinutes}m`;
 }
 
+function formatDurationShort(durationMs: number): string {
+	const totalSeconds = Math.ceil(durationMs / 1_000);
+
+	if (totalSeconds < 60) {
+		return `${totalSeconds}s`;
+	}
+
+	const minutes = Math.floor(totalSeconds / 60);
+
+	if (minutes < 60) {
+		return `${minutes}m`;
+	}
+
+	const hours = Math.floor(minutes / 60);
+
+	return `${hours}h`;
+}
+
 function estimateTimeRemaining(current: number, total: number, elapsedMs: number): number | null {
 	if (current <= 0 || elapsedMs <= 0 || current >= total) {
 		return null;
@@ -38,6 +61,8 @@ function estimateTimeRemaining(current: number, total: number, elapsedMs: number
 }
 
 export function IterationProgress(): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+
 	const current = useIterationStore((state) => state.current);
 	const total = useIterationStore((state) => state.total);
 	const isRunning = useIterationStore((state) => state.isRunning);
@@ -65,6 +90,12 @@ export function IterationProgress(): React.ReactElement {
 	const etaMs = estimateTimeRemaining(current, total, elapsedMs);
 	const progressColor = percentage >= 100 ? "green" : percentage >= 50 ? "cyan" : "yellow";
 
+	const progressBarWidth = isNarrow
+		? PROGRESS_BAR_WIDTH_NARROW
+		: isMedium
+			? PROGRESS_BAR_WIDTH_MEDIUM
+			: PROGRESS_BAR_WIDTH_WIDE;
+
 	const getSpinnerVariant = (): "processing" | "waiting" | "progress" => {
 		if (isVerifying) {
 			return "processing";
@@ -79,15 +110,47 @@ export function IterationProgress(): React.ReactElement {
 
 	const getStatusLabel = (): string => {
 		if (isVerifying) {
-			return "Verifying changes...";
+			return isNarrow ? "Verify..." : "Verifying changes...";
 		}
 
 		if (isDelaying) {
-			return "Preparing next iteration...";
+			return isNarrow ? "Prep..." : "Preparing next iteration...";
 		}
 
-		return "Running...";
+		return isNarrow ? "Run..." : "Running...";
 	};
+
+	if (isNarrow) {
+		return (
+			<Box flexDirection="column" paddingX={1} marginY={1}>
+				<Box gap={1} marginBottom={1}>
+					<Text bold color={progressColor}>
+						{current}/{total}
+					</Text>
+					{(isRunning || isDelaying || isVerifying) && (
+						<Spinner variant={getSpinnerVariant()} label={getStatusLabel()} />
+					)}
+				</Box>
+
+				<ProgressBar
+					current={current}
+					total={total}
+					width={progressBarWidth}
+					color="auto"
+					style="minimal"
+					showPercentage
+				/>
+
+				{etaMs !== null && <Text dimColor>~{formatDurationShort(etaMs)}</Text>}
+
+				{lastVerificationResult && !lastVerificationResult.passed && (
+					<Box marginTop={1}>
+						<Text color="red">✖ Verify fail</Text>
+					</Box>
+				)}
+			</Box>
+		);
+	}
 
 	return (
 		<Box flexDirection="column" paddingX={1} marginY={1}>
@@ -104,7 +167,7 @@ export function IterationProgress(): React.ReactElement {
 				<ProgressBar
 					current={current}
 					total={total}
-					width={25}
+					width={progressBarWidth}
 					color="auto"
 					style="compact"
 					showPercentage
@@ -114,7 +177,9 @@ export function IterationProgress(): React.ReactElement {
 				{elapsedMs > 0 && isRunning && (
 					<Text dimColor>
 						Elapsed: {formatDuration(elapsedMs)}
-						{current > 0 && <Text> · Avg: {formatDuration(elapsedMs / current)}/iteration</Text>}
+						{current > 0 && !isMedium && (
+							<Text> · Avg: {formatDuration(elapsedMs / current)}/iteration</Text>
+						)}
 					</Text>
 				)}
 			</Box>

@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import type { AgentPhase } from "@/lib/agent-phase.ts";
 import { PHASE_INFO_BY_PHASE } from "@/lib/agent-phase.ts";
+import { useResponsive } from "./ResponsiveLayout.tsx";
 
 const PHASE_ORDER: AgentPhase[] = [
 	"starting",
@@ -39,7 +40,7 @@ function getPhaseIcon(phase: AgentPhase): string {
 	return ICON_BY_PHASE[phase];
 }
 
-type PhaseIndicatorStyle = "dots" | "timeline" | "compact" | "minimal";
+export type PhaseIndicatorStyle = "dots" | "timeline" | "compact" | "minimal" | "auto";
 
 interface PhaseIndicatorProps {
 	currentPhase: AgentPhase;
@@ -170,17 +171,36 @@ function MinimalStyle({ currentPhase }: { currentPhase: AgentPhase }): React.Rea
 	);
 }
 
+function resolveAutoStyle(
+	isNarrow: boolean,
+	isMedium: boolean,
+): Exclude<PhaseIndicatorStyle, "auto"> {
+	if (isNarrow) {
+		return "minimal";
+	}
+
+	if (isMedium) {
+		return "compact";
+	}
+
+	return "dots";
+}
+
 export function PhaseIndicator({
 	currentPhase,
 	completedPhases = [],
 	style = "dots",
 	showLabels = false,
 }: PhaseIndicatorProps): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+
 	if (currentPhase === "idle") {
 		return <Text dimColor>Idle</Text>;
 	}
 
-	if (style === "timeline") {
+	const effectiveStyle = style === "auto" ? resolveAutoStyle(isNarrow, isMedium) : style;
+
+	if (effectiveStyle === "timeline") {
 		return (
 			<TimelineStyle
 				currentPhase={currentPhase}
@@ -190,11 +210,11 @@ export function PhaseIndicator({
 		);
 	}
 
-	if (style === "compact") {
+	if (effectiveStyle === "compact") {
 		return <CompactStyle currentPhase={currentPhase} />;
 	}
 
-	if (style === "minimal") {
+	if (effectiveStyle === "minimal") {
 		return <MinimalStyle currentPhase={currentPhase} />;
 	}
 

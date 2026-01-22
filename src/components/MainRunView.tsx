@@ -3,8 +3,8 @@ import type { Prd, RalphConfig } from "@/types.ts";
 import { AgentStatus } from "./AgentStatus.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
 import { CommandInput } from "./CommandInput.tsx";
-import { FixedLayout } from "./common/FixedLayout.tsx";
 import { Message } from "./common/Message.tsx";
+import { ResponsiveLayout, useResponsive } from "./common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "./common/ScrollableContent.tsx";
 import { Header } from "./Header.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
@@ -68,10 +68,18 @@ function HeaderSection({
 	showUpdateBanner,
 	latestVersion,
 }: HeaderSectionProps): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+	const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+
 	return (
 		<Box flexDirection="column">
-			<Header version={version} agent={config?.agent} projectName={prd?.project} />
-			{showUpdateBanner && latestVersion && (
+			<Header
+				version={version}
+				agent={config?.agent}
+				projectName={prd?.project}
+				variant={headerVariant}
+			/>
+			{showUpdateBanner && latestVersion && !isNarrow && (
 				<UpdateBanner currentVersion={version} latestVersion={latestVersion} />
 			)}
 		</Box>
@@ -184,7 +192,7 @@ export function MainRunView({
 	const showUpdateBanner = Boolean(updateAvailable && latestVersion && !updateBannerDismissed);
 
 	return (
-		<FixedLayout
+		<ResponsiveLayout
 			header={
 				<HeaderSection
 					version={version}
