@@ -20,6 +20,7 @@ export type ActiveView =
 	| "status"
 	| "archive"
 	| "guardrails"
+	| "rules"
 	| "analyze"
 	| "memory"
 	| "agent"

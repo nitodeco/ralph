@@ -50,6 +50,7 @@ export {
 	getGuardrailsService,
 	getPrdService,
 	getProjectRegistryService,
+	getRulesService,
 	getServices,
 	getSessionMemoryService,
 	getSessionService,
@@ -96,6 +97,10 @@ export type {
 	RegisterProjectOptions,
 } from "./project-registry/types.ts";
 export { REGISTRY_VERSION } from "./project-registry/types.ts";
+export { formatRulesForPrompt } from "./rules/formatters.ts";
+export { createRulesService } from "./rules/implementation.ts";
+export type { AddRuleOptions, CustomRule, RulesFile, RulesService } from "./rules/types.ts";
+export { isCustomRule, isRulesFile } from "./rules/validation.ts";
 export {
 	createSleepPreventionService,
 	type SleepPreventionService,

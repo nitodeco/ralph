@@ -82,6 +82,22 @@ function createMockServices(
 			getActive: () => [],
 			formatForPrompt: () => "",
 		},
+		rules: {
+			get: () => [],
+			load: () => [],
+			save: () => {},
+			exists: () => false,
+			initialize: () => {},
+			invalidate: () => {},
+			add: () => ({
+				id: "test",
+				instruction: "test",
+				addedAt: new Date().toISOString(),
+			}),
+			remove: () => true,
+			getById: () => null,
+			formatForPrompt: () => "",
+		},
 		prd: {
 			get: () => null,
 			load: () => null,

@@ -3,7 +3,11 @@ import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { handleShutdownSignal } from "@/lib/daemon.ts";
 import { loadPrd, savePrd } from "@/lib/prd.ts";
-import { getGuardrailsService, getSessionMemoryService } from "@/lib/services/index.ts";
+import {
+	getGuardrailsService,
+	getRulesService,
+	getSessionMemoryService,
+} from "@/lib/services/index.ts";
 import type { ActiveView, SetManualTaskResult } from "@/types.ts";
 
 interface SlashCommandMessage {
@@ -43,6 +47,7 @@ interface UseSlashCommandsResult {
 	handleClearCancel: () => void;
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
+	ruleMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
 	clearMessage: SlashCommandMessage | null;
@@ -72,6 +77,7 @@ export function useSlashCommands({
 }: UseSlashCommandsDependencies): UseSlashCommandsResult {
 	const [nextTaskMessage, setNextTaskMessage] = useState<SlashCommandMessage | null>(null);
 	const [guardrailMessage, setGuardrailMessage] = useState<SlashCommandMessage | null>(null);
+	const [ruleMessage, setRuleMessage] = useState<SlashCommandMessage | null>(null);
 	const [memoryMessage, setMemoryMessage] = useState<SlashCommandMessage | null>(null);
 	const [refreshMessage, setRefreshMessage] = useState<SlashCommandMessage | null>(null);
 	const [clearMessage, setClearMessage] = useState<SlashCommandMessage | null>(null);
@@ -144,6 +150,39 @@ export function useSlashCommands({
 					agentStop();
 					iterationPause();
 					setActiveView("guardrails");
+					break;
+				case "rule":
+					if (args?.ruleInstruction) {
+						try {
+							const rule = getRulesService().add({
+								instruction: args.ruleInstruction,
+							});
+
+							setRuleMessage({
+								type: "success",
+								text: `Added rule: "${rule.instruction}"`,
+							});
+						} catch {
+							setRuleMessage({
+								type: "error",
+								text: "Failed to add rule",
+							});
+						}
+
+						setTimeout(() => setRuleMessage(null), UI_MESSAGE_TIMEOUT_MS);
+					} else {
+						setRuleMessage({
+							type: "error",
+							text: "Usage: /rule <instruction>",
+						});
+						setTimeout(() => setRuleMessage(null), UI_MESSAGE_TIMEOUT_MS);
+					}
+
+					break;
+				case "rules":
+					agentStop();
+					iterationPause();
+					setActiveView("rules");
 					break;
 				case "learn":
 					if (args?.lesson) {
@@ -446,6 +485,7 @@ export function useSlashCommands({
 		handleClearCancel,
 		nextTaskMessage,
 		guardrailMessage,
+		ruleMessage,
 		memoryMessage,
 		refreshMessage,
 		clearMessage,

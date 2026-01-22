@@ -22,6 +22,8 @@ export type SlashCommand =
 	| "clear"
 	| "guardrail"
 	| "guardrails"
+	| "rule"
+	| "rules"
 	| "analyze"
 	| "learn"
 	| "note"
@@ -40,6 +42,7 @@ export interface CommandArgs {
 	full?: boolean;
 	taskIdentifier?: string;
 	guardrailInstruction?: string;
+	ruleInstruction?: string;
 	lesson?: string;
 	note?: string;
 	taskSubcommand?: TaskSubcommand;
@@ -67,6 +70,8 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
 	clear: { description: "Clear session data" },
 	guardrail: { description: "Add a new guardrail instruction", args: "<text>" },
 	guardrails: { description: "View and manage guardrails" },
+	rule: { description: "Add a new custom rule", args: "<text>" },
+	rules: { description: "View and manage custom rules" },
 	analyze: { description: "View failure pattern analysis" },
 	learn: { description: "Add a lesson to session memory", args: "<lesson>" },
 	note: { description: "Add a note about the current task", args: "<note>" },
@@ -220,6 +225,12 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 		const guardrailInstruction = parts.slice(1).join(" ");
 
 		return { command: commandName, args: { guardrailInstruction } };
+	}
+
+	if (commandName === "rule" && parts.length > 1) {
+		const ruleInstruction = parts.slice(1).join(" ");
+
+		return { command: commandName, args: { ruleInstruction } };
 	}
 
 	if (commandName === "learn" && parts.length > 1) {

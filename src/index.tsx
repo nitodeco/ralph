@@ -18,6 +18,8 @@ import {
 	handleProgressAdd,
 	handleProgressClear,
 	handleProjectsPrune,
+	handleRulesAdd,
+	handleRulesRemove,
 	handleStopCommand,
 	handleTaskAdd,
 	handleTaskDone,
@@ -43,6 +45,7 @@ import {
 	printMemory,
 	printProgress,
 	printProjects,
+	printRules,
 	printStats,
 	printStatus,
 	printTaskList,
@@ -183,6 +186,8 @@ function main(): void {
 		dependencySubcommand,
 		dependencySetOptions,
 		dependencyModifyOptions,
+		rulesSubcommand,
+		rulesArg,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -313,6 +318,21 @@ function main(): void {
 					break;
 				default:
 					printGuardrails(VERSION, json);
+					break;
+			}
+
+			break;
+
+		case "rules":
+			switch (rulesSubcommand) {
+				case "add":
+					handleRulesAdd(rulesArg ?? "");
+					break;
+				case "remove":
+					handleRulesRemove(rulesArg ?? "");
+					break;
+				default:
+					printRules(VERSION, json);
 					break;
 			}
 

@@ -76,6 +76,10 @@ export function getCommandHistoryFilePath(): string {
 	return getProjectFilePath("command-history.json");
 }
 
+export function getRulesFilePath(): string {
+	return getProjectFilePath("rules.json");
+}
+
 export function getLogsDir(): string {
 	return getProjectFilePath("logs");
 }

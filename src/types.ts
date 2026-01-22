@@ -48,6 +48,7 @@ export type {
 	ProjectsSubcommand,
 	PromptGuardrail,
 	RalphConfig,
+	RulesSubcommand,
 	RunOptions,
 	Session,
 	SessionMemory,

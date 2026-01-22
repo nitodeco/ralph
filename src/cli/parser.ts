@@ -11,6 +11,7 @@ import type {
 	ParsedArgs,
 	ProgressSubcommand,
 	ProjectsSubcommand,
+	RulesSubcommand,
 	TaskAddOptions,
 	TaskEditOptions,
 	TaskSubcommand,
@@ -48,6 +49,7 @@ const VALID_DEPENDENCY_SUBCOMMANDS: DependencySubcommand[] = [
 	"add",
 	"remove",
 ];
+const VALID_RULES_SUBCOMMANDS: RulesSubcommand[] = ["list", "add", "remove"];
 
 function parseTaskAddOptions(args: string[]): TaskAddOptions {
 	const options: TaskAddOptions = {};
@@ -323,6 +325,23 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let rulesSubcommand: RulesSubcommand | undefined;
+	let rulesArg: string | undefined;
+
+	if (command === "rules") {
+		const subcommand = filteredArgs[1] as RulesSubcommand | undefined;
+
+		if (subcommand && VALID_RULES_SUBCOMMANDS.includes(subcommand)) {
+			rulesSubcommand = subcommand;
+			rulesArg = filteredArgs.slice(2).join(" ");
+		} else if (subcommand && !subcommand.startsWith("-")) {
+			rulesSubcommand = "add";
+			rulesArg = filteredArgs.slice(1).join(" ");
+		} else {
+			rulesSubcommand = "list";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -349,5 +368,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 		dependencySubcommand,
 		dependencySetOptions,
 		dependencyModifyOptions,
+		rulesSubcommand,
+		rulesArg,
 	};
 }

@@ -27,6 +27,7 @@ interface MainRunViewProps {
 	agentIsStreaming: boolean;
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
+	ruleMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
 	clearMessage: SlashCommandMessage | null;
@@ -89,6 +90,7 @@ function HeaderSection({
 interface ContentSectionProps {
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
+	ruleMessage: SlashCommandMessage | null;
 	memoryMessage: SlashCommandMessage | null;
 	refreshMessage: SlashCommandMessage | null;
 	clearMessage: SlashCommandMessage | null;
@@ -101,6 +103,7 @@ interface ContentSectionProps {
 function ContentSection({
 	nextTaskMessage,
 	guardrailMessage,
+	ruleMessage,
 	memoryMessage,
 	refreshMessage,
 	clearMessage,
@@ -117,6 +120,7 @@ function ContentSection({
 
 			<MessageDisplay message={nextTaskMessage} />
 			<MessageDisplay message={guardrailMessage} />
+			<MessageDisplay message={ruleMessage} />
 			<MessageDisplay message={memoryMessage} />
 			<MessageDisplay message={refreshMessage} />
 			<MessageDisplay message={clearMessage} />
@@ -180,6 +184,7 @@ export function MainRunView({
 	agentIsStreaming,
 	nextTaskMessage,
 	guardrailMessage,
+	ruleMessage,
 	memoryMessage,
 	refreshMessage,
 	clearMessage,
@@ -206,6 +211,7 @@ export function MainRunView({
 				<ContentSection
 					nextTaskMessage={nextTaskMessage}
 					guardrailMessage={guardrailMessage}
+					ruleMessage={ruleMessage}
 					memoryMessage={memoryMessage}
 					refreshMessage={refreshMessage}
 					clearMessage={clearMessage}
