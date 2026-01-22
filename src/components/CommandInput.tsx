@@ -499,8 +499,17 @@ export function CommandInput({
 		}
 
 		if (hasSuggestions) {
-			const displayedSuggestions = suggestions.slice(0, maxSuggestions);
-			const remainingCount = suggestions.length - maxSuggestions;
+			const windowStart = Math.max(
+				0,
+				Math.min(
+					selectedHintIndex - Math.floor(maxSuggestions / 2),
+					suggestions.length - maxSuggestions,
+				),
+			);
+			const windowEnd = Math.min(windowStart + maxSuggestions, suggestions.length);
+			const displayedSuggestions = suggestions.slice(windowStart, windowEnd);
+			const itemsAbove = windowStart;
+			const itemsBelow = suggestions.length - windowEnd;
 			const currentPartial = getCurrentPartialCommand();
 			const commonPrefix = autocomplete.commonPrefix ?? "";
 			const canExpandPrefix =
@@ -509,13 +518,15 @@ export function CommandInput({
 			const tabHint = canExpandPrefix
 				? `Tab to complete "${commonPrefix}"`
 				: suggestions.length > 1
-					? "Tab to cycle"
+					? "Tab/↑↓ to cycle"
 					: "Tab to complete";
 
 			return (
 				<Box flexDirection="column">
+					{itemsAbove > 0 && <Text dimColor> (+{itemsAbove} above)</Text>}
 					{displayedSuggestions.map(({ command, hint }, index) => {
-						const isSelected = index === selectedHintIndex;
+						const actualIndex = windowStart + index;
+						const isSelected = actualIndex === selectedHintIndex;
 
 						return (
 							<Box key={command} gap={1}>
@@ -531,7 +542,7 @@ export function CommandInput({
 						);
 					})}
 					<Box gap={1}>
-						{remainingCount > 0 && <Text dimColor>(+{remainingCount} more)</Text>}
+						{itemsBelow > 0 && <Text dimColor>(+{itemsBelow} below)</Text>}
 						<Text dimColor>[{tabHint}]</Text>
 					</Box>
 				</Box>
