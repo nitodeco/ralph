@@ -43,6 +43,9 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 	maxRuntimeMs: 0,
 	retryWithContext: DEFAULTS.retryWithContext,
 	verification: DEFAULT_VERIFICATION,
+	technicalDebtReview: {
+		enabled: true,
+	},
 	maxDecompositionsPerTask: DEFAULTS.maxDecompositionsPerTask,
 	learningEnabled: DEFAULTS.learningEnabled,
 };

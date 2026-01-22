@@ -58,6 +58,8 @@ export type {
 	TaskEditOptions,
 	TaskListOutput,
 	TaskSubcommand,
+	TechnicalDebtReviewConfig,
+	TechnicalDebtSeverity,
 	ValidationWarning,
 	VerificationConfig,
 	VerificationResult,

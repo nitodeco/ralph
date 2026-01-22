@@ -29,6 +29,8 @@ export type {
 	SessionStatistics,
 	SessionStatus,
 	TaskWithIndex,
+	TechnicalDebtReviewConfig,
+	TechnicalDebtSeverity,
 	VerificationConfig,
 } from "@/lib/services/index.ts";
 export type { AgentResult, RunOptions } from "./agent.types.ts";

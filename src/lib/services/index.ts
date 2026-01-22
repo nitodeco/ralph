@@ -40,6 +40,8 @@ export type {
 	NotificationConfig,
 	NotificationEvent,
 	RalphConfig,
+	TechnicalDebtReviewConfig,
+	TechnicalDebtSeverity,
 	VerificationConfig,
 } from "./config/types.ts";
 export { isPartialRalphConfig, isRalphConfig, validateConfig } from "./config/validation.ts";

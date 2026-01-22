@@ -11,12 +11,14 @@ import { eventBus } from "@/lib/events.ts";
 import {
 	DecompositionHandler,
 	LearningHandler,
+	TechnicalDebtHandler,
 	VerificationHandler,
 } from "@/lib/handlers/index.ts";
 import {
 	appendIterationError,
 	completeIterationLog,
 	generateSessionId,
+	getAllIterationLogs,
 	initializeLogsIndex,
 	startIterationLog,
 } from "@/lib/iteration-logs.ts";
@@ -97,6 +99,7 @@ class SessionOrchestrator {
 	private decompositionHandler: DecompositionHandler | null = null;
 	private verificationHandler: VerificationHandler | null = null;
 	private learningHandler: LearningHandler | null = null;
+	private technicalDebtHandler: TechnicalDebtHandler | null = null;
 
 	private parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
 	private currentParallelGroup: ParallelGroupState | null = null;
@@ -138,6 +141,14 @@ class SessionOrchestrator {
 		this.learningHandler = new LearningHandler({
 			enabled: options.config.learningEnabled !== false,
 			logFilePath: options.config.logFilePath,
+		});
+		this.technicalDebtHandler = new TechnicalDebtHandler({
+			onStateChange: (isReviewing, report) => {
+				useAppStore.setState({
+					isReviewingTechnicalDebt: isReviewing,
+					lastTechnicalDebtReport: report,
+				});
+			},
 		});
 		this.setupSubscriptions();
 
@@ -822,6 +833,33 @@ class SessionOrchestrator {
 
 					displayStatisticsReport(finalStatistics);
 					logStatisticsToProgress(finalStatistics);
+
+					if (this.technicalDebtHandler) {
+						try {
+							const iterationLogs = getAllIterationLogs();
+							const sessionId = `session-${appState.currentSession.startTime}`;
+							const technicalDebtReport = this.technicalDebtHandler.run(
+								sessionId,
+								iterationLogs,
+								finalStatistics,
+								this.config?.technicalDebtReview,
+							);
+
+							if (technicalDebtReport.totalItems > 0) {
+								eventBus.emit("session:technical_debt_review", {
+									totalItems: technicalDebtReport.totalItems,
+									criticalItems: technicalDebtReport.itemsBySeverity.critical,
+									highItems: technicalDebtReport.itemsBySeverity.high,
+									hasRecommendations: technicalDebtReport.recommendations.length > 0,
+								});
+							}
+						} catch (debtReviewError) {
+							logger.warn("Technical debt review failed", {
+								error: getErrorMessage(debtReviewError),
+							});
+						}
+					}
+
 					const completedSession = sessionService.updateStatus(
 						appState.currentSession,
 						"completed",
@@ -992,9 +1030,11 @@ class SessionOrchestrator {
 		this.lastDecomposition = null;
 		this.decompositionHandler?.reset();
 		this.verificationHandler?.reset();
+		this.technicalDebtHandler?.reset();
 		this.decompositionHandler = null;
 		this.verificationHandler = null;
 		this.learningHandler = null;
+		this.technicalDebtHandler = null;
 
 		this.parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
 		this.currentParallelGroup = null;

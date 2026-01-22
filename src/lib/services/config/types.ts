@@ -23,6 +23,18 @@ export interface VerificationConfig {
 	failOnWarning: boolean;
 }
 
+export type TechnicalDebtSeverity = "low" | "medium" | "high" | "critical";
+
+export interface TechnicalDebtReviewConfig {
+	enabled?: boolean;
+	minSeverity?: TechnicalDebtSeverity;
+	analyzeRetryPatterns?: boolean;
+	analyzeVerificationFailures?: boolean;
+	analyzeDecompositions?: boolean;
+	analyzeErrorPatterns?: boolean;
+	analyzePerformance?: boolean;
+}
+
 export interface RalphConfig {
 	agent: AgentType;
 	lastUpdateCheck?: number;
@@ -38,6 +50,7 @@ export interface RalphConfig {
 	maxRuntimeMs?: number;
 	retryWithContext?: boolean;
 	verification?: VerificationConfig;
+	technicalDebtReview?: TechnicalDebtReviewConfig;
 	maxDecompositionsPerTask?: number;
 	learningEnabled?: boolean;
 }

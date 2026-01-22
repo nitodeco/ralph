@@ -4,6 +4,7 @@ import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
+import type { TechnicalDebtReport } from "@/lib/handlers/index.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import {
 	canWorkOnTask,
@@ -47,6 +48,8 @@ interface AppStoreState {
 	isVerifying: boolean;
 	lastVerificationResult: VerificationResult | null;
 	lastDecomposition: DecompositionRequest | null;
+	isReviewingTechnicalDebt: boolean;
+	lastTechnicalDebtReport: TechnicalDebtReport | null;
 	updateAvailable: boolean;
 	latestVersion: string | null;
 	updateBannerDismissed: boolean;
@@ -118,6 +121,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	isVerifying: false,
 	lastVerificationResult: null,
 	lastDecomposition: null,
+	isReviewingTechnicalDebt: false,
+	lastTechnicalDebtReport: null,
 	updateAvailable: false,
 	latestVersion: null,
 	updateBannerDismissed: false,

@@ -89,6 +89,13 @@ export interface ParallelTaskCompleteEvent {
 	groupIndex: number;
 }
 
+export interface TechnicalDebtReviewEvent {
+	totalItems: number;
+	criticalItems: number;
+	highItems: number;
+	hasRecommendations: boolean;
+}
+
 export interface EventMap {
 	"agent:start": AgentStartEvent;
 	"agent:complete": AgentCompleteEvent;
@@ -105,6 +112,7 @@ export interface EventMap {
 	"parallel:group_complete": ParallelGroupCompleteEvent;
 	"parallel:task_start": ParallelTaskStartEvent;
 	"parallel:task_complete": ParallelTaskCompleteEvent;
+	"session:technical_debt_review": TechnicalDebtReviewEvent;
 }
 
 export type EventName = keyof EventMap;
