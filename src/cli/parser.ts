@@ -329,16 +329,20 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	let rulesSubcommand: RulesSubcommand | undefined;
 	let rulesArg: string | undefined;
+	let rulesGlobal: boolean | undefined;
 
 	if (command === "rules") {
 		const subcommand = filteredArgs.at(1) as RulesSubcommand | undefined;
 
+		rulesGlobal = relevantArgs.includes("--global") || relevantArgs.includes("-g");
+		const rulesFilteredArgs = filteredArgs.filter((arg) => arg !== "--global" && arg !== "-g");
+
 		if (subcommand && VALID_RULES_SUBCOMMANDS.includes(subcommand)) {
 			rulesSubcommand = subcommand;
-			rulesArg = filteredArgs.slice(2).join(" ");
+			rulesArg = rulesFilteredArgs.slice(2).join(" ");
 		} else if (subcommand && !subcommand.startsWith("-")) {
 			rulesSubcommand = "add";
-			rulesArg = filteredArgs.slice(1).join(" ");
+			rulesArg = rulesFilteredArgs.slice(1).join(" ");
 		} else {
 			rulesSubcommand = "list";
 		}
@@ -395,6 +399,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 		dependencyModifyOptions,
 		rulesSubcommand,
 		rulesArg,
+		rulesGlobal,
 		usageSubcommand,
 		usageLimit,
 	};

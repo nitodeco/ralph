@@ -113,6 +113,7 @@ export interface ParsedArgs {
 	dependencyModifyOptions?: DependencyModifyOptions;
 	rulesSubcommand?: RulesSubcommand;
 	rulesArg?: string;
+	rulesGlobal?: boolean;
 	usageSubcommand?: UsageSubcommand;
 	usageLimit?: number;
 }

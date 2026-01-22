@@ -100,7 +100,13 @@ export type {
 export { REGISTRY_VERSION } from "./project-registry/types.ts";
 export { formatRulesForPrompt } from "./rules/formatters.ts";
 export { createRulesService } from "./rules/implementation.ts";
-export type { AddRuleOptions, CustomRule, RulesFile, RulesService } from "./rules/types.ts";
+export type {
+	AddRuleOptions,
+	CustomRule,
+	RuleScope,
+	RulesFile,
+	RulesService,
+} from "./rules/types.ts";
 export { isCustomRule, isRulesFile } from "./rules/validation.ts";
 export {
 	createSleepPreventionService,

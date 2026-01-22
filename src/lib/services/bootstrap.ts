@@ -310,11 +310,21 @@ function createMockGuardrailsService(
 function createMockRulesService(overrides: Partial<RulesService> = {}): RulesService {
 	return {
 		get: () => [],
+		getGlobal: () => [],
+		getProject: () => [],
 		load: () => [],
+		loadGlobal: () => [],
+		loadProject: () => [],
 		save: () => {},
+		saveGlobal: () => {},
+		saveProject: () => {},
 		exists: () => false,
+		existsGlobal: () => false,
+		existsProject: () => false,
 		initialize: () => {},
 		invalidate: () => {},
+		invalidateGlobal: () => {},
+		invalidateProject: () => {},
 		add: (options) => ({
 			id: `rule-${Date.now()}`,
 			instruction: options.instruction,
@@ -322,6 +332,7 @@ function createMockRulesService(overrides: Partial<RulesService> = {}): RulesSer
 		}),
 		remove: () => true,
 		getById: () => null,
+		getByIdInScope: () => null,
 		formatForPrompt: () => "",
 		...overrides,
 	};

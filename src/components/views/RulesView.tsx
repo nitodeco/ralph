@@ -5,14 +5,25 @@ import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import { MESSAGE_DISMISS_TIMEOUT_MS } from "@/lib/constants/ui.ts";
-import { type CustomRule, getRulesService } from "@/lib/services/index.ts";
+import { type CustomRule, getRulesService, type RuleScope } from "@/lib/services/index.ts";
 
 interface RulesViewProps {
 	version: string;
 	onClose: () => void;
 }
 
-type ViewMode = "list" | "add" | "confirm-delete";
+type ViewMode = "list" | "add" | "confirm-delete" | "select-scope";
+
+interface RulesState {
+	globalRules: CustomRule[];
+	projectRules: CustomRule[];
+}
+
+interface SelectedRule {
+	rule: CustomRule;
+	scope: RuleScope;
+	displayIndex: number;
+}
 
 function RulesHeader({ version }: { version: string }): React.ReactElement {
 	return (
@@ -37,6 +48,14 @@ function RulesFooter({ viewMode }: RulesFooterProps): React.ReactElement {
 		);
 	}
 
+	if (viewMode === "select-scope") {
+		return (
+			<Box paddingX={1}>
+				<Text dimColor>g Global | p Project | Escape to cancel</Text>
+			</Box>
+		);
+	}
+
 	return (
 		<Box paddingX={1}>
 			<Text dimColor>↑/↓ Navigate | a Add | d Delete | q/Esc Close</Text>
@@ -44,17 +63,47 @@ function RulesFooter({ viewMode }: RulesFooterProps): React.ReactElement {
 	);
 }
 
+function getSelectedRule(rulesState: RulesState, selectedIndex: number): SelectedRule | null {
+	const { globalRules, projectRules } = rulesState;
+
+	if (selectedIndex < globalRules.length) {
+		const maybeRule = globalRules.at(selectedIndex);
+
+		if (maybeRule) {
+			return { rule: maybeRule, scope: "global", displayIndex: selectedIndex };
+		}
+	}
+
+	const projectIndex = selectedIndex - globalRules.length;
+	const maybeRule = projectRules.at(projectIndex);
+
+	if (maybeRule) {
+		return { rule: maybeRule, scope: "project", displayIndex: selectedIndex };
+	}
+
+	return null;
+}
+
 export function RulesView({ version, onClose }: RulesViewProps): React.ReactElement {
 	const rulesService = getRulesService();
-	const [rules, setRules] = useState<CustomRule[]>(() => rulesService.get());
+	const [rulesState, setRulesState] = useState<RulesState>(() => ({
+		globalRules: rulesService.getGlobal(),
+		projectRules: rulesService.getProject(),
+	}));
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 	const [newInstruction, setNewInstruction] = useState("");
+	const [selectedScope, setSelectedScope] = useState<RuleScope>("project");
 	const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+	const totalRules = rulesState.globalRules.length + rulesState.projectRules.length;
 
 	const refreshRules = () => {
 		rulesService.invalidate();
-		setRules(rulesService.get());
+		setRulesState({
+			globalRules: rulesService.getGlobal(),
+			projectRules: rulesService.getProject(),
+		});
 	};
 
 	const showMessage = (type: "success" | "error", text: string) => {
@@ -71,20 +120,42 @@ export function RulesView({ version, onClose }: RulesViewProps): React.ReactElem
 			}
 
 			if (key.return) {
-				const rule = rules[selectedIndex];
+				const selectedRule = getSelectedRule(rulesState, selectedIndex);
 
-				if (rule) {
-					rulesService.remove(rule.id);
+				if (selectedRule) {
+					rulesService.remove(selectedRule.rule.id, selectedRule.scope);
 					refreshRules();
 
-					if (selectedIndex >= rules.length - 1) {
-						setSelectedIndex(Math.max(0, rules.length - 2));
+					const newTotalRules = rulesState.globalRules.length + rulesState.projectRules.length - 1;
+
+					if (selectedIndex >= newTotalRules) {
+						setSelectedIndex(Math.max(0, newTotalRules - 1));
 					}
 
-					showMessage("success", "Rule removed");
+					showMessage("success", `Removed ${selectedRule.scope} rule`);
 				}
 
 				setViewMode("list");
+			}
+
+			return;
+		}
+
+		if (viewMode === "select-scope") {
+			if (key.escape) {
+				setViewMode("list");
+
+				return;
+			}
+
+			if (input === "g") {
+				setSelectedScope("global");
+				setViewMode("add");
+			}
+
+			if (input === "p") {
+				setSelectedScope("project");
+				setViewMode("add");
 			}
 
 			return;
@@ -109,29 +180,80 @@ export function RulesView({ version, onClose }: RulesViewProps): React.ReactElem
 			setSelectedIndex(selectedIndex - 1);
 		}
 
-		if (key.downArrow && selectedIndex < rules.length - 1) {
+		if (key.downArrow && selectedIndex < totalRules - 1) {
 			setSelectedIndex(selectedIndex + 1);
 		}
 
 		if (input === "a") {
-			setViewMode("add");
+			setViewMode("select-scope");
 		}
 
-		if (input === "d" && rules.length > 0) {
+		if (input === "d" && totalRules > 0) {
 			setViewMode("confirm-delete");
 		}
 	});
 
 	const handleAddSubmit = (value: string) => {
 		if (value.trim()) {
-			rulesService.add({ instruction: value.trim() });
+			rulesService.add({ instruction: value.trim(), scope: selectedScope });
 			refreshRules();
-			showMessage("success", "Rule added");
+			showMessage("success", `Added ${selectedScope} rule`);
 		}
 
 		setNewInstruction("");
 		setViewMode("list");
 	};
+
+	const renderRulesSection = (
+		rules: CustomRule[],
+		sectionTitle: string,
+		scope: RuleScope,
+		startIndex: number,
+	) => {
+		if (rules.length === 0) {
+			return (
+				<Box flexDirection="column" marginTop={1}>
+					<Text bold color="yellow">
+						{sectionTitle}: <Text dimColor>(none)</Text>
+					</Text>
+				</Box>
+			);
+		}
+
+		return (
+			<Box flexDirection="column" marginTop={1}>
+				<Text bold color="yellow">
+					{sectionTitle}:
+				</Text>
+				<Box flexDirection="column" marginTop={1}>
+					{rules.map((rule, index) => {
+						const displayIndex = startIndex + index;
+						const isSelected = displayIndex === selectedIndex;
+
+						return (
+							<Box key={rule.id} flexDirection="column">
+								<Box>
+									<Text color={isSelected ? "cyan" : undefined}>{isSelected ? "❯ " : "  "}</Text>
+									<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+										{displayIndex + 1}. {rule.instruction}
+									</Text>
+								</Box>
+								{isSelected && (
+									<Box paddingLeft={4}>
+										<Text dimColor>
+											id: {rule.id} | scope: {scope}
+										</Text>
+									</Box>
+								)}
+							</Box>
+						);
+					})}
+				</Box>
+			</Box>
+		);
+	};
+
+	const selectedRule = getSelectedRule(rulesState, selectedIndex);
 
 	return (
 		<ResponsiveLayout
@@ -139,10 +261,24 @@ export function RulesView({ version, onClose }: RulesViewProps): React.ReactElem
 			content={
 				<ScrollableContent>
 					<Box flexDirection="column" paddingX={1} gap={1}>
-						{viewMode === "add" ? (
+						{viewMode === "select-scope" ? (
 							<Box flexDirection="column">
 								<Text bold color="yellow">
-									Add New Rule:
+									Select Rule Scope:
+								</Text>
+								<Box marginTop={1} flexDirection="column" gap={1}>
+									<Text>
+										<Text color="cyan">g</Text> - Global (applies to all projects)
+									</Text>
+									<Text>
+										<Text color="cyan">p</Text> - Project (applies to this project only)
+									</Text>
+								</Box>
+							</Box>
+						) : viewMode === "add" ? (
+							<Box flexDirection="column">
+								<Text bold color="yellow">
+									Add New {selectedScope === "global" ? "Global" : "Project"} Rule:
 								</Text>
 								<Box marginTop={1} gap={1}>
 									<Text color="cyan">❯</Text>
@@ -158,41 +294,29 @@ export function RulesView({ version, onClose }: RulesViewProps): React.ReactElem
 							<>
 								<Box flexDirection="column">
 									<Text bold color="yellow">
-										Custom Rules ({rules.length} total):
+										Custom Rules ({totalRules} total):
 									</Text>
-									<Box flexDirection="column" marginTop={1}>
-										{rules.length === 0 ? (
+									{totalRules === 0 ? (
+										<Box marginTop={1}>
 											<Text dimColor>No custom rules configured. Press 'a' to add one.</Text>
-										) : (
-											rules.map((rule, index) => {
-												const isSelected = index === selectedIndex;
-
-												return (
-													<Box key={rule.id} flexDirection="column">
-														<Box>
-															<Text color={isSelected ? "cyan" : undefined}>
-																{isSelected ? "❯ " : "  "}
-															</Text>
-															<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
-																{index + 1}. {rule.instruction}
-															</Text>
-														</Box>
-														{isSelected && (
-															<Box paddingLeft={4}>
-																<Text dimColor>id: {rule.id}</Text>
-															</Box>
-														)}
-													</Box>
-												);
-											})
-										)}
-									</Box>
+										</Box>
+									) : (
+										<>
+											{renderRulesSection(rulesState.globalRules, "Global Rules", "global", 0)}
+											{renderRulesSection(
+												rulesState.projectRules,
+												"Project Rules",
+												"project",
+												rulesState.globalRules.length,
+											)}
+										</>
+									)}
 								</Box>
 
-								{viewMode === "confirm-delete" && rules[selectedIndex] && (
+								{viewMode === "confirm-delete" && selectedRule && (
 									<ConfirmationDialog
-										title="Delete rule?"
-										message={`"${rules[selectedIndex]?.instruction}"`}
+										title={`Delete ${selectedRule.scope} rule?`}
+										message={`"${selectedRule.rule.instruction}"`}
 									/>
 								)}
 

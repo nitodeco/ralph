@@ -193,6 +193,7 @@ function main(): void {
 		dependencyModifyOptions,
 		rulesSubcommand,
 		rulesArg,
+		rulesGlobal,
 		usageSubcommand,
 		usageLimit,
 	} = parseArgs(process.argv);
@@ -308,7 +309,7 @@ function main(): void {
 		})
 		.with("rules", () => {
 			match(rulesSubcommand)
-				.with("add", () => handleRulesAdd(rulesArg ?? ""))
+				.with("add", () => handleRulesAdd(rulesArg ?? "", rulesGlobal ?? false))
 				.with("remove", () => handleRulesRemove(rulesArg ?? ""))
 				.otherwise(() => printRules(VERSION, json));
 		})

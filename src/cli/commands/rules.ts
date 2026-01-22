@@ -1,9 +1,12 @@
 import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
-import { type CustomRule, getRulesService } from "@/lib/services/index.ts";
+import { type CustomRule, getRulesService, type RuleScope } from "@/lib/services/index.ts";
 
 interface RulesOutput {
-	rules: CustomRule[];
+	globalRules: CustomRule[];
+	projectRules: CustomRule[];
 	summary: {
+		globalTotal: number;
+		projectTotal: number;
 		total: number;
 	};
 }
@@ -12,14 +15,37 @@ function formatRuleStatus(rule: CustomRule, index: number): string {
 	return `  ${index + 1}. ${rule.instruction}`;
 }
 
+function printRulesSection(rules: CustomRule[], sectionTitle: string, startIndex: number): number {
+	if (rules.length === 0) {
+		console.log(`\n${sectionTitle}: (none)`);
+
+		return startIndex;
+	}
+
+	console.log(`\n${sectionTitle}:`);
+
+	for (const [index, rule] of rules.entries()) {
+		console.log(formatRuleStatus(rule, startIndex + index));
+		console.log(`    \x1b[90mid: ${rule.id}\x1b[0m`);
+	}
+
+	return startIndex + rules.length;
+}
+
 export function printRules(version: string, jsonOutput: boolean): void {
-	const rules = getRulesService().get();
+	const rulesService = getRulesService();
+	const globalRules = rulesService.getGlobal();
+	const projectRules = rulesService.getProject();
+	const totalCount = globalRules.length + projectRules.length;
 
 	if (jsonOutput) {
 		const output: RulesOutput = {
-			rules,
+			globalRules,
+			projectRules,
 			summary: {
-				total: rules.length,
+				globalTotal: globalRules.length,
+				projectTotal: projectRules.length,
+				total: totalCount,
 			},
 		};
 
@@ -30,35 +56,39 @@ export function printRules(version: string, jsonOutput: boolean): void {
 
 	console.log(`◆ ralph v${version} - Custom Rules\n`);
 
-	if (rules.length === 0) {
+	if (totalCount === 0) {
 		console.log("No custom rules configured.");
-		console.log("\nAdd a rule with: ralph rules add <instruction>");
+		console.log("\nAdd a rule with:");
+		console.log("  ralph rules add <instruction>          Add to this project");
+		console.log("  ralph rules add <instruction> --global Add globally");
 
 		return;
 	}
 
-	console.log(`Custom Rules (${rules.length} total):\n`);
+	console.log(`Custom Rules (${totalCount} total):`);
 
-	for (const [index, rule] of rules.entries()) {
-		console.log(formatRuleStatus(rule, index));
-		console.log(`    \x1b[90mid: ${rule.id}\x1b[0m`);
-	}
+	const indexAfterGlobal = printRulesSection(globalRules, "Global Rules", 0);
+
+	printRulesSection(projectRules, "Project Rules", indexAfterGlobal);
 
 	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
 	console.log("\nCommands:");
-	console.log("  ralph rules add <instruction>  Add a new rule");
-	console.log("  ralph rules remove <id>        Remove a rule");
+	console.log("  ralph rules add <instruction>            Add a project rule");
+	console.log("  ralph rules add <instruction> --global   Add a global rule");
+	console.log("  ralph rules remove <id>                  Remove a rule");
 }
 
-export function handleRulesAdd(instruction: string): void {
+export function handleRulesAdd(instruction: string, isGlobal: boolean): void {
 	if (!instruction.trim()) {
 		console.error("\x1b[31mError:\x1b[0m Instruction cannot be empty");
 		process.exit(1);
 	}
 
-	const rule = getRulesService().add({ instruction: instruction.trim() });
+	const scope: RuleScope = isGlobal ? "global" : "project";
+	const rule = getRulesService().add({ instruction: instruction.trim(), scope });
+	const scopeLabel = isGlobal ? "global" : "project";
 
-	console.log(`\x1b[32m✓\x1b[0m Added rule: "${rule.instruction}"`);
+	console.log(`\x1b[32m✓\x1b[0m Added ${scopeLabel} rule: "${rule.instruction}"`);
 	console.log(`  id: ${rule.id}`);
 }
 
@@ -68,12 +98,20 @@ export function handleRulesRemove(ruleId: string): void {
 		process.exit(1);
 	}
 
-	const removed = getRulesService().remove(ruleId.trim());
+	const rulesService = getRulesService();
+	const trimmedId = ruleId.trim();
 
-	if (removed) {
-		console.log(`\x1b[32m✓\x1b[0m Removed rule: ${ruleId}`);
+	const maybeProjectRule = rulesService.getByIdInScope(trimmedId, "project");
+	const maybeGlobalRule = rulesService.getByIdInScope(trimmedId, "global");
+
+	if (maybeProjectRule) {
+		rulesService.remove(trimmedId, "project");
+		console.log(`\x1b[32m✓\x1b[0m Removed project rule: ${trimmedId}`);
+	} else if (maybeGlobalRule) {
+		rulesService.remove(trimmedId, "global");
+		console.log(`\x1b[32m✓\x1b[0m Removed global rule: ${trimmedId}`);
 	} else {
-		console.error(`\x1b[31mError:\x1b[0m Rule not found: ${ruleId}`);
+		console.error(`\x1b[31mError:\x1b[0m Rule not found: ${trimmedId}`);
 		process.exit(1);
 	}
 }
