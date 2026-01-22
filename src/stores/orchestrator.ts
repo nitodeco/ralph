@@ -516,14 +516,14 @@ class SessionOrchestrator {
 
 						const iterationStore = useIterationStore.getState();
 
-						iterationStore.markIterationComplete(false);
+						iterationStore.markIterationComplete(false, true);
 					});
 				} catch (error) {
 					logger.error("Sync error in agent:complete handler", { error: getErrorMessage(error) });
 
 					const iterationStore = useIterationStore.getState();
 
-					iterationStore.markIterationComplete(false);
+					iterationStore.markIterationComplete(false, true);
 				}
 			}),
 		);
@@ -573,6 +573,8 @@ class SessionOrchestrator {
 			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
 			: false;
 
+		const hasPendingTasks = currentPrd ? currentPrd.tasks.some((task) => !task.done) : false;
+
 		const verificationConfig = this.config?.verification;
 
 		if (
@@ -587,7 +589,7 @@ class SessionOrchestrator {
 				if (!verificationResult.passed) {
 					const iterationStore = useIterationStore.getState();
 
-					iterationStore.markIterationComplete(false);
+					iterationStore.markIterationComplete(false, hasPendingTasks);
 
 					return;
 				}
@@ -606,7 +608,7 @@ class SessionOrchestrator {
 
 		const iterationStore = useIterationStore.getState();
 
-		iterationStore.markIterationComplete(allTasksActuallyDone);
+		iterationStore.markIterationComplete(allTasksActuallyDone, hasPendingTasks);
 	}
 
 	private logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {

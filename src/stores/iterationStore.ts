@@ -9,6 +9,7 @@ interface IterationState {
 	isRunning: boolean;
 	isDelaying: boolean;
 	isPaused: boolean;
+	isFullMode: boolean;
 }
 
 interface IterationCallbacks {
@@ -27,7 +28,8 @@ interface IterationActions {
 	stop: () => void;
 	next: () => void;
 	setTotal: (newTotal: number) => void;
-	markIterationComplete: (isProjectComplete: boolean) => void;
+	setFullMode: (isFullMode: boolean) => void;
+	markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => void;
 	restartCurrentIteration: () => void;
 	setCallbacks: (callbacks: IterationCallbacks) => void;
 	clearCallbacks: () => void;
@@ -53,6 +55,7 @@ const INITIAL_STATE: IterationState = {
 	isRunning: false,
 	isDelaying: false,
 	isPaused: false,
+	isFullMode: false,
 };
 
 export const useIterationStore = create<IterationStore>((set, get) => ({
@@ -166,6 +169,10 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		set({ total: newTotal });
 	},
 
+	setFullMode: (isFullMode: boolean) => {
+		set({ isFullMode });
+	},
+
 	next: () => {
 		const state = get();
 
@@ -202,7 +209,7 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		});
 	},
 
-	markIterationComplete: (isProjectComplete: boolean) => {
+	markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => {
 		const state = get();
 
 		IterationTimer.setProjectComplete(isProjectComplete);
@@ -221,6 +228,17 @@ export const useIterationStore = create<IterationStore>((set, get) => ({
 		}
 
 		if (state.current >= state.total) {
+			if (state.isFullMode && hasPendingTasks) {
+				set({ total: state.total + 1, isDelaying: true });
+				eventBus.emit("iteration:delay", { iteration: state.current, delayMs: state.delayMs });
+
+				IterationTimer.scheduleNext(state.delayMs, () => {
+					get().next();
+				});
+
+				return;
+			}
+
 			state.callbacks.onMaxIterations?.();
 			set({
 				isRunning: false,

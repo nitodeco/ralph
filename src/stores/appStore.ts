@@ -236,6 +236,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		const iterationStore = useIterationStore.getState();
 
 		iterationStore.setTotal(totalIters);
+		iterationStore.setFullMode(full === true);
 		iterationStore.setStartTime(Date.now());
 
 		const { session: newSession } = orchestrator.startSession(loadedPrd, totalIters);
@@ -447,10 +448,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	handleAgentComplete: () => {
+		const state = get();
 		const agentStore = useAgentStore.getState();
 		const iterationStore = useIterationStore.getState();
+		const hasPendingTasks = state.prd ? state.prd.tasks.some((task) => !task.done) : false;
 
-		iterationStore.markIterationComplete(agentStore.isComplete);
+		iterationStore.markIterationComplete(agentStore.isComplete, hasPendingTasks);
 	},
 
 	handleFatalError: (error: string) => {
