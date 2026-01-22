@@ -149,6 +149,7 @@ export interface TextInputProps {
 	readonly onArrowUp?: () => void;
 	readonly onArrowDown?: () => void;
 	readonly onTab?: () => void;
+	readonly onShiftTab?: () => void;
 	readonly onArrowRight?: () => void;
 	readonly vimMode?: boolean;
 	readonly showVimModeIndicator?: boolean;
@@ -211,6 +212,7 @@ export function TextInput({
 	onArrowUp,
 	onArrowDown,
 	onTab,
+	onShiftTab,
 	onArrowRight,
 	vimMode: isVimModeEnabled = false,
 	showVimModeIndicator = true,
@@ -464,7 +466,13 @@ export function TextInput({
 				return;
 			}
 
-			if (key.tab || (key.shift && key.tab)) {
+			if (key.shift && key.tab) {
+				onShiftTab?.();
+
+				return;
+			}
+
+			if (key.tab) {
 				onTab?.();
 
 				return;

@@ -88,9 +88,40 @@ interface AutocompleteResult {
 	type: "suggestions" | "argument-hint" | "default";
 	suggestions?: Array<{ command: SlashCommand; hint: CommandHint }>;
 	argumentHint?: string;
+	commonPrefix?: string;
 }
 
-function getAutocompleteHint(input: string, isRunning: boolean): AutocompleteResult {
+export function getCommonPrefix(commands: readonly string[]): string {
+	if (commands.length === 0) {
+		return "";
+	}
+
+	if (commands.length === 1) {
+		return commands[0] ?? "";
+	}
+
+	const [firstCommand, ...restCommands] = commands;
+
+	if (!firstCommand) {
+		return "";
+	}
+
+	let prefix = firstCommand;
+
+	for (const command of restCommands) {
+		while (prefix.length > 0 && !command.startsWith(prefix)) {
+			prefix = prefix.slice(0, -1);
+		}
+
+		if (prefix.length === 0) {
+			break;
+		}
+	}
+
+	return prefix;
+}
+
+export function getAutocompleteHint(input: string, isRunning: boolean): AutocompleteResult {
 	const trimmed = input.trim();
 
 	if (!trimmed.startsWith("/")) {
@@ -127,7 +158,10 @@ function getAutocompleteHint(input: string, isRunning: boolean): AutocompleteRes
 		.map((cmd) => ({ command: cmd, hint: COMMAND_HINTS[cmd] }));
 
 	if (matchingCommands.length > 0) {
-		return { type: "suggestions", suggestions: matchingCommands };
+		const commandNames = matchingCommands.map(({ command }) => command);
+		const commonPrefix = getCommonPrefix(commandNames);
+
+		return { type: "suggestions", suggestions: matchingCommands, commonPrefix };
 	}
 
 	return { type: "default" };
@@ -240,17 +274,76 @@ export function CommandInput({
 		setPastedSegments((prev) => [...prev, segment]);
 	};
 
-	const applyAutocomplete = () => {
+	const getCompletedValue = (command: SlashCommand): string => {
+		const hint = COMMAND_HINTS[command];
+		const hasArgs = hint.args !== undefined;
+
+		return hasArgs ? `/${command} ` : `/${command}`;
+	};
+
+	const getCurrentPartialCommand = (): string => {
+		const trimmed = inputValue.trim();
+
+		if (!trimmed.startsWith("/")) {
+			return "";
+		}
+
+		const parts = trimmed.slice(1).split(/\s+/);
+
+		return parts[0]?.toLowerCase() ?? "";
+	};
+
+	const handleTabComplete = (direction: "forward" | "backward") => {
 		if (!hasSuggestions) {
 			return;
 		}
 
-		const selectedSuggestion = suggestions[selectedHintIndex];
+		const currentPartial = getCurrentPartialCommand();
+		const commonPrefix = autocomplete.commonPrefix ?? "";
+		const isCommonPrefixComplete = currentPartial === commonPrefix.toLowerCase();
 
-		if (selectedSuggestion) {
-			setInputValue(`/${selectedSuggestion.command}`);
-			setSelectedHintIndex(0);
+		if (suggestions.length === 1) {
+			const selectedSuggestion = suggestions[0];
+
+			if (selectedSuggestion) {
+				setInputValue(getCompletedValue(selectedSuggestion.command));
+				setSelectedHintIndex(0);
+			}
+
+			return;
 		}
+
+		if (!isCommonPrefixComplete && commonPrefix.length > currentPartial.length) {
+			setInputValue(`/${commonPrefix}`);
+
+			return;
+		}
+
+		if (direction === "forward") {
+			const nextIndex = selectedHintIndex >= suggestions.length - 1 ? 0 : selectedHintIndex + 1;
+			const selectedSuggestion = suggestions[nextIndex];
+
+			if (selectedSuggestion) {
+				setInputValue(getCompletedValue(selectedSuggestion.command));
+				setSelectedHintIndex(nextIndex);
+			}
+		} else {
+			const prevIndex = selectedHintIndex <= 0 ? suggestions.length - 1 : selectedHintIndex - 1;
+			const selectedSuggestion = suggestions[prevIndex];
+
+			if (selectedSuggestion) {
+				setInputValue(getCompletedValue(selectedSuggestion.command));
+				setSelectedHintIndex(prevIndex);
+			}
+		}
+	};
+
+	const applyAutocomplete = () => {
+		handleTabComplete("forward");
+	};
+
+	const handleShiftTab = () => {
+		handleTabComplete("backward");
 	};
 
 	const handleArrowUp = () => {
@@ -317,6 +410,16 @@ export function CommandInput({
 		if (hasSuggestions) {
 			const displayedSuggestions = suggestions.slice(0, maxSuggestions);
 			const remainingCount = suggestions.length - maxSuggestions;
+			const currentPartial = getCurrentPartialCommand();
+			const commonPrefix = autocomplete.commonPrefix ?? "";
+			const canExpandPrefix =
+				commonPrefix.length > currentPartial.length &&
+				currentPartial !== commonPrefix.toLowerCase();
+			const tabHint = canExpandPrefix
+				? `Tab to complete "${commonPrefix}"`
+				: suggestions.length > 1
+					? "Tab to cycle"
+					: "Tab to complete";
 
 			return (
 				<Box flexDirection="column">
@@ -336,9 +439,10 @@ export function CommandInput({
 							</Box>
 						);
 					})}
-					{remainingCount > 0 && (
-						<Text dimColor> (+{remainingCount} more, keep typing to filter)</Text>
-					)}
+					<Box gap={1}>
+						{remainingCount > 0 && <Text dimColor>(+{remainingCount} more)</Text>}
+						<Text dimColor>[{tabHint}]</Text>
+					</Box>
 				</Box>
 			);
 		}
@@ -365,6 +469,7 @@ export function CommandInput({
 						onArrowUp={handleArrowUp}
 						onArrowDown={handleArrowDown}
 						onTab={applyAutocomplete}
+						onShiftTab={handleShiftTab}
 						onArrowRight={applyAutocomplete}
 					/>
 				</Box>
