@@ -4,6 +4,62 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVimMode, type VimMode } from "@/lib/vim/index.ts";
 
+interface LinePosition {
+	readonly lineIndex: number;
+	readonly columnIndex: number;
+}
+
+function getLinePosition(text: string, cursorOffset: number): LinePosition {
+	const lines = text.split("\n");
+	let currentOffset = 0;
+
+	for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+		const line = lines[lineIndex] ?? "";
+		const lineEndOffset = currentOffset + line.length;
+
+		if (cursorOffset <= lineEndOffset) {
+			return {
+				lineIndex,
+				columnIndex: cursorOffset - currentOffset,
+			};
+		}
+
+		currentOffset = lineEndOffset + 1;
+	}
+
+	const lastLineIndex = lines.length - 1;
+	const lastLine = lines[lastLineIndex] ?? "";
+
+	return {
+		lineIndex: lastLineIndex,
+		columnIndex: lastLine.length,
+	};
+}
+
+function getCursorOffsetFromLinePosition(
+	text: string,
+	lineIndex: number,
+	columnIndex: number,
+): number {
+	const lines = text.split("\n");
+	let offset = 0;
+
+	for (let index = 0; index < lineIndex && index < lines.length; index++) {
+		const line = lines[index] ?? "";
+
+		offset += line.length + 1;
+	}
+
+	const targetLine = lines[lineIndex] ?? "";
+	const clampedColumn = Math.min(columnIndex, targetLine.length);
+
+	return offset + clampedColumn;
+}
+
+function getLineCount(text: string): number {
+	return text.split("\n").length;
+}
+
 export interface PastedTextSegment {
 	readonly id: number;
 	readonly content: string;
@@ -235,12 +291,56 @@ export function TextInput({
 			}
 
 			if (key.upArrow) {
+				const currentValue = valueRef.current;
+				const currentCursorOffset = cursorOffsetRef.current;
+				const lineCount = getLineCount(currentValue);
+
+				if (lineCount > 1) {
+					const { lineIndex, columnIndex } = getLinePosition(currentValue, currentCursorOffset);
+
+					if (lineIndex > 0) {
+						const newOffset = getCursorOffsetFromLinePosition(
+							currentValue,
+							lineIndex - 1,
+							columnIndex,
+						);
+
+						valueRef.current = currentValue;
+						cursorOffsetRef.current = newOffset;
+						setState({ cursorOffset: newOffset, cursorWidth: 0 });
+
+						return;
+					}
+				}
+
 				onArrowUp?.();
 
 				return;
 			}
 
 			if (key.downArrow) {
+				const currentValue = valueRef.current;
+				const currentCursorOffset = cursorOffsetRef.current;
+				const lineCount = getLineCount(currentValue);
+
+				if (lineCount > 1) {
+					const { lineIndex, columnIndex } = getLinePosition(currentValue, currentCursorOffset);
+
+					if (lineIndex < lineCount - 1) {
+						const newOffset = getCursorOffsetFromLinePosition(
+							currentValue,
+							lineIndex + 1,
+							columnIndex,
+						);
+
+						valueRef.current = currentValue;
+						cursorOffsetRef.current = newOffset;
+						setState({ cursorOffset: newOffset, cursorWidth: 0 });
+
+						return;
+					}
+				}
+
 				onArrowDown?.();
 
 				return;
