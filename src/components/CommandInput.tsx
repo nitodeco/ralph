@@ -373,7 +373,13 @@ export function CommandInput({
 
 	const handleArrowUp = () => {
 		if (hasSuggestions) {
-			setSelectedHintIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
+			const newIndex = selectedHintIndex <= 0 ? suggestions.length - 1 : selectedHintIndex - 1;
+			const selectedSuggestion = suggestions[newIndex];
+
+			if (selectedSuggestion) {
+				setInputValue(getCompletedValue(selectedSuggestion.command));
+				setSelectedHintIndex(newIndex);
+			}
 
 			return;
 		}
@@ -396,7 +402,13 @@ export function CommandInput({
 
 	const handleArrowDown = () => {
 		if (hasSuggestions) {
-			setSelectedHintIndex((prev) => (prev >= suggestions.length - 1 ? 0 : prev + 1));
+			const newIndex = selectedHintIndex >= suggestions.length - 1 ? 0 : selectedHintIndex + 1;
+			const selectedSuggestion = suggestions[newIndex];
+
+			if (selectedSuggestion) {
+				setInputValue(getCompletedValue(selectedSuggestion.command));
+				setSelectedHintIndex(newIndex);
+			}
 
 			return;
 		}
