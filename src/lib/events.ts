@@ -61,6 +61,34 @@ export interface SessionCompleteEvent {
 	totalIterations: number;
 }
 
+export interface ParallelGroupStartEvent {
+	groupIndex: number;
+	taskCount: number;
+	taskTitles: string[];
+}
+
+export interface ParallelGroupCompleteEvent {
+	groupIndex: number;
+	completedCount: number;
+	failedCount: number;
+	durationMs: number;
+	allSucceeded: boolean;
+}
+
+export interface ParallelTaskStartEvent {
+	taskId: string | undefined;
+	taskTitle: string;
+	processId: string;
+	groupIndex: number;
+}
+
+export interface ParallelTaskCompleteEvent {
+	taskId: string | undefined;
+	taskTitle: string;
+	wasSuccessful: boolean;
+	groupIndex: number;
+}
+
 export interface EventMap {
 	"agent:start": AgentStartEvent;
 	"agent:complete": AgentCompleteEvent;
@@ -73,6 +101,10 @@ export interface EventMap {
 	"session:resume": SessionResumeEvent;
 	"session:stop": SessionStopEvent;
 	"session:complete": SessionCompleteEvent;
+	"parallel:group_start": ParallelGroupStartEvent;
+	"parallel:group_complete": ParallelGroupCompleteEvent;
+	"parallel:task_start": ParallelTaskStartEvent;
+	"parallel:task_complete": ParallelTaskCompleteEvent;
 }
 
 export type EventName = keyof EventMap;
