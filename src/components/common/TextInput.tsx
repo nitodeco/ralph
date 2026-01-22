@@ -395,6 +395,24 @@ export function TextInput({
 				return;
 			}
 
+			if (key.ctrl && key.home) {
+				cursorOffsetRef.current = 0;
+				setState({ cursorOffset: 0, cursorWidth: 0 });
+
+				return;
+			}
+
+			if (key.ctrl && key.end) {
+				const currentValue = valueRef.current;
+				const newOffset = currentValue.length;
+
+				valueRef.current = currentValue;
+				cursorOffsetRef.current = newOffset;
+				setState({ cursorOffset: newOffset, cursorWidth: 0 });
+
+				return;
+			}
+
 			if (key.home) {
 				const currentValue = valueRef.current;
 				const currentCursorOffset = cursorOffsetRef.current;
