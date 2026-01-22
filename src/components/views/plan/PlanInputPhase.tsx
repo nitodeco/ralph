@@ -10,9 +10,14 @@ import type { Prd } from "@/types.ts";
 interface PlanInputPhaseProps {
 	existingPrd: Prd | null;
 	onSubmit: (specification: string) => void;
+	onCancel: () => void;
 }
 
-export function PlanInputPhase({ existingPrd, onSubmit }: PlanInputPhaseProps): React.ReactElement {
+export function PlanInputPhase({
+	existingPrd,
+	onSubmit,
+	onCancel,
+}: PlanInputPhaseProps): React.ReactElement {
 	const [inputValue, setInputValue] = useState("");
 	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
 
@@ -54,6 +59,7 @@ export function PlanInputPhase({ existingPrd, onSubmit }: PlanInputPhaseProps): 
 						value={inputValue}
 						onChange={setInputValue}
 						onSubmit={handleSubmit}
+						onQuit={onCancel}
 						placeholder="I want to build..."
 						collapsePastedText
 						pastedSegments={pastedSegments}
@@ -62,9 +68,9 @@ export function PlanInputPhase({ existingPrd, onSubmit }: PlanInputPhaseProps): 
 					/>
 				</Box>
 			</Box>
-			<Text dimColor>
-				Tip: Vim mode enabled. Press Esc for normal mode. You can paste multi-line text.
-			</Text>
+			<Box gap={2}>
+				<Text dimColor>Tip: Vim mode enabled. Press Esc for normal mode, q to quit.</Text>
+			</Box>
 		</Box>
 	);
 }

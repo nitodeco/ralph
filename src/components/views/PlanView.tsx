@@ -5,12 +5,8 @@ import { Header } from "@/components/Header.tsx";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
-import {
-	applyApprovedCommands,
-	commandsToDiffTasks,
-	parseTaskCommandsFromOutput,
-} from "@/lib/plan-command-parser.ts";
-import { loadPrd, savePrd } from "@/lib/prd.ts";
+import { applyApprovedCommands, generateDiffFromPrdStates } from "@/lib/plan-command-parser.ts";
+import { loadPrd, reloadPrd, savePrd } from "@/lib/prd.ts";
 import { buildPlanPrompt } from "@/lib/prompt.ts";
 import type { PlanDiffTask, PlanPhase, Prd, PrdTask } from "@/types.ts";
 import {
@@ -59,6 +55,8 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 	const abortRef = useRef<(() => void) | null>(null);
 
 	const handleSpecificationSubmit = async (specification: string) => {
+		const prdBefore = state.existingPrd ? structuredClone(state.existingPrd) : null;
+
 		setState((prev) => ({
 			...prev,
 			specification,
@@ -81,12 +79,12 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 
 			abortRef.current = abort;
 
-			const output = await promise;
+			await promise;
 
 			abortRef.current = null;
 
-			const commands = parseTaskCommandsFromOutput(output);
-			const diffTasks = commandsToDiffTasks(commands, state.existingPrd);
+			const prdAfter = reloadPrd();
+			const diffTasks = generateDiffFromPrdStates(prdBefore, prdAfter);
 
 			const hasChanges = diffTasks.some((diffTask) => diffTask.status !== "unchanged");
 
@@ -95,7 +93,7 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 					...prev,
 					phase: "error",
 					errorMessage:
-						"No task changes were detected in the agent output. The agent may not have followed the expected command format.",
+						"No task changes were detected. The agent may not have made any modifications to the PRD.",
 				}));
 
 				return;
@@ -103,6 +101,7 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 
 			setState((prev) => ({
 				...prev,
+				existingPrd: prdAfter,
 				generatedPrd: null,
 				diffTasks,
 				phase: "review",
@@ -164,7 +163,11 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 	const renderPhase = (): React.ReactNode =>
 		match(state.phase)
 			.with("input", () => (
-				<PlanInputPhase existingPrd={state.existingPrd} onSubmit={handleSpecificationSubmit} />
+				<PlanInputPhase
+					existingPrd={state.existingPrd}
+					onSubmit={handleSpecificationSubmit}
+					onCancel={handleCancel}
+				/>
 			))
 			.with("generating", () => (
 				<PlanGeneratingPhase agentOutput={state.agentOutput} onCancel={handleGenerationCancel} />

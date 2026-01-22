@@ -151,6 +151,7 @@ export interface TextInputProps {
 	readonly onTab?: () => void;
 	readonly onShiftTab?: () => void;
 	readonly onArrowRight?: () => void;
+	readonly onQuit?: () => void;
 	readonly vimMode?: boolean;
 	readonly showVimModeIndicator?: boolean;
 	readonly onVimModeChange?: (mode: VimMode) => void;
@@ -214,6 +215,7 @@ export function TextInput({
 	onTab,
 	onShiftTab,
 	onArrowRight,
+	onQuit,
 	vimMode: isVimModeEnabled = false,
 	showVimModeIndicator = true,
 	onVimModeChange,
@@ -505,6 +507,12 @@ export function TextInput({
 				!key.backspace &&
 				!key.delete
 			) {
+				if (input === "q" && onQuit) {
+					onQuit();
+
+					return;
+				}
+
 				const wasHandled = handleVimInput(input, false);
 
 				if (wasHandled) {
