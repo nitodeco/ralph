@@ -4,6 +4,12 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVimMode, type VimMode } from "@/lib/vim/index.ts";
 
+interface InputState {
+	readonly value: string;
+	readonly cursorOffset: number;
+	readonly cursorWidth: number;
+}
+
 interface LinePosition {
 	readonly lineIndex: number;
 	readonly columnIndex: number;
@@ -220,32 +226,65 @@ export function TextInput({
 	showVimModeIndicator = true,
 	onVimModeChange,
 }: TextInputProps): React.ReactElement {
-	const [state, setState] = useState({
+	const stateRef = useRef<InputState>({
+		value: originalValue || "",
 		cursorOffset: (originalValue || "").length,
 		cursorWidth: 0,
 	});
 
-	const { cursorOffset, cursorWidth } = state;
+	const [renderState, setRenderState] = useState({
+		cursorOffset: (originalValue || "").length,
+		cursorWidth: 0,
+	});
 
-	const valueRef = useRef(originalValue);
-	const cursorOffsetRef = useRef(cursorOffset);
+	const inputQueueRef = useRef<Array<{ input: string; key: unknown }>>([]);
+	const isProcessingRef = useRef(false);
+	const pendingOnChangeRef = useRef<string | null>(null);
 
-	const handleCursorChange = useCallback((offset: number) => {
-		cursorOffsetRef.current = offset;
-		setState((previousState) => ({
-			...previousState,
-			cursorOffset: offset,
-		}));
-	}, []);
+	const { cursorOffset, cursorWidth } = renderState;
+
+	const syncStateToRender = useCallback(() => {
+		const currentState = stateRef.current;
+
+		setRenderState({
+			cursorOffset: currentState.cursorOffset,
+			cursorWidth: currentState.cursorWidth,
+		});
+
+		if (pendingOnChangeRef.current !== null && pendingOnChangeRef.current !== originalValue) {
+			const valueToEmit = pendingOnChangeRef.current;
+
+			pendingOnChangeRef.current = null;
+			onChange(valueToEmit);
+		}
+	}, [onChange, originalValue]);
+
+	const handleCursorChange = useCallback(
+		(offset: number) => {
+			stateRef.current = {
+				...stateRef.current,
+				cursorOffset: offset,
+			};
+			syncStateToRender();
+		},
+		[syncStateToRender],
+	);
 
 	const {
 		mode: vimCurrentMode,
 		pendingOperator,
 		handleInput: handleVimInput,
 	} = useVimMode({
-		value: originalValue,
-		cursorOffset,
-		onChange,
+		value: stateRef.current.value,
+		cursorOffset: stateRef.current.cursorOffset,
+		onChange: (newValue: string) => {
+			stateRef.current = {
+				...stateRef.current,
+				value: newValue,
+			};
+			pendingOnChangeRef.current = newValue;
+			syncStateToRender();
+		},
 		onCursorChange: handleCursorChange,
 		enabled: isVimModeEnabled,
 	});
@@ -255,31 +294,34 @@ export function TextInput({
 	}, [vimCurrentMode, onVimModeChange]);
 
 	useEffect(() => {
-		valueRef.current = originalValue;
-	}, [originalValue]);
+		const currentInternalValue = stateRef.current.value;
+
+		if (originalValue !== currentInternalValue) {
+			stateRef.current = {
+				...stateRef.current,
+				value: originalValue,
+				cursorOffset: Math.min(stateRef.current.cursorOffset, originalValue.length),
+			};
+			syncStateToRender();
+		}
+	}, [originalValue, syncStateToRender]);
 
 	useEffect(() => {
-		cursorOffsetRef.current = cursorOffset;
-	}, [cursorOffset]);
+		if (!focus || !showCursor) {
+			return;
+		}
 
-	useEffect(() => {
-		setState((previousState) => {
-			if (!focus || !showCursor) {
-				return previousState;
-			}
+		const newValue = originalValue || "";
 
-			const newValue = originalValue || "";
-
-			if (previousState.cursorOffset > newValue.length - 1) {
-				return {
-					cursorOffset: newValue.length,
-					cursorWidth: 0,
-				};
-			}
-
-			return previousState;
-		});
-	}, [originalValue, focus, showCursor]);
+		if (stateRef.current.cursorOffset > newValue.length) {
+			stateRef.current = {
+				...stateRef.current,
+				cursorOffset: newValue.length,
+				cursorWidth: 0,
+			};
+			syncStateToRender();
+		}
+	}, [originalValue, focus, showCursor, syncStateToRender]);
 
 	const cursorActualWidth = highlightPastedText ? cursorWidth : 0;
 	const value = mask ? mask.repeat(originalValue.length) : originalValue;
@@ -333,19 +375,50 @@ export function TextInput({
 			</Text>
 		) : null;
 
-	useInput(
-		(input, key) => {
+	const processInputQueue = useCallback(() => {
+		if (isProcessingRef.current || inputQueueRef.current.length === 0) {
+			return;
+		}
+
+		isProcessingRef.current = true;
+
+		const eventsToProcess = [...inputQueueRef.current];
+
+		inputQueueRef.current = [];
+
+		for (const event of eventsToProcess) {
+			const { input, key } = event as {
+				input: string;
+				key: {
+					upArrow: boolean;
+					downArrow: boolean;
+					leftArrow: boolean;
+					rightArrow: boolean;
+					ctrl: boolean;
+					shift: boolean;
+					meta: boolean;
+					home: boolean;
+					end: boolean;
+					tab: boolean;
+					backspace: boolean;
+					delete: boolean;
+					return: boolean;
+					escape: boolean;
+				};
+			};
+
 			const isEscape = key.escape;
 
 			if (isVimModeEnabled && isEscape) {
 				handleVimInput("", true);
-
-				return;
+				continue;
 			}
 
+			const currentState = stateRef.current;
+			const currentValue = currentState.value;
+			const currentCursorOffset = currentState.cursorOffset;
+
 			if (key.upArrow) {
-				const currentValue = valueRef.current;
-				const currentCursorOffset = cursorOffsetRef.current;
 				const lineCount = getLineCount(currentValue);
 
 				if (lineCount > 1) {
@@ -358,22 +431,20 @@ export function TextInput({
 							columnIndex,
 						);
 
-						valueRef.current = currentValue;
-						cursorOffsetRef.current = newOffset;
-						setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-						return;
+						stateRef.current = {
+							...currentState,
+							cursorOffset: newOffset,
+							cursorWidth: 0,
+						};
+						continue;
 					}
 				}
 
 				onArrowUp?.();
-
-				return;
+				continue;
 			}
 
 			if (key.downArrow) {
-				const currentValue = valueRef.current;
-				const currentCursorOffset = cursorOffsetRef.current;
 				const lineCount = getLineCount(currentValue);
 
 				if (lineCount > 1) {
@@ -386,117 +457,108 @@ export function TextInput({
 							columnIndex,
 						);
 
-						valueRef.current = currentValue;
-						cursorOffsetRef.current = newOffset;
-						setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-						return;
+						stateRef.current = {
+							...currentState,
+							cursorOffset: newOffset,
+							cursorWidth: 0,
+						};
+						continue;
 					}
 				}
 
 				onArrowDown?.();
-
-				return;
+				continue;
 			}
 
 			if (key.ctrl && key.home) {
-				cursorOffsetRef.current = 0;
-				setState({ cursorOffset: 0, cursorWidth: 0 });
-
-				return;
+				stateRef.current = {
+					...currentState,
+					cursorOffset: 0,
+					cursorWidth: 0,
+				};
+				continue;
 			}
 
 			if (key.ctrl && key.end) {
-				const currentValue = valueRef.current;
-				const newOffset = currentValue.length;
-
-				valueRef.current = currentValue;
-				cursorOffsetRef.current = newOffset;
-				setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-				return;
+				stateRef.current = {
+					...currentState,
+					cursorOffset: currentValue.length,
+					cursorWidth: 0,
+				};
+				continue;
 			}
 
 			if (key.home) {
-				const currentValue = valueRef.current;
-				const currentCursorOffset = cursorOffsetRef.current;
 				const { lineIndex } = getLinePosition(currentValue, currentCursorOffset);
 				const newOffset = getCursorOffsetFromLinePosition(currentValue, lineIndex, 0);
 
-				valueRef.current = currentValue;
-				cursorOffsetRef.current = newOffset;
-				setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-				return;
+				stateRef.current = {
+					...currentState,
+					cursorOffset: newOffset,
+					cursorWidth: 0,
+				};
+				continue;
 			}
 
 			if (key.end) {
-				const currentValue = valueRef.current;
-				const currentCursorOffset = cursorOffsetRef.current;
 				const { lineIndex } = getLinePosition(currentValue, currentCursorOffset);
 				const lineLength = getLineLength(currentValue, lineIndex);
 				const newOffset = getCursorOffsetFromLinePosition(currentValue, lineIndex, lineLength);
 
-				valueRef.current = currentValue;
-				cursorOffsetRef.current = newOffset;
-				setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-				return;
+				stateRef.current = {
+					...currentState,
+					cursorOffset: newOffset,
+					cursorWidth: 0,
+				};
+				continue;
 			}
 
 			if (key.ctrl && key.leftArrow) {
-				const currentValue = valueRef.current;
-				const currentCursorOffset = cursorOffsetRef.current;
 				const newOffset = getPreviousWordBoundary(currentValue, currentCursorOffset);
 
-				valueRef.current = currentValue;
-				cursorOffsetRef.current = newOffset;
-				setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-				return;
+				stateRef.current = {
+					...currentState,
+					cursorOffset: newOffset,
+					cursorWidth: 0,
+				};
+				continue;
 			}
 
 			if (key.ctrl && key.rightArrow) {
-				const currentValue = valueRef.current;
-				const currentCursorOffset = cursorOffsetRef.current;
 				const newOffset = getNextWordBoundary(currentValue, currentCursorOffset);
 
-				valueRef.current = currentValue;
-				cursorOffsetRef.current = newOffset;
-				setState({ cursorOffset: newOffset, cursorWidth: 0 });
-
-				return;
+				stateRef.current = {
+					...currentState,
+					cursorOffset: newOffset,
+					cursorWidth: 0,
+				};
+				continue;
 			}
 
 			if (key.shift && key.tab) {
 				onShiftTab?.();
-
-				return;
+				continue;
 			}
 
 			if (key.tab) {
 				onTab?.();
-
-				return;
+				continue;
 			}
 
 			if (key.ctrl && input === "c") {
-				return;
+				continue;
 			}
-
-			const currentValue = valueRef.current;
-			const currentCursorOffset = cursorOffsetRef.current;
 
 			if (key.return) {
 				if (key.ctrl || key.meta) {
-					return;
+					continue;
 				}
 
 				if (onSubmit) {
 					onSubmit(currentValue);
 				}
 
-				return;
+				continue;
 			}
 
 			if (
@@ -509,14 +571,13 @@ export function TextInput({
 			) {
 				if (input === "q" && onQuit) {
 					onQuit();
-
-					return;
+					continue;
 				}
 
 				const wasHandled = handleVimInput(input, false);
 
 				if (wasHandled) {
-					return;
+					continue;
 				}
 			}
 
@@ -533,8 +594,7 @@ export function TextInput({
 
 				if (isAtEnd && onArrowRight) {
 					onArrowRight();
-
-					return;
+					continue;
 				}
 
 				if (showCursor) {
@@ -588,17 +648,42 @@ export function TextInput({
 				nextCursorOffset = nextValue.length;
 			}
 
-			valueRef.current = nextValue;
-			cursorOffsetRef.current = nextCursorOffset;
-
-			setState({
+			stateRef.current = {
+				value: nextValue,
 				cursorOffset: nextCursorOffset,
 				cursorWidth: nextCursorWidth,
-			});
+			};
 
 			if (nextValue !== currentValue) {
-				onChange(nextValue);
+				pendingOnChangeRef.current = nextValue;
 			}
+		}
+
+		isProcessingRef.current = false;
+		syncStateToRender();
+	}, [
+		isVimModeEnabled,
+		vimCurrentMode,
+		handleVimInput,
+		onArrowUp,
+		onArrowDown,
+		onShiftTab,
+		onTab,
+		onSubmit,
+		onQuit,
+		onArrowRight,
+		showCursor,
+		collapsePastedText,
+		pastedSegments,
+		onPaste,
+		syncStateToRender,
+	]);
+
+	useInput(
+		(input, key) => {
+			inputQueueRef.current.push({ input, key });
+
+			queueMicrotask(processInputQueue);
 		},
 		{ isActive: focus },
 	);
