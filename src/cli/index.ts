@@ -5,6 +5,7 @@ export {
 	handleDependencyRemove,
 	handleDependencySet,
 	handleGuardrailsAdd,
+	handleGuardrailsGenerate,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
 	handleMemoryClear,

@@ -9,6 +9,7 @@ import {
 	handleDependencyRemove,
 	handleDependencySet,
 	handleGuardrailsAdd,
+	handleGuardrailsGenerate,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
 	handleMemoryClear,
@@ -168,6 +169,7 @@ function main(): void {
 		skipVerification,
 		guardrailsSubcommand,
 		guardrailsArg,
+		guardrailsGenerateOptions,
 		analyzeSubcommand,
 		memorySubcommand,
 		projectsSubcommand,
@@ -304,6 +306,9 @@ function main(): void {
 					break;
 				case "toggle":
 					handleGuardrailsToggle(guardrailsArg ?? "");
+					break;
+				case "generate":
+					handleGuardrailsGenerate(guardrailsGenerateOptions ?? {}, json);
 					break;
 				default:
 					printGuardrails(VERSION, json);

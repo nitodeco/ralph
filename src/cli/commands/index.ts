@@ -15,6 +15,7 @@ export {
 } from "./dependency.ts";
 export {
 	handleGuardrailsAdd,
+	handleGuardrailsGenerate,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
 	printGuardrails,

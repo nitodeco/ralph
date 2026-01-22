@@ -5,6 +5,7 @@ import type {
 	DependencyModifyOptions,
 	DependencySetOptions,
 	DependencySubcommand,
+	GuardrailsGenerateOptions,
 	GuardrailsSubcommand,
 	MemorySubcommand,
 	ParsedArgs,
@@ -15,7 +16,13 @@ import type {
 	TaskSubcommand,
 } from "@/types.ts";
 
-const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = ["list", "add", "remove", "toggle"];
+const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = [
+	"list",
+	"add",
+	"remove",
+	"toggle",
+	"generate",
+];
 const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
 const VALID_MEMORY_SUBCOMMANDS: MemorySubcommand[] = ["list", "clear", "export"];
 const VALID_PROJECTS_SUBCOMMANDS: ProjectsSubcommand[] = ["list", "current", "prune"];
@@ -169,13 +176,21 @@ export function parseArgs(args: string[]): ParsedArgs {
 
 	let guardrailsSubcommand: GuardrailsSubcommand | undefined;
 	let guardrailsArg: string | undefined;
+	let guardrailsGenerateOptions: GuardrailsGenerateOptions | undefined;
 
 	if (command === "guardrails") {
 		const subcommand = filteredArgs[1] as GuardrailsSubcommand | undefined;
 
 		if (subcommand && VALID_GUARDRAILS_SUBCOMMANDS.includes(subcommand)) {
 			guardrailsSubcommand = subcommand;
-			guardrailsArg = filteredArgs.slice(2).join(" ");
+
+			if (subcommand === "generate") {
+				guardrailsGenerateOptions = {
+					apply: relevantArgs.includes("--apply"),
+				};
+			} else {
+				guardrailsArg = filteredArgs.slice(2).join(" ");
+			}
 		} else if (subcommand && !subcommand.startsWith("-")) {
 			guardrailsSubcommand = "add";
 			guardrailsArg = filteredArgs.slice(1).join(" ");
@@ -317,6 +332,7 @@ export function parseArgs(args: string[]): ParsedArgs {
 		skipVerification,
 		guardrailsSubcommand,
 		guardrailsArg,
+		guardrailsGenerateOptions,
 		analyzeSubcommand,
 		memorySubcommand,
 		projectsSubcommand,

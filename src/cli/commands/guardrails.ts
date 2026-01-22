@@ -1,4 +1,10 @@
+import {
+	type AnalysisReport,
+	formatAnalysisReport,
+	generateAnalysisReport,
+} from "@/lib/codebase-analyzer.ts";
 import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
+import type { GuardrailsGenerateOptions } from "@/types.ts";
 
 interface GuardrailsOutput {
 	guardrails: PromptGuardrail[];
@@ -101,5 +107,74 @@ export function handleGuardrailsToggle(guardrailId: string): void {
 	} else {
 		console.error(`\x1b[31mError:\x1b[0m Guardrail not found: ${guardrailId}`);
 		process.exit(1);
+	}
+}
+
+interface GuardrailsGenerateOutput {
+	analysis: AnalysisReport["analysis"];
+	suggestedGuardrails: PromptGuardrail[];
+	applied: boolean;
+	addedCount: number;
+	summary: AnalysisReport["summary"];
+}
+
+export function handleGuardrailsGenerate(
+	options: GuardrailsGenerateOptions,
+	jsonOutput: boolean,
+): void {
+	const report = generateAnalysisReport(process.cwd());
+
+	if (jsonOutput) {
+		const addedCount = options.apply ? report.suggestedGuardrails.length : 0;
+
+		if (options.apply) {
+			const guardrailsService = getGuardrailsService();
+
+			for (const guardrail of report.suggestedGuardrails) {
+				guardrailsService.add({
+					instruction: guardrail.instruction,
+					trigger: guardrail.trigger,
+					category: guardrail.category,
+					enabled: guardrail.enabled,
+					addedAfterFailure: guardrail.addedAfterFailure,
+				});
+			}
+		}
+
+		const output: GuardrailsGenerateOutput = {
+			analysis: report.analysis,
+			suggestedGuardrails: report.suggestedGuardrails,
+			applied: options.apply ?? false,
+			addedCount,
+			summary: report.summary,
+		};
+
+		console.log(JSON.stringify(output, null, 2));
+
+		return;
+	}
+
+	console.log(formatAnalysisReport(report));
+
+	if (options.apply) {
+		if (report.suggestedGuardrails.length === 0) {
+			console.log("\nNo guardrails to add.");
+
+			return;
+		}
+
+		const guardrailsService = getGuardrailsService();
+
+		for (const guardrail of report.suggestedGuardrails) {
+			guardrailsService.add({
+				instruction: guardrail.instruction,
+				trigger: guardrail.trigger,
+				category: guardrail.category,
+				enabled: guardrail.enabled,
+				addedAfterFailure: guardrail.addedAfterFailure,
+			});
+		}
+
+		console.log(`\n\x1b[32m✓\x1b[0m Added ${report.suggestedGuardrails.length} guardrail(s)`);
 	}
 }

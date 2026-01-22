@@ -47,6 +47,7 @@ export type {
 	DependencyModifyOptions,
 	DependencySetOptions,
 	DependencySubcommand,
+	GuardrailsGenerateOptions,
 	GuardrailsSubcommand,
 	MemorySubcommand,
 	ParsedArgs,

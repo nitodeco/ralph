@@ -20,6 +20,7 @@ export type {
 	FailureHistoryEntry,
 	FailurePattern,
 	GuardrailCategory,
+	GuardrailsGenerateOptions,
 	GuardrailsSubcommand,
 	GuardrailTrigger,
 	IterationLog,

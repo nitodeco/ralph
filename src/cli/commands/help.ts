@@ -54,6 +54,14 @@ Progress Subcommands:
   progress add <text>  Add a progress note
   progress clear    Clear all progress notes
 
+Guardrails Subcommands:
+  guardrails               List all guardrails (default)
+  guardrails add <text>    Add a new guardrail
+  guardrails remove <id>   Remove a guardrail by ID
+  guardrails toggle <id>   Enable/disable a guardrail
+  guardrails generate      Auto-generate guardrails from codebase analysis
+  guardrails generate --apply  Generate and immediately add guardrails
+
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)
   --dry-run              Simulate agent execution without running agents (validates PRD/config)

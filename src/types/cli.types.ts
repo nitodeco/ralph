@@ -26,7 +26,12 @@ export type Command =
 	| "-h"
 	| "--help";
 
-export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle";
+export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle" | "generate";
+
+export interface GuardrailsGenerateOptions {
+	apply?: boolean;
+}
+
 export type AnalyzeSubcommand = "patterns" | "export" | "clear";
 export type MemorySubcommand = "list" | "clear" | "export";
 export type ProjectsSubcommand = "list" | "current" | "prune";
@@ -87,6 +92,7 @@ export interface ParsedArgs {
 	skipVerification: boolean;
 	guardrailsSubcommand?: GuardrailsSubcommand;
 	guardrailsArg?: string;
+	guardrailsGenerateOptions?: GuardrailsGenerateOptions;
 	analyzeSubcommand?: AnalyzeSubcommand;
 	memorySubcommand?: MemorySubcommand;
 	projectsSubcommand?: ProjectsSubcommand;
