@@ -1,5 +1,6 @@
 import type { ConfigService } from "./config/types.ts";
 import type { GitBranchService } from "./git-branch/types.ts";
+import type { GitProviderService } from "./git-provider/types.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import type { PrdService } from "./prd/types.ts";
 import type { ProjectRegistryService } from "./project-registry/types.ts";
@@ -20,6 +21,7 @@ export interface ServiceContainer {
 	sleepPrevention: SleepPreventionService;
 	usageStatistics: UsageStatisticsService;
 	gitBranch: GitBranchService;
+	gitProvider: GitProviderService;
 }
 
 let container: ServiceContainer | null = null;
@@ -88,4 +90,8 @@ export function getUsageStatisticsService(): UsageStatisticsService {
 
 export function getGitBranchService(): GitBranchService {
 	return getServices().gitBranch;
+}
+
+export function getGitProviderService(): GitProviderService {
+	return getServices().gitProvider;
 }

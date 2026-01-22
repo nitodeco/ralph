@@ -50,6 +50,21 @@ export interface BranchModeConfig {
 	returnToBaseBranch?: boolean;
 }
 
+export interface GitProviderAuthConfig {
+	token?: string;
+	apiUrl?: string;
+}
+
+export interface GitProviderConfig {
+	github?: GitProviderAuthConfig;
+	gitlab?: GitProviderAuthConfig;
+	bitbucket?: GitProviderAuthConfig;
+	autoCreatePr?: boolean;
+	prDraft?: boolean;
+	prLabels?: string[];
+	prReviewers?: string[];
+}
+
 export interface RalphConfig {
 	agent: AgentType;
 	lastUpdateCheck?: number;
@@ -70,6 +85,7 @@ export interface RalphConfig {
 	learningEnabled?: boolean;
 	workflowMode?: WorkflowMode;
 	branchMode?: BranchModeConfig;
+	gitProvider?: GitProviderConfig;
 }
 
 export interface ConfigValidationError {

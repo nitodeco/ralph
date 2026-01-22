@@ -1,4 +1,10 @@
-import type { AgentType, BranchModeConfig, RalphConfig, VerificationConfig } from "./types.ts";
+import type {
+	AgentType,
+	BranchModeConfig,
+	GitProviderConfig,
+	RalphConfig,
+	VerificationConfig,
+} from "./types.ts";
 
 export const DEFAULTS = {
 	agent: "cursor" as const,
@@ -29,6 +35,11 @@ export const DEFAULT_BRANCH_MODE: BranchModeConfig = {
 	returnToBaseBranch: true,
 };
 
+export const DEFAULT_GIT_PROVIDER: GitProviderConfig = {
+	autoCreatePr: false,
+	prDraft: true,
+};
+
 export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "skipVersion">> = {
 	agent: DEFAULTS.agent,
 	maxRetries: DEFAULTS.maxRetries,
@@ -57,6 +68,7 @@ export const CONFIG_DEFAULTS: Required<Omit<RalphConfig, "lastUpdateCheck" | "sk
 	learningEnabled: DEFAULTS.learningEnabled,
 	workflowMode: "standard",
 	branchMode: DEFAULT_BRANCH_MODE,
+	gitProvider: DEFAULT_GIT_PROVIDER,
 };
 
 export const DEFAULT_CONFIG: RalphConfig = {

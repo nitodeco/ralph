@@ -38,6 +38,8 @@ export type {
 	ConfigService,
 	ConfigValidationError,
 	ConfigValidationResult,
+	GitProviderAuthConfig,
+	GitProviderConfig as RalphGitProviderConfig,
 	MemoryConfig,
 	NotificationConfig,
 	NotificationEvent,
@@ -51,6 +53,7 @@ export { isPartialRalphConfig, isRalphConfig, validateConfig } from "./config/va
 export {
 	getConfigService,
 	getGitBranchService,
+	getGitProviderService,
 	getGuardrailsService,
 	getPrdService,
 	getProjectRegistryService,
@@ -73,6 +76,24 @@ export type {
 	GitBranchService,
 	WorkingDirectoryStatus,
 } from "./git-branch/types.ts";
+export {
+	createGitProviderService,
+	type ProviderFactory,
+	registerProvider,
+	unregisterProvider,
+} from "./git-provider/implementation.ts";
+export type {
+	GitProvider,
+	GitProviderConfig,
+	GitProviderService,
+	GitProviderType,
+	ProviderOperationResult,
+	PullRequest,
+	PullRequestCreateOptions,
+	PullRequestState,
+	PullRequestUpdateOptions,
+	RemoteInfo,
+} from "./git-provider/types.ts";
 export { createDefaultGuardrails } from "./guardrails/defaults.ts";
 export { formatGuardrailsForPrompt } from "./guardrails/formatters.ts";
 export { createGuardrailsService } from "./guardrails/implementation.ts";

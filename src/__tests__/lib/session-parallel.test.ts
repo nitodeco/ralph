@@ -393,6 +393,18 @@ function createMockServices(
 				message: "Stash popped successfully",
 			}),
 		},
+		gitProvider: {
+			detectProvider: (remoteUrl: string) => ({
+				provider: remoteUrl.includes("github.com") ? ("github" as const) : ("none" as const),
+				owner: "test-owner",
+				repo: "test-repo",
+				hostname: "github.com",
+			}),
+			getProvider: () => null,
+			getProviderForRemote: () => null,
+			isProviderConfigured: () => false,
+			getSupportedProviders: () => [],
+		},
 	};
 }
 

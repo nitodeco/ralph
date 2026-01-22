@@ -5,6 +5,8 @@ import type { ConfigService } from "./config/types.ts";
 import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
 import { createGitBranchService } from "./git-branch/implementation.ts";
 import type { GitBranchService } from "./git-branch/types.ts";
+import { createGitProviderService } from "./git-provider/implementation.ts";
+import type { GitProviderService } from "./git-provider/types.ts";
 import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
@@ -40,6 +42,7 @@ export function bootstrapServices(): void {
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
+		gitProvider: createGitProviderService(),
 	});
 }
 
@@ -54,6 +57,7 @@ export interface TestServiceOverrides {
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
+	gitProvider?: Partial<GitProviderService>;
 }
 
 function createMockProjectRegistryService(
@@ -476,6 +480,24 @@ function createMockGitBranchService(overrides: Partial<GitBranchService> = {}): 
 	};
 }
 
+function createMockGitProviderService(
+	overrides: Partial<GitProviderService> = {},
+): GitProviderService {
+	return {
+		detectProvider: (remoteUrl) => ({
+			provider: remoteUrl.includes("github.com") ? "github" : "none",
+			owner: "test-owner",
+			repo: "test-repo",
+			hostname: "github.com",
+		}),
+		getProvider: () => null,
+		getProviderForRemote: () => null,
+		isProviderConfigured: () => false,
+		getSupportedProviders: () => [],
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -490,6 +512,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),
+		gitProvider: createMockGitProviderService(overrides.gitProvider),
 	};
 
 	initializeServices(testContainer);
