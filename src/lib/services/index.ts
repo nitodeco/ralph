@@ -1,5 +1,5 @@
 export { getProjectConfigPath } from "../paths.ts";
-export { AgentProcessManager } from "./AgentProcessManager.ts";
+export { AgentProcessManager, type ProcessEntry, type ProcessInfo } from "./AgentProcessManager.ts";
 export {
 	bootstrapServices,
 	bootstrapTestServices,

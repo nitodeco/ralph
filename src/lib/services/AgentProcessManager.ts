@@ -1,53 +1,131 @@
 import type { Subprocess } from "bun";
 import { FORCE_KILL_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 
-class AgentProcessManagerClass {
-	private process: Subprocess | null = null;
-	private processId: number | null = null;
-	private aborted = false;
-	private retryCount = 0;
-	private forceKillTimeout: ReturnType<typeof setTimeout> | null = null;
-	private pendingKillTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
+const DEFAULT_PROCESS_ID = "__default__";
 
-	getProcess(): Subprocess | null {
-		return this.process;
+export interface ProcessEntry {
+	process: Subprocess;
+	processId: number;
+	aborted: boolean;
+	retryCount: number;
+	forceKillTimeout: ReturnType<typeof setTimeout> | null;
+	createdAt: number;
+}
+
+export interface ProcessInfo {
+	id: string;
+	processId: number;
+	isAlive: boolean;
+	aborted: boolean;
+	retryCount: number;
+	createdAt: number;
+}
+
+class AgentProcessManagerClass {
+	private processes: Map<string, ProcessEntry> = new Map();
+	private pendingKillTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
+	private globalAborted = false;
+
+	getProcess(id: string = DEFAULT_PROCESS_ID): Subprocess | null {
+		return this.processes.get(id)?.process ?? null;
 	}
 
-	setProcess(process: Subprocess | null): void {
-		if (process !== null && this.process !== null && this.process !== process) {
-			this.safeKillProcess(this.process);
+	setProcess(process: Subprocess | null, id: string = DEFAULT_PROCESS_ID): void {
+		const existingEntry = this.processes.get(id);
+
+		if (process === null) {
+			if (existingEntry) {
+				this.cleanupEntry(id, existingEntry);
+				this.processes.delete(id);
+			}
+
+			return;
 		}
 
-		this.process = process;
-		this.processId = process?.pid ?? null;
+		if (existingEntry && existingEntry.process !== process) {
+			this.safeKillProcess(existingEntry.process);
+			this.cleanupEntry(id, existingEntry);
+		}
+
+		this.processes.set(id, {
+			process,
+			processId: process.pid,
+			aborted: false,
+			retryCount: existingEntry?.retryCount ?? 0,
+			forceKillTimeout: null,
+			createdAt: Date.now(),
+		});
 	}
 
-	getProcessId(): number | null {
-		return this.processId;
+	registerProcess(id: string, process: Subprocess): void {
+		this.setProcess(process, id);
 	}
 
-	isProcessAlive(): boolean {
-		if (this.process === null) {
+	unregisterProcess(id: string): void {
+		this.setProcess(null, id);
+	}
+
+	getProcessById(id: string): Subprocess | null {
+		return this.getProcess(id);
+	}
+
+	getAllProcessIds(): string[] {
+		return [...this.processes.keys()];
+	}
+
+	getAllProcessInfo(): ProcessInfo[] {
+		return [...this.processes.entries()].map(([id, entry]) => ({
+			id,
+			processId: entry.processId,
+			isAlive: this.isProcessAliveById(id),
+			aborted: entry.aborted,
+			retryCount: entry.retryCount,
+			createdAt: entry.createdAt,
+		}));
+	}
+
+	getActiveProcessCount(): number {
+		let activeCount = 0;
+
+		for (const [id] of this.processes) {
+			if (this.isProcessAliveById(id)) {
+				activeCount++;
+			}
+		}
+
+		return activeCount;
+	}
+
+	getProcessId(id: string = DEFAULT_PROCESS_ID): number | null {
+		return this.processes.get(id)?.processId ?? null;
+	}
+
+	private isProcessAliveById(id: string): boolean {
+		const entry = this.processes.get(id);
+
+		if (!entry) {
 			return false;
 		}
 
 		try {
-			if (this.process.exitCode !== null) {
-				return false;
-			}
-
-			return true;
+			return entry.process.exitCode === null;
 		} catch {
 			return false;
 		}
 	}
 
-	validateProcessState(): { isValid: boolean; reason?: string } {
-		if (this.process === null && this.processId !== null) {
-			return { isValid: false, reason: "Process reference lost but PID still tracked" };
+	isProcessAlive(id: string = DEFAULT_PROCESS_ID): boolean {
+		return this.isProcessAliveById(id);
+	}
+
+	validateProcessState(id: string = DEFAULT_PROCESS_ID): { isValid: boolean; reason?: string } {
+		const entry = this.processes.get(id);
+
+		if (!entry) {
+			return { isValid: true };
 		}
 
-		if (this.process !== null && this.process.pid !== this.processId) {
+		if (entry.process.pid !== entry.processId) {
 			return { isValid: false, reason: "Process PID mismatch" };
 		}
 
@@ -74,6 +152,12 @@ class AgentProcessManagerClass {
 		this.pendingKillTimeouts.add(killTimeout);
 	}
 
+	private cleanupEntry(_id: string, entry: ProcessEntry): void {
+		if (entry.forceKillTimeout) {
+			clearTimeout(entry.forceKillTimeout);
+		}
+	}
+
 	clearPendingKillTimeouts(): void {
 		for (const timeout of this.pendingKillTimeouts) {
 			clearTimeout(timeout);
@@ -82,81 +166,177 @@ class AgentProcessManagerClass {
 		this.pendingKillTimeouts.clear();
 	}
 
-	isAborted(): boolean {
-		return this.aborted;
+	isAborted(id: string = DEFAULT_PROCESS_ID): boolean {
+		if (this.globalAborted) {
+			return true;
+		}
+
+		const entry = this.processes.get(id);
+
+		return entry?.aborted ?? false;
 	}
 
-	setAborted(value: boolean): void {
-		this.aborted = value;
-	}
+	setAborted(value: boolean, id?: string): void {
+		if (id === undefined) {
+			this.globalAborted = value;
 
-	getRetryCount(): number {
-		return this.retryCount;
-	}
-
-	incrementRetry(): number {
-		this.retryCount += 1;
-
-		return this.retryCount;
-	}
-
-	resetRetry(): void {
-		this.retryCount = 0;
-	}
-
-	isRunning(): boolean {
-		return this.process !== null && this.isProcessAlive();
-	}
-
-	kill(): void {
-		this.aborted = true;
-		this.clearForceKillTimeout();
-
-		if (this.process) {
-			const processToKill = this.process;
-			const pidToKill = this.processId;
-
-			try {
-				processToKill.kill("SIGTERM");
-			} catch {
-				// Process may have already exited, ignore
+			if (value) {
+				for (const entry of this.processes.values()) {
+					entry.aborted = true;
+				}
 			}
 
-			this.forceKillTimeout = setTimeout(() => {
-				if (this.processId === pidToKill && processToKill) {
-					try {
-						processToKill.kill("SIGKILL");
-					} catch {
-						// Process may have already exited, ignore
-					}
+			return;
+		}
+
+		const entry = this.processes.get(id);
+
+		if (entry) {
+			entry.aborted = value;
+		}
+	}
+
+	isGloballyAborted(): boolean {
+		return this.globalAborted;
+	}
+
+	getRetryCount(id: string = DEFAULT_PROCESS_ID): number {
+		return this.processes.get(id)?.retryCount ?? 0;
+	}
+
+	incrementRetry(id: string = DEFAULT_PROCESS_ID): number {
+		const entry = this.processes.get(id);
+
+		if (entry) {
+			entry.retryCount += 1;
+
+			return entry.retryCount;
+		}
+
+		return 0;
+	}
+
+	resetRetry(id: string = DEFAULT_PROCESS_ID): void {
+		const entry = this.processes.get(id);
+
+		if (entry) {
+			entry.retryCount = 0;
+		}
+	}
+
+	isRunning(id: string = DEFAULT_PROCESS_ID): boolean {
+		return this.isProcessAliveById(id);
+	}
+
+	isAnyRunning(): boolean {
+		for (const [id] of this.processes) {
+			if (this.isProcessAliveById(id)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	kill(id: string = DEFAULT_PROCESS_ID): void {
+		const entry = this.processes.get(id);
+
+		if (!entry) {
+			return;
+		}
+
+		entry.aborted = true;
+
+		if (entry.forceKillTimeout) {
+			clearTimeout(entry.forceKillTimeout);
+			entry.forceKillTimeout = null;
+		}
+
+		const processToKill = entry.process;
+		const pidToKill = entry.processId;
+
+		try {
+			processToKill.kill("SIGTERM");
+		} catch {
+			// Process may have already exited, ignore
+		}
+
+		entry.forceKillTimeout = setTimeout(() => {
+			const currentEntry = this.processes.get(id);
+
+			if (currentEntry && currentEntry.processId === pidToKill) {
+				try {
+					processToKill.kill("SIGKILL");
+				} catch {
+					// Process may have already exited, ignore
 				}
 
-				this.forceKillTimeout = null;
-			}, FORCE_KILL_TIMEOUT_MS);
+				currentEntry.forceKillTimeout = null;
+			}
+		}, FORCE_KILL_TIMEOUT_MS);
 
-			this.process = null;
-			this.processId = null;
+		this.processes.delete(id);
+	}
+
+	killAll(): void {
+		this.globalAborted = true;
+
+		for (const [id] of this.processes) {
+			this.kill(id);
 		}
 	}
 
-	clearForceKillTimeout(): void {
-		if (this.forceKillTimeout) {
-			clearTimeout(this.forceKillTimeout);
-			this.forceKillTimeout = null;
+	clearForceKillTimeout(id: string = DEFAULT_PROCESS_ID): void {
+		const entry = this.processes.get(id);
+
+		if (entry?.forceKillTimeout) {
+			clearTimeout(entry.forceKillTimeout);
+			entry.forceKillTimeout = null;
 		}
 	}
 
-	reset(): void {
-		if (this.process && this.isProcessAlive()) {
-			this.safeKillProcess(this.process);
+	clearAllForceKillTimeouts(): void {
+		for (const entry of this.processes.values()) {
+			if (entry.forceKillTimeout) {
+				clearTimeout(entry.forceKillTimeout);
+				entry.forceKillTimeout = null;
+			}
+		}
+	}
+
+	reset(id?: string): void {
+		if (id === undefined) {
+			for (const [processId, entry] of this.processes) {
+				if (this.isProcessAliveById(processId)) {
+					this.safeKillProcess(entry.process);
+				}
+
+				this.cleanupEntry(processId, entry);
+			}
+
+			this.processes.clear();
+			this.globalAborted = false;
+			this.clearPendingKillTimeouts();
+
+			return;
 		}
 
-		this.aborted = false;
-		this.retryCount = 0;
-		this.clearForceKillTimeout();
-		this.clearPendingKillTimeouts();
-		this.processId = null;
-		this.process = null;
+		const entry = this.processes.get(id);
+
+		if (!entry) {
+			return;
+		}
+
+		if (this.isProcessAliveById(id)) {
+			this.safeKillProcess(entry.process);
+		}
+
+		this.cleanupEntry(id, entry);
+		this.processes.delete(id);
+	}
+
+	resetAll(): void {
+		this.reset();
 	}
 }
 
