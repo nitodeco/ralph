@@ -119,3 +119,15 @@ export function reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd {
 
 	return { ...prd, tasks: updatedTasks };
 }
+
+export function updateTask(prd: Prd, taskIndex: number, updatedTask: PrdTask): Prd {
+	if (taskIndex < 0 || taskIndex >= prd.tasks.length) {
+		return prd;
+	}
+
+	const updatedTasks = prd.tasks.map((currentTask, index) =>
+		index === taskIndex ? updatedTask : currentTask,
+	);
+
+	return { ...prd, tasks: updatedTasks };
+}
