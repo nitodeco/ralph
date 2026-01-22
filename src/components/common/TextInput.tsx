@@ -158,6 +158,7 @@ export interface TextInputProps {
 	readonly onShiftTab?: () => void;
 	readonly onArrowRight?: () => void;
 	readonly onQuit?: () => void;
+	readonly onEscape?: () => void;
 	readonly vimMode?: boolean;
 	readonly showVimModeIndicator?: boolean;
 	readonly onVimModeChange?: (mode: VimMode) => void;
@@ -222,6 +223,7 @@ export function TextInput({
 	onShiftTab,
 	onArrowRight,
 	onQuit,
+	onEscape,
 	vimMode: isVimModeEnabled = false,
 	showVimModeIndicator = true,
 	onVimModeChange,
@@ -411,6 +413,11 @@ export function TextInput({
 
 			if (isVimModeEnabled && isEscape) {
 				handleVimInput("", true);
+				continue;
+			}
+
+			if (!isVimModeEnabled && isEscape && onEscape) {
+				onEscape();
 				continue;
 			}
 
@@ -671,6 +678,7 @@ export function TextInput({
 		onTab,
 		onSubmit,
 		onQuit,
+		onEscape,
 		onArrowRight,
 		showCursor,
 		collapsePastedText,

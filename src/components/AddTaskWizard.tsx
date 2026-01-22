@@ -225,6 +225,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 								value={inputValue}
 								onChange={setInputValue}
 								onSubmit={handleDescriptionSubmit}
+								onEscape={handleExit}
 								placeholder="I want to add..."
 								collapsePastedText
 								pastedSegments={pastedSegments}
@@ -232,6 +233,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 							/>
 						</Box>
 					</Box>
+					<Text dimColor>Esc Cancel</Text>
 				</Box>
 			))
 			.with("generating", () => (
