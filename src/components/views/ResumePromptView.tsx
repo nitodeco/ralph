@@ -1,4 +1,6 @@
 import { Box, Text } from "ink";
+import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import type { RalphConfig, Session } from "@/types.ts";
 import { type CommandArgs, CommandInput, type SlashCommand } from "../CommandInput.tsx";
 import { Message } from "../common/Message.tsx";
@@ -28,6 +30,36 @@ function formatElapsedTime(seconds: number): string {
 	return `${secs}s`;
 }
 
+function ResumePromptHeader({
+	version,
+	config,
+	projectName,
+}: {
+	version: string;
+	config: RalphConfig | null;
+	projectName?: string;
+}): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+	const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+
+	return (
+		<Header
+			version={version}
+			agent={config?.agent}
+			projectName={projectName}
+			variant={headerVariant}
+		/>
+	);
+}
+
+function ResumePromptFooter({
+	onCommand,
+}: {
+	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
+}): React.ReactElement {
+	return <CommandInput onCommand={onCommand} />;
+}
+
 export function ResumePromptView({
 	version,
 	config,
@@ -38,34 +70,40 @@ export function ResumePromptView({
 	const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Header version={version} agent={config?.agent} projectName={projectName} />
-			<Box flexDirection="column" marginY={1} paddingX={1} gap={1}>
-				<Message type="info">Found an existing session</Message>
-				<Box flexDirection="column" paddingLeft={2}>
-					<Text>
-						<Text dimColor>Iterations completed:</Text>{" "}
-						<Text color="cyan">{pendingSession.currentIteration}</Text>
-						<Text dimColor> / </Text>
-						<Text>{pendingSession.totalIterations}</Text>
-					</Text>
-					<Text>
-						<Text dimColor>Elapsed time:</Text>{" "}
-						<Text color="cyan">{formatElapsedTime(pendingSession.elapsedTimeSeconds)}</Text>
-					</Text>
-					<Text>
-						<Text dimColor>Remaining iterations:</Text>{" "}
-						<Text color="cyan">{remainingIterations > 0 ? remainingIterations : 0}</Text>
-					</Text>
-				</Box>
-				<Box marginTop={1}>
-					<Text>
-						Type <Text color="cyan">/resume</Text> to continue or <Text color="yellow">/start</Text>{" "}
-						to start fresh
-					</Text>
-				</Box>
-			</Box>
-			<CommandInput onCommand={onCommand} />
-		</Box>
+		<ResponsiveLayout
+			header={<ResumePromptHeader version={version} config={config} projectName={projectName} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1} gap={1}>
+						<Message type="info">Found an existing session</Message>
+						<Box flexDirection="column" paddingLeft={2}>
+							<Text>
+								<Text dimColor>Iterations completed:</Text>{" "}
+								<Text color="cyan">{pendingSession.currentIteration}</Text>
+								<Text dimColor> / </Text>
+								<Text>{pendingSession.totalIterations}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Elapsed time:</Text>{" "}
+								<Text color="cyan">{formatElapsedTime(pendingSession.elapsedTimeSeconds)}</Text>
+							</Text>
+							<Text>
+								<Text dimColor>Remaining iterations:</Text>{" "}
+								<Text color="cyan">{remainingIterations > 0 ? remainingIterations : 0}</Text>
+							</Text>
+						</Box>
+						<Box marginTop={1}>
+							<Text>
+								Type <Text color="cyan">/resume</Text> to continue or{" "}
+								<Text color="yellow">/start</Text> to start fresh
+							</Text>
+						</Box>
+					</Box>
+				</ScrollableContent>
+			}
+			footer={<ResumePromptFooter onCommand={onCommand} />}
+			headerHeight={10}
+			footerHeight={2}
+		/>
 	);
 }

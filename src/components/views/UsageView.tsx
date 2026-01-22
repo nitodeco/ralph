@@ -1,5 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { getUsageStatisticsService } from "@/lib/services/index.ts";
 import { Header } from "../Header.tsx";
 
@@ -24,6 +26,22 @@ function formatDuration(ms: number): string {
 	}
 
 	return `${seconds}s`;
+}
+
+function UsageHeader({ version }: { version: string }): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+	const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+
+	return <Header version={version} variant={headerVariant} />;
+}
+
+function UsageFooter(): React.ReactElement {
+	return (
+		<Box paddingX={1} flexDirection="column">
+			<Text dimColor>Press q or Escape to close</Text>
+			<Text dimColor>Use ←/→ to switch tabs</Text>
+		</Box>
+	);
 }
 
 export const UsageView: React.FC<UsageViewProps> = ({ version, onClose }) => {
@@ -205,47 +223,49 @@ export const UsageView: React.FC<UsageViewProps> = ({ version, onClose }) => {
 	};
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Header version={version} />
+		<ResponsiveLayout
+			header={<UsageHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1}>
+						<Box flexDirection="column">
+							<Text bold color="cyan">
+								Usage Statistics: {statistics.projectName}
+							</Text>
+							{hasUsage && <Text dimColor>Last updated: {statistics.lastUpdatedAt}</Text>}
+						</Box>
 
-			<Box flexDirection="column" marginTop={1}>
-				<Text bold color="cyan">
-					Usage Statistics: {statistics.projectName}
-				</Text>
-				{hasUsage && <Text dimColor>Last updated: {statistics.lastUpdatedAt}</Text>}
-			</Box>
+						<Box marginTop={1} gap={2}>
+							{tabs.map((tab) => (
+								<Box key={tab.key}>
+									<Text
+										bold={activeTab === tab.key}
+										color={activeTab === tab.key ? "cyan" : undefined}
+										dimColor={activeTab !== tab.key}
+									>
+										{activeTab === tab.key ? "▸ " : "  "}
+										{tab.label}
+									</Text>
+								</Box>
+							))}
+						</Box>
 
-			<Box marginTop={1} gap={2}>
-				{tabs.map((tab) => (
-					<Box key={tab.key}>
-						<Text
-							bold={activeTab === tab.key}
-							color={activeTab === tab.key ? "cyan" : undefined}
-							dimColor={activeTab !== tab.key}
+						<Box
+							flexDirection="column"
+							marginTop={1}
+							borderStyle="round"
+							borderColor="gray"
+							paddingX={1}
+							paddingY={1}
 						>
-							{activeTab === tab.key ? "▸ " : "  "}
-							{tab.label}
-						</Text>
+							{renderTabContent()}
+						</Box>
 					</Box>
-				))}
-			</Box>
-
-			<Box
-				flexDirection="column"
-				marginTop={1}
-				borderStyle="round"
-				borderColor="gray"
-				paddingX={1}
-				paddingY={1}
-				minHeight={10}
-			>
-				{renderTabContent()}
-			</Box>
-
-			<Box marginTop={1} flexDirection="column">
-				<Text dimColor>Press q or Escape to close</Text>
-				<Text dimColor>Use ←/→ to switch tabs</Text>
-			</Box>
-		</Box>
+				</ScrollableContent>
+			}
+			footer={<UsageFooter />}
+			headerHeight={10}
+			footerHeight={3}
+		/>
 	);
 };

@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
+import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { getProjectRegistryService } from "@/lib/services/index.ts";
 import type { ProjectMetadata } from "@/lib/services/project-registry/types.ts";
 import { Header } from "../Header.tsx";
@@ -64,6 +66,46 @@ function isCurrentProject(project: ProjectMetadata): boolean {
 	const cwd = process.cwd();
 
 	return project.lastKnownPath === cwd;
+}
+
+function ProjectsHeader({ version }: { version: string }): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+	const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+
+	return <Header version={version} variant={headerVariant} />;
+}
+
+interface ProjectsFooterProps {
+	viewMode: ViewMode;
+	hasOrphanedProjects: boolean;
+}
+
+function ProjectsFooter({
+	viewMode,
+	hasOrphanedProjects,
+}: ProjectsFooterProps): React.ReactElement {
+	if (viewMode === "confirm-prune") {
+		return (
+			<Box paddingX={1}>
+				<Text color="yellow">Press Enter to confirm, Escape to cancel</Text>
+			</Box>
+		);
+	}
+
+	if (viewMode === "detail") {
+		return (
+			<Box paddingX={1}>
+				<Text dimColor>Press q or Escape to go back</Text>
+			</Box>
+		);
+	}
+
+	return (
+		<Box paddingX={1} flexDirection="column">
+			<Text dimColor>↑/↓ or j/k Navigate | Enter View details | x Remove</Text>
+			<Text dimColor>q/Esc Close{hasOrphanedProjects && " | p Prune orphaned"}</Text>
+		</Box>
+	);
 }
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({ version, onClose }) => {
@@ -166,192 +208,186 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ version, onClose }) 
 
 	const maybeSelectedProject = projects[selectedIndex];
 
-	if (viewMode === "confirm-prune") {
-		return (
-			<Box flexDirection="column" padding={1}>
-				<Header version={version} />
-
-				<Box
-					flexDirection="column"
-					marginTop={1}
-					borderStyle="round"
-					borderColor="red"
-					paddingX={1}
-					paddingY={1}
-				>
-					<Text bold color="red">
-						Prune Orphaned Projects
-					</Text>
-					<Text>
-						This will remove {orphanedProjects.length} project
-						{orphanedProjects.length === 1 ? "" : "s"} with invalid paths:
-					</Text>
-					<Box flexDirection="column" marginTop={1}>
-						{orphanedProjects.map((project) => (
-							<Text key={project.identifier.folderName} dimColor>
-								• {project.displayName} ({truncatePath(project.lastKnownPath, 40)})
+	const renderContent = (): React.ReactElement => {
+		if (viewMode === "confirm-prune") {
+			return (
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1}>
+						<Box
+							flexDirection="column"
+							borderStyle="round"
+							borderColor="red"
+							paddingX={1}
+							paddingY={1}
+						>
+							<Text bold color="red">
+								Prune Orphaned Projects
 							</Text>
-						))}
+							<Text>
+								This will remove {orphanedProjects.length} project
+								{orphanedProjects.length === 1 ? "" : "s"} with invalid paths:
+							</Text>
+							<Box flexDirection="column" marginTop={1}>
+								{orphanedProjects.map((project) => (
+									<Text key={project.identifier.folderName} dimColor>
+										• {project.displayName} ({truncatePath(project.lastKnownPath, 40)})
+									</Text>
+								))}
+							</Box>
+						</Box>
 					</Box>
-				</Box>
+				</ScrollableContent>
+			);
+		}
 
-				<Box marginTop={1} flexDirection="column">
-					<Text color="yellow">Press Enter to confirm, Escape to cancel</Text>
-				</Box>
-			</Box>
-		);
-	}
+		if (viewMode === "detail" && maybeSelectedProject) {
+			const projectDir = projectRegistry.getProjectDir(maybeSelectedProject.identifier);
+			const pathExists = existsSync(maybeSelectedProject.lastKnownPath);
 
-	if (viewMode === "detail" && maybeSelectedProject) {
-		const projectDir = projectRegistry.getProjectDir(maybeSelectedProject.identifier);
-		const pathExists = existsSync(maybeSelectedProject.lastKnownPath);
+			return (
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1}>
+						<Box flexDirection="column">
+							<Text bold color="cyan">
+								Project Details
+							</Text>
+						</Box>
+
+						<Box
+							flexDirection="column"
+							marginTop={1}
+							borderStyle="round"
+							borderColor="gray"
+							paddingX={1}
+							paddingY={1}
+						>
+							<Box>
+								<Text bold>Name: </Text>
+								<Text>{maybeSelectedProject.displayName}</Text>
+							</Box>
+							<Box>
+								<Text bold>Path: </Text>
+								<Text color={pathExists ? undefined : "red"}>
+									{maybeSelectedProject.lastKnownPath}
+									{!pathExists && " (not found)"}
+								</Text>
+							</Box>
+							<Box>
+								<Text bold>Type: </Text>
+								<Text>{maybeSelectedProject.identifier.type}</Text>
+							</Box>
+							<Box>
+								<Text bold>Folder: </Text>
+								<Text>{maybeSelectedProject.identifier.folderName}</Text>
+							</Box>
+							<Box>
+								<Text bold>Created: </Text>
+								<Text>{formatDateFull(maybeSelectedProject.createdAt)}</Text>
+							</Box>
+							<Box>
+								<Text bold>Last Used: </Text>
+								<Text>{formatDateFull(maybeSelectedProject.lastAccessedAt)}</Text>
+							</Box>
+							{maybeSelectedProject.gitRemote && (
+								<Box>
+									<Text bold>Git Remote: </Text>
+									<Text>{maybeSelectedProject.gitRemote}</Text>
+								</Box>
+							)}
+							{projectDir && (
+								<Box>
+									<Text bold>Storage: </Text>
+									<Text>{projectDir}</Text>
+								</Box>
+							)}
+						</Box>
+					</Box>
+				</ScrollableContent>
+			);
+		}
 
 		return (
-			<Box flexDirection="column" padding={1}>
-				<Header version={version} />
-
-				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="cyan">
-						Project Details
-					</Text>
-				</Box>
-
-				<Box
-					flexDirection="column"
-					marginTop={1}
-					borderStyle="round"
-					borderColor="gray"
-					paddingX={1}
-					paddingY={1}
-				>
-					<Box>
-						<Text bold>Name: </Text>
-						<Text>{maybeSelectedProject.displayName}</Text>
-					</Box>
-					<Box>
-						<Text bold>Path: </Text>
-						<Text color={pathExists ? undefined : "red"}>
-							{maybeSelectedProject.lastKnownPath}
-							{!pathExists && " (not found)"}
+			<ScrollableContent>
+				<Box flexDirection="column" paddingX={1}>
+					<Box flexDirection="column">
+						<Text bold color="cyan">
+							Registered Projects ({projects.length})
 						</Text>
+						{hasOrphanedProjects && (
+							<Text color="yellow">
+								{orphanedProjects.length} orphaned project
+								{orphanedProjects.length === 1 ? "" : "s"} found (press p to prune)
+							</Text>
+						)}
 					</Box>
-					<Box>
-						<Text bold>Type: </Text>
-						<Text>{maybeSelectedProject.identifier.type}</Text>
-					</Box>
-					<Box>
-						<Text bold>Folder: </Text>
-						<Text>{maybeSelectedProject.identifier.folderName}</Text>
-					</Box>
-					<Box>
-						<Text bold>Created: </Text>
-						<Text>{formatDateFull(maybeSelectedProject.createdAt)}</Text>
-					</Box>
-					<Box>
-						<Text bold>Last Used: </Text>
-						<Text>{formatDateFull(maybeSelectedProject.lastAccessedAt)}</Text>
-					</Box>
-					{maybeSelectedProject.gitRemote && (
-						<Box>
-							<Text bold>Git Remote: </Text>
-							<Text>{maybeSelectedProject.gitRemote}</Text>
-						</Box>
-					)}
-					{projectDir && (
-						<Box>
-							<Text bold>Storage: </Text>
-							<Text>{projectDir}</Text>
-						</Box>
-					)}
-				</Box>
 
-				<Box marginTop={1} flexDirection="column">
-					<Text dimColor>Press q or Escape to go back</Text>
+					<Box
+						flexDirection="column"
+						marginTop={1}
+						borderStyle="round"
+						borderColor="gray"
+						paddingX={1}
+						paddingY={1}
+					>
+						{projects.length === 0 ? (
+							<Text dimColor>No registered projects. Run 'ralph init' in a project directory.</Text>
+						) : (
+							projects.map((project, index) => {
+								const isSelected = index === selectedIndex;
+								const isCurrent = isCurrentProject(project);
+								const pathExists = existsSync(project.lastKnownPath);
+
+								return (
+									<Box key={project.identifier.folderName} gap={1}>
+										<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+											{isSelected ? "▸" : " "}
+										</Text>
+										<Box width={24}>
+											<Text
+												color={isSelected ? "cyan" : pathExists ? undefined : "red"}
+												bold={isSelected}
+											>
+												{project.displayName.slice(0, 22)}
+												{isCurrent && (
+													<Text color="green" bold>
+														{" "}
+														*
+													</Text>
+												)}
+											</Text>
+										</Box>
+										<Box width={35}>
+											<Text dimColor={!isSelected} color={pathExists ? undefined : "red"}>
+												{truncatePath(project.lastKnownPath, 33)}
+											</Text>
+										</Box>
+										<Box width={8}>
+											<Text dimColor={!isSelected}>{project.identifier.type}</Text>
+										</Box>
+										<Text dimColor={!isSelected}>{formatRelativeTime(project.lastAccessedAt)}</Text>
+									</Box>
+								);
+							})
+						)}
+					</Box>
+
+					{message && (
+						<Box marginTop={1}>
+							<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
+						</Box>
+					)}
 				</Box>
-			</Box>
+			</ScrollableContent>
 		);
-	}
+	};
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Header version={version} />
-
-			<Box flexDirection="column" marginTop={1}>
-				<Text bold color="cyan">
-					Registered Projects ({projects.length})
-				</Text>
-				{hasOrphanedProjects && (
-					<Text color="yellow">
-						{orphanedProjects.length} orphaned project{orphanedProjects.length === 1 ? "" : "s"}{" "}
-						found (press p to prune)
-					</Text>
-				)}
-			</Box>
-
-			<Box
-				flexDirection="column"
-				marginTop={1}
-				borderStyle="round"
-				borderColor="gray"
-				paddingX={1}
-				paddingY={1}
-				minHeight={10}
-			>
-				{projects.length === 0 ? (
-					<Text dimColor>No registered projects. Run 'ralph init' in a project directory.</Text>
-				) : (
-					projects.map((project, index) => {
-						const isSelected = index === selectedIndex;
-						const isCurrent = isCurrentProject(project);
-						const pathExists = existsSync(project.lastKnownPath);
-
-						return (
-							<Box key={project.identifier.folderName} gap={1}>
-								<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
-									{isSelected ? "▸" : " "}
-								</Text>
-								<Box width={24}>
-									<Text
-										color={isSelected ? "cyan" : pathExists ? undefined : "red"}
-										bold={isSelected}
-									>
-										{project.displayName.slice(0, 22)}
-										{isCurrent && (
-											<Text color="green" bold>
-												{" "}
-												*
-											</Text>
-										)}
-									</Text>
-								</Box>
-								<Box width={35}>
-									<Text dimColor={!isSelected} color={pathExists ? undefined : "red"}>
-										{truncatePath(project.lastKnownPath, 33)}
-									</Text>
-								</Box>
-								<Box width={8}>
-									<Text dimColor={!isSelected}>{project.identifier.type}</Text>
-								</Box>
-								<Text dimColor={!isSelected}>{formatRelativeTime(project.lastAccessedAt)}</Text>
-							</Box>
-						);
-					})
-				)}
-			</Box>
-
-			{message && (
-				<Box marginTop={1}>
-					<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
-				</Box>
-			)}
-
-			<Box marginTop={1} flexDirection="column">
-				<Text dimColor>Press q or Escape to close</Text>
-				<Text dimColor>Use ↑/↓ or j/k to navigate, Enter to view details</Text>
-				<Text dimColor>
-					Press x to remove selected project{hasOrphanedProjects && ", p to prune orphaned"}
-				</Text>
-			</Box>
-		</Box>
+		<ResponsiveLayout
+			header={<ProjectsHeader version={version} />}
+			content={renderContent()}
+			footer={<ProjectsFooter viewMode={viewMode} hasOrphanedProjects={hasOrphanedProjects} />}
+			headerHeight={10}
+			footerHeight={3}
+		/>
 	);
 };

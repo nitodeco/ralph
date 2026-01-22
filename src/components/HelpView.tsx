@@ -1,8 +1,28 @@
 import { Box, Text, useInput } from "ink";
+import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 
 interface HelpViewProps {
 	version: string;
 	onClose: () => void;
+}
+
+function HelpHeader({ version }: { version: string }): React.ReactElement {
+	return (
+		<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+			<Text bold color="cyan">
+				◆ ralph v{version}
+			</Text>
+		</Box>
+	);
+}
+
+function HelpFooter(): React.ReactElement {
+	return (
+		<Box paddingX={1}>
+			<Text dimColor>Press Enter, Escape, or 'q' to close</Text>
+		</Box>
+	);
 }
 
 export function HelpView({ version, onClose }: HelpViewProps): React.ReactElement {
@@ -13,262 +33,260 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 	});
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-				<Text bold color="cyan">
-					◆ ralph v{version}
-				</Text>
-			</Box>
+		<ResponsiveLayout
+			header={<HelpHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1} gap={1}>
+						<Text>A CLI tool for long-running PRD-driven development with AI coding agents</Text>
 
-			<Box flexDirection="column" marginTop={1} paddingX={1} gap={1}>
-				<Text>A CLI tool for long-running PRD-driven development with AI coding agents</Text>
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								CLI Usage:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>ralph [iterations]</Text>
+									{"      "}
+									<Text>Run the agent loop (default: 10 iterations)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>ralph {"<command>"}</Text>
+								</Text>
+							</Box>
+						</Box>
 
-				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">
-						CLI Usage:
-					</Text>
-					<Box flexDirection="column" paddingLeft={2}>
-						<Text>
-							<Text dimColor>ralph [iterations]</Text>
-							{"      "}
-							<Text>Run the agent loop (default: 10 iterations)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>ralph {"<command>"}</Text>
-						</Text>
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								CLI Commands:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>init</Text>
+									{"              "}
+									<Text>Initialize a new PRD project (AI-generated)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>resume</Text>
+									{"            "}
+									<Text>Resume a previously interrupted session</Text>
+								</Text>
+								<Text>
+									<Text dimColor>setup</Text>
+									{"             "}
+									<Text>Configure global preferences</Text>
+								</Text>
+								<Text>
+									<Text dimColor>update</Text>
+									{"            "}
+									<Text>Check for updates</Text>
+								</Text>
+								<Text>
+									<Text dimColor>help</Text>
+									{"              "}
+									<Text>Show this help message</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								CLI Options:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>-t, --task {"<n>"}</Text>
+									{"     "}
+									<Text>Run specific task by number or title</Text>
+								</Text>
+								<Text>
+									<Text dimColor>-b, --background</Text>
+									{"  "}
+									<Text>Run in background/daemon mode</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Slash Commands (in-app):
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>/start [n|full]</Text>
+									{"   "}
+									<Text>Start the agent loop (default: 10, full: all tasks)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/stop</Text>
+									{"             "}
+									<Text>Stop the running agent</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/resume</Text>
+									{"           "}
+									<Text>Resume a previously interrupted session</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/init</Text>
+									{"             "}
+									<Text>Initialize a new PRD project (AI-generated)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/add</Text>
+									{"              "}
+									<Text>Add a new task to the PRD (AI-generated)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/next [n|title]</Text>
+									{"   "}
+									<Text>Set the next task to work on (by number or title)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/task done {"<id>"}</Text>
+									{"   "}
+									<Text>Mark a task as done (by number or title)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/task undone {"<id>"}</Text>{" "}
+									<Text>Mark a task as pending (by number or title)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/task current</Text>
+									{"     "}
+									<Text>Show the next pending task</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/task list</Text>
+									{"        "}
+									<Text>Open the tasks view</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/tasks</Text>
+									{"            "}
+									<Text>Open the tasks view (alias)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/setup</Text>
+									{"            "}
+									<Text>Configure global preferences</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/agent</Text>
+									{"            "}
+									<Text>Switch coding agent</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/update</Text>
+									{"           "}
+									<Text>Check for updates</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/status</Text>
+									{"           "}
+									<Text>Show session and project status</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/archive</Text>
+									{"          "}
+									<Text>Archive completed tasks and progress file</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/clear</Text>
+									{"            "}
+									<Text>Clear session data (archives first, then resets)</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/guardrail {"<text>"}</Text>
+									{"  "}
+									<Text>Add a new guardrail instruction</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/guardrails</Text>
+									{"       "}
+									<Text>View and manage guardrails</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/analyze</Text>
+									{"          "}
+									<Text>View failure pattern analysis</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/learn {"<lesson>"}</Text>
+									{"   "}
+									<Text>Add a lesson to session memory</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/note {"<note>"}</Text>
+									{"      "}
+									<Text>Add a note about the current task</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/memory</Text>
+									{"           "}
+									<Text>View and manage session memory</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/usage</Text>
+									{"            "}
+									<Text>View usage statistics</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/dismiss-update</Text>
+									{"   "}
+									<Text>Dismiss the update notification banner</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/refresh</Text>
+									{"          "}
+									<Text>Reload PRD from disk and update UI state</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/help</Text>
+									{"             "}
+									<Text>Show this help message</Text>
+								</Text>
+								<Text>
+									<Text dimColor>/quit</Text>
+									{"             "}
+									<Text>Exit the application</Text>
+								</Text>
+							</Box>
+						</Box>
+
+						<Box flexDirection="column" marginTop={1}>
+							<Text bold color="yellow">
+								Examples:
+							</Text>
+							<Box flexDirection="column" paddingLeft={2}>
+								<Text>
+									<Text dimColor>ralph</Text>
+									{"              "}
+									<Text>Run 10 iterations</Text>
+								</Text>
+								<Text>
+									<Text dimColor>ralph 5</Text>
+									{"            "}
+									<Text>Run 5 iterations</Text>
+								</Text>
+								<Text>
+									<Text dimColor>ralph -t 3</Text>
+									{"         "}
+									<Text>Run specific task #3</Text>
+								</Text>
+								<Text>
+									<Text dimColor>ralph init</Text>
+									{"         "}
+									<Text>Create a new PRD project</Text>
+								</Text>
+							</Box>
+						</Box>
 					</Box>
-				</Box>
-
-				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">
-						CLI Commands:
-					</Text>
-					<Box flexDirection="column" paddingLeft={2}>
-						<Text>
-							<Text dimColor>init</Text>
-							{"              "}
-							<Text>Initialize a new PRD project (AI-generated)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>resume</Text>
-							{"            "}
-							<Text>Resume a previously interrupted session</Text>
-						</Text>
-						<Text>
-							<Text dimColor>setup</Text>
-							{"             "}
-							<Text>Configure global preferences</Text>
-						</Text>
-						<Text>
-							<Text dimColor>update</Text>
-							{"            "}
-							<Text>Check for updates</Text>
-						</Text>
-						<Text>
-							<Text dimColor>help</Text>
-							{"              "}
-							<Text>Show this help message</Text>
-						</Text>
-					</Box>
-				</Box>
-
-				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">
-						CLI Options:
-					</Text>
-					<Box flexDirection="column" paddingLeft={2}>
-						<Text>
-							<Text dimColor>-t, --task {"<n>"}</Text>
-							{"     "}
-							<Text>Run specific task by number or title</Text>
-						</Text>
-						<Text>
-							<Text dimColor>-b, --background</Text>
-							{"  "}
-							<Text>Run in background/daemon mode</Text>
-						</Text>
-					</Box>
-				</Box>
-
-				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">
-						Slash Commands (in-app):
-					</Text>
-					<Box flexDirection="column" paddingLeft={2}>
-						<Text>
-							<Text dimColor>/start [n|full]</Text>
-							{"   "}
-							<Text>Start the agent loop (default: 10, full: all tasks)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/stop</Text>
-							{"             "}
-							<Text>Stop the running agent</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/resume</Text>
-							{"           "}
-							<Text>Resume a previously interrupted session</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/init</Text>
-							{"             "}
-							<Text>Initialize a new PRD project (AI-generated)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/add</Text>
-							{"              "}
-							<Text>Add a new task to the PRD (AI-generated)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/next [n|title]</Text>
-							{"   "}
-							<Text>Set the next task to work on (by number or title)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/task done {"<id>"}</Text>
-							{"   "}
-							<Text>Mark a task as done (by number or title)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/task undone {"<id>"}</Text>{" "}
-							<Text>Mark a task as pending (by number or title)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/task current</Text>
-							{"     "}
-							<Text>Show the next pending task</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/task list</Text>
-							{"        "}
-							<Text>Open the tasks view</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/tasks</Text>
-							{"            "}
-							<Text>Open the tasks view (alias)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/setup</Text>
-							{"            "}
-							<Text>Configure global preferences</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/agent</Text>
-							{"            "}
-							<Text>Switch coding agent</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/update</Text>
-							{"           "}
-							<Text>Check for updates</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/status</Text>
-							{"           "}
-							<Text>Show session and project status</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/archive</Text>
-							{"          "}
-							<Text>Archive completed tasks and progress file</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/clear</Text>
-							{"            "}
-							<Text>Clear session data (archives first, then resets)</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/guardrail {"<text>"}</Text>
-							{"  "}
-							<Text>Add a new guardrail instruction</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/guardrails</Text>
-							{"       "}
-							<Text>View and manage guardrails</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/analyze</Text>
-							{"          "}
-							<Text>View failure pattern analysis</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/learn {"<lesson>"}</Text>
-							{"   "}
-							<Text>Add a lesson to session memory</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/note {"<note>"}</Text>
-							{"      "}
-							<Text>Add a note about the current task</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/memory</Text>
-							{"           "}
-							<Text>View and manage session memory</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/usage</Text>
-							{"            "}
-							<Text>View usage statistics</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/dismiss-update</Text>
-							{"   "}
-							<Text>Dismiss the update notification banner</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/refresh</Text>
-							{"          "}
-							<Text>Reload PRD from disk and update UI state</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/help</Text>
-							{"             "}
-							<Text>Show this help message</Text>
-						</Text>
-						<Text>
-							<Text dimColor>/quit</Text>
-							{"             "}
-							<Text>Exit the application</Text>
-						</Text>
-					</Box>
-				</Box>
-
-				<Box flexDirection="column" marginTop={1}>
-					<Text bold color="yellow">
-						Examples:
-					</Text>
-					<Box flexDirection="column" paddingLeft={2}>
-						<Text>
-							<Text dimColor>ralph</Text>
-							{"              "}
-							<Text>Run 10 iterations</Text>
-						</Text>
-						<Text>
-							<Text dimColor>ralph 5</Text>
-							{"            "}
-							<Text>Run 5 iterations</Text>
-						</Text>
-						<Text>
-							<Text dimColor>ralph -t 3</Text>
-							{"         "}
-							<Text>Run specific task #3</Text>
-						</Text>
-						<Text>
-							<Text dimColor>ralph init</Text>
-							{"         "}
-							<Text>Create a new PRD project</Text>
-						</Text>
-					</Box>
-				</Box>
-
-				<Box marginTop={1}>
-					<Text dimColor>Press Enter, Escape, or 'q' to close</Text>
-				</Box>
-			</Box>
-		</Box>
+				</ScrollableContent>
+			}
+			footer={<HelpFooter />}
+			headerHeight={3}
+			footerHeight={2}
+		/>
 	);
 }

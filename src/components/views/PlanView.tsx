@@ -1,6 +1,8 @@
 import { Box, Text } from "ink";
 import { useRef, useState } from "react";
 import { match } from "ts-pattern";
+import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { Header } from "@/components/Header.tsx";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { loadConfig } from "@/lib/config.ts";
@@ -31,6 +33,21 @@ interface PlanState {
 	finalPrd: Prd | null;
 	agentOutput: string;
 	errorMessage: string | null;
+}
+
+function PlanHeader({ version }: { version: string }): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+	const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+
+	return <Header version={version} variant={headerVariant} />;
+}
+
+function PlanFooter(): React.ReactElement {
+	return (
+		<Box paddingX={1}>
+			<Text dimColor>Press Escape to cancel</Text>
+		</Box>
+	);
 }
 
 export function PlanView({ version, onClose }: PlanViewProps): React.ReactElement {
@@ -192,14 +209,21 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 			.exhaustive();
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Header version={version} />
-			<Box flexDirection="column" marginTop={1} paddingX={1}>
-				<Box marginBottom={1}>
-					<Text bold>Generate PRD from Specification</Text>
-				</Box>
-				{renderPhase()}
-			</Box>
-		</Box>
+		<ResponsiveLayout
+			header={<PlanHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1}>
+						<Box marginBottom={1}>
+							<Text bold>Generate PRD from Specification</Text>
+						</Box>
+						{renderPhase()}
+					</Box>
+				</ScrollableContent>
+			}
+			footer={<PlanFooter />}
+			headerHeight={10}
+			footerHeight={2}
+		/>
 	);
 }

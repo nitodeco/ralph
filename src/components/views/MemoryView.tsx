@@ -1,6 +1,8 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
 import { ConfirmationDialog } from "@/components/common/index.ts";
+import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { getSessionMemoryService } from "@/lib/services/index.ts";
 import { Header } from "../Header.tsx";
 
@@ -11,6 +13,22 @@ interface MemoryViewProps {
 
 type MemoryTab = "lessons" | "patterns" | "failed" | "notes";
 type ViewMode = "view" | "confirm-clear";
+
+function MemoryHeader({ version }: { version: string }): React.ReactElement {
+	const { isNarrow, isMedium } = useResponsive();
+	const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+
+	return <Header version={version} variant={headerVariant} />;
+}
+
+function MemoryFooter(): React.ReactElement {
+	return (
+		<Box paddingX={1} flexDirection="column">
+			<Text dimColor>Press q or Escape to close</Text>
+			<Text dimColor>Use ←/→ to switch tabs | c to clear all memory</Text>
+		</Box>
+	);
+}
 
 export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 	const sessionMemoryService = getSessionMemoryService();
@@ -152,61 +170,62 @@ export const MemoryView: React.FC<MemoryViewProps> = ({ version, onClose }) => {
 	};
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Header version={version} />
+		<ResponsiveLayout
+			header={<MemoryHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1}>
+						<Box flexDirection="column">
+							<Text bold color="cyan">
+								Session Memory: {memory.projectName}
+							</Text>
+							{hasMemory && <Text dimColor>Last updated: {memory.lastUpdated}</Text>}
+						</Box>
 
-			<Box flexDirection="column" marginTop={1}>
-				<Text bold color="cyan">
-					Session Memory: {memory.projectName}
-				</Text>
-				{hasMemory && <Text dimColor>Last updated: {memory.lastUpdated}</Text>}
-			</Box>
+						<Box marginTop={1} gap={2}>
+							{tabs.map((tab) => (
+								<Box key={tab.key}>
+									<Text
+										bold={activeTab === tab.key}
+										color={activeTab === tab.key ? "cyan" : undefined}
+										dimColor={activeTab !== tab.key}
+									>
+										{activeTab === tab.key ? "▸ " : "  "}
+										{tab.label} ({tab.count})
+									</Text>
+								</Box>
+							))}
+						</Box>
 
-			<Box marginTop={1} gap={2}>
-				{tabs.map((tab) => (
-					<Box key={tab.key}>
-						<Text
-							bold={activeTab === tab.key}
-							color={activeTab === tab.key ? "cyan" : undefined}
-							dimColor={activeTab !== tab.key}
+						<Box
+							flexDirection="column"
+							marginTop={1}
+							borderStyle="round"
+							borderColor="gray"
+							paddingX={1}
+							paddingY={1}
 						>
-							{activeTab === tab.key ? "▸ " : "  "}
-							{tab.label} ({tab.count})
-						</Text>
+							{renderTabContent()}
+						</Box>
+
+						{viewMode === "confirm-clear" && (
+							<ConfirmationDialog
+								title="Clear all session memory?"
+								message={`This will remove ${memory.lessonsLearned.length} lessons, ${memory.successfulPatterns.length} patterns, ${memory.failedApproaches.length} failed approaches, and ${Object.keys(memory.taskNotes).length} task notes.`}
+							/>
+						)}
+
+						{message && (
+							<Box marginTop={1}>
+								<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
+							</Box>
+						)}
 					</Box>
-				))}
-			</Box>
-
-			<Box
-				flexDirection="column"
-				marginTop={1}
-				borderStyle="round"
-				borderColor="gray"
-				paddingX={1}
-				paddingY={1}
-				minHeight={10}
-			>
-				{renderTabContent()}
-			</Box>
-
-			{viewMode === "confirm-clear" && (
-				<ConfirmationDialog
-					title="Clear all session memory?"
-					message={`This will remove ${memory.lessonsLearned.length} lessons, ${memory.successfulPatterns.length} patterns, ${memory.failedApproaches.length} failed approaches, and ${Object.keys(memory.taskNotes).length} task notes.`}
-				/>
-			)}
-
-			{message && (
-				<Box marginTop={1}>
-					<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
-				</Box>
-			)}
-
-			<Box marginTop={1} flexDirection="column">
-				<Text dimColor>Press q or Escape to close</Text>
-				<Text dimColor>Use ←/→ to switch tabs</Text>
-				<Text dimColor>Press c to clear all memory</Text>
-			</Box>
-		</Box>
+				</ScrollableContent>
+			}
+			footer={<MemoryFooter />}
+			headerHeight={10}
+			footerHeight={3}
+		/>
 	);
 };

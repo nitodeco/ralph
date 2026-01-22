@@ -1,6 +1,8 @@
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import { useState } from "react";
+import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import {
 	invalidateConfigCache,
 	loadConfig,
@@ -27,6 +29,24 @@ const AGENT_DISPLAY_NAMES: Record<AgentType, string> = {
 	claude: "Claude Code",
 	codex: "Codex",
 };
+
+function AgentSelectHeader({ version }: { version: string }): React.ReactElement {
+	return (
+		<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+			<Text bold color="cyan">
+				◆ ralph v{version} - Select Agent
+			</Text>
+		</Box>
+	);
+}
+
+function AgentSelectFooter(): React.ReactElement {
+	return (
+		<Box paddingX={1}>
+			<Text dimColor>Press Escape or 'q' to cancel</Text>
+		</Box>
+	);
+}
 
 export function AgentSelectView({ version, onClose }: AgentSelectViewProps): React.ReactElement {
 	const effectiveConfig = loadConfig();
@@ -74,41 +94,39 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
 	};
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-				<Text bold color="cyan">
-					◆ ralph v{version} - Select Agent
-				</Text>
-			</Box>
+		<ResponsiveLayout
+			header={<AgentSelectHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1} gap={1}>
+						<Box flexDirection="column">
+							<Text bold color="yellow">
+								Which AI agent do you want to use?
+							</Text>
+							<Text dimColor>Current: {AGENT_DISPLAY_NAMES[effectiveConfig.agent]}</Text>
+						</Box>
 
-			<Box flexDirection="column" marginTop={1} paddingX={1} gap={1}>
-				<Box flexDirection="column">
-					<Text bold color="yellow">
-						Which AI agent do you want to use?
-					</Text>
-					<Text dimColor>Current: {AGENT_DISPLAY_NAMES[effectiveConfig.agent]}</Text>
-				</Box>
+						<Box marginTop={1}>
+							<SelectInput
+								items={AGENT_CHOICES}
+								initialIndex={AGENT_CHOICES.findIndex(
+									(choice) => choice.value === effectiveConfig.agent,
+								)}
+								onSelect={handleAgentSelect}
+							/>
+						</Box>
 
-				<Box marginTop={1}>
-					<SelectInput
-						items={AGENT_CHOICES}
-						initialIndex={AGENT_CHOICES.findIndex(
-							(choice) => choice.value === effectiveConfig.agent,
+						{message && (
+							<Box marginTop={1}>
+								<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
+							</Box>
 						)}
-						onSelect={handleAgentSelect}
-					/>
-				</Box>
-
-				{message && (
-					<Box marginTop={1}>
-						<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
 					</Box>
-				)}
-
-				<Box marginTop={1}>
-					<Text dimColor>Press Escape or 'q' to cancel</Text>
-				</Box>
-			</Box>
-		</Box>
+				</ScrollableContent>
+			}
+			footer={<AgentSelectFooter />}
+			headerHeight={3}
+			footerHeight={2}
+		/>
 	);
 }

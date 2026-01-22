@@ -1,6 +1,8 @@
 import { Box, Text, useInput } from "ink";
 import { useState } from "react";
 import { ConfirmationDialog } from "@/components/common/ConfirmationDialog.tsx";
+import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import { getGuardrailsService, type PromptGuardrail } from "@/lib/services/index.ts";
 
@@ -10,6 +12,36 @@ interface GuardrailsViewProps {
 }
 
 type ViewMode = "list" | "add" | "confirm-delete";
+
+function GuardrailsHeader({ version }: { version: string }): React.ReactElement {
+	return (
+		<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+			<Text bold color="cyan">
+				◆ ralph v{version} - Guardrails
+			</Text>
+		</Box>
+	);
+}
+
+interface GuardrailsFooterProps {
+	viewMode: ViewMode;
+}
+
+function GuardrailsFooter({ viewMode }: GuardrailsFooterProps): React.ReactElement {
+	if (viewMode === "add") {
+		return (
+			<Box paddingX={1}>
+				<Text dimColor>Press Enter to add, Escape to cancel</Text>
+			</Box>
+		);
+	}
+
+	return (
+		<Box paddingX={1}>
+			<Text dimColor>↑/↓ Navigate | a Add | t Toggle | d Delete | q/Esc Close</Text>
+		</Box>
+	);
+}
 
 export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React.ReactElement {
 	const guardrailsService = getGuardrailsService();
@@ -113,90 +145,85 @@ export function GuardrailsView({ version, onClose }: GuardrailsViewProps): React
 	const enabledCount = guardrails.filter((guardrail) => guardrail.enabled).length;
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-				<Text bold color="cyan">
-					◆ ralph v{version} - Guardrails
-				</Text>
-			</Box>
+		<ResponsiveLayout
+			header={<GuardrailsHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1} gap={1}>
+						{viewMode === "add" ? (
+							<Box flexDirection="column">
+								<Text bold color="yellow">
+									Add New Guardrail:
+								</Text>
+								<Box marginTop={1} gap={1}>
+									<Text color="cyan">❯</Text>
+									<TextInput
+										value={newInstruction}
+										onChange={setNewInstruction}
+										onSubmit={handleAddSubmit}
+										placeholder="Enter guardrail instruction..."
+									/>
+								</Box>
+							</Box>
+						) : (
+							<>
+								<Box flexDirection="column">
+									<Text bold color="yellow">
+										Guardrails ({enabledCount}/{guardrails.length} enabled):
+									</Text>
+									<Box flexDirection="column" marginTop={1}>
+										{guardrails.length === 0 ? (
+											<Text dimColor>No guardrails configured. Press 'a' to add one.</Text>
+										) : (
+											guardrails.map((guardrail, index) => {
+												const isSelected = index === selectedIndex;
+												const statusIcon = guardrail.enabled ? "✓" : "○";
+												const statusColor = guardrail.enabled ? "green" : "gray";
 
-			<Box flexDirection="column" marginTop={1} paddingX={1} gap={1}>
-				{viewMode === "add" ? (
-					<Box flexDirection="column">
-						<Text bold color="yellow">
-							Add New Guardrail:
-						</Text>
-						<Box marginTop={1} gap={1}>
-							<Text color="cyan">❯</Text>
-							<TextInput
-								value={newInstruction}
-								onChange={setNewInstruction}
-								onSubmit={handleAddSubmit}
-								placeholder="Enter guardrail instruction..."
-							/>
-						</Box>
-						<Box marginTop={1}>
-							<Text dimColor>Press Enter to add, Escape to cancel</Text>
-						</Box>
-					</Box>
-				) : (
-					<>
-						<Box flexDirection="column">
-							<Text bold color="yellow">
-								Guardrails ({enabledCount}/{guardrails.length} enabled):
-							</Text>
-							<Box flexDirection="column" marginTop={1}>
-								{guardrails.length === 0 ? (
-									<Text dimColor>No guardrails configured. Press 'a' to add one.</Text>
-								) : (
-									guardrails.map((guardrail, index) => {
-										const isSelected = index === selectedIndex;
-										const statusIcon = guardrail.enabled ? "✓" : "○";
-										const statusColor = guardrail.enabled ? "green" : "gray";
-
-										return (
-											<Box key={guardrail.id} flexDirection="column">
-												<Box>
-													<Text color={isSelected ? "cyan" : undefined}>
-														{isSelected ? "❯ " : "  "}
-													</Text>
-													<Text color={statusColor}>{statusIcon} </Text>
-													<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
-														{guardrail.instruction}
-													</Text>
-													<Text dimColor> [{guardrail.category}]</Text>
-												</Box>
-												{isSelected && (
-													<Box paddingLeft={4}>
-														<Text dimColor>id: {guardrail.id}</Text>
+												return (
+													<Box key={guardrail.id} flexDirection="column">
+														<Box>
+															<Text color={isSelected ? "cyan" : undefined}>
+																{isSelected ? "❯ " : "  "}
+															</Text>
+															<Text color={statusColor}>{statusIcon} </Text>
+															<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+																{guardrail.instruction}
+															</Text>
+															<Text dimColor> [{guardrail.category}]</Text>
+														</Box>
+														{isSelected && (
+															<Box paddingLeft={4}>
+																<Text dimColor>id: {guardrail.id}</Text>
+															</Box>
+														)}
 													</Box>
-												)}
-											</Box>
-										);
-									})
+												);
+											})
+										)}
+									</Box>
+								</Box>
+
+								{viewMode === "confirm-delete" && guardrails[selectedIndex] && (
+									<ConfirmationDialog
+										title="Delete guardrail?"
+										message={`"${guardrails[selectedIndex]?.instruction}"`}
+									/>
 								)}
-							</Box>
-						</Box>
 
-						{viewMode === "confirm-delete" && guardrails[selectedIndex] && (
-							<ConfirmationDialog
-								title="Delete guardrail?"
-								message={`"${guardrails[selectedIndex]?.instruction}"`}
-							/>
+								{message && (
+									<Box marginTop={1}>
+										<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
+									</Box>
+								)}
+							</>
 						)}
-
-						{message && (
-							<Box marginTop={1}>
-								<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
-							</Box>
-						)}
-
-						<Box flexDirection="column" marginTop={1}>
-							<Text dimColor>↑/↓ Navigate | a Add | t Toggle | d Delete | q/Esc Close</Text>
-						</Box>
-					</>
-				)}
-			</Box>
-		</Box>
+					</Box>
+				</ScrollableContent>
+			}
+			footer={<GuardrailsFooter viewMode={viewMode} />}
+			headerHeight={3}
+			footerHeight={2}
+		/>
 	);
 }

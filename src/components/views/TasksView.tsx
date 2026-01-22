@@ -1,5 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
+import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
+import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { deleteTask, savePrd, toggleTaskDone } from "@/lib/prd.ts";
 import { getPrdService, type Prd } from "@/lib/services/index.ts";
 
@@ -8,6 +10,24 @@ type ViewMode = "list" | "confirm-delete";
 interface TasksViewProps {
 	version: string;
 	onClose: () => void;
+}
+
+function TasksHeader({ version }: { version: string }): React.ReactElement {
+	return (
+		<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+			<Text bold color="cyan">
+				◆ ralph v{version} - Tasks
+			</Text>
+		</Box>
+	);
+}
+
+function TasksFooter(): React.ReactElement {
+	return (
+		<Box paddingX={1}>
+			<Text dimColor>↑/↓ Navigate | d Toggle done | x Delete | q/Esc Close</Text>
+		</Box>
+	);
 }
 
 export function TasksView({ version, onClose }: TasksViewProps): React.ReactElement {
@@ -102,102 +122,102 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 	const completedCount = tasks.filter((task) => task.done).length;
 
 	return (
-		<Box flexDirection="column" padding={1}>
-			<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-				<Text bold color="cyan">
-					◆ ralph v{version} - Tasks
-				</Text>
-			</Box>
-
-			<Box flexDirection="column" marginTop={1} paddingX={1} gap={1}>
-				<Box flexDirection="column">
-					<Text bold color="yellow">
-						Tasks ({completedCount}/{tasks.length} completed):
-					</Text>
-					<Box flexDirection="column" marginTop={1}>
-						{tasks.length === 0 ? (
-							<Text dimColor>No tasks found. Run /init to create a project.</Text>
-						) : (
-							tasks.map((task, index) => {
-								const isSelected = index === selectedIndex;
-								const statusIcon = task.done ? "✓" : "○";
-								const statusColor = task.done ? "green" : "gray";
-								const stepCount = task.steps.length;
-
-								return (
-									<Box key={task.title}>
-										<Text color={isSelected ? "cyan" : undefined}>{isSelected ? "❯ " : "  "}</Text>
-										<Text color={statusColor}>{statusIcon} </Text>
-										<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
-											{task.title}
-										</Text>
-										<Text dimColor> ({stepCount} steps)</Text>
-									</Box>
-								);
-							})
-						)}
-					</Box>
-				</Box>
-
-				{selectedTask && (
-					<Box
-						flexDirection="column"
-						marginTop={1}
-						borderStyle="single"
-						borderColor="gray"
-						paddingX={1}
-					>
-						<Text bold color="yellow">
-							{selectedTask.title}
-						</Text>
-						<Box marginTop={1}>
-							<Text>{selectedTask.description}</Text>
-						</Box>
-						{selectedTask.steps.length > 0 && (
+		<ResponsiveLayout
+			header={<TasksHeader version={version} />}
+			content={
+				<ScrollableContent>
+					<Box flexDirection="column" paddingX={1} gap={1}>
+						<Box flexDirection="column">
+							<Text bold color="yellow">
+								Tasks ({completedCount}/{tasks.length} completed):
+							</Text>
 							<Box flexDirection="column" marginTop={1}>
-								<Text bold dimColor>
-									Steps:
+								{tasks.length === 0 ? (
+									<Text dimColor>No tasks found. Run /init to create a project.</Text>
+								) : (
+									tasks.map((task, index) => {
+										const isSelected = index === selectedIndex;
+										const statusIcon = task.done ? "✓" : "○";
+										const statusColor = task.done ? "green" : "gray";
+										const stepCount = task.steps.length;
+
+										return (
+											<Box key={task.title}>
+												<Text color={isSelected ? "cyan" : undefined}>
+													{isSelected ? "❯ " : "  "}
+												</Text>
+												<Text color={statusColor}>{statusIcon} </Text>
+												<Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+													{task.title}
+												</Text>
+												<Text dimColor> ({stepCount} steps)</Text>
+											</Box>
+										);
+									})
+								)}
+							</Box>
+						</Box>
+
+						{selectedTask && (
+							<Box
+								flexDirection="column"
+								marginTop={1}
+								borderStyle="single"
+								borderColor="gray"
+								paddingX={1}
+							>
+								<Text bold color="yellow">
+									{selectedTask.title}
 								</Text>
-								{selectedTask.steps.map((step) => (
-									<Box key={step} paddingLeft={1}>
-										<Text dimColor>{step}</Text>
+								<Box marginTop={1}>
+									<Text>{selectedTask.description}</Text>
+								</Box>
+								{selectedTask.steps.length > 0 && (
+									<Box flexDirection="column" marginTop={1}>
+										<Text bold dimColor>
+											Steps:
+										</Text>
+										{selectedTask.steps.map((step) => (
+											<Box key={step} paddingLeft={1}>
+												<Text dimColor>{step}</Text>
+											</Box>
+										))}
 									</Box>
-								))}
+								)}
+							</Box>
+						)}
+
+						{viewMode === "confirm-delete" && selectedTask && (
+							<Box
+								flexDirection="column"
+								marginTop={1}
+								borderStyle="single"
+								borderColor="red"
+								paddingX={1}
+							>
+								<Text bold color="red">
+									Delete task?
+								</Text>
+								<Box marginTop={1}>
+									<Text>"{selectedTask.title}"</Text>
+								</Box>
+								<Box marginTop={1}>
+									<Text dimColor>Press Enter to confirm, Escape to cancel</Text>
+								</Box>
+							</Box>
+						)}
+
+						{statusMessage && (
+							<Box marginTop={1}>
+								<Text color="green">{statusMessage}</Text>
 							</Box>
 						)}
 					</Box>
-				)}
-
-				{viewMode === "confirm-delete" && selectedTask && (
-					<Box
-						flexDirection="column"
-						marginTop={1}
-						borderStyle="single"
-						borderColor="red"
-						paddingX={1}
-					>
-						<Text bold color="red">
-							Delete task?
-						</Text>
-						<Box marginTop={1}>
-							<Text>"{selectedTask.title}"</Text>
-						</Box>
-						<Box marginTop={1}>
-							<Text dimColor>Press Enter to confirm, Escape to cancel</Text>
-						</Box>
-					</Box>
-				)}
-
-				{statusMessage && (
-					<Box marginTop={1}>
-						<Text color="green">{statusMessage}</Text>
-					</Box>
-				)}
-
-				<Box flexDirection="column" marginTop={1}>
-					<Text dimColor>↑/↓ Navigate | d Toggle done | x Delete | q/Esc Close</Text>
-				</Box>
-			</Box>
-		</Box>
+				</ScrollableContent>
+			}
+			footer={<TasksFooter />}
+			headerHeight={3}
+			footerHeight={2}
+		/>
 	);
 }
