@@ -120,14 +120,14 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		}, GIT_STATS_POLL_INTERVAL_MS);
 
 		try {
-			const result = await agentRunner.run(prompt);
+			const agentRunResult = await agentRunner.run(prompt);
 
 			if (AgentProcessManager.isAborted()) {
 				set({
 					isStreaming: false,
-					isComplete: result.isComplete,
-					exitCode: result.exitCode,
-					retryCount: result.retryCount,
+					isComplete: agentRunResult.isComplete,
+					exitCode: agentRunResult.exitCode,
+					retryCount: agentRunResult.retryCount,
 					isRetrying: false,
 				});
 
@@ -136,10 +136,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 			set({
 				isStreaming: false,
-				isComplete: result.isComplete,
-				exitCode: result.exitCode,
-				retryCount: result.retryCount,
-				error: result.success ? null : (result.error ?? "Unknown error"),
+				isComplete: agentRunResult.isComplete,
+				exitCode: agentRunResult.exitCode,
+				retryCount: agentRunResult.retryCount,
+				error: agentRunResult.success ? null : (agentRunResult.error ?? "Unknown error"),
 				isRetrying: false,
 			});
 		} catch (error) {

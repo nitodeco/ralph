@@ -197,7 +197,7 @@ export interface SessionCleanupResult {
 export function performSessionCleanup(config?: MemoryConfig): SessionCleanupResult {
 	const logger = getLogger({ logFilePath: config?.logFilePath });
 
-	const result: SessionCleanupResult = {
+	const cleanupResult: SessionCleanupResult = {
 		eventListenersCleared: false,
 		timersCleared: false,
 		processManagerReset: false,
@@ -208,7 +208,7 @@ export function performSessionCleanup(config?: MemoryConfig): SessionCleanupResu
 		const listenerCountBefore = eventBus.getListenerCount();
 
 		eventBus.removeAllListeners();
-		result.eventListenersCleared = true;
+		cleanupResult.eventListenersCleared = true;
 
 		if (listenerCountBefore > 0) {
 			logger.debug("Cleared event listeners", { count: listenerCountBefore });
@@ -219,26 +219,26 @@ export function performSessionCleanup(config?: MemoryConfig): SessionCleanupResu
 
 	try {
 		IterationTimer.reset();
-		result.timersCleared = true;
+		cleanupResult.timersCleared = true;
 	} catch (error) {
 		logger.warn("Failed to reset iteration timer", { error: String(error) });
 	}
 
 	try {
 		AgentProcessManager.reset();
-		result.processManagerReset = true;
+		cleanupResult.processManagerReset = true;
 	} catch (error) {
 		logger.warn("Failed to reset agent process manager", { error: String(error) });
 	}
 
 	try {
 		triggerGarbageCollection(config);
-		result.gcTriggered = true;
+		cleanupResult.gcTriggered = true;
 	} catch (error) {
 		logger.warn("Failed to trigger garbage collection", { error: String(error) });
 	}
 
-	return result;
+	return cleanupResult;
 }
 
 export interface MemoryDiagnostics {

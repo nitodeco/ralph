@@ -3,9 +3,9 @@ import { performSessionArchive } from "@/lib/archive.ts";
 export function printArchive(version: string): void {
 	console.log(`◆ ralph v${version} - Archive\n`);
 
-	const result = performSessionArchive();
+	const archiveResult = performSessionArchive();
 
-	if (result.tasksArchived === 0 && !result.progressArchived) {
+	if (archiveResult.tasksArchived === 0 && !archiveResult.progressArchived) {
 		console.log("Nothing to archive.");
 		console.log("\nCompleted tasks and progress files are archived when:");
 		console.log("  - Tasks are marked as done in the PRD");
@@ -14,13 +14,13 @@ export function printArchive(version: string): void {
 		return;
 	}
 
-	if (result.tasksArchived > 0) {
+	if (archiveResult.tasksArchived > 0) {
 		console.log(
-			`Archived ${result.tasksArchived} completed task${result.tasksArchived === 1 ? "" : "s"}`,
+			`Archived ${archiveResult.tasksArchived} completed task${archiveResult.tasksArchived === 1 ? "" : "s"}`,
 		);
 	}
 
-	if (result.progressArchived) {
+	if (archiveResult.progressArchived) {
 		console.log("Archived progress file");
 	}
 

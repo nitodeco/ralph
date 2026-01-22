@@ -166,10 +166,10 @@ export function detectCycles(prd: Prd): CycleDetectionResult {
 
 		for (const dependencyId of dependencies) {
 			if (!visited.has(dependencyId)) {
-				const result = dfs(dependencyId);
+				const cycleResult = dfs(dependencyId);
 
-				if (result.hasCycle) {
-					return result;
+				if (cycleResult.hasCycle) {
+					return cycleResult;
 				}
 			} else if (recursionStack.has(dependencyId)) {
 				const cycleStartIndex = path.indexOf(dependencyId);
@@ -187,10 +187,10 @@ export function detectCycles(prd: Prd): CycleDetectionResult {
 
 	for (const nodeId of graph.nodes.keys()) {
 		if (!visited.has(nodeId)) {
-			const result = dfs(nodeId);
+			const cycleResult = dfs(nodeId);
 
-			if (result.hasCycle) {
-				return result;
+			if (cycleResult.hasCycle) {
+				return cycleResult;
 			}
 		}
 	}
@@ -201,7 +201,7 @@ export function detectCycles(prd: Prd): CycleDetectionResult {
 export function getTopologicalOrder(prd: Prd): PrdTask[] {
 	const graph = buildDependencyGraph(prd);
 	const visited = new Set<string>();
-	const result: PrdTask[] = [];
+	const sortedTasks: PrdTask[] = [];
 
 	function visit(nodeId: string): void {
 		if (visited.has(nodeId)) {
@@ -219,7 +219,7 @@ export function getTopologicalOrder(prd: Prd): PrdTask[] {
 		const node = graph.nodes.get(nodeId);
 
 		if (node) {
-			result.push(node.task);
+			sortedTasks.push(node.task);
 		}
 	}
 
@@ -227,7 +227,7 @@ export function getTopologicalOrder(prd: Prd): PrdTask[] {
 		visit(nodeId);
 	}
 
-	return result;
+	return sortedTasks;
 }
 
 export function getReadyTasks(prd: Prd): TaskWithDependencyInfo[] {
@@ -303,33 +303,33 @@ export function getBlockedTasks(prd: Prd): TaskWithDependencyInfo[] {
 export function getDependents(prd: Prd, taskId: string): PrdTask[] {
 	const graph = buildDependencyGraph(prd);
 	const dependents = graph.reverseEdges.get(taskId) ?? new Set();
-	const result: PrdTask[] = [];
+	const dependentTasks: PrdTask[] = [];
 
 	for (const dependentId of dependents) {
 		const node = graph.nodes.get(dependentId);
 
 		if (node) {
-			result.push(node.task);
+			dependentTasks.push(node.task);
 		}
 	}
 
-	return result;
+	return dependentTasks;
 }
 
 export function getDependencies(prd: Prd, taskId: string): PrdTask[] {
 	const graph = buildDependencyGraph(prd);
 	const dependencies = graph.edges.get(taskId) ?? new Set();
-	const result: PrdTask[] = [];
+	const dependencyTasks: PrdTask[] = [];
 
 	for (const dependencyId of dependencies) {
 		const node = graph.nodes.get(dependencyId);
 
 		if (node) {
-			result.push(node.task);
+			dependencyTasks.push(node.task);
 		}
 	}
 
-	return result;
+	return dependencyTasks;
 }
 
 export function getNextReadyTask(prd: Prd): TaskWithDependencyInfo | null {

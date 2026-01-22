@@ -368,15 +368,15 @@ async function readStdinAsync(): Promise<string> {
 		}
 
 		const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-		const result = new Uint8Array(totalLength);
+		const stdinBuffer = new Uint8Array(totalLength);
 		let offset = 0;
 
 		for (const chunk of chunks) {
-			result.set(chunk, offset);
+			stdinBuffer.set(chunk, offset);
 			offset += chunk.length;
 		}
 
-		return new TextDecoder().decode(result).trim();
+		return new TextDecoder().decode(stdinBuffer).trim();
 	} catch {
 		return "";
 	}

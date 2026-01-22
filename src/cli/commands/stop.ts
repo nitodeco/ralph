@@ -4,9 +4,9 @@ import { getSessionService } from "@/lib/services/index.ts";
 export async function handleStopCommand(version: string): Promise<void> {
 	console.log(`◆ ralph v${version} - Stop\n`);
 
-	const result = await stopDaemonProcess();
+	const stopResult = await stopDaemonProcess();
 
-	if (result.success && result.pid !== null) {
+	if (stopResult.success && stopResult.pid !== null) {
 		const sessionService = getSessionService();
 		const session = sessionService.load();
 
@@ -18,11 +18,11 @@ export async function handleStopCommand(version: string): Promise<void> {
 		}
 	}
 
-	console.log(result.message);
+	console.log(stopResult.message);
 
-	if (result.success) {
+	if (stopResult.success) {
 		console.log("\nUse 'ralph resume' to continue the session later.");
 	}
 
-	process.exit(result.success ? 0 : 1);
+	process.exit(stopResult.success ? 0 : 1);
 }

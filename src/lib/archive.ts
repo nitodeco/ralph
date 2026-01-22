@@ -74,7 +74,7 @@ export interface ArchiveResult {
 }
 
 export function performSessionArchive(): ArchiveResult {
-	const result: ArchiveResult = {
+	const archiveResult: ArchiveResult = {
 		tasksArchived: 0,
 		progressArchived: false,
 	};
@@ -82,13 +82,13 @@ export function performSessionArchive(): ArchiveResult {
 	const prdFile = findPrdFile();
 
 	if (!prdFile) {
-		return result;
+		return archiveResult;
 	}
 
 	const prd = loadPrd();
 
 	if (!prd) {
-		return result;
+		return archiveResult;
 	}
 
 	const completedTaskCount = prd.tasks.filter((task) => task.done).length;
@@ -97,15 +97,15 @@ export function performSessionArchive(): ArchiveResult {
 		const updatedPrd = archiveCompletedTasks(prd);
 
 		savePrd(updatedPrd);
-		result.tasksArchived = completedTaskCount;
+		archiveResult.tasksArchived = completedTaskCount;
 	}
 
 	const progressFilePath = getProgressFilePath();
 
 	if (existsSync(progressFilePath)) {
 		archiveProgressFile();
-		result.progressArchived = true;
+		archiveResult.progressArchived = true;
 	}
 
-	return result;
+	return archiveResult;
 }

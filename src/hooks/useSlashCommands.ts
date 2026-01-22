@@ -98,17 +98,17 @@ export function useSlashCommands({
 				})
 				.with("next", () => {
 					if (args?.taskIdentifier) {
-						const result = setManualNextTask(args.taskIdentifier);
+						const taskSetResult = setManualNextTask(args.taskIdentifier);
 
-						if (result.success) {
+						if (taskSetResult.success) {
 							setNextTaskMessage({
 								type: "success",
-								text: `Next task set to: ${result.taskTitle}`,
+								text: `Next task set to: ${taskSetResult.taskTitle}`,
 							});
 						} else {
 							setNextTaskMessage({
 								type: "error",
-								text: result.error ?? "Failed to set next task",
+								text: taskSetResult.error ?? "Failed to set next task",
 							});
 						}
 
@@ -397,13 +397,13 @@ export function useSlashCommands({
 				})
 				.with("refresh", () => {
 					if (refreshState) {
-						const result = refreshState();
+						const refreshResult = refreshState();
 
-						if (result.success) {
+						if (refreshResult.success) {
 							const taskDisplay =
-								result.currentTaskIndex >= 0
-									? `Task ${result.currentTaskIndex + 1}/${result.taskCount}`
-									: `${result.taskCount} tasks (all done)`;
+								refreshResult.currentTaskIndex >= 0
+									? `Task ${refreshResult.currentTaskIndex + 1}/${refreshResult.taskCount}`
+									: `${refreshResult.taskCount} tasks (all done)`;
 
 							setRefreshMessage({
 								type: "success",
@@ -412,7 +412,7 @@ export function useSlashCommands({
 						} else {
 							setRefreshMessage({
 								type: "error",
-								text: result.error ?? "Failed to refresh state",
+								text: refreshResult.error ?? "Failed to refresh state",
 							});
 						}
 

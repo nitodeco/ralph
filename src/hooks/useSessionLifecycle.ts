@@ -65,10 +65,10 @@ export function useSessionLifecycle(
 
 	useEffect(() => {
 		const checkUpdate = async () => {
-			const result = await checkForUpdateOnStartup(version);
+			const updateCheckResult = await checkForUpdateOnStartup(version);
 
-			if (result.updateAvailable && result.latestVersion) {
-				useAppStore.getState().setUpdateStatus(true, result.latestVersion);
+			if (updateCheckResult.updateAvailable && updateCheckResult.latestVersion) {
+				useAppStore.getState().setUpdateStatus(true, updateCheckResult.latestVersion);
 			}
 		};
 
@@ -87,13 +87,13 @@ export function useSessionLifecycle(
 		}
 
 		if (initialTask && appState === "idle" && !pendingSession) {
-			const result = setManualNextTask(initialTask);
+			const taskSetResult = setManualNextTask(initialTask);
 
-			if (result.success) {
-				onTaskSet?.(result, initialTask);
+			if (taskSetResult.success) {
+				onTaskSet?.(taskSetResult, initialTask);
 				startIterations(1);
 			} else {
-				onTaskSet?.(result, initialTask);
+				onTaskSet?.(taskSetResult, initialTask);
 			}
 		} else if (autoStart && !autoResume && appState === "idle" && !pendingSession) {
 			startIterations();

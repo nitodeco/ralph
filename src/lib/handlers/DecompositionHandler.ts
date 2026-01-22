@@ -51,26 +51,26 @@ export class DecompositionHandler {
 			return false;
 		}
 
-		const result = applyDecomposition(currentPrd, request);
+		const decompositionResult = applyDecomposition(currentPrd, request);
 
-		if (!result.success || !result.updatedPrd) {
-			logger.error("Failed to apply decomposition", { error: result.error });
+		if (!decompositionResult.success || !decompositionResult.updatedPrd) {
+			logger.error("Failed to apply decomposition", { error: decompositionResult.error });
 
 			return false;
 		}
 
-		savePrd(result.updatedPrd);
+		savePrd(decompositionResult.updatedPrd);
 		this.decompositionCountByTask.set(taskKey, currentCount + 1);
 
 		logger.info("Task decomposed successfully", {
 			originalTask: request.originalTaskTitle,
-			subtasksCreated: result.subtasksCreated,
+			subtasksCreated: decompositionResult.subtasksCreated,
 			reason: request.reason,
 		});
 
 		appendProgress(formatDecompositionForProgress(request));
 
-		this.onPrdUpdate(result.updatedPrd);
+		this.onPrdUpdate(decompositionResult.updatedPrd);
 		this.onRestartIteration();
 
 		return true;

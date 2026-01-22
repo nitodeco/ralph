@@ -50,9 +50,9 @@ export function createGuardrailsService(): GuardrailsService {
 
 	function save(guardrails: PromptGuardrail[]): void {
 		ensureProjectDirExists();
-		const data: GuardrailsFile = { guardrails };
+		const guardrailsFile: GuardrailsFile = { guardrails };
 
-		writeFileIdempotent(getGuardrailsFilePath(), JSON.stringify(data, null, "\t"));
+		writeFileIdempotent(getGuardrailsFilePath(), JSON.stringify(guardrailsFile, null, "\t"));
 		cachedGuardrails = guardrails;
 	}
 

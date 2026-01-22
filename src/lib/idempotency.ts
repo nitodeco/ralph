@@ -250,13 +250,13 @@ export function createBatchedUpdater<T>(options: BatchedUpdaterOptions<T>): Batc
 		pendingUpdaters = [];
 		timeoutId = null;
 
-		let current = load();
+		let currentState = load();
 
 		for (const updater of updaters) {
-			current = updater(current);
+			currentState = updater(currentState);
 		}
 
-		save(current);
+		save(currentState);
 	}
 
 	return {

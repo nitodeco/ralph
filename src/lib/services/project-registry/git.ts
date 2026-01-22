@@ -7,13 +7,13 @@ export function getGitRemoteUrl(cwd: string = process.cwd()): string | null {
 	}
 
 	try {
-		const result = execSync("git remote get-url origin", {
+		const remoteUrlOutput = execSync("git remote get-url origin", {
 			cwd,
 			encoding: "utf-8",
 			stdio: ["pipe", "pipe", "pipe"],
 		});
 
-		const trimmed = result.trim();
+		const trimmed = remoteUrlOutput.trim();
 
 		if (trimmed.length === 0) {
 			return null;

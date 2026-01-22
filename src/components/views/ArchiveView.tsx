@@ -27,7 +27,7 @@ function ArchiveFooter(): React.ReactElement {
 }
 
 export function ArchiveView({ version, onClose }: ArchiveViewProps): React.ReactElement {
-	const result = performSessionArchive();
+	const archiveResult = performSessionArchive();
 
 	useInput((input, key) => {
 		if (key.escape || key.return || input === "q") {
@@ -41,7 +41,7 @@ export function ArchiveView({ version, onClose }: ArchiveViewProps): React.React
 			content={
 				<ScrollableContent>
 					<Box flexDirection="column" paddingX={1} gap={1}>
-						{result.tasksArchived === 0 && !result.progressArchived ? (
+						{archiveResult.tasksArchived === 0 && !archiveResult.progressArchived ? (
 							<Box flexDirection="column">
 								<Text>Nothing to archive.</Text>
 								<Box flexDirection="column" marginTop={1}>
@@ -58,13 +58,14 @@ export function ArchiveView({ version, onClose }: ArchiveViewProps): React.React
 									Archive Complete
 								</Text>
 								<Box flexDirection="column" paddingLeft={2} marginTop={1}>
-									{result.tasksArchived > 0 && (
+									{archiveResult.tasksArchived > 0 && (
 										<Text>
-											<Text color="green">✓</Text> Archived {result.tasksArchived} completed task
-											{result.tasksArchived === 1 ? "" : "s"}
+											<Text color="green">✓</Text> Archived {archiveResult.tasksArchived} completed
+											task
+											{archiveResult.tasksArchived === 1 ? "" : "s"}
 										</Text>
 									)}
-									{result.progressArchived && (
+									{archiveResult.progressArchived && (
 										<Text>
 											<Text color="green">✓</Text> Archived progress file
 										</Text>

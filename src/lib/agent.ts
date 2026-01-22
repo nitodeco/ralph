@@ -170,24 +170,24 @@ export class AgentRunner {
 		}
 
 		while (AgentProcessManager.getRetryCount() <= maxRetries && !AgentProcessManager.isAborted()) {
-			const result = await this.runOnce({
+			const runAttemptResult = await this.runOnce({
 				prompt,
 				additionalContext: currentRetryContext,
 				outputThrottleMs,
 			});
 
-			if (result.success || AgentProcessManager.isAborted()) {
+			if (runAttemptResult.success || AgentProcessManager.isAborted()) {
 				const finalResult: AgentRunResult = {
-					...result,
+					...runAttemptResult,
 					retryCount: AgentProcessManager.getRetryCount(),
 					retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 				};
 
 				if (this.config.emitEvents && !AgentProcessManager.isAborted()) {
 					eventBus.emit("agent:complete", {
-						isComplete: result.isComplete,
-						exitCode: result.exitCode,
-						output: result.output,
+						isComplete: runAttemptResult.isComplete,
+						exitCode: runAttemptResult.exitCode,
+						output: runAttemptResult.output,
 						retryCount: AgentProcessManager.getRetryCount(),
 						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 					});
@@ -196,7 +196,10 @@ export class AgentRunner {
 				return finalResult;
 			}
 
-			const categorizedError = categorizeAgentErrorFull(result.error ?? "", result.exitCode);
+			const categorizedError = categorizeAgentErrorFull(
+				runAttemptResult.error ?? "",
+				runAttemptResult.exitCode,
+			);
 
 			if (categorizedError.category === "fatal") {
 				const errorWithSuggestion = categorizedError.suggestion
@@ -206,20 +209,20 @@ export class AgentRunner {
 				logger.error("Fatal error encountered, not retrying", {
 					error: categorizedError.message,
 					code: categorizedError.code,
-					exitCode: result.exitCode,
+					exitCode: runAttemptResult.exitCode,
 				});
 
 				if (this.config.emitEvents) {
 					eventBus.emit("agent:error", {
 						error: errorWithSuggestion,
-						exitCode: result.exitCode,
+						exitCode: runAttemptResult.exitCode,
 						isFatal: true,
 						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 					});
 				}
 
 				return {
-					...result,
+					...runAttemptResult,
 					retryCount: AgentProcessManager.getRetryCount(),
 					isFatal: true,
 					error: `Fatal error [${categorizedError.code}]: ${errorWithSuggestion}`,
@@ -235,7 +238,11 @@ export class AgentRunner {
 
 				if (retryWithContext) {
 					try {
-						failureAnalysis = analyzeFailure(result.error ?? "", result.output, result.exitCode);
+						failureAnalysis = analyzeFailure(
+							runAttemptResult.error ?? "",
+							runAttemptResult.output,
+							runAttemptResult.exitCode,
+						);
 						currentRetryContext = generateRetryContext(failureAnalysis, currentRetryCount);
 
 						const retryContextEntry: IterationLogRetryContext = {
@@ -291,7 +298,7 @@ export class AgentRunner {
 					`Max retries (${maxRetries}) exceeded`,
 					{
 						lastError: categorizedError.message,
-						exitCode: result.exitCode,
+						exitCode: runAttemptResult.exitCode,
 						retryCount: AgentProcessManager.getRetryCount(),
 					},
 				);
@@ -300,7 +307,7 @@ export class AgentRunner {
 					maxRetries,
 					lastError: categorizedError.message,
 					code: maxRetriesError.code,
-					exitCode: result.exitCode,
+					exitCode: runAttemptResult.exitCode,
 				});
 
 				const errorMessage = maxRetriesError.suggestion
@@ -310,14 +317,14 @@ export class AgentRunner {
 				if (this.config.emitEvents) {
 					eventBus.emit("agent:error", {
 						error: errorMessage,
-						exitCode: result.exitCode,
+						exitCode: runAttemptResult.exitCode,
 						isFatal: true,
 						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
 					});
 				}
 
 				return {
-					...result,
+					...runAttemptResult,
 					retryCount: AgentProcessManager.getRetryCount(),
 					error: errorMessage,
 					isFatal: true,

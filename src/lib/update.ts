@@ -56,9 +56,9 @@ export async function fetchLatestVersion(): Promise<string> {
 		throw new Error(`Failed to fetch latest version: ${response.statusText}`);
 	}
 
-	const data = (await response.json()) as GitHubRelease;
+	const releaseInfo = (await response.json()) as GitHubRelease;
 
-	return data.tag_name;
+	return releaseInfo.tag_name;
 }
 
 export function compareVersions(current: string, latest: string): number {
@@ -160,15 +160,15 @@ export async function downloadBinary(
 		onProgress(downloadedBytes, totalBytes);
 	}
 
-	const result = new Uint8Array(downloadedBytes);
+	const binaryBuffer = new Uint8Array(downloadedBytes);
 	let offset = 0;
 
 	for (const chunk of chunks) {
-		result.set(chunk, offset);
+		binaryBuffer.set(chunk, offset);
 		offset += chunk.length;
 	}
 
-	return result.buffer;
+	return binaryBuffer.buffer;
 }
 
 export async function installBinary(binaryData: ArrayBuffer, targetPath: string): Promise<void> {
