@@ -1,5 +1,372 @@
 # ralph
 
+## 0.13.0
+
+### Minor Changes
+
+- e259393: feat: add auto-guardrail generation from codebase analysis
+
+  Added a new `ralph guardrails generate` command that analyzes the current project's codebase and automatically generates relevant guardrails based on detected patterns.
+
+  ## Features
+
+  - Detects package manager (npm, yarn, pnpm, bun)
+  - Detects TypeScript usage
+  - Detects test frameworks (jest, vitest, mocha, bun test)
+  - Detects linters (eslint, biome)
+  - Detects formatters (prettier, biome)
+  - Detects frameworks (React, Next.js, Vue, Svelte, Angular)
+  - Detects build tools (Vite, Webpack, esbuild, Parcel)
+  - Detects git hooks (husky, lint-staged, lefthook)
+  - Detects CI configuration (GitHub Actions, GitLab CI, CircleCI, etc.)
+  - Detects monorepo configurations (workspaces, pnpm-workspace, turbo, nx, lerna)
+  - Detects npm scripts (build, test, lint, format, typecheck)
+
+  ## Usage
+
+  ```bash
+  # View suggested guardrails without applying
+  ralph guardrails generate
+
+  # View as JSON
+  ralph guardrails generate --json
+
+  # Generate and immediately add guardrails
+  ralph guardrails generate --apply
+  ```
+
+- 8ae9bb2: feat: add /usage command to terminal UI
+
+  Added new /usage slash command that opens an interactive view displaying:
+
+  - Summary tab with lifetime statistics (sessions, iterations, tasks, success rate, streaks)
+  - Sessions tab showing recent session history with status indicators
+  - Daily tab showing aggregated daily usage metrics
+
+  The view uses tab navigation with arrow keys and matches the existing UI patterns.
+
+- 86ee029: Add better progress indicators with informative spinners and progress bars
+
+  - Enhanced Spinner component with 9 context-aware variants (default, processing, waiting, success, warning, error, thinking, network, progress) using different cli-spinners animations
+  - Enhanced ProgressBar component with 4 style options (default, minimal, detailed, compact), auto-color mode, and configurable display options (count, bytes, suffix)
+  - Added PhaseIndicator component with 4 visualization styles (dots, timeline, compact, minimal) showing agent execution phase progress
+  - Updated IterationProgress with ETA calculation, elapsed time display, average iteration time, and enhanced visual feedback
+  - Updated AgentStatus with phase-specific spinner variants, visual phase timeline, and color-coded file change indicators
+  - Updated PlanGeneratingPhase to use thinking spinner variant
+
+- 4ecd4c6: Add CLI-based task operations for /plan command
+
+  - Add `ralph task add` command to add new tasks via `--stdin` JSON or flags
+  - Add `ralph task edit <n>` command to edit existing tasks (partial updates, preserves done status)
+  - Add `ralph task remove <n>` command to remove tasks by index
+  - Add `ralph task show <n>` command to display full task details (description, steps)
+  - Update `/plan` prompt to show full task content and instruct AI to use CLI commands
+  - Add command parser to extract task operations from AI output instead of parsing JSON
+  - Prevents task content degradation by only touching tasks relevant to the specification
+
+- f32d673: Add command history with arrow key navigation. Commands entered in the Terminal UI are now persisted and can be navigated using up/down arrow keys. History is stored per-project and shows a visual indicator when browsing previous commands.
+- e13fce8: Add confirmation dialogs for destructive actions
+
+  - Created reusable `ConfirmationDialog` component in `src/components/common/`
+  - Added confirmation dialog to `MemoryView` when pressing 'c' to clear all session memory
+  - Added confirmation dialog to `GuardrailsView` when pressing 'd' to delete a guardrail
+  - Added `ConfirmClearView` for the `/clear` slash command with session summary
+  - Added `--force` (or `-f`) flag to `ralph clear` CLI command to skip confirmation
+  - Added `--force` flag to `ralph memory clear` CLI command to skip confirmation
+  - CLI commands now show interactive readline prompts for confirmation when not using `--force`
+
+- ac23359: feat: add CLI commands for dependency management
+
+  Added new `ralph dependency` command with subcommands:
+
+  - `dependency` / `dependency graph` - Show dependency graph for all tasks
+  - `dependency validate` - Validate task dependencies (detect cycles, missing refs)
+  - `dependency ready` - List tasks ready for execution (dependencies satisfied)
+  - `dependency blocked` - List tasks blocked by incomplete dependencies
+  - `dependency order` - Show parallel execution groups in order
+  - `dependency show <task>` - Show dependency details for a specific task
+  - `dependency set <task> <dep1> [dep2...]` - Set dependencies for a task
+  - `dependency add <task> <dep>` - Add a dependency to a task
+  - `dependency remove <task> <dep>` - Remove a dependency from a task
+
+  All commands support `--json` flag for programmatic output.
+
+- 3231ee7: feat: enhanced agent status display with phase detection
+
+  Replaces the generic "Agent working..." spinner with detailed phase-based status indicators:
+
+  - Shows current agent phase: starting, exploring, reading, implementing, running commands, verifying, committing
+  - Displays phase duration after 5 seconds (e.g., "Agent is implementing changes... (12s)")
+  - Shows file change statistics: created, modified, deleted counts from git status
+  - Polls git status every 5 seconds while agent is running
+
+  New files:
+
+  - `src/lib/agent-phase.ts` - Phase detection from agent output using regex patterns
+  - `src/lib/git-stats.ts` - Git status parsing for file change statistics
+  - `src/stores/agentStatusStore.ts` - Zustand store for phase and file change state
+  - `src/components/AgentStatus.tsx` - Enhanced status display component
+
+  Also fixes IterationProgress edge cases when total is 0 or current exceeds total.
+
+- 6cf1098: Add parallel task execution tracking to session management
+
+  - Added new types for parallel execution: `TaskExecutionStatus`, `ActiveTaskExecution`, `ParallelExecutionGroup`, and `ParallelSessionState`
+  - Extended `Session` interface with optional `parallelState` field
+  - Extended `IterationLog` with `isParallelExecution` and `parallelGroup` fields for tracking parallel task executions
+  - Added new types `ParallelTaskExecution` and `IterationLogParallelGroup` for logging parallel task execution details
+  - Added 14 new methods to `SessionService` for parallel execution management:
+    - `enableParallelMode` / `disableParallelMode` / `isParallelMode` for mode control
+    - `startParallelGroup` / `completeParallelGroup` / `getCurrentParallelGroup` for group management
+    - `startTaskExecution` / `completeTaskExecution` / `failTaskExecution` / `retryTaskExecution` for task lifecycle
+    - `getActiveExecutions` / `getTaskExecution` / `isTaskExecuting` / `getActiveExecutionCount` for querying state
+  - Added comprehensive validation for parallel session state
+  - Added 39 unit tests for parallel session tracking functionality
+
+- 04d9f33: Add idempotent operations to prevent duplicate work
+
+  - Create idempotency module with content hashing, atomic file writes, operation tracking, debounced writers, and batched updaters
+  - Update SessionService, PrdService, iteration-logs, ConfigService, GuardrailsService, SessionMemoryService, FailurePatterns, and ProjectRegistry to use idempotent file writes
+  - Atomic file operations (write-to-temp, rename) ensure data integrity
+  - Content hash-based change detection skips unnecessary writes
+  - Operation tracker prevents duplicate work with TTL-based cleanup
+  - Add 43 unit tests for the idempotency module
+
+- e7e172a: Add multi-process support to AgentProcessManager for parallel task execution
+
+  - Changed from single-process to Map-based multi-process tracking
+  - Added process identifier support for managing multiple concurrent agent processes
+  - New methods: registerProcess, unregisterProcess, getProcessById, getAllProcessIds, getAllProcessInfo, getActiveProcessCount, isAnyRunning, killAll, resetAll, clearAllForceKillTimeouts
+  - Maintained backward compatibility with existing single-process API by using a default process identifier
+  - Added per-process state tracking: aborted, retryCount, forceKillTimeout, createdAt
+  - Added global abort state that affects all processes
+  - Exported ProcessEntry and ProcessInfo types for external use
+
+- dbd9095: feat: add parallel task scheduling to SessionOrchestrator
+
+  Added parallel execution capabilities to the orchestrator:
+
+  - New `ParallelExecutionConfig` interface for configuring parallel mode
+  - `initializeParallelExecution()` method to validate dependencies and compute parallel groups
+  - `startNextParallelGroup()` to begin executing a group of independent tasks
+  - `recordParallelTaskStart()` and `recordParallelTaskComplete()` for tracking individual task progress
+  - `getParallelExecutionSummary()` for monitoring parallel execution status
+  - Integration with SessionService parallel tracking methods
+  - New events: `parallel:group_start`, `parallel:group_complete`, `parallel:task_start`, `parallel:task_complete`
+  - Comprehensive test coverage with 14 tests
+
+  This enables ralph to execute multiple independent tasks in parallel when configured, improving throughput for PRDs with independent tasks or tasks organized with dependency metadata.
+
+- 50a84a0: Align all terminal UI with ResponsiveLayout fixed layout system
+- 757b34f: Add responsive terminal layout support for narrow terminals
+
+  - Added `useTerminalDimensions` hook for detecting terminal width/height and breakpoints
+  - Created `ResponsiveLayout` component that provides responsive context to child components
+  - Updated `Header` component with three variants: `full` (default), `compact`, and `minimal`
+  - Updated `StatusBar` with responsive variants that adapt to terminal width
+  - Updated `PhaseIndicator` with auto-style selection based on terminal width
+  - Updated `IterationProgress` with responsive progress bar width and condensed display for narrow terminals
+  - Breakpoints: narrow (≤60 cols), medium (61-100 cols), wide (>100 cols)
+
+- 44a4f2b: Add /rules command for managing custom instructions
+
+  This adds a new command for managing custom rules (instructions) that are injected into the agent prompt. Rules are simpler than guardrails - they are just text instructions without triggers or categories.
+
+  Features:
+
+  - CLI: `ralph rules [list|add|remove]`
+  - Slash commands: `/rules` (view), `/rule <text>` (add)
+  - Terminal UI: Interactive RulesView with add/delete/navigate
+  - Stored per-project in `rules.json`
+
+- ebccb9b: feat: add Default/Advanced mode selection to setup wizard
+
+  The setup wizard now offers two configuration modes:
+
+  - Default (Recommended): Only asks for the AI agent type and uses sensible defaults for all other settings
+  - Advanced: Goes through all configuration options as before (retries, timeouts, memory, notifications)
+
+  This makes the initial setup faster for users who just want to get started quickly.
+
+- 05e9a95: Add slash command autocomplete hints with keyboard navigation
+
+  - Display command suggestions above the input when typing `/`
+  - Filter suggestions dynamically as user continues typing
+  - Use Tab or ArrowRight (at end of input) to autocomplete the top result
+  - Use ArrowUp/ArrowDown to navigate through suggestions
+  - Visual highlighting shows the currently selected suggestion with a `▸` indicator
+  - Show command description alongside each suggestion for better discoverability
+
+- 081ce0b: Add system notifications for user input events
+
+  - Add new notification event types: input_required, session_paused, verification_failed
+  - Send session_paused notification when user stops the session
+  - Send verification_failed notification when verification checks fail
+  - All notifications respect the systemNotification config setting
+
+- 0c59184: feat: add post-run technical debt review
+
+  Implemented automatic technical debt review at session completion:
+
+  - Created TechnicalDebtHandler that analyzes iteration logs for quality issues
+  - Detects retry patterns, verification failures, decomposition frequency, error patterns, and performance issues
+  - Generates structured reports with severity levels (critical/high/medium/low)
+  - Provides actionable recommendations based on detected issues
+  - Added TechnicalDebtReviewConfig to RalphConfig for customization
+  - Integrated into orchestrator's onAllComplete callback
+  - Added session:technical_debt_review event for external integrations
+  - Report is automatically appended to progress file when issues are found
+
+- b1abc83: feat: add vim-like editing to PRD text input
+
+  Added vim-like editing capabilities to the TextInput component:
+
+  - Normal mode (Esc) and Insert mode (i, a, A, I)
+  - Navigation: hjkl, word motions (w, b, e), line motions (0, $, ^)
+  - Delete operations: x, X, d+motion (dw, db, dd, d$, d0), D, C
+  - Undo support (u)
+  - Visual vim mode indicator showing [N] for normal mode and [I] for insert mode
+  - Block cursor highlighting in normal mode
+
+  The PlanInputPhase component now uses vim mode by default. Users can navigate
+  and edit their PRD specifications using familiar vim keybindings.
+
+### Patch Changes
+
+- 95c8332: Add failsafes and error handling to agent loop
+
+  - Add try-catch around stream reading operations to prevent crashes from stream read failures
+  - Add safe decoder handling for invalid UTF-8 data with graceful fallback
+  - Add timeout protection (30s) for process exit to prevent infinite hangs
+  - Add error isolation for event handlers in orchestrator to prevent cascading failures
+  - Add process state validation in AgentProcessManager to detect desynchronization
+  - Add error handling for output handler callbacks to prevent callback errors from crashing stream reading
+  - Add new error codes: AGENT_STREAM_ERROR, AGENT_PROCESS_HANG, AGENT_DECODE_ERROR
+  - Wrap retry context generation in try-catch with fallback to retry without context
+  - Wrap verification handler, learning handler, and iteration log operations in try-catch
+
+- bae074e: feat: add cross-session usage statistics tracking
+
+  Adds a new UsageStatisticsService that tracks usage metrics across sessions:
+
+  - Tracks lifetime statistics: total sessions, iterations, tasks completed, success rates
+  - Records recent sessions with details like duration, status, and performance
+  - Maintains daily usage data for trend analysis
+  - Provides streak tracking for consecutive days of usage
+
+  New CLI command `ralph usage` with subcommands:
+
+  - `ralph usage` or `ralph usage show` - full statistics display
+  - `ralph usage summary` - condensed summary
+  - `ralph usage sessions [limit]` - recent sessions list
+  - `ralph usage daily [days]` - daily usage breakdown
+
+  Statistics are automatically recorded when sessions complete, stop, or fail.
+
+- ffaf819: feat: add task dependency graph engine
+
+  Implements a comprehensive dependency graph engine for analyzing and managing task dependencies in PRDs. The engine provides:
+
+  - `buildDependencyGraph`: Constructs a directed graph from task dependencies
+  - `validateDependencies`: Validates dependencies for missing refs, cycles, and self-references
+  - `detectCycles`: Detects circular dependencies using DFS
+  - `getTopologicalOrder`: Returns tasks sorted in dependency order
+  - `getReadyTasks`: Returns tasks that have all dependencies satisfied
+  - `getBlockedTasks`: Returns tasks waiting on incomplete dependencies
+  - `getNextReadyTask`: Returns the highest priority ready task
+  - `canExecuteTask`: Checks if a specific task can be executed
+  - `getExecutionOrder`: Returns the order tasks should be executed
+  - `getParallelExecutionGroups`: Groups tasks that can run in parallel
+
+  This engine enables parallel task execution by identifying which tasks can run concurrently based on their dependency relationships.
+
+- 76f2d76: Extracted magic numbers into named constants for improved code readability and maintainability. Constants now include timeout values, progress thresholds, display widths, and delay configurations.
+- 35d2343: Fixed slash command completion keyboard navigation where arrow keys now properly select and apply the highlighted suggestion
+- fa6c1de: fix: reset iteration count when clearing session via /clear command
+- a42b2a1: Fix Ctrl+Enter keybind not working when editing task after PRD generation. The TextInput component was consuming all Enter key events, including Ctrl+Enter, preventing the parent handler from processing the save action. Now TextInput explicitly allows Ctrl+Enter and Meta+Enter events to propagate to parent handlers.
+- 2f2d6d6: Fix layout shift in plan review view when switching between edit and details modes
+- 0f5a32d: Fix task list scrolling in PlanReviewPhase for condensed terminal views. Implements viewport windowing to ensure the selected task is always visible when navigating with arrow keys. Shows 5 tasks in narrow terminals vs 8 in normal view, with scroll indicators showing items above/below the viewport.
+- e2128cc: Fix terminal UI after session resume - iteration counter now correctly continues from where it left off instead of resetting to 1
+- ce0c5ba: fix: setup wizard no longer repeats on every start
+
+  The globalConfigExists() function now directly checks the file system instead of going through the service container. This ensures the setup wizard correctly detects an existing config file regardless of service initialization state.
+
+- f5ec186: Fixed /start full command to continue running until all tasks are complete. Previously, when running in full mode, the session would stop when the initial iteration count (based on incomplete tasks) was reached, even if tasks hadn't been completed due to retries, verification failures, or decomposition. Now the iteration limit automatically extends when there are still pending tasks.
+- e6399cb: Fix text input character loss during fast typing by using refs to track the latest value and cursor position
+- 410c366: feat: implement fixed terminal UI layout system
+
+  Adds a stable terminal UI layout that maintains consistent positioning:
+
+  - New FixedLayout component divides the terminal into header, content, and footer regions
+  - New ScrollableContent component wraps the content area with overflow handling
+  - StatusBar and CommandInput stay anchored at the bottom regardless of content changes
+  - Terminal resize events are handled to recalculate layout dimensions
+  - Refactored MainRunView to use the new layout system for improved stability
+
+- 53c206e: Add memory leak prevention for long-running sessions
+
+  - Fix timeout leak in AgentProcessManager.safeKillProcess by tracking and clearing pending kill timeouts
+  - Add clearCallbacks and reset methods to iterationStore to prevent closure accumulation
+  - Add reset method to createThrottledFunction utility for proper timeout cleanup
+  - Clear iteration callbacks in orchestrator cleanup to prevent closure leaks between sessions
+  - Add getListenerCount and getListenerStats methods to eventBus for memory debugging
+  - Add performSessionCleanup function for comprehensive session resource cleanup
+  - Add getMemoryDiagnostics function for debugging memory and resource state
+
+- 0dbe1ac: feat: add dependency metadata fields to PrdTask type
+
+  The PrdTask type now includes optional fields for task dependency management:
+
+  - `id`: Optional unique identifier for referencing tasks in dependencies
+  - `dependsOn`: Optional array of task IDs that must complete before this task
+  - `priority`: Optional number for scheduling priority (lower = higher priority)
+
+  The DecompositionSubtask type has also been updated to support these fields when decomposing tasks. All fields are optional to maintain backward compatibility with existing PRD files.
+
+- 953e933: Add quit functionality to plan command input phase
+
+  Users can now press `q` in vim normal mode (press Esc first) to quit from the plan command input phase. This follows the same pattern as other phases where `q` or Esc can be used to cancel/exit.
+
+- 7d7c424: chore: remove unused IterationLogHandler class
+- 9bd3bc5: chore: remove unused plan-command-parser functions
+- 7f80e83: chore: remove unused plan-parser functions
+- 2621a4d: Replaced all switch statements with ts-pattern match expressions for consistent control flow throughout the codebase
+- f551b10: Enhanced tab completion for slash commands with common prefix completion, Tab/Shift+Tab cycling through suggestions, and trailing spaces for commands with arguments
+- b1ad96d: feat: add Ctrl+Home/End document start/end navigation to TextInput
+
+  The TextInput component now supports Ctrl+Home and Ctrl+End for document-level cursor navigation:
+
+  - Ctrl+Home moves the cursor to the beginning of the document (offset 0)
+  - Ctrl+End moves the cursor to the end of the document (after the last character)
+
+- fcbf291: feat: add Home/End key navigation for line start/end in TextInput
+
+  The TextInput component now supports Home and End key navigation for moving the cursor to the start or end of the current line in multiline text:
+
+  - Home key moves the cursor to the beginning of the current line
+  - End key moves the cursor to the end of the current line
+
+  This complements the existing up/down arrow line navigation for a more complete multiline editing experience.
+
+- ec9ffa2: feat: add up/down arrow line navigation to TextInput component
+
+  The TextInput component now supports navigating between lines in multiline text using the up and down arrow keys. When pressing up/down:
+
+  - The cursor moves to the equivalent column position on the previous/next line
+  - If the target line is shorter, the cursor is clamped to the end of that line
+  - External onArrowUp/onArrowDown callbacks are only triggered when already at the first/last line
+
+  This improves the multiline text editing experience when pasting or entering multi-line content.
+
+- 9f99b6c: feat: add Ctrl+Left/Right word-by-word navigation to TextInput
+
+  The TextInput component now supports Ctrl+Left and Ctrl+Right for word-by-word cursor navigation:
+
+  - Ctrl+Left moves the cursor to the beginning of the previous word
+  - Ctrl+Right moves the cursor to the end of the next word
+
+  Word boundaries are determined by transitions between word characters (alphanumeric and underscore) and non-word characters.
+
 ## 0.12.0
 
 ### Minor Changes
