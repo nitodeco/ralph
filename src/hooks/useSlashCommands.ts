@@ -46,6 +46,7 @@ interface UseSlashCommandsResult {
 	handleSlashCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	handleClearConfirm: (result: ClearResult) => void;
 	handleClearCancel: () => void;
+	dismissHelp: () => void;
 	nextTaskMessage: SlashCommandMessage | null;
 	guardrailMessage: SlashCommandMessage | null;
 	ruleMessage: SlashCommandMessage | null;
@@ -53,6 +54,7 @@ interface UseSlashCommandsResult {
 	refreshMessage: SlashCommandMessage | null;
 	clearMessage: SlashCommandMessage | null;
 	taskMessage: SlashCommandMessage | null;
+	helpVisible: boolean;
 }
 
 function getViewForCommand(command: SlashCommand): ActiveView {
@@ -83,6 +85,7 @@ export function useSlashCommands({
 	const [refreshMessage, setRefreshMessage] = useState<SlashCommandMessage | null>(null);
 	const [clearMessage, setClearMessage] = useState<SlashCommandMessage | null>(null);
 	const [taskMessage, setTaskMessage] = useState<SlashCommandMessage | null>(null);
+	const [helpVisible, setHelpVisible] = useState(false);
 
 	const handleSlashCommand = useCallback(
 		(command: SlashCommand, args?: CommandArgs) => {
@@ -366,11 +369,13 @@ export function useSlashCommands({
 						setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
 					}
 				})
+				.with("help", () => {
+					setHelpVisible((prev) => !prev);
+				})
 				.with(
 					"init",
 					"setup",
 					"update",
-					"help",
 					"add",
 					"status",
 					"archive",
@@ -486,10 +491,15 @@ export function useSlashCommands({
 		setActiveView("run");
 	}, [setActiveView]);
 
+	const dismissHelp = useCallback(() => {
+		setHelpVisible(false);
+	}, []);
+
 	return {
 		handleSlashCommand,
 		handleClearConfirm,
 		handleClearCancel,
+		dismissHelp,
 		nextTaskMessage,
 		guardrailMessage,
 		ruleMessage,
@@ -497,5 +507,6 @@ export function useSlashCommands({
 		refreshMessage,
 		clearMessage,
 		taskMessage,
+		helpVisible,
 	};
 }

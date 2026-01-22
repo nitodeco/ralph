@@ -80,6 +80,7 @@ export function RunApp({
 		handleSlashCommand,
 		handleClearConfirm,
 		handleClearCancel,
+		dismissHelp,
 		nextTaskMessage,
 		guardrailMessage,
 		ruleMessage,
@@ -87,6 +88,7 @@ export function RunApp({
 		refreshMessage,
 		clearMessage,
 		taskMessage,
+		helpVisible,
 	} = useSlashCommands({
 		startIterations,
 		resumeSession,
@@ -196,6 +198,8 @@ export function RunApp({
 				updateAvailable={updateAvailable}
 				latestVersion={latestVersion}
 				updateBannerDismissed={updateBannerDismissed}
+				helpVisible={helpVisible}
+				onDismissHelp={dismissHelp}
 			/>
 		</ViewRouter>
 	);

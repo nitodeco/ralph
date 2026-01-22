@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text, useInput } from "ink";
 import type { Prd, RalphConfig } from "@/types.ts";
 import { AgentStatus } from "./AgentStatus.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
@@ -7,6 +7,7 @@ import { Message } from "./common/Message.tsx";
 import { ResponsiveLayout, useResponsive } from "./common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "./common/ScrollableContent.tsx";
 import { Header } from "./Header.tsx";
+import { InlineHelpContent } from "./InlineHelpContent.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
@@ -36,6 +37,8 @@ interface MainRunViewProps {
 	updateAvailable: boolean;
 	latestVersion: string | null;
 	updateBannerDismissed: boolean;
+	helpVisible: boolean;
+	onDismissHelp: () => void;
 }
 
 interface MessageDisplayProps {
@@ -98,6 +101,8 @@ interface ContentSectionProps {
 	appState: string;
 	iterationCurrent: number;
 	iterationTotal: number;
+	helpVisible: boolean;
+	version: string;
 }
 
 function ContentSection({
@@ -111,9 +116,13 @@ function ContentSection({
 	appState,
 	iterationCurrent,
 	iterationTotal,
+	helpVisible,
+	version,
 }: ContentSectionProps): React.ReactElement {
 	return (
 		<ScrollableContent>
+			{helpVisible && <InlineHelpContent version={version} />}
+
 			<TaskList />
 			<IterationProgress />
 			<AgentStatus />
@@ -193,8 +202,19 @@ export function MainRunView({
 	updateAvailable,
 	latestVersion,
 	updateBannerDismissed,
+	helpVisible,
+	onDismissHelp,
 }: MainRunViewProps): React.ReactElement {
 	const showUpdateBanner = Boolean(updateAvailable && latestVersion && !updateBannerDismissed);
+
+	useInput(
+		(_input, key) => {
+			if (key.escape && helpVisible) {
+				onDismissHelp();
+			}
+		},
+		{ isActive: helpVisible },
+	);
 
 	return (
 		<ResponsiveLayout
@@ -219,6 +239,8 @@ export function MainRunView({
 					appState={appState}
 					iterationCurrent={iterationCurrent}
 					iterationTotal={iterationTotal}
+					helpVisible={helpVisible}
+					version={version}
 				/>
 			}
 			footer={<FooterSection onCommand={onCommand} agentIsStreaming={agentIsStreaming} />}
