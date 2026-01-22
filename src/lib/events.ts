@@ -96,6 +96,20 @@ export interface TechnicalDebtReviewEvent {
 	hasRecommendations: boolean;
 }
 
+export interface PullRequestCreatedEvent {
+	prNumber: number;
+	prUrl: string;
+	branchName: string;
+	baseBranch: string;
+	isDraft: boolean;
+}
+
+export interface PullRequestFailedEvent {
+	branchName: string;
+	baseBranch: string;
+	error: string;
+}
+
 export interface EventMap {
 	"agent:start": AgentStartEvent;
 	"agent:complete": AgentCompleteEvent;
@@ -113,6 +127,8 @@ export interface EventMap {
 	"parallel:task_start": ParallelTaskStartEvent;
 	"parallel:task_complete": ParallelTaskCompleteEvent;
 	"session:technical_debt_review": TechnicalDebtReviewEvent;
+	"session:pr_created": PullRequestCreatedEvent;
+	"session:pr_failed": PullRequestFailedEvent;
 }
 
 export type EventName = keyof EventMap;

@@ -30,6 +30,7 @@ import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
 import type { BranchModeConfig } from "@/lib/services/config/types.ts";
 import {
 	getGitBranchService,
+	getGitProviderService,
 	getSessionMemoryService,
 	getSessionService,
 	getUsageStatisticsService,
@@ -293,7 +294,9 @@ class SessionOrchestrator {
 		return { success: true };
 	}
 
-	completeTaskBranch(): { success: boolean; error?: string } {
+	async completeTaskBranch(
+		prd: Prd | null,
+	): Promise<{ success: boolean; error?: string; prUrl?: string }> {
 		if (!this.branchModeEnabled || !this.branchModeConfig || !this.currentTaskBranch) {
 			return { success: true };
 		}
@@ -304,6 +307,7 @@ class SessionOrchestrator {
 		const branchName = this.currentTaskBranch;
 		const shouldPush = this.branchModeConfig.pushAfterCommit ?? true;
 		const shouldReturn = this.branchModeConfig.returnToBaseBranch ?? true;
+		let wasPushed = false;
 
 		if (shouldPush) {
 			const pushResult = gitBranchService.pushBranch(branchName);
@@ -317,8 +321,19 @@ class SessionOrchestrator {
 			} else if (pushResult.status === "success") {
 				logger.info("Pushed branch", { branchName });
 				appendProgress(`Pushed branch: ${branchName}\n`);
+				wasPushed = true;
 			} else {
 				appendProgress(`Skipped push: ${pushResult.message}\n`);
+			}
+		}
+
+		let prUrl: string | undefined;
+
+		if (wasPushed) {
+			const prResult = await this.createPullRequestForBranch(branchName, prd);
+
+			if (prResult.prUrl) {
+				prUrl = prResult.prUrl;
 			}
 		}
 
@@ -340,7 +355,170 @@ class SessionOrchestrator {
 
 		this.currentTaskBranch = null;
 
-		return { success: true };
+		return { success: true, prUrl };
+	}
+
+	async createPullRequestForBranch(
+		branchName: string,
+		prd: Prd | null,
+	): Promise<{ success: boolean; prUrl?: string; error?: string }> {
+		if (!this.branchModeEnabled || !this.baseBranch) {
+			return { success: false, error: "Branch mode not enabled or no base branch" };
+		}
+
+		const loadedConfig = loadConfig();
+		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const gitProviderConfig = loadedConfig.gitProvider;
+
+		if (!gitProviderConfig?.autoCreatePr) {
+			logger.info("Auto PR creation disabled, skipping", { branchName });
+
+			return { success: true };
+		}
+
+		const gitBranchService = getGitBranchService();
+		const remoteUrl = gitBranchService.getRemoteUrl();
+
+		if (!remoteUrl) {
+			logger.warn("No remote URL found, cannot create PR", { branchName });
+
+			return { success: false, error: "No remote URL configured" };
+		}
+
+		const gitProviderService = getGitProviderService();
+		const remoteInfo = gitProviderService.detectProvider(remoteUrl);
+
+		if (remoteInfo.provider === "none") {
+			logger.warn("Unknown git provider, cannot create PR", { remoteUrl });
+
+			return { success: false, error: `Unknown git provider for remote: ${remoteUrl}` };
+		}
+
+		const provider = gitProviderService.getProvider(remoteInfo);
+
+		if (!provider) {
+			logger.warn("Git provider not configured", {
+				provider: remoteInfo.provider,
+				branchName,
+			});
+
+			return { success: false, error: `${remoteInfo.provider} provider not configured` };
+		}
+
+		if (!provider.isConfigured) {
+			logger.warn("Git provider token not configured", {
+				provider: remoteInfo.provider,
+				branchName,
+			});
+
+			return {
+				success: false,
+				error: `${remoteInfo.provider} token not configured`,
+			};
+		}
+
+		const prTitle = prd?.project
+			? `[Ralph] ${prd.project}: ${branchName}`
+			: `[Ralph] ${branchName}`;
+
+		const prBody = this.generatePrBody(prd, branchName);
+
+		try {
+			const result = await provider.createPullRequest({
+				title: prTitle,
+				body: prBody,
+				head: branchName,
+				base: this.baseBranch,
+				isDraft: gitProviderConfig.prDraft ?? false,
+				labels: gitProviderConfig.prLabels,
+				reviewers: gitProviderConfig.prReviewers,
+			});
+
+			if (!result.success || !result.data) {
+				logger.error("Failed to create PR", {
+					branchName,
+					error: result.error,
+				});
+
+				eventBus.emit("session:pr_failed", {
+					branchName,
+					baseBranch: this.baseBranch,
+					error: result.error ?? "Unknown error",
+				});
+
+				return { success: false, error: result.error };
+			}
+
+			logger.info("Created pull request", {
+				prNumber: result.data.number,
+				prUrl: result.data.url,
+				branchName,
+				baseBranch: this.baseBranch,
+			});
+
+			appendProgress(
+				`\n=== Pull Request Created ===\nPR #${result.data.number}: ${result.data.url}\n`,
+			);
+
+			eventBus.emit("session:pr_created", {
+				prNumber: result.data.number,
+				prUrl: result.data.url,
+				branchName,
+				baseBranch: this.baseBranch,
+				isDraft: result.data.isDraft,
+			});
+
+			return { success: true, prUrl: result.data.url };
+		} catch (error) {
+			const errorMessage = getErrorMessage(error);
+
+			logger.error("Failed to create PR", {
+				branchName,
+				error: errorMessage,
+			});
+
+			eventBus.emit("session:pr_failed", {
+				branchName,
+				baseBranch: this.baseBranch,
+				error: errorMessage,
+			});
+
+			return { success: false, error: errorMessage };
+		}
+	}
+
+	private generatePrBody(prd: Prd | null, branchName: string): string {
+		const lines: string[] = ["## Summary", ""];
+
+		if (prd?.project) {
+			lines.push(`Automated PR created by Ralph for project: **${prd.project}**`);
+		} else {
+			lines.push("Automated PR created by Ralph.");
+		}
+
+		lines.push("");
+		lines.push(`Branch: \`${branchName}\``);
+
+		if (prd?.tasks && prd.tasks.length > 0) {
+			const completedTasks = prd.tasks.filter((task) => task.done);
+			const totalTasks = prd.tasks.length;
+
+			lines.push("");
+			lines.push("## Tasks Completed");
+			lines.push("");
+			lines.push(`${completedTasks.length} / ${totalTasks} tasks completed.`);
+			lines.push("");
+
+			for (const task of completedTasks) {
+				lines.push(`- [x] ${task.title}`);
+			}
+		}
+
+		lines.push("");
+		lines.push("---");
+		lines.push("*This PR was automatically created by [Ralph](https://github.com/your-org/ralph)*");
+
+		return lines.join("\n");
 	}
 
 	isParallelModeEnabled(): boolean {
@@ -1005,13 +1183,15 @@ class SessionOrchestrator {
 				}
 
 				if (this.branchModeEnabled && wasSuccessful && agentStore.isComplete) {
-					const branchResult = this.completeTaskBranch();
+					const currentPrd = reloadPrd();
 
-					if (!branchResult.success) {
-						logger.error("Failed to complete task branch workflow", {
-							error: branchResult.error,
-						});
-					}
+					this.completeTaskBranch(currentPrd).then((branchResult) => {
+						if (!branchResult.success) {
+							logger.error("Failed to complete task branch workflow", {
+								error: branchResult.error,
+							});
+						}
+					});
 				}
 
 				agentStore.reset();

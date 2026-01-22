@@ -29,6 +29,7 @@ export interface GitBranchService {
 	getBaseBranch(cwd?: string): string;
 	hasRemote(cwd?: string): boolean;
 	getRemoteName(cwd?: string): string | null;
+	getRemoteUrl(cwd?: string): string | null;
 
 	getWorkingDirectoryStatus(cwd?: string): WorkingDirectoryStatus;
 	isWorkingDirectoryClean(cwd?: string): boolean;

@@ -330,6 +330,7 @@ function createMockServices(
 			getBaseBranch: () => "main",
 			hasRemote: () => true,
 			getRemoteName: () => "origin",
+			getRemoteUrl: () => "git@github.com:test-org/test-repo.git",
 			getWorkingDirectoryStatus: () => ({
 				isClean: true,
 				hasUncommittedChanges: false,

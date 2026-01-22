@@ -84,6 +84,22 @@ export function createGitBranchService(): GitBranchService {
 		return firstRemote ?? null;
 	}
 
+	function getRemoteUrl(cwd: string = process.cwd()): string | null {
+		const remoteName = getRemoteName(cwd);
+
+		if (!remoteName) {
+			return null;
+		}
+
+		const result = execGitCommand(`git remote get-url ${remoteName}`, cwd);
+
+		if (!result.success || result.output.length === 0) {
+			return null;
+		}
+
+		return result.output;
+	}
+
 	function getWorkingDirectoryStatus(cwd: string = process.cwd()): WorkingDirectoryStatus {
 		const statusResult = execGitCommand("git status --porcelain", cwd);
 
@@ -372,6 +388,7 @@ export function createGitBranchService(): GitBranchService {
 		getBaseBranch,
 		hasRemote,
 		getRemoteName,
+		getRemoteUrl,
 		getWorkingDirectoryStatus,
 		isWorkingDirectoryClean,
 		createBranch,
