@@ -9,6 +9,8 @@ export enum ErrorCode {
 	PRD_NO_TASKS = "E012",
 	PRD_TASK_NOT_FOUND = "E013",
 
+	INVALID_INPUT = "E014",
+
 	AGENT_NOT_FOUND = "E020",
 	AGENT_NOT_EXECUTABLE = "E021",
 	AGENT_TIMEOUT = "E022",
@@ -55,6 +57,7 @@ const ERROR_SUGGESTIONS: Record<ErrorCode, string> = {
 		"Add tasks to your PRD file. Each task needs a 'title' and optionally 'description' and 'steps'.",
 	[ErrorCode.PRD_TASK_NOT_FOUND]:
 		"Check the task identifier. Use 'ralph list' to see available tasks with their indices.",
+	[ErrorCode.INVALID_INPUT]: "Check the input value and try again.",
 
 	[ErrorCode.AGENT_NOT_FOUND]:
 		"Ensure the agent CLI is installed. For Cursor: install the Cursor agent. For Claude: run 'npm install -g @anthropic-ai/claude-code'.",

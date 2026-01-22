@@ -3,6 +3,17 @@ export { printArchive } from "./archive.ts";
 export { printClear } from "./clear.ts";
 export { printConfig } from "./config.ts";
 export {
+	handleDependencyAdd,
+	handleDependencyRemove,
+	handleDependencySet,
+	printDependencyBlocked,
+	printDependencyGraph,
+	printDependencyOrder,
+	printDependencyReady,
+	printDependencyShow,
+	printDependencyValidate,
+} from "./dependency.ts";
+export {
 	handleGuardrailsAdd,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,

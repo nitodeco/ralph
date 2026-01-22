@@ -2,6 +2,9 @@ import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import type {
 	AnalyzeSubcommand,
 	Command,
+	DependencyModifyOptions,
+	DependencySetOptions,
+	DependencySubcommand,
 	GuardrailsSubcommand,
 	MemorySubcommand,
 	ParsedArgs,
@@ -27,6 +30,17 @@ const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = [
 	"show",
 ];
 const VALID_PROGRESS_SUBCOMMANDS: ProgressSubcommand[] = ["show", "add", "clear"];
+const VALID_DEPENDENCY_SUBCOMMANDS: DependencySubcommand[] = [
+	"graph",
+	"validate",
+	"ready",
+	"blocked",
+	"order",
+	"show",
+	"set",
+	"add",
+	"remove",
+];
 
 function parseTaskAddOptions(args: string[]): TaskAddOptions {
 	const options: TaskAddOptions = {};
@@ -252,6 +266,45 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
+	let dependencySubcommand: DependencySubcommand | undefined;
+	let dependencySetOptions: DependencySetOptions | undefined;
+	let dependencyModifyOptions: DependencyModifyOptions | undefined;
+
+	if (command === "dependency") {
+		const subcommand = filteredArgs[1] as DependencySubcommand | undefined;
+
+		if (subcommand && VALID_DEPENDENCY_SUBCOMMANDS.includes(subcommand)) {
+			dependencySubcommand = subcommand;
+
+			if (subcommand === "show") {
+				const taskIdentifierArg = filteredArgs.at(2);
+
+				dependencySetOptions = {
+					taskIdentifier: taskIdentifierArg ?? "",
+					dependencies: [],
+				};
+			} else if (subcommand === "set") {
+				const taskIdentifierArg = filteredArgs.at(2) ?? "";
+				const dependencies = filteredArgs.slice(3);
+
+				dependencySetOptions = {
+					taskIdentifier: taskIdentifierArg,
+					dependencies,
+				};
+			} else if (subcommand === "add" || subcommand === "remove") {
+				const taskIdentifierArg = filteredArgs.at(2) ?? "";
+				const dependencyId = filteredArgs.at(3) ?? "";
+
+				dependencyModifyOptions = {
+					taskIdentifier: taskIdentifierArg,
+					dependencyId,
+				};
+			}
+		} else {
+			dependencySubcommand = "graph";
+		}
+	}
+
 	return {
 		command,
 		iterations,
@@ -273,5 +326,8 @@ export function parseArgs(args: string[]): ParsedArgs {
 		taskEditOptions,
 		progressSubcommand,
 		progressText,
+		dependencySubcommand,
+		dependencySetOptions,
+		dependencyModifyOptions,
 	};
 }

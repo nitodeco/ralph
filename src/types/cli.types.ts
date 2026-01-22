@@ -18,6 +18,7 @@ export type Command =
 	| "projects"
 	| "task"
 	| "progress"
+	| "dependency"
 	| "help"
 	| "version"
 	| "-v"
@@ -53,6 +54,26 @@ export interface TaskEditOptions {
 	stdin?: boolean;
 }
 export type ProgressSubcommand = "show" | "add" | "clear";
+export type DependencySubcommand =
+	| "graph"
+	| "validate"
+	| "ready"
+	| "blocked"
+	| "order"
+	| "show"
+	| "set"
+	| "add"
+	| "remove";
+
+export interface DependencySetOptions {
+	taskIdentifier: string;
+	dependencies: string[];
+}
+
+export interface DependencyModifyOptions {
+	taskIdentifier: string;
+	dependencyId: string;
+}
 
 export interface ParsedArgs {
 	command: Command;
@@ -75,6 +96,9 @@ export interface ParsedArgs {
 	taskEditOptions?: TaskEditOptions;
 	progressSubcommand?: ProgressSubcommand;
 	progressText?: string;
+	dependencySubcommand?: DependencySubcommand;
+	dependencySetOptions?: DependencySetOptions;
+	dependencyModifyOptions?: DependencyModifyOptions;
 }
 
 export interface TaskListOutput {

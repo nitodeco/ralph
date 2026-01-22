@@ -5,6 +5,9 @@ import { useState } from "react";
 import {
 	handleAnalyzeClear,
 	handleAnalyzeExport,
+	handleDependencyAdd,
+	handleDependencyRemove,
+	handleDependencySet,
 	handleGuardrailsAdd,
 	handleGuardrailsRemove,
 	handleGuardrailsToggle,
@@ -27,6 +30,12 @@ import {
 	printConfig,
 	printCurrentProject,
 	printCurrentTask,
+	printDependencyBlocked,
+	printDependencyGraph,
+	printDependencyOrder,
+	printDependencyReady,
+	printDependencyShow,
+	printDependencyValidate,
 	printGuardrails,
 	printHelp,
 	printList,
@@ -168,6 +177,9 @@ function main(): void {
 		taskEditOptions,
 		progressSubcommand,
 		progressText,
+		dependencySubcommand,
+		dependencySetOptions,
+		dependencyModifyOptions,
 	} = parseArgs(process.argv);
 
 	setShutdownHandler({
@@ -395,6 +407,51 @@ function main(): void {
 					break;
 				default:
 					printProgress(json);
+					break;
+			}
+
+			break;
+
+		case "dependency":
+			switch (dependencySubcommand) {
+				case "validate":
+					printDependencyValidate(json);
+					break;
+				case "ready":
+					printDependencyReady(json);
+					break;
+				case "blocked":
+					printDependencyBlocked(json);
+					break;
+				case "order":
+					printDependencyOrder(json);
+					break;
+				case "show":
+					printDependencyShow(dependencySetOptions?.taskIdentifier ?? "", json);
+					break;
+				case "set":
+					handleDependencySet(
+						dependencySetOptions?.taskIdentifier ?? "",
+						dependencySetOptions?.dependencies ?? [],
+						json,
+					);
+					break;
+				case "add":
+					handleDependencyAdd(
+						dependencyModifyOptions?.taskIdentifier ?? "",
+						dependencyModifyOptions?.dependencyId ?? "",
+						json,
+					);
+					break;
+				case "remove":
+					handleDependencyRemove(
+						dependencyModifyOptions?.taskIdentifier ?? "",
+						dependencyModifyOptions?.dependencyId ?? "",
+						json,
+					);
+					break;
+				default:
+					printDependencyGraph(json);
 					break;
 			}
 
