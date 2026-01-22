@@ -19,6 +19,12 @@ function getEventTitle(event: NotificationEvent): string {
 			return "Ralph - Max Iterations Reached";
 		case "fatal_error":
 			return "Ralph - Fatal Error";
+		case "input_required":
+			return "Ralph - Input Required";
+		case "session_paused":
+			return "Ralph - Session Paused";
+		case "verification_failed":
+			return "Ralph - Verification Failed";
 	}
 }
 
@@ -32,6 +38,12 @@ function getEventMessage(event: NotificationEvent, projectName?: string): string
 			return `${projectPrefix}Maximum iterations reached. PRD is not yet complete.`;
 		case "fatal_error":
 			return `${projectPrefix}A fatal error occurred. Check logs for details.`;
+		case "input_required":
+			return `${projectPrefix}Waiting for your input to continue.`;
+		case "session_paused":
+			return `${projectPrefix}Session has been paused. Use /resume to continue.`;
+		case "verification_failed":
+			return `${projectPrefix}Verification failed. Review required before continuing.`;
 	}
 }
 

@@ -6,7 +6,13 @@ export interface NotificationConfig {
 	markerFilePath?: string;
 }
 
-export type NotificationEvent = "complete" | "max_iterations" | "fatal_error";
+export type NotificationEvent =
+	| "complete"
+	| "max_iterations"
+	| "fatal_error"
+	| "input_required"
+	| "session_paused"
+	| "verification_failed";
 
 export interface MemoryConfig {
 	maxOutputBufferBytes?: number;

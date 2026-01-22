@@ -618,6 +618,18 @@ class SessionOrchestrator {
 
 				if (!verificationResult.passed) {
 					const iterationStore = useIterationStore.getState();
+					const loadedConfig = loadConfig();
+					const currentPrd = reloadPrd();
+
+					sendNotifications(
+						loadedConfig.notifications,
+						"verification_failed",
+						currentPrd?.project,
+						{
+							failedChecks: verificationResult.failedChecks,
+							iteration: iterationStore.current,
+						},
+					);
 
 					iterationStore.markIterationComplete(false, hasPendingTasks);
 
