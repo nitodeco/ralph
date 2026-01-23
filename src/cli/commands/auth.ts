@@ -51,9 +51,26 @@ export function printAuthStatus(version: string, jsonOutput: boolean): void {
 	console.log(`◆ ralph v${version} - GitHub Authentication Status\n`);
 
 	if (hasOAuth) {
+		const oauth = gitProvider?.github?.oauth;
+		const expiresAt = oauth?.expiresAt ? new Date(oauth.expiresAt) : null;
+		const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
+		const hasRefreshToken = oauth?.refreshToken !== undefined;
+
 		console.log("\x1b[32m✓\x1b[0m Authenticated via OAuth");
-		console.log(`  Scope: ${gitProvider?.github?.oauth?.scope ?? "repo"}`);
-		console.log(`  Authenticated: ${gitProvider?.github?.oauth?.createdAt ?? "unknown"}`);
+		console.log(`  Scope: ${oauth?.scope || "(app permissions)"}`);
+		console.log(`  Authenticated: ${oauth?.createdAt ?? "unknown"}`);
+
+		if (expiresAt) {
+			const expiryStatus = isExpired
+				? "\x1b[33m(expired, will refresh on next use)\x1b[0m"
+				: `\x1b[32m(valid)\x1b[0m`;
+
+			console.log(`  Token expires: ${expiresAt.toLocaleString()} ${expiryStatus}`);
+		}
+
+		if (!hasRefreshToken && expiresAt) {
+			console.log("\x1b[33m  ⚠ No refresh token - re-authenticate when token expires\x1b[0m");
+		}
 	} else if (hasPat) {
 		console.log("\x1b[33m!\x1b[0m Authenticated via Personal Access Token (legacy)");
 		console.log(`  Token: ${maskToken(gitProvider?.github?.token ?? "")}`);
@@ -122,6 +139,9 @@ export async function handleAuthLogin(jsonOutput: boolean): Promise<void> {
 								tokenType: result.token.tokenType,
 								scope: result.token.scope,
 								createdAt: new Date().toISOString(),
+								expiresAt: result.token.expiresAt,
+								refreshToken: result.token.refreshToken,
+								refreshTokenExpiresAt: result.token.refreshTokenExpiresAt,
 							},
 						},
 					},

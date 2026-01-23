@@ -1,6 +1,14 @@
+import {
+	getEffectiveConfig,
+	invalidateConfigCache,
+	loadGlobalConfig,
+	saveGlobalConfig,
+} from "@/lib/config.ts";
+import { createGitHubOAuthService } from "@/lib/services/github-oauth/index.ts";
 import type {
 	GitProvider,
 	GitProviderConfig,
+	GitProviderOAuthTokens,
 	ProviderOperationResult,
 	PullRequest,
 	PullRequestCreateOptions,
@@ -63,6 +71,76 @@ async function parseGitHubError(response: Response): Promise<string> {
 	}
 }
 
+const TOKEN_EXPIRY_BUFFER_MS = 5 * 60 * 1_000;
+
+function isTokenExpired(oauth: GitProviderOAuthTokens): boolean {
+	if (!oauth.expiresAt) {
+		return false;
+	}
+
+	const expiresAt = new Date(oauth.expiresAt).getTime();
+	const now = Date.now();
+
+	return now >= expiresAt - TOKEN_EXPIRY_BUFFER_MS;
+}
+
+async function refreshTokenIfNeeded(oauth: GitProviderOAuthTokens): Promise<string | undefined> {
+	if (!isTokenExpired(oauth)) {
+		return oauth.accessToken;
+	}
+
+	if (!oauth.refreshToken) {
+		return oauth.accessToken;
+	}
+
+	const oauthService = createGitHubOAuthService();
+	const result = await oauthService.refreshAccessToken(oauth.refreshToken);
+
+	if (result.status !== "success") {
+		return undefined;
+	}
+
+	const globalConfig = loadGlobalConfig();
+	const updatedConfig = {
+		...globalConfig,
+		gitProvider: {
+			...globalConfig.gitProvider,
+			github: {
+				...globalConfig.gitProvider?.github,
+				oauth: {
+					accessToken: result.token.accessToken,
+					tokenType: result.token.tokenType,
+					scope: result.token.scope,
+					createdAt: oauth.createdAt,
+					expiresAt: result.token.expiresAt,
+					refreshToken: result.token.refreshToken,
+					refreshTokenExpiresAt: result.token.refreshTokenExpiresAt,
+				},
+			},
+		},
+	};
+
+	saveGlobalConfig(updatedConfig);
+	invalidateConfigCache();
+
+	return result.token.accessToken;
+}
+
+async function getValidToken(): Promise<string | undefined> {
+	const { effective } = getEffectiveConfig();
+	const githubConfig = effective.gitProvider?.github;
+
+	if (!githubConfig) {
+		return undefined;
+	}
+
+	if (githubConfig.oauth?.accessToken) {
+		return refreshTokenIfNeeded(githubConfig.oauth);
+	}
+
+	return githubConfig.token;
+}
+
 function getEffectiveToken(config: GitProviderConfig): string | undefined {
 	if (config.oauth?.accessToken) {
 		return config.oauth.accessToken;
@@ -77,17 +155,26 @@ export function createGitHubProvider(
 ): GitProvider {
 	const { owner, repo } = remoteInfo;
 	const apiBaseUrl = config.apiUrl ?? "https://api.github.com";
-	const effectiveToken = getEffectiveToken(config);
-	const isConfigured = effectiveToken !== undefined && effectiveToken.length > 0;
+	const initialToken = getEffectiveToken(config);
+	const isConfigured = initialToken !== undefined && initialToken.length > 0;
+	const usesOAuth = config.oauth?.accessToken !== undefined;
 
-	function getHeaders(): Record<string, string> {
+	async function getHeaders(): Promise<Record<string, string>> {
+		let token: string | undefined;
+
+		if (usesOAuth) {
+			token = await getValidToken();
+		} else {
+			token = config.token;
+		}
+
 		const headers: Record<string, string> = {
 			Accept: "application/vnd.github+json",
 			"X-GitHub-Api-Version": "2022-11-28",
 		};
 
-		if (effectiveToken) {
-			headers.Authorization = `Bearer ${effectiveToken}`;
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
 		}
 
 		return headers;
@@ -113,10 +200,11 @@ export function createGitHubProvider(
 		};
 
 		try {
+			const headers = await getHeaders();
 			const response = await fetch(url, {
 				method: "POST",
 				headers: {
-					...getHeaders(),
+					...headers,
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(body),
@@ -168,9 +256,10 @@ export function createGitHubProvider(
 		const url = `${apiBaseUrl}/repos/${owner}/${repo}/pulls/${prNumber}`;
 
 		try {
+			const headers = await getHeaders();
 			const response = await fetch(url, {
 				method: "GET",
-				headers: getHeaders(),
+				headers,
 			});
 
 			if (!response.ok) {
@@ -223,10 +312,11 @@ export function createGitHubProvider(
 		}
 
 		try {
+			const headers = await getHeaders();
 			const response = await fetch(url, {
 				method: "PATCH",
 				headers: {
-					...getHeaders(),
+					...headers,
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify(body),
@@ -272,11 +362,12 @@ export function createGitHubProvider(
 
 	async function addLabels(prNumber: number, labels: string[]): Promise<void> {
 		const url = `${apiBaseUrl}/repos/${owner}/${repo}/issues/${prNumber}/labels`;
+		const headers = await getHeaders();
 
 		await fetch(url, {
 			method: "POST",
 			headers: {
-				...getHeaders(),
+				...headers,
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({ labels }),
@@ -285,11 +376,12 @@ export function createGitHubProvider(
 
 	async function addReviewers(prNumber: number, reviewers: string[]): Promise<void> {
 		const url = `${apiBaseUrl}/repos/${owner}/${repo}/pulls/${prNumber}/requested_reviewers`;
+		const headers = await getHeaders();
 
 		await fetch(url, {
 			method: "POST",
 			headers: {
-				...getHeaders(),
+				...headers,
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({ reviewers }),

@@ -1,14 +1,56 @@
+import { exec } from "node:child_process";
+import { platform } from "node:os";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import { invalidateConfigCache, loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
 import { TRANSITION_DELAY_MS } from "@/lib/constants/ui.ts";
-import type { DeviceCodeResponse } from "@/lib/services/github-oauth/index.ts";
+import type {
+	DeviceCodeResponse,
+	DeviceFlowPollResult,
+} from "@/lib/services/github-oauth/index.ts";
 import { createGitHubOAuthService } from "@/lib/services/github-oauth/index.ts";
+
+function openUrl(url: string): void {
+	const os = platform();
+	const command = match(os)
+		.with("darwin", () => `open "${url}"`)
+		.with("win32", () => `start "" "${url}"`)
+		.otherwise(() => `xdg-open "${url}"`);
+
+	exec(command);
+}
+
+function copyToClipboard(text: string): Promise<boolean> {
+	return new Promise((resolve) => {
+		const os = platform();
+		const command = match(os)
+			.with("darwin", () => "pbcopy")
+			.with("win32", () => "clip")
+			.otherwise(() => "xclip -selection clipboard");
+
+		const child = exec(command, (error) => {
+			resolve(!error);
+		});
+
+		child.stdin?.write(text);
+		child.stdin?.end();
+	});
+}
+
+function focusTerminal(): void {
+	const os = platform();
+
+	if (os === "darwin") {
+		const terminalApp = (process.env.TERM_PROGRAM ?? "Terminal").replace(/\.app$/, "");
+
+		exec(`osascript -e 'tell application "${terminalApp}" to activate'`);
+	}
+}
 
 interface GitHubSetupViewProps {
 	version: string;
@@ -24,7 +66,7 @@ interface GitHubSetupState {
 	prDraft: boolean;
 	message: { type: "success" | "error" | "info"; text: string } | null;
 	oauthDeviceCode: DeviceCodeResponse | null;
-	isPolling: boolean;
+	codeCopied: boolean;
 }
 
 const MENU_CHOICES = [
@@ -54,7 +96,7 @@ function GitHubSetupHeader({ version }: { version: string }): React.ReactElement
 function GitHubSetupFooter({ step }: { step: GitHubSetupStep }): React.ReactElement {
 	const footerText = match(step)
 		.with("menu", () => "Press Escape or 'q' to close")
-		.with("oauth", () => "Waiting for browser authorization...")
+		.with("oauth", () => "'c' to copy code | Escape or 'q' to cancel")
 		.otherwise(() => "Press Escape to go back");
 
 	return (
@@ -95,8 +137,10 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 		prDraft: gitProvider?.prDraft ?? true,
 		message: null,
 		oauthDeviceCode: null,
-		isPolling: false,
+		codeCopied: false,
 	});
+
+	const isPollingRef = useRef(false);
 
 	useInput((input, key) => {
 		if (state.step === "menu" && (key.escape || input === "q")) {
@@ -108,18 +152,26 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 			key.escape
 		) {
 			setState((prev) => ({ ...prev, step: "menu", message: null }));
-		} else if (state.step === "oauth" && key.escape && !state.isPolling) {
+		} else if (state.step === "oauth" && (key.escape || input === "q")) {
+			isPollingRef.current = false;
 			setState((prev) => ({
 				...prev,
 				step: "menu",
-				message: null,
+				message: { type: "info", text: "OAuth flow cancelled" },
 				oauthDeviceCode: null,
+				codeCopied: false,
 			}));
+		} else if (state.step === "oauth" && input === "c" && state.oauthDeviceCode?.userCode) {
+			copyToClipboard(state.oauthDeviceCode.userCode).then((success) => {
+				if (success) {
+					setState((prev) => ({ ...prev, codeCopied: true }));
+				}
+			});
 		}
 	});
 
 	useEffect(() => {
-		if (state.step !== "oauth" || !state.oauthDeviceCode || state.isPolling) {
+		if (state.step !== "oauth" || !state.oauthDeviceCode || isPollingRef.current) {
 			return;
 		}
 
@@ -127,7 +179,7 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 		const deviceCode = state.oauthDeviceCode;
 		let isCancelled = false;
 
-		setState((prev) => ({ ...prev, isPolling: true }));
+		isPollingRef.current = true;
 
 		const pollForToken = async () => {
 			const expiresAt = Date.now() + deviceCode.expiresInSeconds * 1_000;
@@ -140,10 +192,20 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 					break;
 				}
 
-				const result = await oauthService.pollForAccessToken(
-					deviceCode.deviceCode,
-					deviceCode.pollingIntervalSeconds,
-				);
+				let result: DeviceFlowPollResult;
+
+				try {
+					result = await oauthService.pollForAccessToken(
+						deviceCode.deviceCode,
+						deviceCode.pollingIntervalSeconds,
+					);
+				} catch {
+					continue;
+				}
+
+				if (result.status === "success") {
+					focusTerminal();
+				}
 
 				if (result.status === "success") {
 					const currentConfig = loadGlobalConfig();
@@ -159,6 +221,9 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 									tokenType: result.token.tokenType,
 									scope: result.token.scope,
 									createdAt: new Date().toISOString(),
+									expiresAt: result.token.expiresAt,
+									refreshToken: result.token.refreshToken,
+									refreshTokenExpiresAt: result.token.refreshTokenExpiresAt,
 								},
 							},
 						},
@@ -166,11 +231,12 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 
 					saveGlobalConfig(updatedConfig);
 					invalidateConfigCache();
+
+					isPollingRef.current = false;
 					setState((prev) => ({
 						...prev,
 						step: "complete",
 						message: { type: "success", text: "Successfully authenticated with GitHub!" },
-						isPolling: false,
 					}));
 					setTimeout(() => onClose(), TRANSITION_DELAY_MS);
 
@@ -178,12 +244,12 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 				}
 
 				if (result.status === "error") {
+					isPollingRef.current = false;
 					setState((prev) => ({
 						...prev,
 						step: "menu",
 						message: { type: "error", text: `Authentication failed: ${result.error}` },
 						oauthDeviceCode: null,
-						isPolling: false,
 					}));
 
 					return;
@@ -191,12 +257,12 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 			}
 
 			if (!isCancelled) {
+				isPollingRef.current = false;
 				setState((prev) => ({
 					...prev,
 					step: "menu",
 					message: { type: "error", text: "Authorization timed out. Please try again." },
 					oauthDeviceCode: null,
-					isPolling: false,
 				}));
 			}
 		};
@@ -205,8 +271,9 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 
 		return () => {
 			isCancelled = true;
+			isPollingRef.current = false;
 		};
-	}, [state.step, state.oauthDeviceCode, state.isPolling, onClose]);
+	}, [state.step, state.oauthDeviceCode, onClose]);
 
 	const saveAndClose = (message: string) => {
 		setState((prev) => ({
@@ -223,11 +290,16 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 		try {
 			const deviceCodeResponse = await oauthService.requestDeviceCode();
 
+			const copied = await copyToClipboard(deviceCodeResponse.userCode);
+
+			openUrl(deviceCodeResponse.verificationUri);
+
 			setState((prev) => ({
 				...prev,
 				step: "oauth",
 				oauthDeviceCode: deviceCodeResponse,
 				message: null,
+				codeCopied: copied,
 			}));
 		} catch (error) {
 			setState((prev) => ({
@@ -376,14 +448,17 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 						</Text>
 						{state.oauthDeviceCode ? (
 							<>
-								<Text>To authenticate, visit:</Text>
+								<Text>Opening browser to:</Text>
 								<Text color="cyan">{state.oauthDeviceCode.verificationUri}</Text>
 								<Box marginTop={1}>
-									<Text>And enter this code:</Text>
+									<Text>Enter this code:</Text>
 								</Box>
-								<Text bold color="white">
-									{state.oauthDeviceCode.userCode}
-								</Text>
+								<Box>
+									<Text bold color="white">
+										{state.oauthDeviceCode.userCode}
+									</Text>
+									{state.codeCopied && <Text color="green"> (copied)</Text>}
+								</Box>
 								<Box marginTop={1}>
 									<Text dimColor>Waiting for authorization...</Text>
 								</Box>

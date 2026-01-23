@@ -27,12 +27,18 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 			: defaults.notifications,
 		memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
 		maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
+		maxRuntimeMs: config.maxRuntimeMs,
 		retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
 		verification: config.verification
 			? { ...defaults.verification, ...config.verification }
 			: defaults.verification,
+		technicalDebtReview: config.technicalDebtReview,
 		maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
 		learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
+		workflowMode: config.workflowMode,
+		branchMode: config.branchMode,
+		gitProvider: config.gitProvider,
+		hasAcknowledgedWarning: config.hasAcknowledgedWarning,
 	};
 }
 

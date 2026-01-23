@@ -1,10 +1,15 @@
-import type { DeviceCodeResponse, DeviceFlowPollResult, GitHubOAuthService } from "./types.ts";
+import type {
+	DeviceCodeResponse,
+	DeviceFlowPollResult,
+	GitHubOAuthService,
+	RefreshTokenResult,
+} from "./types.ts";
 
 const GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
 const GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
 const GITHUB_REVOKE_URL = "https://api.github.com/applications";
 
-const DEFAULT_CLIENT_ID = "Ov23liPHLsmJOnq88Hf9";
+const DEFAULT_CLIENT_ID = "Iv23liBwqlOKCuiXCLOo";
 const DEFAULT_SCOPE = "repo";
 
 interface GitHubDeviceCodeApiResponse {
@@ -19,6 +24,9 @@ interface GitHubAccessTokenApiResponse {
 	access_token?: string;
 	token_type?: string;
 	scope?: string;
+	expires_in?: number;
+	refresh_token?: string;
+	refresh_token_expires_in?: number;
 	error?: string;
 	error_description?: string;
 }
@@ -97,12 +105,83 @@ export function createGitHubOAuthService(
 		}
 
 		if (tokenResponse.access_token) {
+			const now = Date.now();
+			const expiresAt = tokenResponse.expires_in
+				? new Date(now + tokenResponse.expires_in * 1_000).toISOString()
+				: undefined;
+			const refreshTokenExpiresAt = tokenResponse.refresh_token_expires_in
+				? new Date(now + tokenResponse.refresh_token_expires_in * 1_000).toISOString()
+				: undefined;
+
 			return {
 				status: "success",
 				token: {
 					accessToken: tokenResponse.access_token,
 					tokenType: tokenResponse.token_type ?? "bearer",
 					scope: tokenResponse.scope ?? scope,
+					expiresAt,
+					refreshToken: tokenResponse.refresh_token,
+					refreshTokenExpiresAt,
+				},
+			};
+		}
+
+		return {
+			status: "error",
+			error: "Unexpected response from GitHub",
+		};
+	}
+
+	async function refreshAccessToken(refreshToken: string): Promise<RefreshTokenResult> {
+		const response = await fetch(GITHUB_ACCESS_TOKEN_URL, {
+			method: "POST",
+			headers: {
+				Accept: "application/json",
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			body: new URLSearchParams({
+				client_id: clientId,
+				grant_type: "refresh_token",
+				refresh_token: refreshToken,
+			}).toString(),
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+
+			return {
+				status: "error",
+				error: `HTTP ${response.status}: ${errorText}`,
+			};
+		}
+
+		const tokenResponse = (await response.json()) as GitHubAccessTokenApiResponse;
+
+		if (tokenResponse.error) {
+			return {
+				status: "error",
+				error: tokenResponse.error_description ?? tokenResponse.error,
+			};
+		}
+
+		if (tokenResponse.access_token) {
+			const now = Date.now();
+			const expiresAt = tokenResponse.expires_in
+				? new Date(now + tokenResponse.expires_in * 1_000).toISOString()
+				: undefined;
+			const refreshTokenExpiresAt = tokenResponse.refresh_token_expires_in
+				? new Date(now + tokenResponse.refresh_token_expires_in * 1_000).toISOString()
+				: undefined;
+
+			return {
+				status: "success",
+				token: {
+					accessToken: tokenResponse.access_token,
+					tokenType: tokenResponse.token_type ?? "bearer",
+					scope: tokenResponse.scope ?? scope,
+					expiresAt,
+					refreshToken: tokenResponse.refresh_token,
+					refreshTokenExpiresAt,
 				},
 			};
 		}
@@ -138,6 +217,7 @@ export function createGitHubOAuthService(
 	return {
 		requestDeviceCode,
 		pollForAccessToken,
+		refreshAccessToken,
 		revokeToken,
 		getClientId,
 	};

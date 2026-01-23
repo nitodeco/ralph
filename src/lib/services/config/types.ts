@@ -55,6 +55,9 @@ export interface GitHubOAuthTokens {
 	tokenType: string;
 	scope: string;
 	createdAt: string;
+	expiresAt?: string;
+	refreshToken?: string;
+	refreshTokenExpiresAt?: string;
 }
 
 export interface GitProviderAuthConfig {
