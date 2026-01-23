@@ -1,5 +1,13 @@
 # ralph
 
+## 0.14.3
+
+### Patch Changes
+
+- 48dad9c: Remove typing step to permission consent
+- 34faff0: Fix cursor position after slash command autocomplete
+- 87f39de: Shorten first-run consent warning message
+
 ## 0.14.2
 
 ### Patch Changes
