@@ -1,5 +1,88 @@
 # ralph
 
+## 0.14.0
+
+### Minor Changes
+
+- 99d7585: Added inline task editing in TasksView
+- 85326b3: Add config and GitHub integration management via slash commands
+
+  Added new slash commands and CLI functionality:
+
+  - /config - View current configuration settings in the Terminal UI
+  - /github - Interactive GitHub integration setup (token, PR settings)
+  - ralph github - CLI command to view/manage GitHub settings
+  - ralph github set-token - Set GitHub personal access token
+  - ralph github clear-token - Remove GitHub token
+
+  The ConfigView displays all effective configuration including agent settings,
+  retry/timeout settings, notifications, memory management, and git provider config.
+
+  The GitHubSetupView provides a menu-driven interface for:
+
+  - Setting/updating GitHub personal access token (masked display)
+  - Toggling auto-create PR on task completion
+  - Toggling PR draft mode
+  - Clearing stored token
+
+- 4e2a400: Consolidate session-related commands under /session namespace
+
+  - Session control commands now use `/session <subcommand>` format:
+    - `/session start [n|full]` - Start agent loop
+    - `/session stop` - Stop the running agent
+    - `/session resume` - Resume interrupted session
+    - `/session pause` - Pause the current session (new)
+    - `/session clear` - Clear session data
+    - `/session refresh` - Reload PRD from disk
+    - `/session archive` - Archive completed tasks
+  - Removed top-level `/start`, `/stop`, `/resume`, `/clear`, `/refresh`, `/archive` commands
+  - Added new `/session pause` command to pause without stopping
+  - Updated help text across CLI and TUI to reflect new command structure
+
+- ff5344b: Added first-run safety consent warning
+- 7a2ee42: Added branch mode workflow for isolated task branches
+- 6b41edb: Added git provider interface for PR operations
+- 7414213: feat: add OAuth device flow authentication for GitHub
+
+  - Added new `ralph auth` command with subcommands:
+
+    - `ralph auth login` - Initiate GitHub OAuth device flow authentication
+    - `ralph auth logout` - Revoke tokens and clear credentials
+    - `ralph auth status` - Show current authentication status
+
+  - Updated GitHub integration to use OAuth tokens when available, falling back to PAT
+  - Added `/auth` slash command in terminal UI for OAuth authentication
+  - Updated `/github` view with OAuth login option alongside PAT setup
+  - Enhanced `ralph github` command to show authentication method (OAuth vs PAT)
+  - Added migration prompts for existing PAT users to switch to OAuth
+  - OAuth tokens are stored securely in global config alongside existing settings
+
+- 155e9fd: Added GitHub provider for automatic PR creation
+- 5ec56dd: Added global rules support with `--global` flag
+- b33739d: Integrated automatic PR creation into branch mode
+
+### Patch Changes
+
+- 1b011ec: Added Escape key support to exit the /add command input, allowing users to cancel task creation during the description step
+- cec5b59: Fix slash command hint navigation with arrow keys. When typing a partial slash command, the suggestion list now properly follows the selected item using viewport windowing. Previously, navigating past the 5th suggestion would leave the selection indicator invisible because the selected item was outside the displayed window. Now, the window scrolls to keep the selected item visible, showing indicators for items above and below the viewport.
+- ce2a4a6: Fix memory leaks in long-running sessions by using rolling buffers and releasing stream locks
+- 52dc55d: Fixed text input race conditions when typing quickly
+- 00b9da7: Hide iteration progress bar when in idle state
+
+  - The iteration progress bar is now only shown when a session is running, complete, or stopped at max iterations/runtime
+  - In idle state (before starting a session), the progress bar is hidden for a cleaner UI
+
+- 3e938d2: Render /help output inline in the main view instead of navigating to a separate full-screen view. The help content can be dismissed by pressing Escape or by typing /help again to toggle it off.
+- b6d85af: Add shorthand slash commands /q and /e as aliases for /quit and /exit
+- 36d7384: Unified Rules and Tasks views with shared list-detail components
+
+  - Added SelectableList component for generic list navigation with selection indicator
+  - Added DetailPanel component for bordered detail display panels
+  - Added useListNavigation hook for shared keyboard navigation logic
+  - Refactored TasksView to use shared components (SelectableList, DetailPanel, useListNavigation)
+  - Refactored RulesView to use shared components with consistent UX patterns
+  - Extracted smaller subcomponents for better code organization and reusability
+
 ## 0.13.0
 
 ### Minor Changes
