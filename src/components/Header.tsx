@@ -24,11 +24,6 @@ const FULL_LOGO = `
  ██║  ██║ ██║  ██║ ███████╗ ██║      ██║  ██║
  ╚═╝  ╚═╝ ╚═╝  ╚═╝ ╚══════╝ ╚═╝      ╚═╝  ╚═╝`;
 
-const COMPACT_LOGO = `
-╭─────────────────────────╮
-│  ◆ RALPH               │
-╰─────────────────────────╯`;
-
 function FullHeader({
 	version,
 	agent,
@@ -68,7 +63,7 @@ function CompactHeader({
 	return (
 		<Box flexDirection="column" paddingX={1}>
 			<Text bold color="cyan">
-				{COMPACT_LOGO}
+				{FULL_LOGO}
 			</Text>
 			<Box gap={2}>
 				<Text dimColor>v{version}</Text>
