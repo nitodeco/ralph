@@ -302,7 +302,7 @@ export function TextInput({
 			stateRef.current = {
 				...stateRef.current,
 				value: originalValue,
-				cursorOffset: Math.min(stateRef.current.cursorOffset, originalValue.length),
+				cursorOffset: originalValue.length,
 			};
 			syncStateToRender();
 		}
