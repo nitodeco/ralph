@@ -53,38 +53,13 @@ export function ConsentWarning({ version, onAccept }: ConsentWarningProps): Reac
 						</Text>
 						<Box marginTop={1} flexDirection="column">
 							<Text>
-								Ralph orchestrates AI agents that can{" "}
+								Ralph runs AI agents with{" "}
 								<Text bold color="red">
-									execute code and modify files
-								</Text>{" "}
-								on your system.
+									permission prompts bypassed
+								</Text>
+								, allowing them to execute code, modify files, and make system changes without
+								confirmation.
 							</Text>
-							<Box marginTop={1}>
-								<Text>
-									To enable autonomous operation, Ralph uses flags that bypass permission prompts:
-								</Text>
-							</Box>
-							<Box marginTop={1} flexDirection="column" paddingLeft={2}>
-								<Text color="cyan">
-									{" "}
-									- Cursor: <Text dimColor>--force</Text>
-								</Text>
-								<Text color="cyan">
-									{" "}
-									- Claude Code: <Text dimColor>--dangerously-skip-permissions</Text>
-								</Text>
-								<Text color="cyan">
-									{" "}
-									- Codex: <Text dimColor>--full-auto</Text>
-								</Text>
-							</Box>
-							<Box marginTop={1} flexDirection="column">
-								<Text>This means the AI agent can:</Text>
-								<Text dimColor> - Run any shell command without asking</Text>
-								<Text dimColor> - Read, write, and delete files</Text>
-								<Text dimColor> - Install packages and modify your system</Text>
-								<Text dimColor> - Make network requests</Text>
-							</Box>
 							<Box marginTop={1}>
 								<Text bold color="yellow">
 									Only use Ralph in projects where you trust the AI to make changes.
