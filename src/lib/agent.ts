@@ -6,7 +6,9 @@ import {
 	STUCK_CHECK_INTERVAL_DIVISOR,
 } from "@/lib/constants/ui.ts";
 import type { AgentType, IterationLogRetryContext } from "@/types.ts";
+import { createCompletionDetector } from "./completion-detector.ts";
 import { getAgentCommand } from "./config.ts";
+import { parseDecompositionRequest } from "./decomposition.ts";
 import {
 	categorizeAgentErrorFull,
 	createError,
@@ -184,12 +186,18 @@ export class AgentRunner {
 				};
 
 				if (this.config.emitEvents && !AgentProcessManager.isAborted()) {
+					const OUTPUT_PREVIEW_LENGTH = 500;
+					const decompositionResult = parseDecompositionRequest(runAttemptResult.output);
+
 					eventBus.emit("agent:complete", {
 						isComplete: runAttemptResult.isComplete,
 						exitCode: runAttemptResult.exitCode,
-						output: runAttemptResult.output,
+						outputLength: runAttemptResult.output.length,
+						outputPreview: runAttemptResult.output.slice(0, OUTPUT_PREVIEW_LENGTH),
 						retryCount: AgentProcessManager.getRetryCount(),
 						retryContexts: retryContexts.length > 0 ? retryContexts : undefined,
+						hasDecompositionRequest: decompositionResult.detected,
+						decompositionRequest: decompositionResult.request ?? undefined,
 					});
 				}
 
@@ -374,7 +382,7 @@ export class AgentRunner {
 		const stdoutReader = agentProcess.stdout.getReader();
 		const stderrReader = agentProcess.stderr.getReader();
 		const decoder = new TextDecoder();
-		let rawOutput = "";
+		const completionDetector = createCompletionDetector(COMPLETION_MARKER);
 		let parsedOutput = "";
 		let stderrOutput = "";
 		let lineBuffer = "";
@@ -468,7 +476,7 @@ export class AgentRunner {
 					updateLastActivity();
 					const text = safeDecodeText(value);
 
-					rawOutput += text;
+					completionDetector.feed(text);
 					lineBuffer += text;
 
 					const lines = lineBuffer.split("\n");
@@ -488,6 +496,12 @@ export class AgentRunner {
 			} catch (error) {
 				streamState.error = error instanceof Error ? error : new Error(String(error));
 				logger.error("Error reading stdout stream", { error: getErrorMessage(error) });
+			} finally {
+				try {
+					stdoutReader.releaseLock();
+				} catch {
+					// Reader lock may already be released
+				}
 			}
 		};
 
@@ -505,6 +519,12 @@ export class AgentRunner {
 				}
 			} catch (error) {
 				logger.warn("Error reading stderr stream", { error: getErrorMessage(error) });
+			} finally {
+				try {
+					stderrReader.releaseLock();
+				} catch {
+					// Reader lock may already be released
+				}
 			}
 		};
 
@@ -517,6 +537,18 @@ export class AgentRunner {
 
 			if (stuckCheckInterval) {
 				clearInterval(stuckCheckInterval);
+			}
+
+			try {
+				stdoutReader.releaseLock();
+			} catch {
+				// Reader lock may already be released
+			}
+
+			try {
+				stderrReader.releaseLock();
+			} catch {
+				// Reader lock may already be released
 			}
 
 			flushOutput();
@@ -572,7 +604,7 @@ export class AgentRunner {
 			};
 		}
 
-		const isComplete = rawOutput.includes(COMPLETION_MARKER);
+		const isComplete = completionDetector.isComplete();
 
 		if (timeoutTriggered) {
 			const errorMessage = `Agent timed out after ${Math.round(agentTimeoutMs / 1_000 / 60)} minutes`;

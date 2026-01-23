@@ -1,5 +1,4 @@
 import { loadConfig } from "@/lib/config.ts";
-import { parseDecompositionRequest } from "@/lib/decomposition.ts";
 import {
 	getParallelExecutionGroups,
 	getReadyTasks,
@@ -18,8 +17,8 @@ import {
 	appendIterationError,
 	completeIterationLog,
 	generateSessionId,
-	getAllIterationLogs,
 	initializeLogsIndex,
+	iterateIterationLogs,
 	startIterationLog,
 } from "@/lib/iteration-logs.ts";
 import { getLogger } from "@/lib/logger.ts";
@@ -44,6 +43,7 @@ import {
 import type {
 	DecompositionRequest,
 	DecompositionSubtask,
+	IterationLog,
 	IterationLogDecomposition,
 	IterationLogRetryContext,
 	IterationLogStatus,
@@ -916,14 +916,13 @@ class SessionOrchestrator {
 		}
 
 		const currentPrd = reloadPrd();
-		const decompositionResult = parseDecompositionRequest(event.output);
 
-		if (decompositionResult.detected && decompositionResult.request && this.decompositionHandler) {
-			const handled = this.decompositionHandler.handle(decompositionResult.request, currentPrd);
+		if (event.hasDecompositionRequest && event.decompositionRequest && this.decompositionHandler) {
+			const handled = this.decompositionHandler.handle(event.decompositionRequest, currentPrd);
 
 			if (handled) {
-				this.lastDecomposition = decompositionResult.request;
-				useAppStore.setState({ lastDecomposition: decompositionResult.request });
+				this.lastDecomposition = event.decompositionRequest;
+				useAppStore.setState({ lastDecomposition: event.decompositionRequest });
 
 				return;
 			}
@@ -1232,7 +1231,17 @@ class SessionOrchestrator {
 
 					if (this.technicalDebtHandler) {
 						try {
-							const iterationLogs = getAllIterationLogs();
+							const MAX_LOGS_FOR_ANALYSIS = 100;
+							const iterationLogs: IterationLog[] = [];
+
+							for (const log of iterateIterationLogs()) {
+								iterationLogs.push(log);
+
+								if (iterationLogs.length >= MAX_LOGS_FOR_ANALYSIS) {
+									break;
+								}
+							}
+
 							const sessionId = `session-${appState.currentSession.startTime}`;
 							const technicalDebtReport = this.technicalDebtHandler.run(
 								sessionId,

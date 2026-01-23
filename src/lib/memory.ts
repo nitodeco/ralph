@@ -82,6 +82,18 @@ export function triggerGarbageCollection(config?: MemoryConfig): void {
 	}
 }
 
+export function isMemoryPressureHigh(config?: MemoryConfig): boolean {
+	const usage = getMemoryUsage();
+	const threshold = config?.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB;
+
+	return usage.heapUsedMB >= threshold * 0.8;
+}
+
+export function performAggressiveCleanup(config?: MemoryConfig): void {
+	triggerGarbageCollection(config);
+	triggerGarbageCollection(config);
+}
+
 export function performMemoryCleanup(config?: MemoryConfig): void {
 	triggerGarbageCollection(config);
 	checkMemoryUsage(config);
@@ -174,7 +186,11 @@ export function performIterationCleanup(config?: MemoryConfig): {
 } {
 	const tempFilesRemoved = cleanupTempFiles();
 
-	triggerGarbageCollection(config);
+	if (isMemoryPressureHigh(config)) {
+		performAggressiveCleanup(config);
+	} else {
+		triggerGarbageCollection(config);
+	}
 
 	const { level: memoryStatus } = checkMemoryUsage(config);
 

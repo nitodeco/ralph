@@ -1,4 +1,4 @@
-import type { IterationLogRetryContext } from "@/types.ts";
+import type { DecompositionRequest, IterationLogRetryContext } from "@/types.ts";
 import type { FailureAnalysis } from "./failure-analyzer.ts";
 
 export interface AgentStartEvent {
@@ -8,9 +8,12 @@ export interface AgentStartEvent {
 export interface AgentCompleteEvent {
 	isComplete: boolean;
 	exitCode: number | null;
-	output: string;
+	outputLength: number;
+	outputPreview: string;
 	retryCount: number;
 	retryContexts?: IterationLogRetryContext[];
+	hasDecompositionRequest: boolean;
+	decompositionRequest?: DecompositionRequest;
 }
 
 export interface AgentErrorEvent {

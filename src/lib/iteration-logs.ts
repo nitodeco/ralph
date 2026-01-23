@@ -328,3 +328,19 @@ export function getAllIterationLogs(): IterationLog[] {
 
 	return logs;
 }
+
+export function* iterateIterationLogs(): Generator<IterationLog> {
+	const index = loadIterationLogsIndex();
+
+	if (!index) {
+		return;
+	}
+
+	for (const entry of index.iterations) {
+		const log = loadIterationLog(entry.iteration);
+
+		if (log) {
+			yield log;
+		}
+	}
+}
