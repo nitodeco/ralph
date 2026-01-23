@@ -1,6 +1,6 @@
 {
 	"name": "ralph",
-	"version": "0.14.1",
+	"version": "0.14.2",
 	"description": "A CLI tool for long-running PRD-driven development with Cursor CLI",
 	"module": "src/index.tsx",
 	"type": "module",
