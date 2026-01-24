@@ -1,0 +1,81 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { marked } from "marked";
+
+const currentPath = Astro.url.pathname;
+
+const changelogPath = join(process.cwd(), "..", "CHANGELOG.md");
+const changelogContent = readFileSync(changelogPath, "utf-8");
+
+const rawContent = changelogContent.replace(/^# ralph\n+/, "");
+
+const renderedContent = await marked.parse(rawContent, {
+  gfm: true,
+  breaks: false,
+});
+---
+
+<BaseLayout title="Changelog" description="Release history and changes for Ralph">
+  <Header currentPath={currentPath} />
+
+  <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+    <main id="main-content" class="py-8 lg:py-12">
+      <header class="mb-8">
+        <h1 class="text-3xl font-bold text-text">Changelog</h1>
+        <p class="mt-2 text-text-muted">
+          All notable changes to Ralph are documented here.
+        </p>
+      </header>
+
+      <article class="prose prose-invert prose-cyan max-w-none changelog-content" set:html={renderedContent} />
+    </main>
+  </div>
+
+  <Footer />
+</BaseLayout>
+
+<style>
+  .changelog-content :global(h2) {
+    @apply border-b border-border pb-2 mt-12 mb-4 text-2xl font-semibold text-text;
+  }
+
+  .changelog-content :global(h2:first-child) {
+    @apply mt-0;
+  }
+
+  .changelog-content :global(h3) {
+    @apply text-lg font-medium text-text-subtle mt-6 mb-3;
+  }
+
+  .changelog-content :global(ul) {
+    @apply list-disc pl-6 space-y-2;
+  }
+
+  .changelog-content :global(li) {
+    @apply text-text-muted;
+  }
+
+  .changelog-content :global(code) {
+    @apply bg-bg-elevated px-1.5 py-0.5 rounded text-sm text-brand;
+  }
+
+  .changelog-content :global(pre) {
+    @apply bg-bg-elevated rounded-lg p-4 overflow-x-auto my-4;
+  }
+
+  .changelog-content :global(pre code) {
+    @apply bg-transparent p-0;
+  }
+
+  .changelog-content :global(p) {
+    @apply text-text-muted my-3;
+  }
+
+  .changelog-content :global(a) {
+    @apply text-brand hover:underline;
+  }
+</style>
