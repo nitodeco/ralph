@@ -3,25 +3,213 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Button from "@/components/Button.astro";
+import InstallSnippet from "@/components/InstallSnippet.astro";
+import FeatureCard from "@/components/FeatureCard.astro";
 
 const currentPath = Astro.url.pathname;
+
+const features = [
+  {
+    title: "PRD-Driven Workflow",
+    description:
+      "Define your requirements in a PRD file and let Ralph work through each task systematically, maintaining context across sessions.",
+    icon: "📋",
+  },
+  {
+    title: "Long-Running Sessions",
+    description:
+      "Sessions persist across terminal restarts. Pick up exactly where you left off with full context restoration.",
+    icon: "⏱️",
+  },
+  {
+    title: "Task Decomposition",
+    description:
+      "Complex tasks are automatically broken down into manageable subtasks, ensuring thorough implementation.",
+    icon: "🧩",
+  },
+  {
+    title: "Verification & Retries",
+    description:
+      "Built-in verification loops catch issues early. Failed tasks are automatically retried with learned context.",
+    icon: "✅",
+  },
+  {
+    title: "GitHub Integration",
+    description:
+      "Automatic PR creation with detailed descriptions. Connect your workflow directly to your repository.",
+    icon: "🔗",
+  },
+  {
+    title: "Session Memory",
+    description:
+      "Ralph learns from previous sessions. Guardrails and patterns are remembered and applied to future iterations.",
+    icon: "🧠",
+  },
+];
+
+const steps = [
+  {
+    number: "1",
+    title: "Define your PRD",
+    description:
+      "Write a product requirements document with tasks. Ralph parses it and tracks completion.",
+  },
+  {
+    number: "2",
+    title: "Start a session",
+    description:
+      "Run ralph start and the AI agent begins working through tasks, one at a time.",
+  },
+  {
+    number: "3",
+    title: "Review & ship",
+    description:
+      "Ralph creates commits and PRs. You review and merge when ready.",
+  },
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Ralph",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "macOS, Linux",
+  description:
+    "CLI tool for long-running PRD-driven development with AI coding agents. Orchestrates iterative agent runs with retries, verification, progress tracking, and GitHub integration.",
+  url: "https://nitodeco.github.io/ralph/",
+  author: {
+    "@type": "Person",
+    name: "nitodeco",
+    url: "https://github.com/nitodeco",
+  },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  license: "https://opensource.org/licenses/MIT",
+};
 ---
 
-<BaseLayout title="Ralph">
+<BaseLayout
+  title="Ralph - PRD-Driven Development with AI"
+  description="CLI tool for long-running PRD-driven development with AI coding agents. Orchestrates iterative agent runs with retries, verification, and GitHub integration."
+>
   <Header currentPath={currentPath} />
 
-  <main id="main-content" class="flex flex-1 flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4">
-    <h1 class="text-4xl font-bold mb-4">Ralph</h1>
-    <p class="text-text-muted text-lg mb-8 text-center max-w-xl">
-      CLI tool for long-running PRD-driven development with AI coding agents.
-    </p>
-    <div class="flex gap-4">
-      <Button href="/ralph/docs/">Read the docs</Button>
-      <Button variant="secondary" href="https://github.com/nitodeco/ralph">
-        View on GitHub
-      </Button>
-    </div>
+  <main id="main-content" class="flex flex-1 flex-col">
+    <section
+      class="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-16 sm:py-24"
+    >
+      <div class="text-center max-w-3xl mx-auto">
+        <h1
+          class="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-[var(--color-text-muted)] bg-clip-text text-transparent"
+        >
+          Ralph
+        </h1>
+        <p
+          class="text-xl sm:text-2xl text-[var(--color-text-muted)] mb-10 leading-relaxed"
+        >
+          Long-running PRD-driven development with AI coding agents.
+          <span class="block mt-2 text-lg sm:text-xl text-[var(--color-text-subtle)]"
+            >Define tasks. Start a session. Ship code.</span
+          >
+        </p>
+        <div class="flex flex-wrap justify-center gap-4 mb-12">
+          <Button href="/ralph/docs/">Read the docs</Button>
+          <Button variant="secondary" href="https://github.com/nitodeco/ralph">
+            View on GitHub
+          </Button>
+        </div>
+      </div>
+
+      <InstallSnippet />
+    </section>
+
+    <section class="px-4 py-16 sm:py-24 border-t border-[var(--color-border)]">
+      <div class="max-w-6xl mx-auto">
+        <h2
+          class="text-3xl sm:text-4xl font-bold text-center mb-4"
+        >
+          Features
+        </h2>
+        <p
+          class="text-[var(--color-text-muted)] text-center mb-12 max-w-2xl mx-auto"
+        >
+          Everything you need to orchestrate AI-driven development at scale.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {
+            features.map((feature) => (
+              <FeatureCard
+                title={feature.title}
+                description={feature.description}
+                icon={feature.icon}
+              />
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="px-4 py-16 sm:py-24 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border)]"
+    >
+      <div class="max-w-4xl mx-auto">
+        <h2
+          class="text-3xl sm:text-4xl font-bold text-center mb-4"
+        >
+          How it works
+        </h2>
+        <p
+          class="text-[var(--color-text-muted)] text-center mb-12 max-w-2xl mx-auto"
+        >
+          Three steps from requirements to shipped code.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {
+            steps.map((step) => (
+              <div class="text-center">
+                <div class="w-12 h-12 rounded-full bg-[var(--color-brand)] text-[var(--color-bg)] flex items-center justify-center text-xl font-bold mx-auto mb-4">
+                  {step.number}
+                </div>
+                <h3 class="text-lg font-semibold mb-2">{step.title}</h3>
+                <p class="text-[var(--color-text-muted)] text-sm">
+                  {step.description}
+                </p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="px-4 py-16 sm:py-24 border-t border-[var(--color-border)]">
+      <div class="max-w-2xl mx-auto text-center">
+        <h2
+          class="text-3xl sm:text-4xl font-bold mb-4"
+        >
+          Ready to start?
+        </h2>
+        <p class="text-[var(--color-text-muted)] mb-8">
+          Install Ralph and begin your first PRD-driven session.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+          <Button href="/ralph/docs/getting-started/installation/"
+            >Installation guide</Button
+          >
+          <Button
+            variant="secondary"
+            href="/ralph/docs/getting-started/quickstart/"
+          >
+            Quickstart
+          </Button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <Footer />
+
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>
