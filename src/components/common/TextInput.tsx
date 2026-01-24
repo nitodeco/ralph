@@ -245,6 +245,8 @@ export function TextInput({
 
 	const { cursorOffset, cursorWidth } = renderState;
 
+	const vimModeRef = useRef<VimMode>("insert");
+
 	const syncStateToRender = useCallback(() => {
 		const currentState = stateRef.current;
 
@@ -292,10 +294,18 @@ export function TextInput({
 	});
 
 	useEffect(() => {
+		vimModeRef.current = vimCurrentMode;
+	}, [vimCurrentMode]);
+
+	useEffect(() => {
 		onVimModeChange?.(vimCurrentMode);
 	}, [vimCurrentMode, onVimModeChange]);
 
 	useEffect(() => {
+		if (pendingOnChangeRef.current !== null) {
+			return;
+		}
+
 		const currentInternalValue = stateRef.current.value;
 
 		if (originalValue !== currentInternalValue) {
@@ -570,7 +580,7 @@ export function TextInput({
 
 			if (
 				isVimModeEnabled &&
-				vimCurrentMode === "normal" &&
+				vimModeRef.current === "normal" &&
 				!key.leftArrow &&
 				!key.rightArrow &&
 				!key.backspace &&
@@ -670,7 +680,6 @@ export function TextInput({
 		syncStateToRender();
 	}, [
 		isVimModeEnabled,
-		vimCurrentMode,
 		handleVimInput,
 		onArrowUp,
 		onArrowDown,
