@@ -1,17 +1,40 @@
 import { create } from "zustand";
 import { AgentRunner } from "@/lib/agent.ts";
+import type { AgentPhase } from "@/lib/agent-phase.ts";
 import { detectPhaseFromOutput } from "@/lib/agent-phase.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { GIT_STATS_POLL_INTERVAL_MS, OUTPUT_THROTTLE_MS } from "@/lib/constants/ui.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
+import type { GitDiffStats } from "@/lib/git-stats.ts";
 import { getGitStatusStats } from "@/lib/git-stats.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import { buildPrompt } from "@/lib/prompt.ts";
 import { AgentProcessManager, getConfigService, getPrdService } from "@/lib/services/index.ts";
-import { useAgentStatusStore } from "./agentStatusStore.ts";
+
+interface AgentStoreDependencies {
+	setPhase: (phase: AgentPhase) => void;
+	setFileChanges: (stats: GitDiffStats) => void;
+	resetStatus: () => void;
+}
+
+let agentStoreDependencies: AgentStoreDependencies | null = null;
+
+export function setAgentStoreDependencies(dependencies: AgentStoreDependencies): void {
+	agentStoreDependencies = dependencies;
+}
+
+function getAgentStoreDependencies(): AgentStoreDependencies {
+	if (!agentStoreDependencies) {
+		throw new Error(
+			"AgentStore dependencies not initialized. Call setAgentStoreDependencies first.",
+		);
+	}
+
+	return agentStoreDependencies;
+}
 
 interface AgentState {
 	output: string;
@@ -53,7 +76,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 		const detectedPhase = detectPhaseFromOutput(output);
 
-		useAgentStatusStore.getState().setPhase(detectedPhase);
+		getAgentStoreDependencies().setPhase(detectedPhase);
 
 		set({ output: truncatedOutput });
 	},
@@ -76,10 +99,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			isStreaming: true,
 		});
 
-		const statusStore = useAgentStatusStore.getState();
+		const dependencies = getAgentStoreDependencies();
 
-		statusStore.reset();
-		statusStore.setPhase("starting");
+		dependencies.resetStatus();
+		dependencies.setPhase("starting");
 
 		const config = getConfigService().get();
 		const logger = getLogger({ logFilePath: config.logFilePath });
@@ -114,7 +137,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		const gitStatsInterval = setInterval(() => {
 			const stats = getGitStatusStats();
 
-			useAgentStatusStore.getState().setFileChanges(stats);
+			getAgentStoreDependencies().setFileChanges(stats);
 		}, GIT_STATS_POLL_INTERVAL_MS);
 
 		try {
@@ -152,7 +175,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 			});
 		} finally {
 			clearInterval(gitStatsInterval);
-			useAgentStatusStore.getState().setPhase("idle");
+			getAgentStoreDependencies().setPhase("idle");
 			AgentProcessManager.setProcess(null);
 			clearShutdownHandler();
 		}
@@ -167,7 +190,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
 	reset: () => {
 		AgentProcessManager.reset();
-		useAgentStatusStore.getState().reset();
+		getAgentStoreDependencies().resetStatus();
 		set(INITIAL_STATE);
 	},
 

@@ -25,8 +25,48 @@ import type {
 	ValidationWarning,
 	VerificationResult,
 } from "@/types.ts";
-import { useAgentStore } from "./agentStore.ts";
-import { useIterationStore } from "./iterationStore.ts";
+
+interface AppStoreAgentDependencies {
+	reset: () => void;
+	stop: () => void;
+	getIsStreaming: () => boolean;
+	getIsComplete: () => boolean;
+}
+
+interface AppStoreIterationDependencies {
+	setTotal: (total: number) => void;
+	setFullMode: (isFullMode: boolean) => void;
+	setStartTime: (startTime: number) => void;
+	start: () => void;
+	startFromIteration: (iteration: number) => void;
+	stop: () => void;
+	reset: () => void;
+	getCurrent: () => number;
+	getTotal: () => number;
+	getIsRunning: () => boolean;
+	markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => void;
+	restartCurrentIteration: () => void;
+	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => void;
+}
+
+interface AppStoreDependencies {
+	agent: AppStoreAgentDependencies;
+	iteration: AppStoreIterationDependencies;
+}
+
+let appStoreDependencies: AppStoreDependencies | null = null;
+
+export function setAppStoreDependencies(dependencies: AppStoreDependencies): void {
+	appStoreDependencies = dependencies;
+}
+
+function getAppStoreDependencies(): AppStoreDependencies {
+	if (!appStoreDependencies) {
+		throw new Error("AppStore dependencies not initialized. Call setAppStoreDependencies first.");
+	}
+
+	return appStoreDependencies;
+}
 
 interface AppStoreState {
 	appState: AppState;
@@ -229,11 +269,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			totalIters = incompleteTasks > 0 ? incompleteTasks : 1;
 		}
 
-		const iterationStore = useIterationStore.getState();
+		const iterationDeps = getAppStoreDependencies().iteration;
 
-		iterationStore.setTotal(totalIters);
-		iterationStore.setFullMode(full === true);
-		iterationStore.setStartTime(Date.now());
+		iterationDeps.setTotal(totalIters);
+		iterationDeps.setFullMode(full === true);
+		iterationDeps.setStartTime(Date.now());
 
 		const { session: newSession } = getOrchestrator().startSession(loadedPrd, totalIters);
 
@@ -244,8 +284,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			elapsedTime: 0,
 		});
 
-		useAgentStore.getState().reset();
-		iterationStore.start();
+		getAppStoreDependencies().agent.reset();
+		iterationDeps.start();
 	},
 
 	startSingleTask: (taskIdentifier: string): SetManualTaskResult => {
@@ -315,10 +355,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		getSessionService().delete();
 		set({ pendingSession: null });
 
-		const iterationStore = useIterationStore.getState();
+		const iterationDeps = getAppStoreDependencies().iteration;
 
-		iterationStore.setTotal(1);
-		iterationStore.setStartTime(Date.now());
+		iterationDeps.setTotal(1);
+		iterationDeps.setStartTime(Date.now());
 
 		const { session: newSession } = getOrchestrator().startSession(loadedPrd, 1);
 
@@ -329,8 +369,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			elapsedTime: 0,
 		});
 
-		useAgentStore.getState().reset();
-		iterationStore.start();
+		getAppStoreDependencies().agent.reset();
+		iterationDeps.start();
 
 		return { success: true, taskTitle: task.title };
 	},
@@ -371,14 +411,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			loadedPrd,
 		);
 
-		const iterationStore = useIterationStore.getState();
+		const iterationDeps = getAppStoreDependencies().iteration;
 		const resumeFromIteration = state.pendingSession.currentIteration + 1;
 
-		iterationStore.setTotal(state.pendingSession.totalIterations);
+		iterationDeps.setTotal(state.pendingSession.totalIterations);
 
 		const elapsedMs = state.pendingSession.elapsedTimeSeconds * 1000;
 
-		iterationStore.setStartTime(Date.now() - elapsedMs);
+		iterationDeps.setStartTime(Date.now() - elapsedMs);
 
 		set({
 			currentSession: resumedSession,
@@ -390,18 +430,17 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			elapsedTime: state.pendingSession.elapsedTimeSeconds,
 		});
 
-		useAgentStore.getState().reset();
-		iterationStore.startFromIteration(resumeFromIteration);
+		getAppStoreDependencies().agent.reset();
+		iterationDeps.startFromIteration(resumeFromIteration);
 	},
 
 	stopAgent: () => {
-		const agentStore = useAgentStore.getState();
-		const iterationStore = useIterationStore.getState();
+		const deps = getAppStoreDependencies();
 		const state = get();
 
-		if (agentStore.isStreaming || iterationStore.isRunning) {
-			agentStore.stop();
-			iterationStore.stop();
+		if (deps.agent.getIsStreaming() || deps.iteration.getIsRunning()) {
+			deps.agent.stop();
+			deps.iteration.stop();
 
 			if (state.currentSession) {
 				const sessionService = getSessionService();
@@ -414,8 +453,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			const loadedConfig = getConfigService().get();
 
 			sendNotifications(loadedConfig.notifications, "session_paused", state.prd?.project, {
-				iteration: iterationStore.current,
-				totalIterations: iterationStore.total,
+				iteration: deps.iteration.getCurrent(),
+				totalIterations: deps.iteration.getTotal(),
 			});
 
 			set({ appState: "idle" });
@@ -450,16 +489,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			isInGitRepository: isInGitRepo,
 		});
 
-		useAgentStore.getState().reset();
+		getAppStoreDependencies().agent.reset();
 	},
 
 	handleAgentComplete: () => {
 		const state = get();
-		const agentStore = useAgentStore.getState();
-		const iterationStore = useIterationStore.getState();
+		const deps = getAppStoreDependencies();
 		const hasPendingTasks = state.prd ? state.prd.tasks.some((task) => !task.done) : false;
 
-		iterationStore.markIterationComplete(agentStore.isComplete, hasPendingTasks);
+		deps.iteration.markIterationComplete(deps.agent.getIsComplete(), hasPendingTasks);
 	},
 
 	handleFatalError: (error: string) => {
@@ -608,7 +646,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	clearSession: () => {
-		useIterationStore.getState().reset();
+		getAppStoreDependencies().iteration.reset();
 		set({
 			pendingSession: null,
 			currentSession: null,
@@ -631,6 +669,7 @@ export function setupIterationCallbacks(
 	const loadedConfig = getConfigService().get();
 	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
 	const orchestrator = getOrchestrator();
+	const iterationDeps = getAppStoreDependencies().iteration;
 
 	orchestrator.initialize(
 		{
@@ -644,15 +683,13 @@ export function setupIterationCallbacks(
 				useAppStore.setState({ prd });
 			},
 			onRestartIteration: () => {
-				useIterationStore.getState().restartCurrentIteration();
+				iterationDeps.restartCurrentIteration();
 			},
 			onVerificationStateChange: (isVerifying, result) => {
 				useAppStore.setState({ isVerifying, lastVerificationResult: result });
 			},
 			onIterationComplete: (allTasksDone, hasPendingTasks) => {
-				const iterationStore = useIterationStore.getState();
-
-				iterationStore.markIterationComplete(allTasksDone, hasPendingTasks);
+				iterationDeps.markIterationComplete(allTasksDone, hasPendingTasks);
 			},
 			onFatalError: (error, prd, currentSession) => {
 				const stoppedSession = orchestrator.handleFatalError(error, prd, currentSession);
@@ -667,7 +704,7 @@ export function setupIterationCallbacks(
 				useAppStore.setState({ appState: state });
 			},
 			setMaxRuntimeMs: (runtimeMs) => {
-				useIterationStore.getState().setMaxRuntimeMs(runtimeMs);
+				iterationDeps.setMaxRuntimeMs(runtimeMs);
 			},
 		},
 	);

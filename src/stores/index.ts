@@ -1,8 +1,9 @@
 export type { ActiveView, AppState, ValidationWarning } from "@/types.ts";
 export { useAgentStatusStore } from "./agentStatusStore.ts";
-export { useAgentStore } from "./agentStore.ts";
+export { setAgentStoreDependencies, useAgentStore } from "./agentStore.ts";
 export {
 	type SetupIterationCallbacksResult,
+	setAppStoreDependencies,
 	setupIterationCallbacks,
 	useAppStore,
 } from "./appStore.ts";

@@ -87,7 +87,14 @@ import {
 	setParallelExecutionManagerDependencies,
 	setSessionManagerDependencies,
 } from "@/lib/services/index.ts";
-import { useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
+import {
+	setAgentStoreDependencies,
+	setAppStoreDependencies,
+	useAgentStatusStore,
+	useAgentStore,
+	useAppStore,
+	useIterationStore,
+} from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
 
@@ -185,6 +192,43 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 
 function main(): void {
 	bootstrapServices();
+
+	setAgentStoreDependencies({
+		setPhase: (phase) => {
+			useAgentStatusStore.getState().setPhase(phase);
+		},
+		setFileChanges: (stats) => {
+			useAgentStatusStore.getState().setFileChanges(stats);
+		},
+		resetStatus: () => {
+			useAgentStatusStore.getState().reset();
+		},
+	});
+
+	setAppStoreDependencies({
+		agent: {
+			reset: () => useAgentStore.getState().reset(),
+			stop: () => useAgentStore.getState().stop(),
+			getIsStreaming: () => useAgentStore.getState().isStreaming,
+			getIsComplete: () => useAgentStore.getState().isComplete,
+		},
+		iteration: {
+			setTotal: (total) => useIterationStore.getState().setTotal(total),
+			setFullMode: (isFullMode) => useIterationStore.getState().setFullMode(isFullMode),
+			setStartTime: (startTime) => useIterationStore.getState().setStartTime(startTime),
+			start: () => useIterationStore.getState().start(),
+			startFromIteration: (iteration) => useIterationStore.getState().startFromIteration(iteration),
+			stop: () => useIterationStore.getState().stop(),
+			reset: () => useIterationStore.getState().reset(),
+			getCurrent: () => useIterationStore.getState().current,
+			getTotal: () => useIterationStore.getState().total,
+			getIsRunning: () => useIterationStore.getState().isRunning,
+			markIterationComplete: (isProjectComplete, hasPendingTasks) =>
+				useIterationStore.getState().markIterationComplete(isProjectComplete, hasPendingTasks),
+			restartCurrentIteration: () => useIterationStore.getState().restartCurrentIteration(),
+			setMaxRuntimeMs: (maxRuntimeMs) => useIterationStore.getState().setMaxRuntimeMs(maxRuntimeMs),
+		},
+	});
 
 	setSessionManagerDependencies({
 		getAgentStoreState: () => {
