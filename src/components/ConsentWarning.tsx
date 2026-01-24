@@ -1,6 +1,6 @@
 import { Box, Text, useApp, useInput } from "ink";
 import SelectInput from "ink-select-input";
-import { acknowledgeWarning } from "@/lib/config.ts";
+import { getConfigService } from "@/lib/services/index.ts";
 import { Header } from "./Header.tsx";
 
 interface ConsentWarningProps {
@@ -23,7 +23,7 @@ export function ConsentWarning({ version, onAccept }: ConsentWarningProps): Reac
 			return;
 		}
 
-		acknowledgeWarning();
+		getConfigService().acknowledgeWarning();
 		onAccept();
 	};
 

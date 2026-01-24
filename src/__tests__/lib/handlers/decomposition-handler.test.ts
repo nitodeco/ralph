@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { DecompositionHandler } from "@/lib/handlers/DecompositionHandler.ts";
 import { ensureProjectDirExists, getPrdJsonPath } from "@/lib/paths.ts";
-import { reloadPrd } from "@/lib/prd.ts";
 import {
 	bootstrapTestServices,
 	createPrdService,
+	getPrdService,
 	teardownTestServices,
 } from "@/lib/services/index.ts";
 import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
@@ -87,7 +87,7 @@ describe("DecompositionHandler", () => {
 			},
 		});
 
-		const currentPrd = reloadPrd();
+		const currentPrd = getPrdService().reload();
 		const handled = handler.handle(request, currentPrd);
 
 		expect(handled).toBe(true);

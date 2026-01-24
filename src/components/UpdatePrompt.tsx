@@ -2,9 +2,9 @@ import { Box, Text, useApp } from "ink";
 import SelectInput from "ink-select-input";
 import { useCallback, useEffect, useState } from "react";
 import { match } from "ts-pattern";
-import { loadConfig, saveConfig } from "@/lib/config.ts";
 import { RESTART_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
+import { getConfigService } from "@/lib/services/index.ts";
 import {
 	compareVersions,
 	downloadBinary,
@@ -46,10 +46,11 @@ const UPDATE_CHOICES = [
 ];
 
 function skipVersion(version: string): void {
-	const config = loadConfig();
+	const configService = getConfigService();
+	const config = configService.get();
 
 	config.skipVersion = version;
-	saveConfig(config);
+	configService.saveProject(config);
 }
 
 export function UpdatePrompt({
@@ -81,19 +82,20 @@ export function UpdatePrompt({
 
 				setLatestVersion(latest);
 
-				const config = loadConfig();
+				const configService = getConfigService();
+				const config = configService.get();
 
 				config.lastUpdateCheck = Date.now();
-				saveConfig(config);
+				configService.saveProject(config);
 
 				const comparison = compareVersions(version, latest);
 
 				if (comparison <= 0) {
-					const currentConfig = loadConfig();
+					const currentConfig = configService.get();
 
 					currentConfig.skipVersion = undefined;
 
-					saveConfig(currentConfig);
+					configService.saveProject(currentConfig);
 					setState("up_to_date");
 				} else {
 					setState("update_available");

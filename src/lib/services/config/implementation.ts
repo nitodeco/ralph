@@ -224,5 +224,17 @@ export function createConfigService(): ConfigService {
 				effective: this.get(),
 			};
 		},
+
+		hasAcknowledgedWarning(): boolean {
+			const rawConfig = this.loadGlobalRaw();
+
+			return rawConfig?.hasAcknowledgedWarning === true;
+		},
+
+		acknowledgeWarning(): void {
+			const config = this.loadGlobal();
+
+			this.saveGlobal({ ...config, hasAcknowledgedWarning: true });
+		},
 	};
 }

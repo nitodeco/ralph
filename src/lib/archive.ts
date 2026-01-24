@@ -3,8 +3,8 @@ import { join } from "node:path";
 import type { Prd, PrdTask } from "@/types.ts";
 import { formatTimestamp } from "./logging-utils.ts";
 import { getArchiveDir } from "./paths.ts";
-import { findPrdFile, loadPrd, savePrd } from "./prd.ts";
 import { getProgressFilePath } from "./progress.ts";
+import { getPrdService } from "./services/index.ts";
 
 interface ArchivedTasks {
 	archivedAt: string;
@@ -79,24 +79,25 @@ export function performSessionArchive(): ArchiveResult {
 		progressArchived: false,
 	};
 
-	const prdFile = findPrdFile();
+	const prdService = getPrdService();
+	const prdFile = prdService.findFile();
 
 	if (!prdFile) {
 		return archiveResult;
 	}
 
-	const prd = loadPrd();
+	const prd = prdService.get();
 
 	if (!prd) {
 		return archiveResult;
 	}
 
-	const completedTaskCount = prd.tasks.filter((task) => task.done).length;
+	const completedTaskCount = prd.tasks.filter((task: PrdTask) => task.done).length;
 
 	if (completedTaskCount > 0) {
 		const updatedPrd = archiveCompletedTasks(prd);
 
-		savePrd(updatedPrd);
+		prdService.save(updatedPrd);
 		archiveResult.tasksArchived = completedTaskCount;
 	}
 

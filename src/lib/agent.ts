@@ -7,7 +7,6 @@ import {
 } from "@/lib/constants/ui.ts";
 import type { AgentType, IterationLogRetryContext } from "@/types.ts";
 import { createCompletionDetector } from "./completion-detector.ts";
-import { getAgentCommand } from "./config.ts";
 import { parseDecompositionRequest } from "./decomposition.ts";
 import {
 	categorizeAgentErrorFull,
@@ -21,6 +20,7 @@ import { analyzeFailure, type FailureAnalysis, generateRetryContext } from "./fa
 import { getLogger } from "./logger.ts";
 import { COMPLETION_MARKER } from "./prompt.ts";
 import { AgentProcessManager } from "./services/AgentProcessManager.ts";
+import { getAgentCommand } from "./services/index.ts";
 import { calculateRetryDelay, createThrottledFunction, sleep, withTimeout } from "./utils.ts";
 
 export interface RunAgentWithPromptOptions {

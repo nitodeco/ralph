@@ -1,11 +1,6 @@
-import {
-	getEffectiveConfig,
-	invalidateConfigCache,
-	loadGlobalConfig,
-	saveGlobalConfig,
-} from "@/lib/config.ts";
 import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import { createGitHubOAuthService } from "@/lib/services/github-oauth/index.ts";
+import { getConfigService } from "@/lib/services/index.ts";
 
 const SLEEP_BUFFER_MS = 500;
 
@@ -25,7 +20,8 @@ function maskToken(token: string): string {
 }
 
 export function printAuthStatus(version: string, jsonOutput: boolean): void {
-	const { effective } = getEffectiveConfig();
+	const configService = getConfigService();
+	const { effective } = configService.getEffective();
 	const gitProvider = effective.gitProvider;
 	const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
 	const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
@@ -126,7 +122,8 @@ export async function handleAuthLogin(jsonOutput: boolean): Promise<void> {
 			);
 
 			if (result.status === "success") {
-				const globalConfig = loadGlobalConfig();
+				const configService = getConfigService();
+				const globalConfig = configService.loadGlobal();
 				const updatedConfig = {
 					...globalConfig,
 					gitProvider: {
@@ -147,8 +144,8 @@ export async function handleAuthLogin(jsonOutput: boolean): Promise<void> {
 					},
 				};
 
-				saveGlobalConfig(updatedConfig);
-				invalidateConfigCache();
+				configService.saveGlobal(updatedConfig);
+				configService.invalidateAll();
 
 				if (jsonOutput) {
 					console.log(
@@ -198,7 +195,8 @@ export async function handleAuthLogin(jsonOutput: boolean): Promise<void> {
 }
 
 export async function handleAuthLogout(jsonOutput: boolean): Promise<void> {
-	const { effective } = getEffectiveConfig();
+	const configService = getConfigService();
+	const { effective } = configService.getEffective();
 	const gitProvider = effective.gitProvider;
 	const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
 	const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
@@ -219,7 +217,7 @@ export async function handleAuthLogout(jsonOutput: boolean): Promise<void> {
 		await oauthService.revokeToken(gitProvider?.github?.oauth?.accessToken ?? "");
 	}
 
-	const globalConfig = loadGlobalConfig();
+	const globalConfig = configService.loadGlobal();
 	const updatedConfig = {
 		...globalConfig,
 		gitProvider: {
@@ -232,8 +230,8 @@ export async function handleAuthLogout(jsonOutput: boolean): Promise<void> {
 		},
 	};
 
-	saveGlobalConfig(updatedConfig);
-	invalidateConfigCache();
+	configService.saveGlobal(updatedConfig);
+	configService.invalidateAll();
 
 	if (jsonOutput) {
 		console.log(JSON.stringify({ success: true, message: "Logged out successfully" }));

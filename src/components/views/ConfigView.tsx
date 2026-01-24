@@ -5,10 +5,10 @@ import {
 	CONFIG_DEFAULTS,
 	formatBytes,
 	formatMs,
-	getEffectiveConfig,
+	getConfigService,
 	getGlobalConfigPath,
 	getProjectConfigPath,
-} from "@/lib/config.ts";
+} from "@/lib/services/index.ts";
 import type { RalphConfig } from "@/types.ts";
 
 interface ConfigViewProps {
@@ -196,7 +196,11 @@ export function ConfigView({ version, onClose }: ConfigViewProps): React.ReactEl
 		}
 	});
 
-	const { global: globalConfig, project: projectConfig, effective } = getEffectiveConfig();
+	const {
+		global: globalConfig,
+		project: projectConfig,
+		effective,
+	} = getConfigService().getEffective();
 
 	return (
 		<ResponsiveLayout

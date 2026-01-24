@@ -1,4 +1,3 @@
-import { loadConfig } from "@/lib/config.ts";
 import {
 	getParallelExecutionGroups,
 	getReadyTasks,
@@ -24,12 +23,13 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { getCurrentTaskIndex, getNextTaskWithIndex, reloadPrd } from "@/lib/prd.ts";
 import { appendProgress, initializeProgressFile } from "@/lib/progress.ts";
 import type { BranchModeConfig } from "@/lib/services/config/types.ts";
 import {
+	getConfigService,
 	getGitBranchService,
 	getGitProviderService,
+	getPrdService,
 	getSessionMemoryService,
 	getSessionService,
 	getUsageStatisticsService,
@@ -226,7 +226,7 @@ class SessionOrchestrator {
 			return { isValid: true };
 		}
 
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		const gitBranchService = getGitBranchService();
 		const workingStatus = gitBranchService.getWorkingDirectoryStatus();
@@ -262,7 +262,7 @@ class SessionOrchestrator {
 			return { success: true };
 		}
 
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		const gitBranchService = getGitBranchService();
 		const result = gitBranchService.createAndCheckoutTaskBranch(
@@ -301,7 +301,7 @@ class SessionOrchestrator {
 			return { success: true };
 		}
 
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		const gitBranchService = getGitBranchService();
 		const branchName = this.currentTaskBranch;
@@ -366,7 +366,7 @@ class SessionOrchestrator {
 			return { success: false, error: "Branch mode not enabled or no base branch" };
 		}
 
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		const gitProviderConfig = loadedConfig.gitProvider;
 
@@ -538,7 +538,7 @@ class SessionOrchestrator {
 	}
 
 	initializeParallelExecution(prd: Prd): { isValid: boolean; error?: string } {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (!this.parallelConfig.enabled) {
@@ -584,7 +584,7 @@ class SessionOrchestrator {
 	}
 
 	startNextParallelGroup(): { started: boolean; groupIndex: number; tasks: PrdTask[] } {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (this.currentGroupIndex >= this.parallelExecutionGroups.length) {
@@ -643,7 +643,7 @@ class SessionOrchestrator {
 	}
 
 	recordParallelTaskStart(task: PrdTask, processId: string): void {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		logger.info("Parallel task started", {
@@ -683,7 +683,7 @@ class SessionOrchestrator {
 		wasSuccessful: boolean,
 		error?: string,
 	): { groupComplete: boolean; allSucceeded: boolean } {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (!this.currentParallelGroup) {
@@ -754,7 +754,7 @@ class SessionOrchestrator {
 	}
 
 	private completeCurrentParallelGroup(): void {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (!this.currentParallelGroup) {
@@ -805,7 +805,7 @@ class SessionOrchestrator {
 	}
 
 	getReadyTasksForParallelExecution(): PrdTask[] {
-		const prd = reloadPrd();
+		const prd = getPrdService().reload();
 
 		if (!prd) {
 			return [];
@@ -838,7 +838,7 @@ class SessionOrchestrator {
 	}
 
 	disableParallelExecution(): void {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		if (!this.parallelConfig.enabled) {
@@ -865,7 +865,7 @@ class SessionOrchestrator {
 	}
 
 	private setupSubscriptions(): void {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		this.unsubscribers.push(
@@ -915,7 +915,8 @@ class SessionOrchestrator {
 			this.logRetryContextsToProgress(event.retryContexts);
 		}
 
-		const currentPrd = reloadPrd();
+		const prdService = getPrdService();
+		const currentPrd = prdService.reload();
 
 		if (event.hasDecompositionRequest && event.decompositionRequest && this.decompositionHandler) {
 			const handled = this.decompositionHandler.handle(event.decompositionRequest, currentPrd);
@@ -947,8 +948,8 @@ class SessionOrchestrator {
 
 				if (!verificationResult.passed) {
 					const iterationStore = useIterationStore.getState();
-					const loadedConfig = loadConfig();
-					const currentPrd = reloadPrd();
+					const loadedConfig = getConfigService().get();
+					const currentPrd = prdService.reload();
 
 					sendNotifications(
 						loadedConfig.notifications,
@@ -965,7 +966,7 @@ class SessionOrchestrator {
 					return;
 				}
 			} catch (verificationError) {
-				const loadedConfig = loadConfig();
+				const loadedConfig = getConfigService().get();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 				logger.error("Verification handler threw an error, continuing without verification", {
@@ -1011,12 +1012,13 @@ class SessionOrchestrator {
 		iterationStore.setCallbacks({
 			onIterationStart: (iterationNumber: number) => {
 				const appState = useAppStore.getState();
-				const loadedConfig = loadConfig();
+				const loadedConfig = getConfigService().get();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+				const prdService = getPrdService();
 
 				logger.logIterationStart(iterationNumber, iterations);
-				const currentPrd = reloadPrd();
-				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
+				const currentPrd = prdService.reload();
+				const taskWithIndex = currentPrd ? prdService.getNextTaskWithIndex(currentPrd) : null;
 
 				useAgentStore.getState().reset();
 
@@ -1065,11 +1067,12 @@ class SessionOrchestrator {
 			onIterationComplete: (iterationNumber: number) => {
 				const appState = useAppStore.getState();
 				const agentStore = useAgentStore.getState();
-				const loadedConfig = loadConfig();
+				const loadedConfig = getConfigService().get();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+				const prdService = getPrdService();
 
 				logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
-				const currentPrd = reloadPrd();
+				const currentPrd = prdService.reload();
 
 				if (appState.currentSession) {
 					const sessionService = getSessionService();
@@ -1079,7 +1082,7 @@ class SessionOrchestrator {
 						iterationNumber,
 						wasSuccessful,
 					);
-					const taskIndex = currentPrd ? getCurrentTaskIndex(currentPrd) : 0;
+					const taskIndex = currentPrd ? prdService.getCurrentTaskIndex(currentPrd) : 0;
 
 					updatedSession = sessionService.updateIteration(
 						updatedSession,
@@ -1105,7 +1108,7 @@ class SessionOrchestrator {
 								? "completed"
 								: "completed";
 
-				const taskWithIndex = currentPrd ? getNextTaskWithIndex(currentPrd) : null;
+				const taskWithIndex = currentPrd ? prdService.getNextTaskWithIndex(currentPrd) : null;
 				const taskTitle = taskWithIndex?.title ?? "Unknown task";
 				const wasSuccessful = !agentStore.error && agentStore.isComplete && !verificationFailed;
 				const failedChecks = lastVerificationResult ? lastVerificationResult.failedChecks : [];
@@ -1182,9 +1185,9 @@ class SessionOrchestrator {
 				}
 
 				if (this.branchModeEnabled && wasSuccessful && agentStore.isComplete) {
-					const currentPrd = reloadPrd();
+					const reloadedPrd = prdService.reload();
 
-					this.completeTaskBranch(currentPrd).then((branchResult) => {
+					this.completeTaskBranch(reloadedPrd).then((branchResult) => {
 						if (!branchResult.success) {
 							logger.error("Failed to complete task branch workflow", {
 								error: branchResult.error,
@@ -1212,11 +1215,11 @@ class SessionOrchestrator {
 				const appState = useAppStore.getState();
 
 				useAgentStore.getState().stop();
-				const loadedConfig = loadConfig();
+				const loadedConfig = getConfigService().get();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 				logger.logSessionComplete();
-				const currentPrd = reloadPrd();
+				const currentPrd = getPrdService().reload();
 
 				sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
 					totalIterations: iterations,
@@ -1285,11 +1288,11 @@ class SessionOrchestrator {
 				const iterationState = useIterationStore.getState();
 
 				useAgentStore.getState().stop();
-				const loadedConfig = loadConfig();
+				const loadedConfig = getConfigService().get();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 				logger.logMaxIterationsReached(iterationState.total);
-				const currentPrd = reloadPrd();
+				const currentPrd = getPrdService().reload();
 
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
@@ -1314,14 +1317,14 @@ class SessionOrchestrator {
 				const iterationState = useIterationStore.getState();
 
 				useAgentStore.getState().stop();
-				const loadedConfig = loadConfig();
+				const loadedConfig = getConfigService().get();
 				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 				logger.info("Max runtime limit reached", {
 					maxRuntimeMs: iterationState.maxRuntimeMs,
 					completedIterations: iterationState.current,
 				});
-				const currentPrd = reloadPrd();
+				const currentPrd = getPrdService().reload();
 
 				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
 					completedIterations: iterationState.current,
@@ -1346,11 +1349,11 @@ class SessionOrchestrator {
 	}
 
 	startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		const sessionService = getSessionService();
 
-		const taskIndex = prd ? getCurrentTaskIndex(prd) : 0;
+		const taskIndex = prd ? getPrdService().getCurrentTaskIndex(prd) : 0;
 		const newSession = sessionService.create(totalIterations, taskIndex);
 
 		sessionService.save(newSession);
@@ -1370,7 +1373,7 @@ class SessionOrchestrator {
 	}
 
 	resumeSession(pendingSession: Session, _prd: Prd | null): ResumeSessionResult {
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 		const sessionService = getSessionService();
 
@@ -1400,7 +1403,7 @@ class SessionOrchestrator {
 	handleFatalError(error: string, prd: Prd | null, currentSession: Session | null): Session | null {
 		const iterationState = useIterationStore.getState();
 		const agentStore = useAgentStore.getState();
-		const loadedConfig = loadConfig();
+		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
 
 		logger.error("Fatal error occurred", { error });

@@ -6,9 +6,8 @@ import {
 	DEFAULT_ENABLE_GC_HINTS,
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
 	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
-	loadGlobalConfig,
-	saveGlobalConfig,
-} from "@/lib/config.ts";
+	getConfigService,
+} from "@/lib/services/index.ts";
 import type { AgentType, MemoryConfig, NotificationConfig, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { TextInput } from "./common/TextInput.tsx";
@@ -122,7 +121,8 @@ const MEMORY_WARNING_THRESHOLD_CHOICES = [
 
 export function SetupWizard({ version, onComplete }: SetupWizardProps): React.ReactElement {
 	const { exit } = useApp();
-	const existingConfig = loadGlobalConfig();
+	const configService = getConfigService();
+	const existingConfig = configService.loadGlobal();
 
 	const handleExit = () => {
 		if (onComplete) {
@@ -172,7 +172,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 				notifications: defaultNotifications,
 			};
 
-			saveGlobalConfig(newConfig);
+			configService.saveGlobal(newConfig);
 			setState((prev) => ({
 				...prev,
 				agentType: item.value,
@@ -266,7 +266,7 @@ export function SetupWizard({ version, onComplete }: SetupWizardProps): React.Re
 			notifications: finalNotifications,
 		};
 
-		saveGlobalConfig(newConfig);
+		configService.saveGlobal(newConfig);
 		setState((prev) => ({
 			...prev,
 			notifications: finalNotifications,

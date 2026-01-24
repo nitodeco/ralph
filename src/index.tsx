@@ -68,7 +68,6 @@ import { InitWizard } from "@/components/InitWizard.tsx";
 import { RunApp } from "@/components/RunApp.tsx";
 import { SetupWizard } from "@/components/SetupWizard.tsx";
 import { UpdatePrompt } from "@/components/UpdatePrompt.tsx";
-import { globalConfigExists, hasAcknowledgedWarning, loadConfig } from "@/lib/config.ts";
 import {
 	isBackgroundProcessRunning,
 	isDaemonProcess,
@@ -79,7 +78,11 @@ import {
 } from "@/lib/daemon.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
 import { getLogger } from "@/lib/logger.ts";
-import { bootstrapServices, getSleepPreventionService } from "@/lib/services/index.ts";
+import {
+	bootstrapServices,
+	getConfigService,
+	getSleepPreventionService,
+} from "@/lib/services/index.ts";
 import { orchestrator, useAgentStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
@@ -122,8 +125,9 @@ function RunWithSetup({
 	maxRuntimeMs,
 	skipVerification = false,
 }: RunWithSetupProps): React.ReactElement {
-	const [consentGiven, setConsentGiven] = useState(hasAcknowledgedWarning());
-	const [setupComplete, setSetupComplete] = useState(globalConfigExists());
+	const configService = getConfigService();
+	const [consentGiven, setConsentGiven] = useState(configService.hasAcknowledgedWarning());
+	const [setupComplete, setSetupComplete] = useState(configService.globalConfigExists());
 
 	if (!consentGiven) {
 		return <ConsentWarning version={version} onAccept={() => setConsentGiven(true)} />;
@@ -156,7 +160,7 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 		process.exit(1);
 	}
 
-	const config = loadConfig();
+	const config = getConfigService().get();
 	const relevantArgs = process.argv.slice(2);
 
 	const daemonPid = spawnDaemonProcess({

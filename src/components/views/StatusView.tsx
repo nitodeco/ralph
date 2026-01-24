@@ -4,8 +4,7 @@ import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { isBackgroundProcessRunning } from "@/lib/daemon.ts";
 import { getRecentLogEntries } from "@/lib/logger.ts";
-import { loadPrd } from "@/lib/prd.ts";
-import { getSessionService } from "@/lib/services/index.ts";
+import { getPrdService, getSessionService } from "@/lib/services/index.ts";
 
 interface StatusViewProps {
 	version: string;
@@ -39,7 +38,7 @@ export function StatusView({ version, onClose }: StatusViewProps): React.ReactEl
 
 	const { running, pid } = isBackgroundProcessRunning();
 	const session = getSessionService().load();
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	return (
 		<ResponsiveLayout

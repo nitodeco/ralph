@@ -3,9 +3,9 @@ import { match } from "ts-pattern";
 import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { handleShutdownSignal } from "@/lib/daemon.ts";
-import { loadPrd, savePrd } from "@/lib/prd.ts";
 import {
 	getGuardrailsService,
+	getPrdService,
 	getRulesService,
 	getSessionMemoryService,
 } from "@/lib/services/index.ts";
@@ -300,7 +300,7 @@ export function useSlashCommands({
 					}
 
 					if (args?.taskSubcommand === "current") {
-						const prd = loadPrd();
+						const prd = getPrdService().get();
 
 						if (!prd) {
 							setTaskMessage({ type: "error", text: "No PRD found" });
@@ -340,7 +340,8 @@ export function useSlashCommands({
 							return;
 						}
 
-						const prd = loadPrd();
+						const prdService = getPrdService();
+						const prd = prdService.get();
 
 						if (!prd) {
 							setTaskMessage({ type: "error", text: "No PRD found" });
@@ -400,7 +401,7 @@ export function useSlashCommands({
 								index === taskIndex ? { ...currentTask, done: isDone } : currentTask,
 							);
 
-							savePrd({ ...prd, tasks: updatedTasks });
+							prdService.save({ ...prd, tasks: updatedTasks });
 							setTaskMessage({
 								type: "success",
 								text: `Marked task [${taskIndex + 1}] "${task.title}" as ${isDone ? "done" : "pending"}`,

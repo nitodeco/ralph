@@ -1,9 +1,4 @@
-import {
-	getEffectiveConfig,
-	invalidateConfigCache,
-	loadGlobalConfig,
-	saveGlobalConfig,
-} from "@/lib/config.ts";
+import { getConfigService } from "@/lib/services/container.ts";
 import { createGitHubOAuthService } from "@/lib/services/github-oauth/index.ts";
 import type {
 	GitProvider,
@@ -100,7 +95,8 @@ async function refreshTokenIfNeeded(oauth: GitProviderOAuthTokens): Promise<stri
 		return undefined;
 	}
 
-	const globalConfig = loadGlobalConfig();
+	const configService = getConfigService();
+	const globalConfig = configService.loadGlobal();
 	const updatedConfig = {
 		...globalConfig,
 		gitProvider: {
@@ -120,14 +116,14 @@ async function refreshTokenIfNeeded(oauth: GitProviderOAuthTokens): Promise<stri
 		},
 	};
 
-	saveGlobalConfig(updatedConfig);
-	invalidateConfigCache();
+	configService.saveGlobal(updatedConfig);
+	configService.invalidateAll();
 
 	return result.token.accessToken;
 }
 
 async function getValidToken(): Promise<string | undefined> {
-	const { effective } = getEffectiveConfig();
+	const { effective } = getConfigService().getEffective();
 	const githubConfig = effective.gitProvider?.github;
 
 	if (!githubConfig) {

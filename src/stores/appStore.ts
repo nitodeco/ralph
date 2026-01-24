@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { performSessionArchive } from "@/lib/archive.ts";
-import { invalidateConfigCache, loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
 import { eventBus } from "@/lib/events.ts";
@@ -8,14 +7,11 @@ import type { TechnicalDebtReport } from "@/lib/handlers/index.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import {
-	canWorkOnTask,
-	getNextTask,
-	getTaskByIndex,
-	getTaskByTitle,
-	invalidatePrdCache,
-	loadPrd,
-} from "@/lib/prd.ts";
-import { getProjectRegistryService, getSessionService } from "@/lib/services/index.ts";
+	getConfigService,
+	getPrdService,
+	getProjectRegistryService,
+	getSessionService,
+} from "@/lib/services/index.ts";
 import { migrateLocalRalphDir } from "@/lib/services/project-registry/index.ts";
 import type {
 	ActiveView,
@@ -171,8 +167,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			return;
 		}
 
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
+		const loadedConfig = getConfigService().get();
+		const loadedPrd = getPrdService().get();
 		const isInGitRepo = isGitRepository();
 
 		set({
@@ -212,8 +208,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		performSessionArchive();
 
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
+		const loadedConfig = getConfigService().get();
+		const loadedPrd = getPrdService().get();
 		const isInGitRepo = isGitRepository();
 
 		set({
@@ -267,8 +263,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		performSessionArchive();
 
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
+		const prdService = getPrdService();
+		const loadedConfig = getConfigService().get();
+		const loadedPrd = prdService.get();
 		const isInGitRepo = isGitRepository();
 
 		if (!loadedPrd) {
@@ -284,9 +281,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		let task: PrdTask | null = null;
 
 		if (!Number.isNaN(taskIndex) && taskIndex > 0 && taskIndex <= loadedPrd.tasks.length) {
-			task = getTaskByIndex(loadedPrd, taskIndex - 1);
+			task = prdService.getTaskByIndex(loadedPrd, taskIndex - 1);
 		} else {
-			task = getTaskByTitle(loadedPrd, taskIdentifier);
+			task = prdService.getTaskByTitle(loadedPrd, taskIdentifier);
 		}
 
 		if (!task) {
@@ -301,7 +298,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			};
 		}
 
-		const canWork = canWorkOnTask(task);
+		const canWork = prdService.canWorkOnTask(task);
 
 		if (!canWork.canWork) {
 			return { success: false, error: canWork.reason };
@@ -359,8 +356,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		performSessionArchive();
 
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
+		const loadedConfig = getConfigService().get();
+		const loadedPrd = getPrdService().get();
 		const isInGitRepo = isGitRepository();
 
 		set({
@@ -412,7 +409,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 				set({ currentSession: stoppedSession });
 			}
 
-			const loadedConfig = loadConfig();
+			const loadedConfig = getConfigService().get();
 
 			sendNotifications(loadedConfig.notifications, "session_paused", state.prd?.project, {
 				iteration: iterationStore.current,
@@ -425,8 +422,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	revalidateAndGoIdle: () => {
-		invalidateConfigCache();
-		invalidatePrdCache();
+		getConfigService().invalidateAll();
+		getPrdService().invalidate();
 
 		const warning = validateProject();
 
@@ -439,8 +436,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			return;
 		}
 
-		const loadedConfig = loadConfig();
-		const loadedPrd = loadPrd();
+		const loadedConfig = getConfigService().get();
+		const loadedPrd = getPrdService().get();
 		const isInGitRepo = isGitRepository();
 
 		set({
@@ -477,7 +474,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	setManualNextTask: (taskIdentifier: string): SetManualTaskResult => {
 		const state = get();
-		const prd = state.prd ?? loadPrd();
+		const prdService = getPrdService();
+		const prd = state.prd ?? prdService.get();
 
 		if (!prd) {
 			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD loaded");
@@ -490,8 +488,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 		const taskIndex = Number.parseInt(taskIdentifier, 10);
 		const task = Number.isNaN(taskIndex)
-			? getTaskByTitle(prd, taskIdentifier)
-			: getTaskByIndex(prd, taskIndex - 1);
+			? prdService.getTaskByTitle(prd, taskIdentifier)
+			: prdService.getTaskByIndex(prd, taskIndex - 1);
 
 		if (!task) {
 			const availableTasks = prd.tasks
@@ -505,7 +503,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			};
 		}
 
-		const canWork = canWorkOnTask(task);
+		const canWork = prdService.canWorkOnTask(task);
 
 		if (!canWork.canWork) {
 			return {
@@ -525,12 +523,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	getEffectiveNextTask: (): string | null => {
 		const state = get();
+		const prdService = getPrdService();
 
 		if (state.manualNextTask) {
-			const prd = state.prd ?? loadPrd();
+			const prd = state.prd ?? prdService.get();
 
 			if (prd) {
-				const task = getTaskByTitle(prd, state.manualNextTask);
+				const task = prdService.getTaskByTitle(prd, state.manualNextTask);
 
 				if (task && !task.done) {
 					return state.manualNextTask;
@@ -540,9 +539,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			set({ manualNextTask: null });
 		}
 
-		const prd = state.prd ?? loadPrd();
+		const prd = state.prd ?? prdService.get();
 
-		return prd ? getNextTask(prd) : null;
+		return prd ? prdService.getNextTask(prd) : null;
 	},
 
 	getRemainingRuntimeMs: (): number | null => {
@@ -567,10 +566,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
 	},
 
 	refreshState: (): RefreshStateResult => {
-		invalidatePrdCache();
+		const prdService = getPrdService();
+
+		prdService.invalidate();
 
 		try {
-			const loadedPrd = loadPrd();
+			const loadedPrd = prdService.get();
 
 			if (!loadedPrd) {
 				return {
@@ -622,7 +623,7 @@ export function setupIterationCallbacks(
 	maxRuntimeMs?: number,
 	skipVerification?: boolean,
 ): SetupIterationCallbacksResult {
-	const loadedConfig = loadConfig();
+	const loadedConfig = getConfigService().get();
 	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
 
 	orchestrator.initialize({

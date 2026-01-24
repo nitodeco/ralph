@@ -143,6 +143,8 @@ function createMockConfigService(overrides: Partial<ConfigService> = {}): Config
 			project: null,
 			effective: defaultConfig,
 		}),
+		hasAcknowledgedWarning: () => true,
+		acknowledgeWarning: () => {},
 		...overrides,
 	};
 }
@@ -166,6 +168,10 @@ function createMockPrdService(overrides: Partial<PrdService> = {}): PrdService {
 		canWorkOnTask: () => ({ canWork: true }),
 		createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
 		loadInstructions: () => null,
+		toggleTaskDone: (prd) => prd,
+		deleteTask: (prd) => prd,
+		reorderTask: (prd) => prd,
+		updateTask: (prd) => prd,
 		...overrides,
 	};
 }

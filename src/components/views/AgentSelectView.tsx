@@ -3,15 +3,8 @@ import SelectInput from "ink-select-input";
 import { useState } from "react";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
-import {
-	invalidateConfigCache,
-	loadConfig,
-	loadGlobalConfig,
-	loadProjectConfigRaw,
-	saveConfig,
-	saveGlobalConfig,
-} from "@/lib/config.ts";
 import { TRANSITION_DELAY_MS } from "@/lib/constants/ui.ts";
+import { getConfigService } from "@/lib/services/index.ts";
 import type { AgentType } from "@/types.ts";
 
 interface AgentSelectViewProps {
@@ -50,7 +43,8 @@ function AgentSelectFooter(): React.ReactElement {
 }
 
 export function AgentSelectView({ version, onClose }: AgentSelectViewProps): React.ReactElement {
-	const effectiveConfig = loadConfig();
+	const configService = getConfigService();
+	const effectiveConfig = configService.get();
 	const [message, setMessage] = useState<{
 		type: "success" | "error";
 		text: string;
@@ -63,15 +57,15 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
 	});
 
 	const handleAgentSelect = (item: { value: AgentType }) => {
-		const globalConfig = loadGlobalConfig();
-		const projectConfigRaw = loadProjectConfigRaw();
+		const globalConfig = configService.loadGlobal();
+		const projectConfigRaw = configService.loadProjectRaw();
 
 		const updatedGlobalConfig = {
 			...globalConfig,
 			agent: item.value,
 		};
 
-		saveGlobalConfig(updatedGlobalConfig);
+		configService.saveGlobal(updatedGlobalConfig);
 
 		if (projectConfigRaw !== null) {
 			const updatedProjectConfig = {
@@ -79,10 +73,10 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
 				agent: item.value,
 			};
 
-			saveConfig(updatedProjectConfig);
+			configService.saveProject(updatedProjectConfig);
 		}
 
-		invalidateConfigCache();
+		configService.invalidateAll();
 
 		setMessage({
 			type: "success",

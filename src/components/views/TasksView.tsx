@@ -7,7 +7,6 @@ import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { SelectableList } from "@/components/common/SelectableList.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
 import { useListNavigation } from "@/hooks/useListNavigation.ts";
-import { deleteTask, savePrd, toggleTaskDone, updateTask } from "@/lib/prd.ts";
 import { getPrdService, type Prd, type PrdTask } from "@/lib/services/index.ts";
 
 type ViewMode = "list" | "confirm-delete" | "edit";
@@ -228,9 +227,9 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 			return;
 		}
 
-		const updatedPrd = updateTask(prd, selectedIndex, editState.editedTask);
+		const updatedPrd = prdService.updateTask(prd, selectedIndex, editState.editedTask);
 
-		savePrd(updatedPrd);
+		prdService.save(updatedPrd);
 		setPrd(updatedPrd);
 		setEditState(getInitialEditState());
 		setViewMode("list");
@@ -337,9 +336,9 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 						return;
 					}
 
-					const updatedPrd = deleteTask(prd, selectedIndex);
+					const updatedPrd = prdService.deleteTask(prd, selectedIndex);
 
-					savePrd(updatedPrd);
+					prdService.save(updatedPrd);
 					setPrd(updatedPrd);
 					setViewMode("list");
 
@@ -359,9 +358,9 @@ export function TasksView({ version, onClose }: TasksViewProps): React.ReactElem
 					return;
 				}
 
-				const updatedPrd = toggleTaskDone(prd, selectedIndex);
+				const updatedPrd = prdService.toggleTaskDone(prd, selectedIndex);
 
-				savePrd(updatedPrd);
+				prdService.save(updatedPrd);
 				setPrd(updatedPrd);
 
 				const newStatus = !selectedTask.done;

@@ -1,8 +1,7 @@
 import { isBackgroundProcessRunning } from "@/lib/daemon.ts";
 import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
 import { getRecentLogEntries } from "@/lib/logger.ts";
-import { loadPrd } from "@/lib/prd.ts";
-import { getSessionService } from "@/lib/services/index.ts";
+import { getPrdService, getSessionService } from "@/lib/services/index.ts";
 import { formatElapsedTime } from "../formatters.ts";
 
 export function printStatus(version: string, verbose = false): void {
@@ -10,7 +9,7 @@ export function printStatus(version: string, verbose = false): void {
 
 	const { running, pid } = isBackgroundProcessRunning();
 	const session = getSessionService().load();
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (running && pid !== null) {
 		console.log(`Process Status: Running (PID: ${pid})`);

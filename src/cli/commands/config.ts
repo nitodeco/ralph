@@ -1,17 +1,21 @@
+import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import {
 	CONFIG_DEFAULTS,
 	formatValidationErrors,
-	getEffectiveConfig,
+	getConfigService,
 	getGlobalConfigPath,
 	getProjectConfigPath,
 	validateConfig,
-} from "@/lib/config.ts";
-import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
+} from "@/lib/services/index.ts";
 import type { ConfigOutput } from "@/types.ts";
 import { formatBytes, formatDuration } from "../formatters.ts";
 
 export function printConfig(version: string, jsonOutput: boolean, verbose = false): void {
-	const { global: globalConfig, project: projectConfig, effective } = getEffectiveConfig();
+	const {
+		global: globalConfig,
+		project: projectConfig,
+		effective,
+	} = getConfigService().getEffective();
 	const validation = validateConfig(effective);
 
 	if (jsonOutput) {

@@ -1,5 +1,5 @@
 import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
-import { loadPrd, savePrd } from "@/lib/prd.ts";
+import { getPrdService } from "@/lib/services/index.ts";
 import type { Prd, PrdTask, TaskAddOptions, TaskEditOptions } from "@/types.ts";
 
 interface TaskInfo {
@@ -125,7 +125,7 @@ function handleMissingIdentifier(jsonOutput: boolean): void {
 }
 
 export function printTaskList(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -172,7 +172,7 @@ export function printTaskList(jsonOutput: boolean): void {
 }
 
 export function printCurrentTask(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -220,7 +220,8 @@ export function handleTaskDone(identifier: string, jsonOutput: boolean): void {
 		return;
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -252,7 +253,7 @@ export function handleTaskDone(identifier: string, jsonOutput: boolean): void {
 			index === taskIndex ? { ...currentTask, done: true } : currentTask,
 		);
 
-		savePrd({ ...prd, tasks: updatedTasks });
+		prdService.save({ ...prd, tasks: updatedTasks });
 	}
 
 	if (jsonOutput) {
@@ -286,7 +287,8 @@ export function handleTaskUndone(identifier: string, jsonOutput: boolean): void 
 		return;
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -318,7 +320,7 @@ export function handleTaskUndone(identifier: string, jsonOutput: boolean): void 
 			index === taskIndex ? { ...currentTask, done: false } : currentTask,
 		);
 
-		savePrd({ ...prd, tasks: updatedTasks });
+		prdService.save({ ...prd, tasks: updatedTasks });
 	}
 
 	if (jsonOutput) {
@@ -495,7 +497,8 @@ export async function handleTaskAdd(options: TaskAddOptions, jsonOutput: boolean
 		process.exit(1);
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -515,7 +518,7 @@ export async function handleTaskAdd(options: TaskAddOptions, jsonOutput: boolean
 		tasks: [...prd.tasks, newTask],
 	};
 
-	savePrd(updatedPrd);
+	prdService.save(updatedPrd);
 
 	const newIndex = updatedPrd.tasks.length;
 
@@ -557,7 +560,8 @@ export async function handleTaskEdit(
 		return;
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -641,7 +645,7 @@ export async function handleTaskEdit(
 		index === taskIndex ? updatedTask : currentTask,
 	);
 
-	savePrd({ ...prd, tasks: updatedTasks });
+	prdService.save({ ...prd, tasks: updatedTasks });
 
 	if (jsonOutput) {
 		const output: TaskEditJsonOutput = {
@@ -676,7 +680,8 @@ export function handleTaskRemove(identifier: string, jsonOutput: boolean): void 
 		return;
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -702,7 +707,7 @@ export function handleTaskRemove(identifier: string, jsonOutput: boolean): void 
 
 	const updatedTasks = prd.tasks.filter((_, index) => index !== taskIndex);
 
-	savePrd({ ...prd, tasks: updatedTasks });
+	prdService.save({ ...prd, tasks: updatedTasks });
 
 	if (jsonOutput) {
 		const output: TaskRemoveJsonOutput = {
@@ -737,7 +742,7 @@ export function printTaskShow(identifier: string, jsonOutput: boolean): void {
 		return;
 	}
 
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);

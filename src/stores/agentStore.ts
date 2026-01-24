@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { AgentRunner } from "@/lib/agent.ts";
 import { detectPhaseFromOutput } from "@/lib/agent-phase.ts";
-import { loadConfig } from "@/lib/config.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { GIT_STATS_POLL_INTERVAL_MS, OUTPUT_THROTTLE_MS } from "@/lib/constants/ui.ts";
 import { clearShutdownHandler, setShutdownHandler } from "@/lib/daemon.ts";
@@ -10,9 +9,8 @@ import { getGitStatusStats } from "@/lib/git-stats.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { getMaxOutputBytes, truncateOutputBuffer } from "@/lib/memory.ts";
 import { isGitRepository } from "@/lib/paths.ts";
-import { loadInstructions } from "@/lib/prd.ts";
 import { buildPrompt } from "@/lib/prompt.ts";
-import { AgentProcessManager } from "@/lib/services/index.ts";
+import { AgentProcessManager, getConfigService, getPrdService } from "@/lib/services/index.ts";
 import { useAgentStatusStore } from "./agentStatusStore.ts";
 
 interface AgentState {
@@ -49,7 +47,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 	...INITIAL_STATE,
 
 	setOutput: (output: string) => {
-		const config = loadConfig();
+		const config = getConfigService().get();
 		const maxBytes = getMaxOutputBytes(config.maxOutputHistoryBytes);
 		const truncatedOutput = truncateOutputBuffer(output, maxBytes);
 
@@ -83,9 +81,9 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 		statusStore.reset();
 		statusStore.setPhase("starting");
 
-		const config = loadConfig();
+		const config = getConfigService().get();
 		const logger = getLogger({ logFilePath: config.logFilePath });
-		const instructions = loadInstructions();
+		const instructions = getPrdService().loadInstructions();
 		const isInGitRepo = isGitRepository();
 		const prompt = buildPrompt({ instructions, specificTask, isGitRepository: isInGitRepo });
 

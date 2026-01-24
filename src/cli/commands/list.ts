@@ -1,10 +1,10 @@
 import { TASK_LIST_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
 import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
-import { loadPrd } from "@/lib/prd.ts";
+import { getPrdService } from "@/lib/services/index.ts";
 import type { TaskListOutput } from "@/types.ts";
 
 export function printList(version: string, jsonOutput: boolean, verbose = false): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		if (jsonOutput) {

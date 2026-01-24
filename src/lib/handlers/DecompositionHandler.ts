@@ -1,8 +1,8 @@
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { applyDecomposition, formatDecompositionForProgress } from "@/lib/decomposition.ts";
 import { getLogger } from "@/lib/logger.ts";
-import { savePrd } from "@/lib/prd.ts";
 import { appendProgress } from "@/lib/progress.ts";
+import { getPrdService } from "@/lib/services/index.ts";
 import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
 import type { PrdUpdateCallback, RestartIterationCallback } from "./types.ts";
 
@@ -59,7 +59,7 @@ export class DecompositionHandler {
 			return false;
 		}
 
-		savePrd(decompositionResult.updatedPrd);
+		getPrdService().save(decompositionResult.updatedPrd);
 		this.decompositionCountByTask.set(taskKey, currentCount + 1);
 
 		logger.info("Task decomposed successfully", {

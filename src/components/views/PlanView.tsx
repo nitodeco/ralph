@@ -5,11 +5,10 @@ import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveL
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { Header } from "@/components/Header.tsx";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
-import { loadConfig } from "@/lib/config.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { applyApprovedCommands, generateDiffFromPrdStates } from "@/lib/plan-command-parser.ts";
-import { loadPrd, reloadPrd, savePrd } from "@/lib/prd.ts";
 import { buildPlanPrompt } from "@/lib/prompt.ts";
+import { getConfigService, getPrdService } from "@/lib/services/index.ts";
 import type { PlanDiffTask, PlanPhase, Prd, PrdTask } from "@/types.ts";
 import {
 	PlanCompletePhase,
@@ -55,8 +54,9 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 		onClose();
 	};
 
-	const existingPrd = loadPrd();
-	const config = loadConfig();
+	const prdService = getPrdService();
+	const existingPrd = prdService.get();
+	const config = getConfigService().get();
 
 	const [state, setState] = useState<PlanState>({
 		phase: "input",
@@ -100,7 +100,7 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 
 			abortRef.current = null;
 
-			const prdAfter = reloadPrd();
+			const prdAfter = prdService.reload();
 			const diffTasks = generateDiffFromPrdStates(prdBefore, prdAfter);
 
 			const hasChanges = diffTasks.some((diffTask) => diffTask.status !== "unchanged");
@@ -155,7 +155,7 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
 			editedTasks,
 		);
 
-		savePrd(finalPrd);
+		prdService.save(finalPrd);
 
 		setState((prev) => ({
 			...prev,

@@ -2,7 +2,6 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { match } from "ts-pattern";
-import { loadConfig, saveConfig } from "./config.ts";
 import {
 	getDefaultInstallDir,
 	isDirectoryWritable,
@@ -11,6 +10,7 @@ import {
 	prependToShellConfig,
 	SYSTEM_BIN_DIR,
 } from "./paths.ts";
+import { getConfigService } from "./services/index.ts";
 
 const REPO = "nitodeco/ralph";
 const GITHUB_API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -229,7 +229,7 @@ export function getRemoveOldBinaryCommand(oldPath: string): string {
 }
 
 export function shouldCheckForUpdates(): boolean {
-	const config = loadConfig();
+	const config = getConfigService().get();
 	const lastCheck = config.lastUpdateCheck ?? 0;
 	const now = Date.now();
 
@@ -237,7 +237,7 @@ export function shouldCheckForUpdates(): boolean {
 }
 
 export function isVersionSkipped(version: string): boolean {
-	const config = loadConfig();
+	const config = getConfigService().get();
 
 	return config.skipVersion === version;
 }
@@ -256,10 +256,11 @@ export async function checkForUpdateOnStartup(currentVersion: string): Promise<U
 	try {
 		const latestVersion = await fetchLatestVersion();
 
-		const config = loadConfig();
+		const configService = getConfigService();
+		const config = configService.get();
 
 		config.lastUpdateCheck = Date.now();
-		saveConfig(config);
+		configService.saveProject(config);
 
 		if (isVersionSkipped(latestVersion)) {
 			return { updateAvailable: false, latestVersion: null, error: null };

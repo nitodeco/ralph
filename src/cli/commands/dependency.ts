@@ -11,7 +11,7 @@ import {
 	validateDependencies,
 } from "@/lib/dependency-graph.ts";
 import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
-import { loadPrd, savePrd } from "@/lib/prd.ts";
+import { getPrdService } from "@/lib/services/index.ts";
 import type { Prd, PrdTask } from "@/types.ts";
 
 interface DependencyErrorJsonOutput {
@@ -227,7 +227,7 @@ function formatDependencyError(error: DependencyError): string {
 }
 
 export function printDependencyGraph(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -309,7 +309,7 @@ export function printDependencyGraph(jsonOutput: boolean): void {
 }
 
 export function printDependencyValidate(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -353,7 +353,7 @@ export function printDependencyValidate(jsonOutput: boolean): void {
 }
 
 export function printDependencyReady(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -398,7 +398,7 @@ export function printDependencyReady(jsonOutput: boolean): void {
 }
 
 export function printDependencyBlocked(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -441,7 +441,7 @@ export function printDependencyBlocked(jsonOutput: boolean): void {
 }
 
 export function printDependencyOrder(jsonOutput: boolean): void {
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -509,7 +509,7 @@ export function printDependencyShow(identifier: string, jsonOutput: boolean): vo
 		return;
 	}
 
-	const prd = loadPrd();
+	const prd = getPrdService().get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -621,7 +621,8 @@ export function handleDependencySet(
 		return;
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -698,7 +699,7 @@ export function handleDependencySet(
 		index === taskIndex ? updatedTask : currentTask,
 	);
 
-	savePrd({ ...prd, tasks: updatedTasks });
+	prdService.save({ ...prd, tasks: updatedTasks });
 
 	if (jsonOutput) {
 		const output: DependencySetJsonOutput = {
@@ -756,7 +757,8 @@ export function handleDependencyAdd(
 		process.exit(1);
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -856,7 +858,7 @@ export function handleDependencyAdd(
 		index === taskIndex ? updatedTask : currentTask,
 	);
 
-	savePrd({ ...prd, tasks: updatedTasks });
+	prdService.save({ ...prd, tasks: updatedTasks });
 
 	if (jsonOutput) {
 		const output: DependencySetJsonOutput = {
@@ -908,7 +910,8 @@ export function handleDependencyRemove(
 		process.exit(1);
 	}
 
-	const prd = loadPrd();
+	const prdService = getPrdService();
+	const prd = prdService.get();
 
 	if (!prd) {
 		handlePrdNotFound(jsonOutput);
@@ -965,7 +968,7 @@ export function handleDependencyRemove(
 		index === taskIndex ? updatedTask : currentTask,
 	);
 
-	savePrd({ ...prd, tasks: updatedTasks });
+	prdService.save({ ...prd, tasks: updatedTasks });
 
 	if (jsonOutput) {
 		const output: DependencyRemoveJsonOutput = {

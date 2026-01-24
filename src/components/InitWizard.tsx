@@ -4,13 +4,16 @@ import SelectInput from "ink-select-input";
 import { useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
-import { loadGlobalConfig, saveConfig } from "@/lib/config.ts";
 import { AGENT_OUTPUT_PREVIEW_MAX_CHARS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { ensureProjectDirExists, getPrdJsonPath, getProgressFilePath } from "@/lib/paths.ts";
-import { findPrdFile, savePrd } from "@/lib/prd.ts";
 import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
-import { getProjectRegistryService, isPrd } from "@/lib/services/index.ts";
+import {
+	getConfigService,
+	getPrdService,
+	getProjectRegistryService,
+	isPrd,
+} from "@/lib/services/index.ts";
 import type { AgentType, Prd, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
@@ -90,10 +93,12 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 		}
 	};
 
-	const existingPrd = findPrdFile();
+	const prdService = getPrdService();
+	const configService = getConfigService();
+	const existingPrd = prdService.findFile();
 	const progressFilePath = getProgressFilePath();
 	const existingProgress = existsSync(progressFilePath);
-	const globalConfig = loadGlobalConfig();
+	const globalConfig = configService.loadGlobal();
 
 	const getInitialStep = (): WizardStep => {
 		if (existingPrd) {
@@ -215,7 +220,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				displayName: prd.project,
 			});
 			ensureProjectDirExists();
-			savePrd(prd);
+			prdService.save(prd);
 
 			const registeredProgressFilePath = getProgressFilePath();
 
@@ -223,7 +228,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 
 			const config: RalphConfig = { agent: state.agentType };
 
-			saveConfig(config);
+			configService.saveProject(config);
 
 			setState((prev) => ({
 				...prev,

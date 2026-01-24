@@ -7,13 +7,13 @@ import { match } from "ts-pattern";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
 import { TextInput } from "@/components/common/TextInput.tsx";
-import { invalidateConfigCache, loadGlobalConfig, saveGlobalConfig } from "@/lib/config.ts";
 import { TRANSITION_DELAY_MS } from "@/lib/constants/ui.ts";
 import type {
 	DeviceCodeResponse,
 	DeviceFlowPollResult,
 } from "@/lib/services/github-oauth/index.ts";
 import { createGitHubOAuthService } from "@/lib/services/github-oauth/index.ts";
+import { getConfigService } from "@/lib/services/index.ts";
 
 function openUrl(url: string): void {
 	const os = platform();
@@ -124,7 +124,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): React.ReactElement {
-	const globalConfig = loadGlobalConfig();
+	const configService = getConfigService();
+	const globalConfig = configService.loadGlobal();
 	const gitProvider = globalConfig.gitProvider;
 	const existingToken = gitProvider?.github?.token;
 	const existingOAuth = gitProvider?.github?.oauth;
@@ -208,7 +209,7 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 				}
 
 				if (result.status === "success") {
-					const currentConfig = loadGlobalConfig();
+					const currentConfig = configService.loadGlobal();
 					const updatedConfig = {
 						...currentConfig,
 						gitProvider: {
@@ -229,8 +230,8 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 						},
 					};
 
-					saveGlobalConfig(updatedConfig);
-					invalidateConfigCache();
+					configService.saveGlobal(updatedConfig);
+					configService.invalidateAll();
 
 					isPollingRef.current = false;
 					setState((prev) => ({
@@ -273,7 +274,14 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 			isCancelled = true;
 			isPollingRef.current = false;
 		};
-	}, [state.step, state.oauthDeviceCode, onClose]);
+	}, [
+		state.step,
+		state.oauthDeviceCode,
+		onClose,
+		configService.invalidateAll,
+		configService.loadGlobal,
+		configService.saveGlobal,
+	]);
 
 	const saveAndClose = (message: string) => {
 		setState((prev) => ({
@@ -339,8 +347,8 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 					},
 				};
 
-				saveGlobalConfig(updatedConfig);
-				invalidateConfigCache();
+				configService.saveGlobal(updatedConfig);
+				configService.invalidateAll();
 				saveAndClose("GitHub credentials cleared");
 			})
 			.with("cancel", () => {
@@ -369,8 +377,8 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 			},
 		};
 
-		saveGlobalConfig(updatedConfig);
-		invalidateConfigCache();
+		configService.saveGlobal(updatedConfig);
+		configService.invalidateAll();
 		saveAndClose("GitHub token saved successfully");
 	};
 
@@ -383,8 +391,8 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 			},
 		};
 
-		saveGlobalConfig(updatedConfig);
-		invalidateConfigCache();
+		configService.saveGlobal(updatedConfig);
+		configService.invalidateAll();
 		saveAndClose(`Auto-create PR ${item.value ? "enabled" : "disabled"}`);
 	};
 
@@ -397,8 +405,8 @@ export function GitHubSetupView({ version, onClose }: GitHubSetupViewProps): Rea
 			},
 		};
 
-		saveGlobalConfig(updatedConfig);
-		invalidateConfigCache();
+		configService.saveGlobal(updatedConfig);
+		configService.invalidateAll();
 		saveAndClose(`PR draft mode ${item.value ? "enabled" : "disabled"}`);
 	};
 

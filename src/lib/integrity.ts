@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import type { Session } from "@/types.ts";
-import { validateConfig } from "./config.ts";
 import { getErrorMessage } from "./errors.ts";
 import { getPrdJsonPath, getProjectConfigPath, getSessionFilePath } from "./paths.ts";
+import { validateConfig } from "./services/index.ts";
 import { isPrd } from "./services/prd/validation.ts";
 import { isSession } from "./services/session/validation.ts";
 

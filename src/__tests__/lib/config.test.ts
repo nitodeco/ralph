@@ -5,7 +5,7 @@ import {
 	formatValidationErrors,
 	getConfigSummary,
 	validateConfig,
-} from "@/lib/config.ts";
+} from "@/lib/services/index.ts";
 import type { RalphConfig } from "@/types.ts";
 
 describe("validateConfig", () => {

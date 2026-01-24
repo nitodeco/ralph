@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { validateConfig } from "@/lib/config.ts";
 import {
 	DRY_RUN_CONFIG_VALIDATION_DELAY_MS,
 	DRY_RUN_ITERATION_DELAY_MS,
@@ -8,7 +7,7 @@ import {
 	DRY_RUN_TASK_DELAY_MS,
 } from "@/lib/constants/ui.ts";
 import { isGitRepository } from "@/lib/paths.ts";
-import { loadPrd } from "@/lib/prd.ts";
+import { getPrdService, validateConfig } from "@/lib/services/index.ts";
 import type { Prd, PrdTask, RalphConfig } from "@/types.ts";
 
 function getNextPendingTask(prd: Prd): PrdTask | null {
@@ -76,7 +75,7 @@ export function useDryRun(
 
 			await new Promise((resolve) => setTimeout(resolve, DRY_RUN_PRD_LOAD_DELAY_MS));
 
-			const currentPrd = loadPrd();
+			const currentPrd = getPrdService().get();
 
 			if (currentPrd) {
 				logs.push(`PRD loaded: "${currentPrd.project}"`);

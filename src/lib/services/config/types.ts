@@ -133,4 +133,6 @@ export interface ConfigService {
 		project: Partial<RalphConfig> | null;
 		effective: RalphConfig;
 	};
+	hasAcknowledgedWarning(): boolean;
+	acknowledgeWarning(): void;
 }

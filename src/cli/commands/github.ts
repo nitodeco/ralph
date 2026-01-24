@@ -1,10 +1,5 @@
-import {
-	getEffectiveConfig,
-	invalidateConfigCache,
-	loadGlobalConfig,
-	saveGlobalConfig,
-} from "@/lib/config.ts";
 import { CLI_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
+import { getConfigService } from "@/lib/services/index.ts";
 
 function maskToken(token: string): string {
 	if (token.length <= 8) {
@@ -18,7 +13,7 @@ function maskToken(token: string): string {
 }
 
 export function printGitHubConfig(version: string, jsonOutput: boolean): void {
-	const { effective } = getEffectiveConfig();
+	const { effective } = getConfigService().getEffective();
 	const gitProvider = effective.gitProvider;
 	const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
 	const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
@@ -102,7 +97,8 @@ export function handleGitHubSetToken(token: string | undefined, jsonOutput: bool
 		process.exit(1);
 	}
 
-	const globalConfig = loadGlobalConfig();
+	const configService = getConfigService();
+	const globalConfig = configService.loadGlobal();
 	const updatedConfig = {
 		...globalConfig,
 		gitProvider: {
@@ -111,8 +107,8 @@ export function handleGitHubSetToken(token: string | undefined, jsonOutput: bool
 		},
 	};
 
-	saveGlobalConfig(updatedConfig);
-	invalidateConfigCache();
+	configService.saveGlobal(updatedConfig);
+	configService.invalidateAll();
 
 	if (jsonOutput) {
 		console.log(JSON.stringify({ success: true, message: "GitHub token saved" }));
@@ -122,7 +118,8 @@ export function handleGitHubSetToken(token: string | undefined, jsonOutput: bool
 }
 
 export function handleGitHubClearToken(jsonOutput: boolean): void {
-	const globalConfig = loadGlobalConfig();
+	const configService = getConfigService();
+	const globalConfig = configService.loadGlobal();
 	const updatedConfig = {
 		...globalConfig,
 		gitProvider: {
@@ -135,8 +132,8 @@ export function handleGitHubClearToken(jsonOutput: boolean): void {
 		},
 	};
 
-	saveGlobalConfig(updatedConfig);
-	invalidateConfigCache();
+	configService.saveGlobal(updatedConfig);
+	configService.invalidateAll();
 
 	if (jsonOutput) {
 		console.log(JSON.stringify({ success: true, message: "GitHub credentials cleared" }));

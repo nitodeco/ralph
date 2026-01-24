@@ -2,12 +2,10 @@ import { Box, Text, useApp, useInput } from "ink";
 import { useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { runAgentWithPrompt } from "@/lib/agent.ts";
-import { loadConfig } from "@/lib/config.ts";
 import { AGENT_OUTPUT_PREVIEW_MAX_CHARS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
-import { loadPrd, savePrd } from "@/lib/prd.ts";
 import { buildAddTaskPrompt, TASK_OUTPUT_END, TASK_OUTPUT_START } from "@/lib/prompt.ts";
-import { isPrdTask } from "@/lib/services/index.ts";
+import { getConfigService, getPrdService, isPrdTask } from "@/lib/services/index.ts";
 import type { Prd, PrdTask } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
@@ -67,8 +65,9 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 		}
 	};
 
-	const existingPrd = loadPrd();
-	const config = loadConfig();
+	const prdService = getPrdService();
+	const existingPrd = prdService.get();
+	const config = getConfigService().get();
 
 	const getInitialStep = (): WizardStep => {
 		if (!existingPrd) {
@@ -164,7 +163,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
 				tasks: [...state.prd.tasks, task],
 			};
 
-			savePrd(updatedPrd);
+			prdService.save(updatedPrd);
 
 			setState((prev) => ({
 				...prev,

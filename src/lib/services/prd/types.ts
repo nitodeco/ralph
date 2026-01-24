@@ -61,4 +61,8 @@ export interface PrdService {
 	canWorkOnTask(task: PrdTask): CanWorkResult;
 	createEmpty(projectName: string): Prd;
 	loadInstructions(): string | null;
+	toggleTaskDone(prd: Prd, taskIndex: number): Prd;
+	deleteTask(prd: Prd, taskIndex: number): Prd;
+	reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd;
+	updateTask(prd: Prd, taskIndex: number, updatedTask: PrdTask): Prd;
 }
