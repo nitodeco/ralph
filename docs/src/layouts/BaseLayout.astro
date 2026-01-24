@@ -23,6 +23,8 @@ const ogImageUrl = ogImage ?? new URL("/ralph/og/og-image.png", Astro.site).toSt
 
     <title>{pageTitle}</title>
 
+    <link rel="dns-prefetch" href="https://github.com" />
+    <link rel="preconnect" href="https://github.com" crossorigin />
     <link rel="canonical" href={canonicalUrl} />
 
     <link rel="icon" type="image/svg+xml" href="/ralph/favicon/favicon.svg" />

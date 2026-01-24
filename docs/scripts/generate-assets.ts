@@ -79,8 +79,14 @@ async function generateAssets() {
 	console.log("\nGenerating OG image...");
 	const ogBuffer = Buffer.from(ogImageSvg);
 
-	await sharp(ogBuffer).resize(1200, 630).png().toFile(join(ogDir, "og-image.png"));
+	await sharp(ogBuffer).resize(1200, 630).png({ quality: 90 }).toFile(join(ogDir, "og-image.png"));
 	console.log("  ✓ og-image.png (1200x630)");
+
+	await sharp(ogBuffer)
+		.resize(1200, 630)
+		.webp({ quality: 85 })
+		.toFile(join(ogDir, "og-image.webp"));
+	console.log("  ✓ og-image.webp (1200x630)");
 
 	const webManifest = {
 		name: "Ralph",
