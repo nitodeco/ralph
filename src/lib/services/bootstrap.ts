@@ -12,6 +12,8 @@ import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import { createIterationCoordinator } from "./iteration-coordinator/implementation.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
+import { createParallelExecutionManager } from "./parallel-execution-manager/implementation.ts";
+import type { ParallelExecutionManager } from "./parallel-execution-manager/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
 import type { PrdService } from "./prd/types.ts";
 import { createProjectRegistryService } from "./project-registry/implementation.ts";
@@ -106,8 +108,21 @@ export interface IterationCoordinatorStoreDependencies {
 	) => Promise<{ success: boolean; error?: string; prUrl?: string }>;
 }
 
+export interface ParallelExecutionManagerStoreDependencies {
+	getAppStoreState: () => {
+		prd: import("./prd/types.ts").Prd | null;
+		currentSession: import("./session/types.ts").Session | null;
+	};
+	setAppStoreState: (
+		state: Partial<{
+			currentSession: import("./session/types.ts").Session | null;
+		}>,
+	) => void;
+}
+
 let sessionManagerDependencies: SessionManagerStoreDependencies | null = null;
 let iterationCoordinatorDependencies: IterationCoordinatorStoreDependencies | null = null;
+let parallelExecutionManagerDependencies: ParallelExecutionManagerStoreDependencies | null = null;
 
 export function setSessionManagerDependencies(dependencies: SessionManagerStoreDependencies): void {
 	sessionManagerDependencies = dependencies;
@@ -117,6 +132,12 @@ export function setIterationCoordinatorDependencies(
 	dependencies: IterationCoordinatorStoreDependencies,
 ): void {
 	iterationCoordinatorDependencies = dependencies;
+}
+
+export function setParallelExecutionManagerDependencies(
+	dependencies: ParallelExecutionManagerStoreDependencies,
+): void {
+	parallelExecutionManagerDependencies = dependencies;
 }
 
 export function bootstrapServices(): void {
@@ -222,6 +243,24 @@ export function bootstrapServices(): void {
 		},
 	};
 
+	const parallelExecutionManagerDeps: ParallelExecutionManagerStoreDependencies = {
+		getAppStoreState: () => {
+			if (!parallelExecutionManagerDependencies) {
+				return {
+					prd: null,
+					currentSession: null,
+				};
+			}
+
+			return parallelExecutionManagerDependencies.getAppStoreState();
+		},
+		setAppStoreState: (state) => {
+			if (parallelExecutionManagerDependencies) {
+				parallelExecutionManagerDependencies.setAppStoreState(state);
+			}
+		},
+	};
+
 	initializeServices({
 		projectRegistry: createProjectRegistryService(),
 		config: createConfigService(),
@@ -232,6 +271,7 @@ export function bootstrapServices(): void {
 		session: createSessionService(),
 		sessionManager: createSessionManager(sessionManagerDeps),
 		iterationCoordinator: createIterationCoordinator(iterationCoordinatorDeps),
+		parallelExecutionManager: createParallelExecutionManager(parallelExecutionManagerDeps),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
@@ -249,6 +289,7 @@ export interface TestServiceOverrides {
 	session?: Partial<SessionService>;
 	sessionManager?: Partial<SessionManager>;
 	iterationCoordinator?: Partial<IterationCoordinator>;
+	parallelExecutionManager?: Partial<ParallelExecutionManager>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
@@ -753,6 +794,32 @@ function createMockIterationCoordinator(
 	};
 }
 
+function createMockParallelExecutionManager(
+	overrides: Partial<ParallelExecutionManager> = {},
+): ParallelExecutionManager {
+	return {
+		isEnabled: () => false,
+		getConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
+		getCurrentGroup: () => null,
+		getExecutionGroups: () => [],
+		initialize: () => ({ isValid: true }),
+		startNextGroup: () => ({ started: false, groupIndex: -1, tasks: [] }),
+		recordTaskStart: () => {},
+		recordTaskComplete: () => ({ groupComplete: true, allSucceeded: true }),
+		getReadyTasks: () => [],
+		hasMoreGroups: () => false,
+		getSummary: () => ({
+			totalGroups: 0,
+			completedGroups: 0,
+			currentGroupIndex: 0,
+			isActive: false,
+		}),
+		disable: () => {},
+		reset: () => {},
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -766,6 +833,9 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		session: createMockSessionService(overrides.session),
 		sessionManager: createMockSessionManager(overrides.sessionManager),
 		iterationCoordinator: createMockIterationCoordinator(overrides.iterationCoordinator),
+		parallelExecutionManager: createMockParallelExecutionManager(
+			overrides.parallelExecutionManager,
+		),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),

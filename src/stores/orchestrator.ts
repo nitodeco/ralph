@@ -1,8 +1,3 @@
-import {
-	getParallelExecutionGroups,
-	getReadyTasks,
-	validateDependencies,
-} from "@/lib/dependency-graph.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
@@ -16,24 +11,29 @@ import {
 	getGitBranchService,
 	getGitProviderService,
 	getIterationCoordinator,
+	getParallelExecutionManager,
 	getPrdService,
 	getSessionManager,
-	getSessionService,
 } from "@/lib/services/index.ts";
+import type {
+	ParallelExecutionConfig,
+	ParallelExecutionSummary,
+	ParallelGroupState,
+} from "@/lib/services/parallel-execution-manager/types.ts";
 import type { PrdTask } from "@/lib/services/prd/types.ts";
 import type { Prd, RalphConfig, Session } from "@/types.ts";
 import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 
 export type {
+	ParallelExecutionConfig,
+	ParallelExecutionSummary,
+	ParallelGroupState,
+} from "@/lib/services/parallel-execution-manager/types.ts";
+export type {
 	ResumeSessionResult,
 	StartSessionResult,
 } from "@/lib/services/session-manager/types.ts";
-
-export interface ParallelExecutionConfig {
-	enabled: boolean;
-	maxConcurrentTasks: number;
-}
 
 interface OrchestratorConfig {
 	config: RalphConfig;
@@ -41,21 +41,6 @@ interface OrchestratorConfig {
 	maxRuntimeMs?: number;
 	skipVerification?: boolean;
 	parallelExecution?: ParallelExecutionConfig;
-}
-
-interface ParallelGroupState {
-	groupIndex: number;
-	tasks: PrdTask[];
-	completedTaskIds: Set<string>;
-	failedTaskIds: Set<string>;
-	startTime: number;
-}
-
-interface ParallelTaskResult {
-	taskId: string;
-	taskTitle: string;
-	success: boolean;
-	error: string | null;
 }
 
 class SessionOrchestrator {
@@ -69,10 +54,6 @@ class SessionOrchestrator {
 	private verificationHandler: VerificationHandler | null = null;
 
 	private parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
-	private currentParallelGroup: ParallelGroupState | null = null;
-	private parallelExecutionGroups: PrdTask[][] = [];
-	private currentGroupIndex = 0;
-	private parallelTaskResults: Map<string, ParallelTaskResult> = new Map();
 
 	private branchModeEnabled = false;
 	private branchModeConfig: BranchModeConfig | null = null;
@@ -90,10 +71,6 @@ class SessionOrchestrator {
 		this.skipVerification = options.skipVerification ?? false;
 		this.parallelConfig = options.parallelExecution ?? { enabled: false, maxConcurrentTasks: 1 };
 		this.initialized = true;
-		this.currentParallelGroup = null;
-		this.parallelExecutionGroups = [];
-		this.currentGroupIndex = 0;
-		this.parallelTaskResults.clear();
 
 		this.branchModeEnabled =
 			options.config.workflowMode === "branches" || (options.config.branchMode?.enabled ?? false);
@@ -450,151 +427,23 @@ class SessionOrchestrator {
 	}
 
 	getCurrentParallelGroup(): ParallelGroupState | null {
-		return this.currentParallelGroup;
+		return getParallelExecutionManager().getCurrentGroup();
 	}
 
 	getParallelExecutionGroups(): PrdTask[][] {
-		return [...this.parallelExecutionGroups];
+		return getParallelExecutionManager().getExecutionGroups();
 	}
 
 	initializeParallelExecution(prd: Prd): { isValid: boolean; error?: string } {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		if (!this.parallelConfig.enabled) {
-			return { isValid: true };
-		}
-
-		const validationResult = validateDependencies(prd);
-
-		if (!validationResult.isValid) {
-			const errorMessages = validationResult.errors
-				.map((err) => `${err.type}: ${err.details}`)
-				.join("; ");
-
-			logger.error("Dependency validation failed for parallel execution", {
-				errors: validationResult.errors,
-			});
-
-			return { isValid: false, error: `Invalid task dependencies: ${errorMessages}` };
-		}
-
-		this.parallelExecutionGroups = getParallelExecutionGroups(prd);
-		this.currentGroupIndex = 0;
-
-		logger.info("Initialized parallel execution", {
-			totalGroups: this.parallelExecutionGroups.length,
-			maxConcurrentTasks: this.parallelConfig.maxConcurrentTasks,
-		});
-
-		const appState = useAppStore.getState();
-
-		if (appState.currentSession) {
-			const sessionService = getSessionService();
-			const parallelSession = sessionService.enableParallelMode(
-				appState.currentSession,
-				this.parallelConfig.maxConcurrentTasks,
-			);
-
-			sessionService.save(parallelSession);
-			useAppStore.setState({ currentSession: parallelSession });
-		}
-
-		return { isValid: true };
+		return getParallelExecutionManager().initialize(prd, this.parallelConfig);
 	}
 
 	startNextParallelGroup(): { started: boolean; groupIndex: number; tasks: PrdTask[] } {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		if (this.currentGroupIndex >= this.parallelExecutionGroups.length) {
-			logger.info("All parallel groups completed");
-
-			return { started: false, groupIndex: -1, tasks: [] };
-		}
-
-		const currentGroup = this.parallelExecutionGroups.at(this.currentGroupIndex);
-
-		if (!currentGroup || currentGroup.length === 0) {
-			logger.warn("Empty parallel group encountered", { groupIndex: this.currentGroupIndex });
-			this.currentGroupIndex++;
-
-			return this.startNextParallelGroup();
-		}
-
-		const tasksToExecute = currentGroup.slice(0, this.parallelConfig.maxConcurrentTasks);
-
-		this.currentParallelGroup = {
-			groupIndex: this.currentGroupIndex,
-			tasks: tasksToExecute,
-			completedTaskIds: new Set(),
-			failedTaskIds: new Set(),
-			startTime: Date.now(),
-		};
-
-		this.parallelTaskResults.clear();
-
-		logger.info("Starting parallel group", {
-			groupIndex: this.currentGroupIndex,
-			taskCount: tasksToExecute.length,
-			taskTitles: tasksToExecute.map((task) => task.title),
-		});
-
-		const appState = useAppStore.getState();
-
-		if (appState.currentSession) {
-			const sessionService = getSessionService();
-			const updatedSession = sessionService.startParallelGroup(
-				appState.currentSession,
-				this.currentGroupIndex,
-			);
-
-			sessionService.save(updatedSession);
-			useAppStore.setState({ currentSession: updatedSession });
-		}
-
-		eventBus.emit("parallel:group_start", {
-			groupIndex: this.currentGroupIndex,
-			taskCount: tasksToExecute.length,
-			taskTitles: tasksToExecute.map((task) => task.title),
-		});
-
-		return { started: true, groupIndex: this.currentGroupIndex, tasks: tasksToExecute };
+		return getParallelExecutionManager().startNextGroup();
 	}
 
 	recordParallelTaskStart(task: PrdTask, processId: string): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		logger.info("Parallel task started", {
-			taskId: task.id,
-			taskTitle: task.title,
-			processId,
-			groupIndex: this.currentGroupIndex,
-		});
-
-		const appState = useAppStore.getState();
-
-		if (appState.currentSession) {
-			const sessionService = getSessionService();
-			const taskIndex = appState.prd?.tasks.findIndex((t) => t.title === task.title) ?? -1;
-			const updatedSession = sessionService.startTaskExecution(appState.currentSession, {
-				taskId: task.id ?? `task-${taskIndex}`,
-				taskTitle: task.title,
-				taskIndex,
-				processId,
-			});
-
-			sessionService.save(updatedSession);
-			useAppStore.setState({ currentSession: updatedSession });
-		}
-
-		eventBus.emit("parallel:task_start", {
-			taskId: task.id,
-			taskTitle: task.title,
-			processId,
-			groupIndex: this.currentGroupIndex,
-		});
+		getParallelExecutionManager().recordTaskStart(task, processId);
 	}
 
 	recordParallelTaskComplete(
@@ -603,185 +452,29 @@ class SessionOrchestrator {
 		wasSuccessful: boolean,
 		error?: string,
 	): { groupComplete: boolean; allSucceeded: boolean } {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		if (!this.currentParallelGroup) {
-			logger.warn("No active parallel group when recording task completion", { taskId });
-
-			return { groupComplete: true, allSucceeded: false };
-		}
-
-		this.parallelTaskResults.set(taskId, {
-			taskId,
-			taskTitle,
-			success: wasSuccessful,
-			error: error ?? null,
-		});
-
-		if (wasSuccessful) {
-			this.currentParallelGroup.completedTaskIds.add(taskId);
-		} else {
-			this.currentParallelGroup.failedTaskIds.add(taskId);
-		}
-
-		logger.info("Parallel task completed", {
+		return getParallelExecutionManager().recordTaskComplete(
 			taskId,
 			taskTitle,
 			wasSuccessful,
-			completedCount: this.currentParallelGroup.completedTaskIds.size,
-			failedCount: this.currentParallelGroup.failedTaskIds.size,
-			totalInGroup: this.currentParallelGroup.tasks.length,
-		});
-
-		const appState = useAppStore.getState();
-
-		if (appState.currentSession) {
-			const sessionService = getSessionService();
-			const updatedSession = wasSuccessful
-				? sessionService.completeTaskExecution(appState.currentSession, taskId, true)
-				: sessionService.failTaskExecution(
-						appState.currentSession,
-						taskId,
-						error ?? "Unknown error",
-					);
-
-			sessionService.save(updatedSession);
-			useAppStore.setState({ currentSession: updatedSession });
-		}
-
-		eventBus.emit("parallel:task_complete", {
-			taskId,
-			taskTitle,
-			wasSuccessful,
-			groupIndex: this.currentGroupIndex,
-		});
-
-		const totalCompleted =
-			this.currentParallelGroup.completedTaskIds.size +
-			this.currentParallelGroup.failedTaskIds.size;
-		const isGroupComplete = totalCompleted >= this.currentParallelGroup.tasks.length;
-		const allSucceeded = this.currentParallelGroup.failedTaskIds.size === 0;
-
-		if (isGroupComplete) {
-			this.completeCurrentParallelGroup();
-		}
-
-		return {
-			groupComplete: isGroupComplete,
-			allSucceeded,
-		};
-	}
-
-	private completeCurrentParallelGroup(): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		if (!this.currentParallelGroup) {
-			return;
-		}
-
-		const durationMs = Date.now() - this.currentParallelGroup.startTime;
-		const allSucceeded = this.currentParallelGroup.failedTaskIds.size === 0;
-
-		logger.info("Parallel group completed", {
-			groupIndex: this.currentParallelGroup.groupIndex,
-			completedCount: this.currentParallelGroup.completedTaskIds.size,
-			failedCount: this.currentParallelGroup.failedTaskIds.size,
-			durationMs,
-			allSucceeded,
-		});
-
-		const appState = useAppStore.getState();
-
-		if (appState.currentSession) {
-			const sessionService = getSessionService();
-			const updatedSession = sessionService.completeParallelGroup(
-				appState.currentSession,
-				this.currentParallelGroup.groupIndex,
-			);
-
-			sessionService.save(updatedSession);
-			useAppStore.setState({ currentSession: updatedSession });
-		}
-
-		eventBus.emit("parallel:group_complete", {
-			groupIndex: this.currentParallelGroup.groupIndex,
-			completedCount: this.currentParallelGroup.completedTaskIds.size,
-			failedCount: this.currentParallelGroup.failedTaskIds.size,
-			durationMs,
-			allSucceeded,
-		});
-
-		appendProgress(
-			`=== Parallel Group ${this.currentParallelGroup.groupIndex + 1} Complete ===\n` +
-				`Completed: ${this.currentParallelGroup.completedTaskIds.size}, ` +
-				`Failed: ${this.currentParallelGroup.failedTaskIds.size}, ` +
-				`Duration: ${Math.round(durationMs / 1000)}s\n`,
+			error,
 		);
-
-		this.currentGroupIndex++;
-		this.currentParallelGroup = null;
 	}
 
 	getReadyTasksForParallelExecution(): PrdTask[] {
-		const prd = getPrdService().reload();
-
-		if (!prd) {
-			return [];
-		}
-
-		const readyTasks = getReadyTasks(prd);
-
-		return readyTasks
-			.filter((taskInfo) => !taskInfo.task.done)
-			.map((taskInfo) => taskInfo.task)
-			.slice(0, this.parallelConfig.maxConcurrentTasks);
+		return getParallelExecutionManager().getReadyTasks();
 	}
 
 	hasMoreParallelGroups(): boolean {
-		return this.currentGroupIndex < this.parallelExecutionGroups.length;
+		return getParallelExecutionManager().hasMoreGroups();
 	}
 
-	getParallelExecutionSummary(): {
-		totalGroups: number;
-		completedGroups: number;
-		currentGroupIndex: number;
-		isActive: boolean;
-	} {
-		return {
-			totalGroups: this.parallelExecutionGroups.length,
-			completedGroups: this.currentGroupIndex,
-			currentGroupIndex: this.currentGroupIndex,
-			isActive: this.currentParallelGroup !== null,
-		};
+	getParallelExecutionSummary(): ParallelExecutionSummary {
+		return getParallelExecutionManager().getSummary();
 	}
 
 	disableParallelExecution(): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-		if (!this.parallelConfig.enabled) {
-			return;
-		}
-
-		logger.info("Disabling parallel execution");
-
 		this.parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
-		this.currentParallelGroup = null;
-		this.parallelExecutionGroups = [];
-		this.currentGroupIndex = 0;
-		this.parallelTaskResults.clear();
-
-		const appState = useAppStore.getState();
-
-		if (appState.currentSession) {
-			const sessionService = getSessionService();
-			const updatedSession = sessionService.disableParallelMode(appState.currentSession);
-
-			sessionService.save(updatedSession);
-			useAppStore.setState({ currentSession: updatedSession });
-		}
+		getParallelExecutionManager().disable();
 	}
 
 	private setupSubscriptions(): void {
@@ -955,13 +648,9 @@ class SessionOrchestrator {
 		this.verificationHandler = null;
 
 		getIterationCoordinator().clearState();
+		getParallelExecutionManager().reset();
 
 		this.parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
-		this.currentParallelGroup = null;
-		this.parallelExecutionGroups = [];
-		this.currentGroupIndex = 0;
-		this.parallelTaskResults.clear();
-
 		this.branchModeEnabled = false;
 		this.branchModeConfig = null;
 		this.baseBranch = null;

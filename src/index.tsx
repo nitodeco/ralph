@@ -83,6 +83,7 @@ import {
 	getConfigService,
 	getSleepPreventionService,
 	setIterationCoordinatorDependencies,
+	setParallelExecutionManagerDependencies,
 	setSessionManagerDependencies,
 } from "@/lib/services/index.ts";
 import { orchestrator, useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
@@ -261,6 +262,20 @@ function main(): void {
 		},
 		completeTaskBranch: async (prd) => {
 			return orchestrator.completeTaskBranch(prd);
+		},
+	});
+
+	setParallelExecutionManagerDependencies({
+		getAppStoreState: () => {
+			const state = useAppStore.getState();
+
+			return {
+				prd: state.prd,
+				currentSession: state.currentSession,
+			};
+		},
+		setAppStoreState: (newState) => {
+			useAppStore.setState(newState);
 		},
 	});
 

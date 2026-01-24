@@ -4,8 +4,10 @@ export {
 	bootstrapServices,
 	bootstrapTestServices,
 	type IterationCoordinatorStoreDependencies,
+	type ParallelExecutionManagerStoreDependencies,
 	type SessionManagerStoreDependencies,
 	setIterationCoordinatorDependencies,
+	setParallelExecutionManagerDependencies,
 	setSessionManagerDependencies,
 	type TestServiceOverrides,
 	teardownTestServices,
@@ -60,6 +62,7 @@ export {
 	getGitProviderService,
 	getGuardrailsService,
 	getIterationCoordinator,
+	getParallelExecutionManager,
 	getPrdService,
 	getProjectRegistryService,
 	getRulesService,
@@ -122,6 +125,19 @@ export type {
 	IterationCallbackOptions,
 	IterationCoordinator,
 } from "./iteration-coordinator/types.ts";
+export {
+	createParallelExecutionManager,
+	type ParallelExecutionManagerDependencies,
+} from "./parallel-execution-manager/implementation.ts";
+export type {
+	ParallelExecutionConfig,
+	ParallelExecutionManager,
+	ParallelExecutionSummary,
+	ParallelGroupState,
+	ParallelTaskResult,
+	RecordTaskCompleteResult,
+	StartGroupResult,
+} from "./parallel-execution-manager/types.ts";
 export { createPrdService } from "./prd/implementation.ts";
 export type {
 	CanWorkResult,

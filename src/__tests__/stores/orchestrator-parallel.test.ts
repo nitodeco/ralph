@@ -3,9 +3,12 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { ensureProjectDirExists, getPrdJsonPath } from "@/lib/paths.ts";
 import {
 	bootstrapTestServices,
+	createParallelExecutionManager,
 	createPrdService,
+	setParallelExecutionManagerDependencies,
 	teardownTestServices,
 } from "@/lib/services/index.ts";
+import { useAppStore } from "@/stores/appStore.ts";
 import { orchestrator } from "@/stores/orchestrator.ts";
 import type { Prd, RalphConfig } from "@/types.ts";
 
@@ -40,8 +43,35 @@ function createMockSession() {
 
 describe("orchestrator parallel execution", () => {
 	beforeEach(() => {
+		setParallelExecutionManagerDependencies({
+			getAppStoreState: () => {
+				const state = useAppStore.getState();
+
+				return {
+					prd: state.prd,
+					currentSession: state.currentSession,
+				};
+			},
+			setAppStoreState: (newState) => {
+				useAppStore.setState(newState);
+			},
+		});
+
 		bootstrapTestServices({
 			prd: createPrdService(),
+			parallelExecutionManager: createParallelExecutionManager({
+				getAppStoreState: () => {
+					const state = useAppStore.getState();
+
+					return {
+						prd: state.prd,
+						currentSession: state.currentSession,
+					};
+				},
+				setAppStoreState: (newState) => {
+					useAppStore.setState(newState);
+				},
+			}),
 			session: {
 				load: () => null,
 				save: () => {},

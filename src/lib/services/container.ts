@@ -3,6 +3,7 @@ import type { GitBranchService } from "./git-branch/types.ts";
 import type { GitProviderService } from "./git-provider/types.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
+import type { ParallelExecutionManager } from "./parallel-execution-manager/types.ts";
 import type { PrdService } from "./prd/types.ts";
 import type { ProjectRegistryService } from "./project-registry/types.ts";
 import type { RulesService } from "./rules/types.ts";
@@ -22,6 +23,7 @@ export interface ServiceContainer {
 	session: SessionService;
 	sessionManager: SessionManager;
 	iterationCoordinator: IterationCoordinator;
+	parallelExecutionManager: ParallelExecutionManager;
 	sleepPrevention: SleepPreventionService;
 	usageStatistics: UsageStatisticsService;
 	gitBranch: GitBranchService;
@@ -106,4 +108,8 @@ export function getSessionManager(): SessionManager {
 
 export function getIterationCoordinator(): IterationCoordinator {
 	return getServices().iterationCoordinator;
+}
+
+export function getParallelExecutionManager(): ParallelExecutionManager {
+	return getServices().parallelExecutionManager;
 }
