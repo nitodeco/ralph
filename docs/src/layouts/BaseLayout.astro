@@ -4,11 +4,13 @@ import "@/styles/global.css";
 interface Props {
   title: string;
   description?: string;
+  ogImage?: string;
 }
 
-const { title, description = "CLI tool for long-running PRD-driven development with AI coding agents" } = Astro.props;
+const { title, description = "CLI tool for long-running PRD-driven development with AI coding agents", ogImage } = Astro.props;
 const pageTitle = `${title} · Ralph`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
+const ogImageUrl = ogImage ?? new URL("/ralph/og/og-image.png", Astro.site).toString();
 ---
 
 <!doctype html>
@@ -23,14 +25,27 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
 
     <link rel="canonical" href={canonicalUrl} />
 
+    <link rel="icon" type="image/svg+xml" href="/ralph/favicon/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/ralph/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/ralph/favicon/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/ralph/favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="/ralph/favicon/site.webmanifest" />
+
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Ralph - PRD-driven development with AI coding agents" />
+    <meta property="og:site_name" content="Ralph" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content="Ralph - PRD-driven development with AI coding agents" />
 
     <link rel="sitemap" href="/ralph/sitemap-index.xml" />
   </head>

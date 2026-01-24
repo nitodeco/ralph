@@ -27,6 +27,20 @@ interface Props {
 
 const { title, description, breadcrumbs = [], headings = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
+
+const breadcrumbJsonLd =
+  breadcrumbs.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: breadcrumbs.map((item, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: item.label,
+          ...(item.href && { item: new URL(item.href, Astro.site).toString() }),
+        })),
+      }
+    : null;
 ---
 
 <BaseLayout title={title} description={description}>
@@ -59,4 +73,8 @@ const currentPath = Astro.url.pathname;
   </div>
 
   <Footer />
+
+  {breadcrumbJsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+  )}
 </BaseLayout>
