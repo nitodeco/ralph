@@ -70,6 +70,7 @@ export {
 	getGitBranchService,
 	getGitProviderService,
 	getGuardrailsService,
+	getHandlerCoordinator,
 	getIterationCoordinator,
 	getParallelExecutionManager,
 	getPrdService,
@@ -125,6 +126,12 @@ export type {
 } from "./guardrails/types.ts";
 export { VALID_GUARDRAIL_CATEGORIES, VALID_GUARDRAIL_TRIGGERS } from "./guardrails/types.ts";
 export { isGuardrailsFile, isPromptGuardrail } from "./guardrails/validation.ts";
+export { createHandlerCoordinator } from "./handler-coordinator/implementation.ts";
+export type {
+	HandlerCoordinator,
+	HandlerCoordinatorCallbacks,
+	HandlerCoordinatorConfig,
+} from "./handler-coordinator/types.ts";
 export { IterationTimer } from "./IterationTimer.ts";
 export {
 	createIterationCoordinator,

@@ -1,16 +1,10 @@
-import { getErrorMessage } from "@/lib/errors.ts";
-import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
-import { DecompositionHandler, VerificationHandler } from "@/lib/handlers/index.ts";
-import { getLogger } from "@/lib/logger.ts";
-import { sendNotifications } from "@/lib/notifications.ts";
 import type { BranchModeConfig } from "@/lib/services/config/types.ts";
 import {
 	getBranchModeManager,
-	getConfigService,
+	getHandlerCoordinator,
 	getIterationCoordinator,
 	getParallelExecutionManager,
-	getPrdService,
 	getSessionManager,
 } from "@/lib/services/index.ts";
 import type {
@@ -46,10 +40,7 @@ class SessionOrchestrator {
 	private iterations = 0;
 	private maxRuntimeMs: number | undefined = undefined;
 	private skipVerification = false;
-	private unsubscribers: (() => void)[] = [];
 	private initialized = false;
-	private decompositionHandler: DecompositionHandler | null = null;
-	private verificationHandler: VerificationHandler | null = null;
 
 	private parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
 
@@ -72,21 +63,36 @@ class SessionOrchestrator {
 		branchModeManager.setEnabled(branchModeEnabled);
 		branchModeManager.setConfig(options.config.branchMode ?? null);
 
-		this.decompositionHandler = new DecompositionHandler({
-			config: options.config,
-			onPrdUpdate: (prd) => {
-				useAppStore.setState({ prd });
+		const handlerCoordinator = getHandlerCoordinator();
+
+		handlerCoordinator.initialize(
+			{
+				config: options.config,
+				skipVerification: this.skipVerification,
 			},
-			onRestartIteration: () => {
-				useIterationStore.getState().restartCurrentIteration();
+			{
+				onPrdUpdate: (prd) => {
+					useAppStore.setState({ prd });
+				},
+				onRestartIteration: () => {
+					useIterationStore.getState().restartCurrentIteration();
+				},
+				onVerificationStateChange: (isVerifying, result) => {
+					useAppStore.setState({ isVerifying, lastVerificationResult: result });
+				},
+				onIterationComplete: (allTasksDone, hasPendingTasks) => {
+					const iterationStore = useIterationStore.getState();
+
+					iterationStore.markIterationComplete(allTasksDone, hasPendingTasks);
+				},
+				onFatalError: (error, prd, currentSession) => {
+					this.handleFatalError(error, prd, currentSession);
+				},
+				onAppStateChange: (state) => {
+					useAppStore.setState({ appState: state });
+				},
 			},
-		});
-		this.verificationHandler = new VerificationHandler({
-			onStateChange: (isVerifying, result) => {
-				useAppStore.setState({ isVerifying, lastVerificationResult: result });
-			},
-		});
-		this.setupSubscriptions();
+		);
 
 		const iterationStore = useIterationStore.getState();
 
@@ -94,7 +100,7 @@ class SessionOrchestrator {
 	}
 
 	getIsVerifying(): boolean {
-		return this.verificationHandler?.getIsRunning() ?? false;
+		return getHandlerCoordinator().getIsVerifying();
 	}
 
 	isBranchModeEnabled(): boolean {
@@ -193,126 +199,6 @@ class SessionOrchestrator {
 		getParallelExecutionManager().disable();
 	}
 
-	private setupSubscriptions(): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const iterationCoordinator = getIterationCoordinator();
-
-		this.unsubscribers.push(
-			eventBus.on("agent:complete", (event) => {
-				try {
-					this.handleAgentComplete(event).catch((error) => {
-						logger.error("Error in handleAgentComplete", { error: getErrorMessage(error) });
-
-						const iterationStore = useIterationStore.getState();
-
-						iterationStore.markIterationComplete(false, true);
-					});
-				} catch (error) {
-					logger.error("Sync error in agent:complete handler", { error: getErrorMessage(error) });
-
-					const iterationStore = useIterationStore.getState();
-
-					iterationStore.markIterationComplete(false, true);
-				}
-			}),
-		);
-
-		this.unsubscribers.push(
-			eventBus.on("agent:error", (event) => {
-				try {
-					if (event.retryContexts) {
-						iterationCoordinator.setLastRetryContexts(event.retryContexts);
-					}
-
-					if (event.isFatal) {
-						const appState = useAppStore.getState();
-
-						this.handleFatalError(event.error, appState.prd, appState.currentSession);
-						useAppStore.setState({ appState: "error" });
-					}
-				} catch (error) {
-					logger.error("Error in agent:error handler", { error: getErrorMessage(error) });
-					useAppStore.setState({ appState: "error" });
-				}
-			}),
-		);
-	}
-
-	private async handleAgentComplete(event: AgentCompleteEvent): Promise<void> {
-		const iterationCoordinator = getIterationCoordinator();
-
-		if (event.retryContexts) {
-			iterationCoordinator.setLastRetryContexts(event.retryContexts);
-		}
-
-		const prdService = getPrdService();
-		const currentPrd = prdService.reload();
-
-		if (event.hasDecompositionRequest && event.decompositionRequest && this.decompositionHandler) {
-			const handled = this.decompositionHandler.handle(event.decompositionRequest, currentPrd);
-
-			if (handled) {
-				iterationCoordinator.setLastDecomposition(event.decompositionRequest);
-
-				return;
-			}
-		}
-
-		const allTasksActuallyDone = currentPrd
-			? currentPrd.tasks.length > 0 && currentPrd.tasks.every((task) => task.done)
-			: false;
-
-		const hasPendingTasks = currentPrd ? currentPrd.tasks.some((task) => !task.done) : false;
-
-		const verificationConfig = this.config?.verification;
-
-		if (
-			verificationConfig?.enabled &&
-			!this.skipVerification &&
-			!allTasksActuallyDone &&
-			this.verificationHandler
-		) {
-			try {
-				const verificationResult = await this.verificationHandler.run(verificationConfig);
-
-				if (!verificationResult.passed) {
-					const iterationStore = useIterationStore.getState();
-					const loadedConfig = getConfigService().get();
-					const currentPrd = prdService.reload();
-
-					sendNotifications(
-						loadedConfig.notifications,
-						"verification_failed",
-						currentPrd?.project,
-						{
-							failedChecks: verificationResult.failedChecks,
-							iteration: iterationStore.current,
-						},
-					);
-
-					iterationStore.markIterationComplete(false, hasPendingTasks);
-
-					return;
-				}
-			} catch (verificationError) {
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-				logger.error("Verification handler threw an error, continuing without verification", {
-					error: getErrorMessage(verificationError),
-				});
-				this.verificationHandler?.reset();
-			}
-		} else {
-			this.verificationHandler?.reset();
-		}
-
-		const iterationStore = useIterationStore.getState();
-
-		iterationStore.markIterationComplete(allTasksActuallyDone, hasPendingTasks);
-	}
-
 	getConfig(): RalphConfig | null {
 		return this.config;
 	}
@@ -354,17 +240,9 @@ class SessionOrchestrator {
 	}
 
 	cleanup(): void {
-		for (const unsubscribe of this.unsubscribers) {
-			unsubscribe();
-		}
-
-		this.unsubscribers = [];
 		this.initialized = false;
-		this.decompositionHandler?.reset();
-		this.verificationHandler?.reset();
-		this.decompositionHandler = null;
-		this.verificationHandler = null;
 
+		getHandlerCoordinator().cleanup();
 		getIterationCoordinator().clearState();
 		getParallelExecutionManager().reset();
 		getBranchModeManager().reset();

@@ -12,6 +12,8 @@ import { createGitProviderService, registerProvider } from "./git-provider/imple
 import type { GitProviderService } from "./git-provider/types.ts";
 import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
+import { createHandlerCoordinator } from "./handler-coordinator/implementation.ts";
+import type { HandlerCoordinator } from "./handler-coordinator/types.ts";
 import { createIterationCoordinator } from "./iteration-coordinator/implementation.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
 import { createParallelExecutionManager } from "./parallel-execution-manager/implementation.ts";
@@ -275,6 +277,7 @@ export function bootstrapServices(): void {
 		iterationCoordinator: createIterationCoordinator(iterationCoordinatorDeps),
 		parallelExecutionManager: createParallelExecutionManager(parallelExecutionManagerDeps),
 		branchModeManager: createBranchModeManager(),
+		handlerCoordinator: createHandlerCoordinator(),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
@@ -294,6 +297,7 @@ export interface TestServiceOverrides {
 	iterationCoordinator?: Partial<IterationCoordinator>;
 	parallelExecutionManager?: Partial<ParallelExecutionManager>;
 	branchModeManager?: Partial<BranchModeManager>;
+	handlerCoordinator?: Partial<HandlerCoordinator>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
@@ -843,6 +847,17 @@ function createMockBranchModeManager(
 	};
 }
 
+function createMockHandlerCoordinator(
+	overrides: Partial<HandlerCoordinator> = {},
+): HandlerCoordinator {
+	return {
+		initialize: () => {},
+		getIsVerifying: () => false,
+		cleanup: () => {},
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -860,6 +875,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 			overrides.parallelExecutionManager,
 		),
 		branchModeManager: createMockBranchModeManager(overrides.branchModeManager),
+		handlerCoordinator: createMockHandlerCoordinator(overrides.handlerCoordinator),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),
