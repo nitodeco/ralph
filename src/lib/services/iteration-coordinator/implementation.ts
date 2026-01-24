@@ -1,5 +1,4 @@
 import { getErrorMessage } from "@/lib/errors.ts";
-import { eventBus } from "@/lib/events.ts";
 import {
 	DecompositionHandler,
 	LearningHandler,
@@ -436,21 +435,13 @@ export function createIterationCoordinator(
 					}
 
 					const sessionId = `session-${appState.currentSession.startTime}`;
-					const technicalDebtReport = technicalDebtHandler.run(
+
+					technicalDebtHandler.run(
 						sessionId,
 						iterationLogs,
 						finalStatistics,
 						config.technicalDebtReview,
 					);
-
-					if (technicalDebtReport.totalItems > 0) {
-						eventBus.emit("session:technical_debt_review", {
-							totalItems: technicalDebtReport.totalItems,
-							criticalItems: technicalDebtReport.itemsBySeverity.critical,
-							highItems: technicalDebtReport.itemsBySeverity.high,
-							hasRecommendations: technicalDebtReport.recommendations.length > 0,
-						});
-					}
 				} catch (debtReviewError) {
 					logger.warn("Technical debt review failed", {
 						error: getErrorMessage(debtReviewError),
@@ -467,7 +458,6 @@ export function createIterationCoordinator(
 			dependencies.setAppStoreState({ currentSession: null });
 		}
 
-		eventBus.emit("session:complete", { totalIterations });
 		dependencies.setAppStoreState({ appState: "complete" });
 	}
 
@@ -497,7 +487,6 @@ export function createIterationCoordinator(
 			dependencies.setAppStoreState({ currentSession: stoppedSession });
 		}
 
-		eventBus.emit("session:stop", { reason: "max_iterations" });
 		dependencies.setAppStoreState({ appState: "max_iterations" });
 	}
 
@@ -531,7 +520,6 @@ export function createIterationCoordinator(
 			dependencies.setAppStoreState({ currentSession: stoppedSession });
 		}
 
-		eventBus.emit("session:stop", { reason: "max_runtime" });
 		dependencies.setAppStoreState({ appState: "max_runtime" });
 	}
 

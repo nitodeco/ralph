@@ -167,10 +167,6 @@ export class AgentRunner {
 		const retryContexts: IterationLogRetryContext[] = [];
 		let currentRetryContext: string | null = null;
 
-		if (this.config.emitEvents) {
-			eventBus.emit("agent:start", { agentType: this.config.agentType });
-		}
-
 		while (AgentProcessManager.getRetryCount() <= maxRetries && !AgentProcessManager.isAborted()) {
 			const runAttemptResult = await this.runOnce({
 				prompt,
@@ -284,15 +280,6 @@ export class AgentRunner {
 							error: getErrorMessage(callbackError),
 						});
 					}
-				}
-
-				if (this.config.emitEvents) {
-					eventBus.emit("agent:retry", {
-						retryCount: currentRetryCount,
-						maxRetries,
-						delayMs: delay,
-						failureAnalysis: failureAnalysis ?? undefined,
-					});
 				}
 
 				await sleep(delay);

@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { performSessionArchive } from "@/lib/archive.ts";
 import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { createError, ErrorCode, getErrorSuggestion } from "@/lib/errors.ts";
-import { eventBus } from "@/lib/events.ts";
 import type { TechnicalDebtReport } from "@/lib/handlers/index.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { isGitRepository } from "@/lib/paths.ts";
@@ -419,7 +418,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 				totalIterations: iterationStore.total,
 			});
 
-			eventBus.emit("session:stop", { reason: "user_stop" });
 			set({ appState: "idle" });
 		}
 	},

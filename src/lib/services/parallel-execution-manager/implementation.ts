@@ -3,7 +3,6 @@ import {
 	getReadyTasks,
 	validateDependencies,
 } from "@/lib/dependency-graph.ts";
-import { eventBus } from "@/lib/events.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { appendProgress } from "@/lib/progress.ts";
 import { getConfigService, getPrdService, getSessionService } from "../container.ts";
@@ -157,12 +156,6 @@ export function createParallelExecutionManager(
 			dependencies.setAppStoreState({ currentSession: updatedSession });
 		}
 
-		eventBus.emit("parallel:group_start", {
-			groupIndex: currentGroupIndex,
-			taskCount: tasksToExecute.length,
-			taskTitles: tasksToExecute.map((task) => task.title),
-		});
-
 		return { started: true, groupIndex: currentGroupIndex, tasks: tasksToExecute };
 	}
 
@@ -192,13 +185,6 @@ export function createParallelExecutionManager(
 			sessionService.save(updatedSession);
 			dependencies.setAppStoreState({ currentSession: updatedSession });
 		}
-
-		eventBus.emit("parallel:task_start", {
-			taskId: task.id,
-			taskTitle: task.title,
-			processId,
-			groupIndex: currentGroupIndex,
-		});
 	}
 
 	function completeCurrentGroup(): void {
@@ -232,14 +218,6 @@ export function createParallelExecutionManager(
 			sessionService.save(updatedSession);
 			dependencies.setAppStoreState({ currentSession: updatedSession });
 		}
-
-		eventBus.emit("parallel:group_complete", {
-			groupIndex: currentParallelGroup.groupIndex,
-			completedCount: currentParallelGroup.completedTaskIds.size,
-			failedCount: currentParallelGroup.failedTaskIds.size,
-			durationMs,
-			allSucceeded,
-		});
 
 		appendProgress(
 			`=== Parallel Group ${currentParallelGroup.groupIndex + 1} Complete ===\n` +
@@ -304,13 +282,6 @@ export function createParallelExecutionManager(
 			sessionService.save(updatedSession);
 			dependencies.setAppStoreState({ currentSession: updatedSession });
 		}
-
-		eventBus.emit("parallel:task_complete", {
-			taskId,
-			taskTitle,
-			wasSuccessful,
-			groupIndex: currentGroupIndex,
-		});
 
 		const totalCompleted =
 			currentParallelGroup.completedTaskIds.size + currentParallelGroup.failedTaskIds.size;

@@ -1,4 +1,3 @@
-import { eventBus } from "@/lib/events.ts";
 import {
 	appendIterationError,
 	completeIterationLog,
@@ -82,8 +81,6 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 
 		getSessionMemoryService().initialize(prd?.project ?? "Unknown Project");
 
-		eventBus.emit("session:start", { totalIterations, taskIndex });
-
 		return { session: newSession, taskIndex };
 	}
 
@@ -102,12 +99,6 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 			pendingSession.totalIterations,
 			pendingSession.elapsedTimeSeconds,
 		);
-
-		eventBus.emit("session:resume", {
-			currentIteration: pendingSession.currentIteration,
-			totalIterations: pendingSession.totalIterations,
-			elapsedTimeSeconds: pendingSession.elapsedTimeSeconds,
-		});
 
 		return {
 			session: resumedSession,
@@ -137,8 +128,6 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 			outputLength: agentStoreState.output.length,
 			taskWasCompleted: false,
 		});
-
-		eventBus.emit("session:stop", { reason: "fatal_error" });
 
 		if (currentSession) {
 			recordUsageStatistics(currentSession, prd, "failed");

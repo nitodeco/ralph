@@ -1,5 +1,4 @@
 import { getErrorMessage } from "@/lib/errors.ts";
-import { eventBus } from "@/lib/events.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { appendProgress } from "@/lib/progress.ts";
 import type { BranchModeConfig } from "../config/types.ts";
@@ -260,12 +259,6 @@ export function createBranchModeManager(): BranchModeManager {
 					error: result.error,
 				});
 
-				eventBus.emit("session:pr_failed", {
-					branchName,
-					baseBranch: baseBranch,
-					error: result.error ?? "Unknown error",
-				});
-
 				return { success: false, error: result.error };
 			}
 
@@ -280,26 +273,12 @@ export function createBranchModeManager(): BranchModeManager {
 				`\n=== Pull Request Created ===\nPR #${result.data.number}: ${result.data.url}\n`,
 			);
 
-			eventBus.emit("session:pr_created", {
-				prNumber: result.data.number,
-				prUrl: result.data.url,
-				branchName,
-				baseBranch: baseBranch,
-				isDraft: result.data.isDraft,
-			});
-
 			return { success: true, prUrl: result.data.url };
 		} catch (error) {
 			const errorMessage = getErrorMessage(error);
 
 			logger.error("Failed to create PR", {
 				branchName,
-				error: errorMessage,
-			});
-
-			eventBus.emit("session:pr_failed", {
-				branchName,
-				baseBranch: baseBranch,
 				error: errorMessage,
 			});
 
