@@ -32,6 +32,7 @@ export function RunApp({
 	const config = useAppStore((state) => state.config);
 	const prd = useAppStore((state) => state.prd);
 	const pendingSession = useAppStore((state) => state.pendingSession);
+	const lastTechnicalDebtReport = useAppStore((state) => state.lastTechnicalDebtReport);
 
 	const setActiveView = useAppStore((state) => state.setActiveView);
 	const loadInitialState = useAppStore((state) => state.loadInitialState);
@@ -198,6 +199,7 @@ export function RunApp({
 				updateBannerDismissed={updateBannerDismissed}
 				helpVisible={helpVisible}
 				onDismissHelp={dismissHelp}
+				lastTechnicalDebtReport={lastTechnicalDebtReport}
 			/>
 		</ViewRouter>
 	);

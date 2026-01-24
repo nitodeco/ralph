@@ -1,4 +1,9 @@
-export { handleAnalyzeClear, handleAnalyzeExport, printAnalyze } from "./analyze.ts";
+export {
+	handleAnalyzeClear,
+	handleAnalyzeDebt,
+	handleAnalyzeExport,
+	printAnalyze,
+} from "./analyze.ts";
 export { printArchive } from "./archive.ts";
 export { handleAuthLogin, handleAuthLogout, printAuthStatus } from "./auth.ts";
 export { printClear } from "./clear.ts";

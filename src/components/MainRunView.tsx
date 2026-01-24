@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import { useState } from "react";
+import type { TechnicalDebtReport } from "@/lib/handlers/index.ts";
 import type { Prd, RalphConfig } from "@/types.ts";
 import { AgentStatus } from "./AgentStatus.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
@@ -12,6 +13,7 @@ import { InteractiveHelpContent } from "./InteractiveHelpContent.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
+import { TechnicalDebtSummary } from "./TechnicalDebtSummary.tsx";
 import { UpdateBanner } from "./UpdateBanner.tsx";
 
 interface SlashCommandMessage {
@@ -39,6 +41,7 @@ interface MainRunViewProps {
 	updateBannerDismissed: boolean;
 	helpVisible: boolean;
 	onDismissHelp: () => void;
+	lastTechnicalDebtReport: TechnicalDebtReport | null;
 }
 
 interface MessageDisplayProps {
@@ -104,6 +107,7 @@ interface ContentSectionProps {
 	version: string;
 	onSelectHelpCommand: (command: string) => void;
 	onDismissHelp: () => void;
+	lastTechnicalDebtReport: TechnicalDebtReport | null;
 }
 
 const STATES_WITH_PROGRESS_BAR = new Set(["running", "complete", "max_iterations", "max_runtime"]);
@@ -122,8 +126,12 @@ function ContentSection({
 	version,
 	onSelectHelpCommand,
 	onDismissHelp,
+	lastTechnicalDebtReport,
 }: ContentSectionProps): React.ReactElement {
 	const showIterationProgress = STATES_WITH_PROGRESS_BAR.has(appState);
+	const showTechnicalDebtSummary =
+		(appState === "complete" || appState === "max_iterations" || appState === "max_runtime") &&
+		lastTechnicalDebtReport !== null;
 
 	return (
 		<ScrollableContent>
@@ -177,6 +185,8 @@ function ContentSection({
 					</Message>
 				</Box>
 			)}
+
+			{showTechnicalDebtSummary && <TechnicalDebtSummary report={lastTechnicalDebtReport} />}
 		</ScrollableContent>
 	);
 }
@@ -230,6 +240,7 @@ export function MainRunView({
 	updateBannerDismissed,
 	helpVisible,
 	onDismissHelp,
+	lastTechnicalDebtReport,
 }: MainRunViewProps): React.ReactElement {
 	const showUpdateBanner = Boolean(updateAvailable && latestVersion && !updateBannerDismissed);
 	const [pendingCommand, setPendingCommand] = useState<string | null>(null);
@@ -269,6 +280,7 @@ export function MainRunView({
 					version={version}
 					onSelectHelpCommand={handleSelectHelpCommand}
 					onDismissHelp={onDismissHelp}
+					lastTechnicalDebtReport={lastTechnicalDebtReport}
 				/>
 			}
 			footer={

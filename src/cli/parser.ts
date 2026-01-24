@@ -26,7 +26,7 @@ const VALID_GUARDRAILS_SUBCOMMANDS: GuardrailsSubcommand[] = [
 	"toggle",
 	"generate",
 ];
-const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear"];
+const VALID_ANALYZE_SUBCOMMANDS: AnalyzeSubcommand[] = ["patterns", "export", "clear", "debt"];
 const VALID_MEMORY_SUBCOMMANDS: MemorySubcommand[] = ["list", "clear", "export"];
 const VALID_PROJECTS_SUBCOMMANDS: ProjectsSubcommand[] = ["list", "current", "prune"];
 const VALID_TASK_SUBCOMMANDS: TaskSubcommand[] = [

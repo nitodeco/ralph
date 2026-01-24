@@ -5,6 +5,7 @@ import { useState } from "react";
 import { match } from "ts-pattern";
 import {
 	handleAnalyzeClear,
+	handleAnalyzeDebt,
 	handleAnalyzeExport,
 	handleAuthLogin,
 	handleAuthLogout,
@@ -485,6 +486,7 @@ function main(): void {
 			match(analyzeSubcommand)
 				.with("export", () => handleAnalyzeExport())
 				.with("clear", () => handleAnalyzeClear())
+				.with("debt", () => handleAnalyzeDebt(json))
 				.otherwise(() => printAnalyze(json));
 		})
 		.with("memory", () => {

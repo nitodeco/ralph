@@ -1,5 +1,6 @@
 export {
 	handleAnalyzeClear,
+	handleAnalyzeDebt,
 	handleAnalyzeExport,
 	handleAuthLogin,
 	handleAuthLogout,

@@ -38,7 +38,7 @@ export interface GuardrailsGenerateOptions {
 	apply?: boolean;
 }
 
-export type AnalyzeSubcommand = "patterns" | "export" | "clear";
+export type AnalyzeSubcommand = "patterns" | "export" | "clear" | "debt";
 export type MemorySubcommand = "list" | "clear" | "export";
 export type ProjectsSubcommand = "list" | "current" | "prune";
 export type TaskSubcommand =

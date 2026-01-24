@@ -11,6 +11,7 @@ export { MainRunView } from "./MainRunView.tsx";
 export { RunApp } from "./RunApp.tsx";
 export { StatusBar } from "./StatusBar.tsx";
 export { TaskList } from "./TaskList.tsx";
+export { TechnicalDebtSummary } from "./TechnicalDebtSummary.tsx";
 export { UpdateBanner } from "./UpdateBanner.tsx";
 export { UpdatePrompt } from "./UpdatePrompt.tsx";
 export { ViewRouter } from "./ViewRouter.tsx";
