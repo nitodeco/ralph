@@ -28,6 +28,7 @@ export {
 	DEFAULT_CONFIG,
 	DEFAULT_ENABLE_GC_HINTS,
 	DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
+	DEFAULT_MEMORY_THRESHOLD_PERCENT,
 	DEFAULT_MEMORY_WARNING_THRESHOLD_MB,
 	DEFAULT_STUCK_THRESHOLD_MS,
 	DEFAULT_VERIFICATION,
@@ -72,6 +73,7 @@ export {
 	getGuardrailsService,
 	getHandlerCoordinator,
 	getIterationCoordinator,
+	getMemoryMonitorService,
 	getOrchestrator,
 	getParallelExecutionManager,
 	getPrdService,
@@ -141,6 +143,12 @@ export type {
 	IterationCallbackOptions,
 	IterationCoordinator,
 } from "./iteration-coordinator/types.ts";
+export {
+	createMemoryMonitorService,
+	MEMORY_MONITOR_DEFAULTS,
+	type MemoryMonitorConfig,
+	type MemoryMonitorService,
+} from "./MemoryMonitorService.ts";
 export { createOrchestrator } from "./orchestrator/implementation.ts";
 export type {
 	Orchestrator,

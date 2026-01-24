@@ -5,6 +5,7 @@ import type { GitProviderService } from "./git-provider/types.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import type { HandlerCoordinator } from "./handler-coordinator/types.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
+import type { MemoryMonitorService } from "./MemoryMonitorService.ts";
 import type { Orchestrator } from "./orchestrator/types.ts";
 import type { ParallelExecutionManager } from "./parallel-execution-manager/types.ts";
 import type { PrdService } from "./prd/types.ts";
@@ -29,6 +30,7 @@ export interface ServiceContainer {
 	handlerCoordinator: HandlerCoordinator;
 	orchestrator: Orchestrator;
 	sleepPrevention: SleepPreventionService;
+	memoryMonitor: MemoryMonitorService;
 	usageStatistics: UsageStatisticsService;
 	gitBranch: GitBranchService;
 	gitProvider: GitProviderService;
@@ -88,6 +90,10 @@ export function getProjectRegistryService(): ProjectRegistryService {
 
 export function getSleepPreventionService(): SleepPreventionService {
 	return getServices().sleepPrevention;
+}
+
+export function getMemoryMonitorService(): MemoryMonitorService {
+	return getServices().memoryMonitor;
 }
 
 export function getUsageStatisticsService(): UsageStatisticsService {

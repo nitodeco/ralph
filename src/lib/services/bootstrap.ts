@@ -16,6 +16,7 @@ import { createHandlerCoordinator } from "./handler-coordinator/implementation.t
 import type { HandlerCoordinator } from "./handler-coordinator/types.ts";
 import { createIterationCoordinator } from "./iteration-coordinator/implementation.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
+import { createMemoryMonitorService, type MemoryMonitorService } from "./MemoryMonitorService.ts";
 import { createOrchestrator } from "./orchestrator/implementation.ts";
 import type { Orchestrator } from "./orchestrator/types.ts";
 import { createParallelExecutionManager } from "./parallel-execution-manager/implementation.ts";
@@ -279,6 +280,7 @@ export function bootstrapServices(): void {
 		handlerCoordinator: createHandlerCoordinator(),
 		orchestrator: createOrchestrator(),
 		sleepPrevention: createSleepPreventionService(),
+		memoryMonitor: createMemoryMonitorService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
 		gitProvider: createGitProviderService(),
@@ -299,6 +301,7 @@ export interface TestServiceOverrides {
 	handlerCoordinator?: Partial<HandlerCoordinator>;
 	orchestrator?: Partial<Orchestrator>;
 	sleepPrevention?: Partial<SleepPreventionService>;
+	memoryMonitor?: Partial<MemoryMonitorService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
 	gitProvider?: Partial<GitProviderService>;
@@ -572,6 +575,20 @@ function createMockSleepPreventionService(
 		start: () => {},
 		stop: () => {},
 		isActive: () => false,
+		...overrides,
+	};
+}
+
+function createMockMemoryMonitorService(
+	overrides: Partial<MemoryMonitorService> = {},
+): MemoryMonitorService {
+	return {
+		start: () => {},
+		stop: () => {},
+		isActive: () => false,
+		getMemoryUsagePercent: () => 50,
+		setThresholdPercent: () => {},
+		getThresholdPercent: () => 80,
 		...overrides,
 	};
 }
@@ -915,6 +932,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		handlerCoordinator: createMockHandlerCoordinator(overrides.handlerCoordinator),
 		orchestrator: createMockOrchestrator(overrides.orchestrator),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
+		memoryMonitor: createMockMemoryMonitorService(overrides.memoryMonitor),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),
 		gitProvider: createMockGitProviderService(overrides.gitProvider),

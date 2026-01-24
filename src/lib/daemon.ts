@@ -11,9 +11,14 @@ import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureProjectDirExists } from "./paths.ts";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
-import { getSessionService, getSleepPreventionService } from "./services/index.ts";
+import {
+	getMemoryMonitorService,
+	getSessionService,
+	getSleepPreventionService,
+} from "./services/index.ts";
 
 export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";
+export type ShutdownReason = ShutdownSignal | "memory_threshold";
 
 interface ShutdownHandler {
 	onShutdown: () => void;
@@ -280,7 +285,7 @@ export function clearShutdownHandler(): void {
 	shutdownHandlerRef = null;
 }
 
-export function handleShutdownSignal(signal: ShutdownSignal): void {
+export function handleShutdown(reason: ShutdownReason): void {
 	if (shutdownInProgress) {
 		return;
 	}
@@ -289,7 +294,7 @@ export function handleShutdownSignal(signal: ShutdownSignal): void {
 
 	const logger = getLogger({});
 
-	logger.info("Shutdown signal received", { signal });
+	logger.info("Shutdown initiated", { reason });
 
 	const sessionService = getSessionService();
 	const session = sessionService.load();
@@ -298,29 +303,46 @@ export function handleShutdownSignal(signal: ShutdownSignal): void {
 		const updatedSession = sessionService.updateStatus(session, "stopped");
 
 		sessionService.save(updatedSession);
-		logger.info("Session state saved as stopped", { signal });
+		logger.info("Session state saved as stopped", { reason });
 	}
 
 	if (shutdownHandlerRef) {
 		try {
 			shutdownHandlerRef.onShutdown();
-			logger.info("Agent process terminated", { signal });
+			logger.info("Agent process terminated", { reason });
 		} catch (error) {
 			const errorMessage = getErrorMessage(error);
 
-			logger.error("Error during shutdown handler", { signal, error: errorMessage });
+			logger.error("Error during shutdown handler", { reason, error: errorMessage });
 		}
 	}
 
 	getSleepPreventionService().stop();
+	getMemoryMonitorService().stop();
 	deletePidFile();
-	logger.info("Shutdown complete", { signal });
+	logger.info("Shutdown complete", { reason });
 
 	if (process.stdout.isTTY) {
 		process.stdout.write("\x1b[?25h\x1b[2J\x1b[3J\x1b[H");
 	}
 
-	process.exit(0);
+	process.exit(reason === "memory_threshold" ? 137 : 0);
+}
+
+export function handleShutdownSignal(signal: ShutdownSignal): void {
+	handleShutdown(signal);
+}
+
+export function handleMemoryThresholdExceeded(): void {
+	const logger = getLogger({});
+	const memoryMonitor = getMemoryMonitorService();
+	const currentUsage = memoryMonitor.getMemoryUsagePercent();
+
+	logger.warn("Memory threshold exceeded, initiating shutdown", {
+		memoryUsagePercent: currentUsage,
+	});
+
+	handleShutdown("memory_threshold");
 }
 
 export function setupSignalHandlers(): void {
@@ -338,4 +360,20 @@ export function setupSignalHandlers(): void {
 			deletePidFile();
 		}
 	});
+}
+
+export function startMemoryMonitor(thresholdPercent?: number): void {
+	const memoryMonitor = getMemoryMonitorService();
+
+	if (thresholdPercent !== undefined) {
+		memoryMonitor.setThresholdPercent(thresholdPercent);
+	}
+
+	memoryMonitor.start(handleMemoryThresholdExceeded);
+}
+
+export function stopMemoryMonitor(): void {
+	const memoryMonitor = getMemoryMonitorService();
+
+	memoryMonitor.stop();
 }

@@ -18,6 +18,7 @@ export interface MemoryConfig {
 	maxOutputBufferBytes?: number;
 	memoryWarningThresholdMb?: number;
 	enableGarbageCollectionHints?: boolean;
+	memoryThresholdPercent?: number;
 }
 
 export interface VerificationConfig {

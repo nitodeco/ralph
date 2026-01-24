@@ -14,6 +14,7 @@ export const DEFAULTS = {
 	stuckThresholdMs: 5 * 60 * 1000,
 	maxOutputBufferBytes: 5 * 1024 * 1024,
 	memoryWarningThresholdMb: 500,
+	memoryThresholdPercent: 80,
 	enableGcHints: true,
 	iterationDelayMs: 2000,
 	iterations: 10,
@@ -56,6 +57,7 @@ export const CONFIG_DEFAULTS: Required<
 		maxOutputBufferBytes: DEFAULTS.maxOutputBufferBytes,
 		memoryWarningThresholdMb: DEFAULTS.memoryWarningThresholdMb,
 		enableGarbageCollectionHints: DEFAULTS.enableGcHints,
+		memoryThresholdPercent: DEFAULTS.memoryThresholdPercent,
 	},
 	maxOutputHistoryBytes: DEFAULTS.maxOutputBufferBytes,
 	maxRuntimeMs: 0,
@@ -83,6 +85,7 @@ export const DEFAULT_AGENT_TIMEOUT_MS = DEFAULTS.agentTimeoutMs;
 export const DEFAULT_STUCK_THRESHOLD_MS = DEFAULTS.stuckThresholdMs;
 export const DEFAULT_MAX_OUTPUT_BUFFER_BYTES = DEFAULTS.maxOutputBufferBytes;
 export const DEFAULT_MEMORY_WARNING_THRESHOLD_MB = DEFAULTS.memoryWarningThresholdMb;
+export const DEFAULT_MEMORY_THRESHOLD_PERCENT = DEFAULTS.memoryThresholdPercent;
 export const DEFAULT_ENABLE_GC_HINTS = DEFAULTS.enableGcHints;
 
 export const AGENT_COMMANDS: Record<AgentType, string[]> = {

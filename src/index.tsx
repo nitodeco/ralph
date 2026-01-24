@@ -71,6 +71,7 @@ import {
 	setShutdownHandler,
 	setupSignalHandlers,
 	spawnDaemonProcess,
+	startMemoryMonitor,
 	writePidFile,
 } from "@/lib/daemon.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
@@ -397,10 +398,13 @@ function main(): void {
 	}
 
 	const autoStart = isDaemonProcess() || dryRun;
+	const ralphConfig = getConfigService().get();
+	const memoryThresholdPercent = ralphConfig.memory?.memoryThresholdPercent;
 
 	match(command)
 		.with("run", () => {
 			getSleepPreventionService().start();
+			startMemoryMonitor(memoryThresholdPercent);
 			maybeInkInstance = render(
 				<RunWithSetup
 					version={VERSION}
@@ -415,6 +419,7 @@ function main(): void {
 		})
 		.with("resume", () => {
 			getSleepPreventionService().start();
+			startMemoryMonitor(memoryThresholdPercent);
 			maybeInkInstance = render(
 				<RunWithSetup
 					version={VERSION}
