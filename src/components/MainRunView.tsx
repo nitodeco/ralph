@@ -1,4 +1,5 @@
-import { Box, Text, useInput } from "ink";
+import { Box, Text } from "ink";
+import { useState } from "react";
 import type { Prd, RalphConfig } from "@/types.ts";
 import { AgentStatus } from "./AgentStatus.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
@@ -7,7 +8,7 @@ import { Message } from "./common/Message.tsx";
 import { ResponsiveLayout, useResponsive } from "./common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "./common/ScrollableContent.tsx";
 import { Header } from "./Header.tsx";
-import { InlineHelpContent } from "./InlineHelpContent.tsx";
+import { InteractiveHelpContent } from "./InteractiveHelpContent.tsx";
 import { IterationProgress } from "./IterationProgress.tsx";
 import { StatusBar } from "./StatusBar.tsx";
 import { TaskList } from "./TaskList.tsx";
@@ -103,6 +104,8 @@ interface ContentSectionProps {
 	iterationTotal: number;
 	helpVisible: boolean;
 	version: string;
+	onSelectHelpCommand: (command: string) => void;
+	onDismissHelp: () => void;
 }
 
 const STATES_WITH_PROGRESS_BAR = new Set(["running", "complete", "max_iterations", "max_runtime"]);
@@ -120,12 +123,21 @@ function ContentSection({
 	iterationTotal,
 	helpVisible,
 	version,
+	onSelectHelpCommand,
+	onDismissHelp,
 }: ContentSectionProps): React.ReactElement {
 	const showIterationProgress = STATES_WITH_PROGRESS_BAR.has(appState);
 
 	return (
 		<ScrollableContent>
-			{helpVisible && <InlineHelpContent version={version} />}
+			{helpVisible && (
+				<InteractiveHelpContent
+					version={version}
+					isActive={helpVisible}
+					onSelectCommand={onSelectHelpCommand}
+					onClose={onDismissHelp}
+				/>
+			)}
 
 			<TaskList />
 			{showIterationProgress && <IterationProgress />}
@@ -176,12 +188,27 @@ function ContentSection({
 interface FooterSectionProps {
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	agentIsStreaming: boolean;
+	helpMode: boolean;
+	pendingCommand: string | null;
+	onPendingCommandConsumed: () => void;
 }
 
-function FooterSection({ onCommand, agentIsStreaming }: FooterSectionProps): React.ReactElement {
+function FooterSection({
+	onCommand,
+	agentIsStreaming,
+	helpMode,
+	pendingCommand,
+	onPendingCommandConsumed,
+}: FooterSectionProps): React.ReactElement {
 	return (
 		<Box flexDirection="column">
-			<CommandInput onCommand={onCommand} isRunning={agentIsStreaming} />
+			<CommandInput
+				onCommand={onCommand}
+				isRunning={agentIsStreaming}
+				helpMode={helpMode}
+				pendingCommand={pendingCommand}
+				onPendingCommandConsumed={onPendingCommandConsumed}
+			/>
 			<StatusBar />
 		</Box>
 	);
@@ -210,15 +237,16 @@ export function MainRunView({
 	onDismissHelp,
 }: MainRunViewProps): React.ReactElement {
 	const showUpdateBanner = Boolean(updateAvailable && latestVersion && !updateBannerDismissed);
+	const [pendingCommand, setPendingCommand] = useState<string | null>(null);
 
-	useInput(
-		(_input, key) => {
-			if (key.escape && helpVisible) {
-				onDismissHelp();
-			}
-		},
-		{ isActive: helpVisible },
-	);
+	const handleSelectHelpCommand = (command: string) => {
+		setPendingCommand(command);
+		onDismissHelp();
+	};
+
+	const handlePendingCommandConsumed = () => {
+		setPendingCommand(null);
+	};
 
 	return (
 		<ResponsiveLayout
@@ -245,9 +273,19 @@ export function MainRunView({
 					iterationTotal={iterationTotal}
 					helpVisible={helpVisible}
 					version={version}
+					onSelectHelpCommand={handleSelectHelpCommand}
+					onDismissHelp={onDismissHelp}
 				/>
 			}
-			footer={<FooterSection onCommand={onCommand} agentIsStreaming={agentIsStreaming} />}
+			footer={
+				<FooterSection
+					onCommand={onCommand}
+					agentIsStreaming={agentIsStreaming}
+					helpMode={helpVisible}
+					pendingCommand={pendingCommand}
+					onPendingCommandConsumed={handlePendingCommandConsumed}
+				/>
+			}
 		/>
 	);
 }

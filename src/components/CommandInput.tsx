@@ -199,6 +199,9 @@ export function getAutocompleteHint(input: string, isRunning: boolean): Autocomp
 interface CommandInputProps {
 	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
 	isRunning?: boolean;
+	helpMode?: boolean;
+	pendingCommand?: string | null;
+	onPendingCommandConsumed?: () => void;
 }
 
 interface ParsedCommand {
@@ -304,6 +307,9 @@ function parseSlashCommand(input: string): ParsedCommand | null {
 export function CommandInput({
 	onCommand,
 	isRunning = false,
+	helpMode = false,
+	pendingCommand = null,
+	onPendingCommandConsumed,
 }: CommandInputProps): React.ReactElement {
 	const [inputValue, setInputValue] = useState("");
 	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
@@ -316,6 +322,14 @@ export function CommandInput({
 	useEffect(() => {
 		setCommandHistory(getCommandHistoryList());
 	}, []);
+
+	useEffect(() => {
+		if (pendingCommand) {
+			setInputValue(pendingCommand);
+			setSelectedHintIndex(0);
+			onPendingCommandConsumed?.();
+		}
+	}, [pendingCommand, onPendingCommandConsumed]);
 
 	const isNavigatingHistory = historyIndex !== null;
 	const autocomplete = getAutocompleteHint(inputValue, isRunning);
@@ -598,6 +612,7 @@ export function CommandInput({
 						onTab={applyAutocomplete}
 						onShiftTab={handleShiftTab}
 						onArrowRight={applyAutocomplete}
+						focus={!helpMode}
 					/>
 				</Box>
 				{error && (
