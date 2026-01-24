@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Ralph is a CLI tool for long-running PRD-driven development with Cursor CLI. It orchestrates AI agent sessions that work through tasks defined in a PRD (Product Requirements Document) file, with features like automatic retries, task decomposition, verification, and session memory.
+Ralph is a CLI tool for long-running PRD-driven development with AI coding agents (Cursor, Claude Code, or Codex). It orchestrates AI agent sessions that work through tasks defined in a PRD (Product Requirements Document) file, with features like automatic retries, task decomposition, verification, and session memory.
 
 ## Commands
 
@@ -47,10 +47,19 @@ ralph progress show          # Display progress notes
 - `src/cli/commands/` - Individual command handlers (status, config, guardrails, etc.)
 
 ### Core Orchestration
-- `src/stores/orchestrator.ts` - `SessionOrchestrator` class manages the entire session lifecycle: starting/resuming sessions, handling iteration callbacks, coordinating between agent runs and verification
-- `src/stores/agentStore.ts` - Zustand store for agent execution state, spawns `AgentRunner`
+The orchestrator is now a service composed of several specialized managers:
+- `src/lib/services/orchestrator/` - Composition root that coordinates all orchestration services
+- `src/lib/services/session-manager/` - Manages session lifecycle (start, resume, fatal errors)
+- `src/lib/services/iteration-coordinator/` - Sets up iteration callbacks, manages retry contexts
+- `src/lib/services/handler-coordinator/` - Coordinates handlers for verification, decomposition, learning
+- `src/lib/services/parallel-execution-manager/` - Manages parallel task execution
+- `src/lib/services/branch-mode-manager/` - Manages branch-per-task workflow
+
+### State Management (Zustand Stores)
+- `src/stores/agentStore.ts` - Agent execution state, spawns `AgentRunner`
 - `src/stores/appStore.ts` - Application state (PRD, session, current view)
 - `src/stores/iterationStore.ts` - Tracks iteration progress and timing
+- `src/stores/agentStatusStore.ts` - Agent status display state
 
 ### Agent Execution
 - `src/lib/agent.ts` - `AgentRunner` class handles spawning the agent process (Cursor CLI), streaming output, timeout/stuck detection, retry logic with context injection
@@ -65,10 +74,14 @@ Services are bootstrapped at startup via `src/lib/services/bootstrap.ts` and acc
 - `GuardrailsService` - Prompt guardrails management
 - `SessionService` - Session persistence
 - `SessionMemoryService` - Cross-session learning/memory
+- `UsageStatisticsService` - Usage tracking and statistics
+- `GitBranchService` - Git branch operations
+- `GitProviderService` - GitHub integration
 
-### Event-Driven Communication
-- `src/lib/events.ts` - Event bus (`agent:start`, `agent:complete`, `agent:error`, `session:*` events)
-- Handlers in `src/lib/handlers/` subscribe to events for verification, decomposition, learning
+### Event Communication
+- `src/lib/events.ts` - Minimal event bus with only `agent:complete` and `agent:error` events
+- HandlerCoordinator subscribes to these events for verification, decomposition, learning
+- Most communication uses direct callback patterns rather than events
 
 ### UI Layer (Ink/React)
 - `src/components/RunApp.tsx` - Main runtime UI
@@ -85,8 +98,9 @@ import { Component } from "@/components/index.ts";
 
 ### Service Access
 ```typescript
-import { getConfigService, getPrdService } from "@/lib/services/index.ts";
+import { getConfigService, getPrdService, getOrchestrator } from "@/lib/services/index.ts";
 const config = getConfigService().get();
+const orchestrator = getOrchestrator();
 ```
 
 ### Testing Services
@@ -102,13 +116,15 @@ afterEach(() => teardownTestServices());
 ~/.ralph/                      # Global Ralph directory
 ├── config.json                # Global config
 ├── registry.json              # Project registry
+├── usage-statistics.json      # Global usage statistics
 └── projects/                  # Per-project storage
     └── <project-folder>/      # Named by git remote or path
         ├── config.json        # Project-specific config
-        ├── prd.md             # PRD file
+        ├── prd.json           # PRD file (JSON format)
         ├── session.json       # Active session state
         ├── session-memory.json
         ├── guardrails.json
+        ├── instructions.md    # Custom agent instructions
         └── logs/              # Iteration logs
 ```
 

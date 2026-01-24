@@ -74,6 +74,7 @@ ralph <command> [options] # Run a specific command
 | Command | Description |
 |---------|-------------|
 | `analyze` | Show failure pattern analysis |
+| `analyze debt` | Show technical debt review |
 | `analyze export` | Export analysis as JSON |
 | `analyze clear` | Clear failure history |
 | `memory` | Show session memory |

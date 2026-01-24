@@ -47,12 +47,15 @@ ralph/
 │   ├── index.tsx          # Entry point
 │   ├── cli/               # CLI commands and parsing
 │   ├── components/        # Ink UI components
+│   ├── hooks/             # React hooks
 │   ├── lib/               # Core logic and services
+│   │   ├── handlers/      # Event handlers (verification, decomposition, etc.)
+│   │   └── services/      # Service layer (DI container)
 │   ├── stores/            # State management (Zustand)
 │   └── types/             # TypeScript types
 ├── docs/                  # Documentation site (separate package)
 ├── scripts/               # Build and utility scripts
-└── tests/                 # Test files
+└── src/__tests__/         # Test files
 ```
 
 ## Development Workflow
@@ -135,11 +138,23 @@ New CLI commands go in `src/cli/commands/`:
 
 ## Adding Services
 
-Services are in `src/lib/services/`:
+Services follow a consistent pattern in `src/lib/services/`:
 
-1. Create service directory with implementation
-2. Export from `src/lib/services/index.ts`
-3. Register in bootstrap if needed
+1. Create a service directory (e.g., `src/lib/services/my-service/`)
+2. Add `types.ts` for interfaces and types
+3. Add `implementation.ts` with a factory function (e.g., `createMyService()`)
+4. Add `index.ts` to re-export public API
+5. Register in `src/lib/services/container.ts`
+6. Add to bootstrap in `src/lib/services/bootstrap.ts`
+7. Export from `src/lib/services/index.ts`
+
+Example service structure:
+```
+src/lib/services/my-service/
+├── types.ts           # MyService interface, config types
+├── implementation.ts  # createMyService() factory
+└── index.ts           # Re-exports
+```
 
 ## Path Aliases
 
