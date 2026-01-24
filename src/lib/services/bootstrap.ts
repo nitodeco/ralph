@@ -26,13 +26,49 @@ import {
 } from "./SleepPreventionService.ts";
 import { createSessionService } from "./session/implementation.ts";
 import type { SessionService } from "./session/types.ts";
+import { createSessionManager } from "./session-manager/implementation.ts";
+import type { SessionManager } from "./session-manager/types.ts";
 import { createSessionMemoryService } from "./session-memory/implementation.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
 import { createUsageStatisticsService } from "./usage-statistics/implementation.ts";
 import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
+export interface SessionManagerStoreDependencies {
+	getAgentStoreState: () => {
+		exitCode: number | null;
+		retryCount: number;
+		output: string;
+	};
+	getIterationStoreState: () => {
+		current: number;
+	};
+}
+
+let sessionManagerDependencies: SessionManagerStoreDependencies | null = null;
+
+export function setSessionManagerDependencies(dependencies: SessionManagerStoreDependencies): void {
+	sessionManagerDependencies = dependencies;
+}
+
 export function bootstrapServices(): void {
 	registerProvider("github", createGitHubProvider);
+
+	const sessionManagerDeps: SessionManagerStoreDependencies = {
+		getAgentStoreState: () => {
+			if (!sessionManagerDependencies) {
+				return { exitCode: null, retryCount: 0, output: "" };
+			}
+
+			return sessionManagerDependencies.getAgentStoreState();
+		},
+		getIterationStoreState: () => {
+			if (!sessionManagerDependencies) {
+				return { current: 0 };
+			}
+
+			return sessionManagerDependencies.getIterationStoreState();
+		},
+	};
 
 	initializeServices({
 		projectRegistry: createProjectRegistryService(),
@@ -42,6 +78,7 @@ export function bootstrapServices(): void {
 		prd: createPrdService(),
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
+		sessionManager: createSessionManager(sessionManagerDeps),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
@@ -57,6 +94,7 @@ export interface TestServiceOverrides {
 	prd?: Partial<PrdService>;
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
+	sessionManager?: Partial<SessionManager>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
@@ -508,6 +546,45 @@ function createMockGitProviderService(
 	};
 }
 
+function createMockSessionManager(overrides: Partial<SessionManager> = {}): SessionManager {
+	const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
+		startTime: Date.now(),
+		lastUpdateTime: Date.now(),
+		currentIteration: 0,
+		totalIterations,
+		currentTaskIndex,
+		status: "running" as const,
+		elapsedTimeSeconds: 0,
+		statistics: {
+			totalIterations,
+			completedIterations: 0,
+			failedIterations: 0,
+			successfulIterations: 0,
+			totalDurationMs: 0,
+			averageDurationMs: 0,
+			successRate: 0,
+			iterationTimings: [],
+		},
+	});
+
+	return {
+		startSession: (_prd, totalIterations) => ({
+			session: createMockSession(totalIterations, 0),
+			taskIndex: 0,
+		}),
+		resumeSession: (pendingSession) => ({
+			session: { ...pendingSession, status: "running" as const },
+			remainingIterations: pendingSession.totalIterations - pendingSession.currentIteration,
+		}),
+		handleFatalError: (_error, _prd, currentSession) => ({
+			session: currentSession ? { ...currentSession, status: "stopped" as const } : null,
+			wasHandled: true,
+		}),
+		recordUsageStatistics: () => {},
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -519,6 +596,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		prd: createMockPrdService(overrides.prd),
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 		session: createMockSessionService(overrides.session),
+		sessionManager: createMockSessionManager(overrides.sessionManager),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),

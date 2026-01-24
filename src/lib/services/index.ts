@@ -3,6 +3,8 @@ export { AgentProcessManager, type ProcessEntry, type ProcessInfo } from "./Agen
 export {
 	bootstrapServices,
 	bootstrapTestServices,
+	type SessionManagerStoreDependencies,
+	setSessionManagerDependencies,
 	type TestServiceOverrides,
 	teardownTestServices,
 } from "./bootstrap.ts";
@@ -59,6 +61,7 @@ export {
 	getProjectRegistryService,
 	getRulesService,
 	getServices,
+	getSessionManager,
 	getSessionMemoryService,
 	getSessionService,
 	getSleepPreventionService,
@@ -153,6 +156,16 @@ export type {
 	SessionStatus,
 } from "./session/types.ts";
 export { VALID_SESSION_STATUSES } from "./session/types.ts";
+export {
+	createSessionManager,
+	type SessionManagerDependencies,
+} from "./session-manager/implementation.ts";
+export type {
+	FatalErrorResult,
+	ResumeSessionResult,
+	SessionManager,
+	StartSessionResult,
+} from "./session-manager/types.ts";
 export type {
 	SessionMemory,
 	SessionMemoryService,

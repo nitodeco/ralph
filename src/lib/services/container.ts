@@ -7,6 +7,7 @@ import type { ProjectRegistryService } from "./project-registry/types.ts";
 import type { RulesService } from "./rules/types.ts";
 import type { SleepPreventionService } from "./SleepPreventionService.ts";
 import type { SessionService } from "./session/types.ts";
+import type { SessionManager } from "./session-manager/types.ts";
 import type { SessionMemoryService } from "./session-memory/types.ts";
 import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
@@ -18,6 +19,7 @@ export interface ServiceContainer {
 	prd: PrdService;
 	sessionMemory: SessionMemoryService;
 	session: SessionService;
+	sessionManager: SessionManager;
 	sleepPrevention: SleepPreventionService;
 	usageStatistics: UsageStatisticsService;
 	gitBranch: GitBranchService;
@@ -94,4 +96,8 @@ export function getGitBranchService(): GitBranchService {
 
 export function getGitProviderService(): GitProviderService {
 	return getServices().gitProvider;
+}
+
+export function getSessionManager(): SessionManager {
+	return getServices().sessionManager;
 }
