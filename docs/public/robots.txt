@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nitodeco.github.io/ralph/sitemap-index.xml

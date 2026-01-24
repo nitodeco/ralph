@@ -37,3 +37,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Ralph local folder (should not be created, but ignore just in case)
 .ralph/
+
+# Docs site build artifacts
+docs/.astro/
+docs/dist/

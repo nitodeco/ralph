@@ -1,0 +1,19 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Button from "@/components/Button.astro";
+---
+
+<BaseLayout title="Ralph">
+  <main id="main-content" class="flex flex-col items-center justify-center min-h-screen px-4">
+    <h1 class="text-4xl font-bold mb-4">Ralph</h1>
+    <p class="text-[var(--color-text-muted)] text-lg mb-8 text-center max-w-xl">
+      CLI tool for long-running PRD-driven development with AI coding agents.
+    </p>
+    <div class="flex gap-4">
+      <Button href="/ralph/docs/">Read the docs</Button>
+      <Button variant="secondary" href="https://github.com/nitodeco/ralph">
+        View on GitHub
+      </Button>
+    </div>
+  </main>
+</BaseLayout>

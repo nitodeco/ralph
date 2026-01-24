@@ -1,0 +1,26 @@
+---
+interface Props {
+  href: string;
+  class?: string;
+  external?: boolean;
+}
+
+const { href, class: className = "", external } = Astro.props;
+
+const isExternal = external ?? (href.startsWith("http://") || href.startsWith("https://"));
+const externalProps = isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {};
+---
+
+<a
+  href={href}
+  class:list={[
+    "text-brand hover:text-brand-hover underline underline-offset-2 transition-colors",
+    className,
+  ]}
+  {...externalProps}
+>
+  <slot />
+  {isExternal && (
+    <span class="inline-block ml-1" aria-hidden="true">↗</span>
+  )}
+</a>

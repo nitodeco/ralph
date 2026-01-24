@@ -1,0 +1,21 @@
+{
+	"name": "ralph-docs",
+	"type": "module",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "astro dev",
+		"start": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"check": "astro check"
+	},
+	"dependencies": {
+		"astro": "5.2.5",
+		"@astrojs/check": "0.9.4",
+		"@astrojs/sitemap": "3.2.1",
+		"@astrojs/tailwind": "5.1.4",
+		"tailwindcss": "3.4.17",
+		"typescript": "5.7.3"
+	}
+}
