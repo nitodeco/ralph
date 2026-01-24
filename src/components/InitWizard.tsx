@@ -49,6 +49,7 @@ interface WizardState {
 const AGENT_CHOICES = [
 	{ label: "Cursor", value: "cursor" as const },
 	{ label: "Claude Code", value: "claude" as const },
+	{ label: "Codex", value: "codex" as const },
 ];
 
 const YES_NO_CHOICES = [
@@ -328,7 +329,12 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
 				</Box>
 			))
 			.with("complete", () => {
-				const agentName = state.agentType === "cursor" ? "Cursor" : "Claude Code";
+				const agentNameMap: Record<AgentType, string> = {
+					cursor: "Cursor",
+					claude: "Claude Code",
+					codex: "Codex",
+				};
+				const agentName = agentNameMap[state.agentType];
 				const registeredPrdPath = getPrdJsonPath();
 				const registeredProgressPath = getProgressFilePath();
 
