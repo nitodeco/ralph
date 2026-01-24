@@ -3,17 +3,21 @@ import { getCollection, render } from "astro:content";
 import DocsLayout from "@/layouts/DocsLayout.astro";
 
 const docs = await getCollection("docs");
-const introDoc = docs.find((doc) => doc.id === "index");
+const introDoc = docs.find((doc) => doc.id === "getting-started/introduction");
 
 if (!introDoc) {
   return Astro.redirect("/ralph/");
 }
 
-const { Content } = await render(introDoc);
+const { Content, headings } = await render(introDoc);
 
-const breadcrumbs = [{ label: "Docs", href: "/ralph/docs/" }, { label: introDoc.data.title }];
+const breadcrumbs = [
+  { label: "Docs", href: "/ralph/docs/" },
+  { label: "Getting Started", href: "/ralph/docs/getting-started/introduction/" },
+  { label: "Introduction" },
+];
 ---
 
-<DocsLayout title={introDoc.data.title} description={introDoc.data.description} breadcrumbs={breadcrumbs}>
+<DocsLayout title={introDoc.data.title} description={introDoc.data.description} breadcrumbs={breadcrumbs} headings={headings}>
   <Content />
 </DocsLayout>

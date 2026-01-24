@@ -5,19 +5,27 @@ import Footer from "@/components/Footer.astro";
 import SidebarNav from "@/components/SidebarNav.astro";
 import MobileNav from "@/components/MobileNav.astro";
 import Breadcrumbs from "@/components/Breadcrumbs.astro";
+import OnThisPage from "@/components/OnThisPage.astro";
 
 interface BreadcrumbItem {
   label: string;
   href?: string;
 }
 
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
 interface Props {
   title: string;
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
+  headings?: Heading[];
 }
 
-const { title, description, breadcrumbs = [] } = Astro.props;
+const { title, description, breadcrumbs = [], headings = [] } = Astro.props;
 const currentPath = Astro.url.pathname;
 ---
 
@@ -39,6 +47,14 @@ const currentPath = Astro.url.pathname;
           <slot />
         </article>
       </main>
+
+      {headings.length > 0 && (
+        <aside class="hidden xl:block xl:w-56 xl:flex-shrink-0">
+          <div class="sticky top-20 py-8">
+            <OnThisPage headings={headings} />
+          </div>
+        </aside>
+      )}
     </div>
   </div>
 

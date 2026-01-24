@@ -37,7 +37,7 @@ export async function getStaticPaths() {
 }
 
 const { doc } = Astro.props;
-const { Content } = await render(doc);
+const { Content, headings } = await render(doc);
 
 const pathSegments = doc.id.split("/");
 const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: "/ralph/docs/" }];
@@ -53,6 +53,6 @@ if (pathSegments.length > 1) {
 breadcrumbs.push({ label: doc.data.sidebar.label ?? doc.data.title });
 ---
 
-<DocsLayout title={doc.data.title} description={doc.data.description} breadcrumbs={breadcrumbs}>
+<DocsLayout title={doc.data.title} description={doc.data.description} breadcrumbs={breadcrumbs} headings={headings}>
   <Content />
 </DocsLayout>
