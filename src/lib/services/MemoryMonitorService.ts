@@ -1,36 +1,31 @@
-import { freemem, totalmem } from "node:os";
-
 export interface MemoryMonitorService {
 	start(onThresholdExceeded: () => void): void;
 	stop(): void;
 	isActive(): boolean;
-	getMemoryUsagePercent(): number;
-	setThresholdPercent(percent: number): void;
-	getThresholdPercent(): number;
+	getMemoryUsageMb(): number;
+	setThresholdMb(mb: number): void;
+	getThresholdMb(): number;
 }
 
 export interface MemoryMonitorConfig {
-	thresholdPercent: number;
+	thresholdMb: number;
 	checkIntervalMs: number;
 }
 
-const DEFAULT_THRESHOLD_PERCENT = 80;
+const DEFAULT_THRESHOLD_MB = 1_024;
 const DEFAULT_CHECK_INTERVAL_MS = 10_000;
 
 let monitorInterval: ReturnType<typeof setInterval> | null = null;
 let isMonitoring = false;
 let currentConfig: MemoryMonitorConfig = {
-	thresholdPercent: DEFAULT_THRESHOLD_PERCENT,
+	thresholdMb: DEFAULT_THRESHOLD_MB,
 	checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
 };
 
-function getMemoryUsagePercent(): number {
-	const totalMemory = totalmem();
-	const freeMemory = freemem();
-	const usedMemory = totalMemory - freeMemory;
-	const usagePercent = (usedMemory / totalMemory) * 100;
+function getMemoryUsageMb(): number {
+	const { rss } = process.memoryUsage();
 
-	return Math.round(usagePercent * 100) / 100;
+	return Math.round(rss / 1024 / 1024);
 }
 
 function startMonitoring(onThresholdExceeded: () => void): void {
@@ -41,9 +36,9 @@ function startMonitoring(onThresholdExceeded: () => void): void {
 	isMonitoring = true;
 
 	monitorInterval = setInterval(() => {
-		const usagePercent = getMemoryUsagePercent();
+		const usageMb = getMemoryUsageMb();
 
-		if (usagePercent >= currentConfig.thresholdPercent) {
+		if (usageMb >= currentConfig.thresholdMb) {
 			stopMonitoring();
 			onThresholdExceeded();
 		}
@@ -63,12 +58,12 @@ function isMonitoringActive(): boolean {
 	return isMonitoring;
 }
 
-function setThresholdPercent(percent: number): void {
-	currentConfig.thresholdPercent = percent;
+function setThresholdMb(mb: number): void {
+	currentConfig.thresholdMb = mb;
 }
 
-function getThresholdPercent(): number {
-	return currentConfig.thresholdPercent;
+function getThresholdMb(): number {
+	return currentConfig.thresholdMb;
 }
 
 export function createMemoryMonitorService(
@@ -76,7 +71,7 @@ export function createMemoryMonitorService(
 ): MemoryMonitorService {
 	if (config) {
 		currentConfig = {
-			thresholdPercent: config.thresholdPercent ?? DEFAULT_THRESHOLD_PERCENT,
+			thresholdMb: config.thresholdMb ?? DEFAULT_THRESHOLD_MB,
 			checkIntervalMs: config.checkIntervalMs ?? DEFAULT_CHECK_INTERVAL_MS,
 		};
 	}
@@ -85,13 +80,13 @@ export function createMemoryMonitorService(
 		start: startMonitoring,
 		stop: stopMonitoring,
 		isActive: isMonitoringActive,
-		getMemoryUsagePercent,
-		setThresholdPercent,
-		getThresholdPercent,
+		getMemoryUsageMb,
+		setThresholdMb,
+		getThresholdMb,
 	};
 }
 
 export const MEMORY_MONITOR_DEFAULTS = {
-	thresholdPercent: DEFAULT_THRESHOLD_PERCENT,
+	thresholdMb: DEFAULT_THRESHOLD_MB,
 	checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
 } as const;

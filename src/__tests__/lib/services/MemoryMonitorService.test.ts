@@ -18,17 +18,17 @@ describe("MemoryMonitorService", () => {
 
 	describe("createMemoryMonitorService", () => {
 		test("creates service with default config", () => {
-			expect(service.getThresholdPercent()).toBe(MEMORY_MONITOR_DEFAULTS.thresholdPercent);
+			expect(service.getThresholdMb()).toBe(MEMORY_MONITOR_DEFAULTS.thresholdMb);
 			expect(service.isActive()).toBe(false);
 		});
 
 		test("creates service with custom config", () => {
 			const customService = createMemoryMonitorService({
-				thresholdPercent: 90,
+				thresholdMb: 2048,
 				checkIntervalMs: 5000,
 			});
 
-			expect(customService.getThresholdPercent()).toBe(90);
+			expect(customService.getThresholdMb()).toBe(2048);
 			customService.stop();
 		});
 	});
@@ -84,42 +84,40 @@ describe("MemoryMonitorService", () => {
 		});
 	});
 
-	describe("getMemoryUsagePercent", () => {
-		test("returns a number between 0 and 100", () => {
-			const usage = service.getMemoryUsagePercent();
+	describe("getMemoryUsageMb", () => {
+		test("returns a positive number", () => {
+			const usage = service.getMemoryUsageMb();
 
 			expect(typeof usage).toBe("number");
-			expect(usage).toBeGreaterThanOrEqual(0);
-			expect(usage).toBeLessThanOrEqual(100);
+			expect(usage).toBeGreaterThan(0);
 		});
 
-		test("returns a number with at most 2 decimal places", () => {
-			const usage = service.getMemoryUsagePercent();
-			const decimalPlaces = (usage.toString().split(".")[1] || "").length;
+		test("returns an integer", () => {
+			const usage = service.getMemoryUsageMb();
 
-			expect(decimalPlaces).toBeLessThanOrEqual(2);
+			expect(Number.isInteger(usage)).toBe(true);
 		});
 	});
 
-	describe("setThresholdPercent", () => {
-		test("updates threshold percent", () => {
-			service.setThresholdPercent(90);
+	describe("setThresholdMb", () => {
+		test("updates threshold mb", () => {
+			service.setThresholdMb(2048);
 
-			expect(service.getThresholdPercent()).toBe(90);
+			expect(service.getThresholdMb()).toBe(2048);
 		});
 	});
 
-	describe("getThresholdPercent", () => {
-		test("returns current threshold percent", () => {
-			service.setThresholdPercent(80);
+	describe("getThresholdMb", () => {
+		test("returns current threshold mb", () => {
+			service.setThresholdMb(512);
 
-			expect(service.getThresholdPercent()).toBe(80);
+			expect(service.getThresholdMb()).toBe(512);
 		});
 	});
 
 	describe("MEMORY_MONITOR_DEFAULTS", () => {
 		test("has expected default values", () => {
-			expect(MEMORY_MONITOR_DEFAULTS.thresholdPercent).toBe(80);
+			expect(MEMORY_MONITOR_DEFAULTS.thresholdMb).toBe(1_024);
 			expect(MEMORY_MONITOR_DEFAULTS.checkIntervalMs).toBe(10_000);
 		});
 	});

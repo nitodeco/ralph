@@ -399,12 +399,12 @@ function main(): void {
 
 	const autoStart = isDaemonProcess() || dryRun;
 	const ralphConfig = getConfigService().get();
-	const memoryThresholdPercent = ralphConfig.memory?.memoryThresholdPercent;
+	const memoryThresholdMb = ralphConfig.memory?.memoryThresholdMb;
 
 	match(command)
 		.with("run", () => {
 			getSleepPreventionService().start();
-			startMemoryMonitor(memoryThresholdPercent);
+			startMemoryMonitor(memoryThresholdMb);
 			maybeInkInstance = render(
 				<RunWithSetup
 					version={VERSION}
@@ -419,7 +419,7 @@ function main(): void {
 		})
 		.with("resume", () => {
 			getSleepPreventionService().start();
-			startMemoryMonitor(memoryThresholdPercent);
+			startMemoryMonitor(memoryThresholdMb);
 			maybeInkInstance = render(
 				<RunWithSetup
 					version={VERSION}

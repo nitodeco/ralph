@@ -586,9 +586,9 @@ function createMockMemoryMonitorService(
 		start: () => {},
 		stop: () => {},
 		isActive: () => false,
-		getMemoryUsagePercent: () => 50,
-		setThresholdPercent: () => {},
-		getThresholdPercent: () => 80,
+		getMemoryUsageMb: () => 100,
+		setThresholdMb: () => {},
+		getThresholdMb: () => 1024,
 		...overrides,
 	};
 }

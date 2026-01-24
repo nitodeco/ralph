@@ -336,10 +336,10 @@ export function handleShutdownSignal(signal: ShutdownSignal): void {
 export function handleMemoryThresholdExceeded(): void {
 	const logger = getLogger({});
 	const memoryMonitor = getMemoryMonitorService();
-	const currentUsage = memoryMonitor.getMemoryUsagePercent();
+	const currentUsageMb = memoryMonitor.getMemoryUsageMb();
 
 	logger.warn("Memory threshold exceeded, initiating shutdown", {
-		memoryUsagePercent: currentUsage,
+		memoryUsageMb: currentUsageMb,
 	});
 
 	handleShutdown("memory_threshold");
@@ -362,11 +362,11 @@ export function setupSignalHandlers(): void {
 	});
 }
 
-export function startMemoryMonitor(thresholdPercent?: number): void {
+export function startMemoryMonitor(thresholdMb?: number): void {
 	const memoryMonitor = getMemoryMonitorService();
 
-	if (thresholdPercent !== undefined) {
-		memoryMonitor.setThresholdPercent(thresholdPercent);
+	if (thresholdMb !== undefined) {
+		memoryMonitor.setThresholdMb(thresholdMb);
 	}
 
 	memoryMonitor.start(handleMemoryThresholdExceeded);
