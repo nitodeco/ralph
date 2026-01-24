@@ -72,6 +72,7 @@ export {
 	getGuardrailsService,
 	getHandlerCoordinator,
 	getIterationCoordinator,
+	getOrchestrator,
 	getParallelExecutionManager,
 	getPrdService,
 	getProjectRegistryService,
@@ -141,6 +142,12 @@ export type {
 	IterationCallbackOptions,
 	IterationCoordinator,
 } from "./iteration-coordinator/types.ts";
+export { createOrchestrator } from "./orchestrator/implementation.ts";
+export type {
+	Orchestrator,
+	OrchestratorCallbacks,
+	OrchestratorConfig,
+} from "./orchestrator/types.ts";
 export {
 	createParallelExecutionManager,
 	type ParallelExecutionManagerDependencies,

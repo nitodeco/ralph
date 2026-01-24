@@ -16,6 +16,8 @@ import { createHandlerCoordinator } from "./handler-coordinator/implementation.t
 import type { HandlerCoordinator } from "./handler-coordinator/types.ts";
 import { createIterationCoordinator } from "./iteration-coordinator/implementation.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
+import { createOrchestrator } from "./orchestrator/implementation.ts";
+import type { Orchestrator } from "./orchestrator/types.ts";
 import { createParallelExecutionManager } from "./parallel-execution-manager/implementation.ts";
 import type { ParallelExecutionManager } from "./parallel-execution-manager/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
@@ -278,6 +280,7 @@ export function bootstrapServices(): void {
 		parallelExecutionManager: createParallelExecutionManager(parallelExecutionManagerDeps),
 		branchModeManager: createBranchModeManager(),
 		handlerCoordinator: createHandlerCoordinator(),
+		orchestrator: createOrchestrator(),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
@@ -298,6 +301,7 @@ export interface TestServiceOverrides {
 	parallelExecutionManager?: Partial<ParallelExecutionManager>;
 	branchModeManager?: Partial<BranchModeManager>;
 	handlerCoordinator?: Partial<HandlerCoordinator>;
+	orchestrator?: Partial<Orchestrator>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
@@ -858,6 +862,72 @@ function createMockHandlerCoordinator(
 	};
 }
 
+function createMockOrchestrator(overrides: Partial<Orchestrator> = {}): Orchestrator {
+	const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
+		startTime: Date.now(),
+		lastUpdateTime: Date.now(),
+		currentIteration: 0,
+		totalIterations,
+		currentTaskIndex,
+		status: "running" as const,
+		elapsedTimeSeconds: 0,
+		statistics: {
+			totalIterations,
+			completedIterations: 0,
+			failedIterations: 0,
+			successfulIterations: 0,
+			totalDurationMs: 0,
+			averageDurationMs: 0,
+			successRate: 0,
+			iterationTimings: [],
+		},
+	});
+
+	return {
+		initialize: () => {},
+		setupIterationCallbacks: () => {},
+		getConfig: () => null,
+		getIsVerifying: () => false,
+		isBranchModeEnabled: () => false,
+		getBranchModeConfig: () => null,
+		getCurrentTaskBranch: () => null,
+		getBaseBranch: () => null,
+		initializeBranchMode: () => ({ isValid: true }),
+		createTaskBranch: () => ({ success: true }),
+		completeTaskBranch: async () => ({ success: true }),
+		createPullRequestForBranch: async () => ({ success: true }),
+		isParallelModeEnabled: () => false,
+		getParallelConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
+		getCurrentParallelGroup: () => null,
+		getParallelExecutionGroups: () => [],
+		initializeParallelExecution: () => ({ isValid: true }),
+		startNextParallelGroup: () => ({ started: false, groupIndex: -1, tasks: [] }),
+		recordParallelTaskStart: () => {},
+		recordParallelTaskComplete: () => ({ groupComplete: true, allSucceeded: true }),
+		getReadyTasksForParallelExecution: () => [],
+		hasMoreParallelGroups: () => false,
+		getParallelExecutionSummary: () => ({
+			totalGroups: 0,
+			completedGroups: 0,
+			currentGroupIndex: 0,
+			isActive: false,
+		}),
+		disableParallelExecution: () => {},
+		startSession: (_prd, totalIterations) => ({
+			session: createMockSession(totalIterations, 0),
+			taskIndex: 0,
+		}),
+		resumeSession: (pendingSession) => ({
+			session: { ...pendingSession, status: "running" as const },
+			remainingIterations: pendingSession.totalIterations - pendingSession.currentIteration,
+		}),
+		handleFatalError: (_error, _prd, currentSession) =>
+			currentSession ? { ...currentSession, status: "stopped" as const } : null,
+		cleanup: () => {},
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -876,6 +946,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		),
 		branchModeManager: createMockBranchModeManager(overrides.branchModeManager),
 		handlerCoordinator: createMockHandlerCoordinator(overrides.handlerCoordinator),
+		orchestrator: createMockOrchestrator(overrides.orchestrator),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),

@@ -81,12 +81,13 @@ import { getLogger } from "@/lib/logger.ts";
 import {
 	bootstrapServices,
 	getConfigService,
+	getOrchestrator,
 	getSleepPreventionService,
 	setIterationCoordinatorDependencies,
 	setParallelExecutionManagerDependencies,
 	setSessionManagerDependencies,
 } from "@/lib/services/index.ts";
-import { orchestrator, useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
+import { useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
 
@@ -258,10 +259,10 @@ function main(): void {
 			useAgentStore.getState().reset();
 		},
 		createTaskBranch: (taskTitle, taskIndex) => {
-			return orchestrator.createTaskBranch(taskTitle, taskIndex);
+			return getOrchestrator().createTaskBranch(taskTitle, taskIndex);
 		},
 		completeTaskBranch: async (prd) => {
-			return orchestrator.completeTaskBranch(prd);
+			return getOrchestrator().completeTaskBranch(prd);
 		},
 	});
 
@@ -319,7 +320,7 @@ function main(): void {
 		onShutdown: () => {
 			unmountInk();
 			getSleepPreventionService().stop();
-			orchestrator.cleanup();
+			getOrchestrator().cleanup();
 			const agentStore = useAgentStore.getState();
 
 			agentStore.stop();

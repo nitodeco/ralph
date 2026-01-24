@@ -3,16 +3,30 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { ensureProjectDirExists, getPrdJsonPath } from "@/lib/paths.ts";
 import {
 	bootstrapTestServices,
+	createOrchestrator,
 	createParallelExecutionManager,
 	createPrdService,
+	getOrchestrator,
+	type OrchestratorCallbacks,
 	setParallelExecutionManagerDependencies,
 	teardownTestServices,
 } from "@/lib/services/index.ts";
 import { useAppStore } from "@/stores/appStore.ts";
-import { orchestrator } from "@/stores/orchestrator.ts";
 import type { Prd, RalphConfig } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-orchestrator-parallel";
+
+function createMockCallbacks(): OrchestratorCallbacks {
+	return {
+		onPrdUpdate: () => {},
+		onRestartIteration: () => {},
+		onVerificationStateChange: () => {},
+		onIterationComplete: () => {},
+		onFatalError: () => {},
+		onAppStateChange: () => {},
+		setMaxRuntimeMs: () => {},
+	};
+}
 
 function writePrdFile(prd: Prd): void {
 	ensureProjectDirExists();
@@ -225,6 +239,7 @@ describe("orchestrator parallel execution", () => {
 				getActiveExecutionCount: (session) =>
 					session.parallelState?.activeExecutions.filter((e) => e.status === "running").length ?? 0,
 			},
+			orchestrator: createOrchestrator(),
 		});
 
 		if (existsSync(TEST_DIR)) {
@@ -236,7 +251,7 @@ describe("orchestrator parallel execution", () => {
 	});
 
 	afterEach(() => {
-		orchestrator.cleanup();
+		getOrchestrator().cleanup();
 		teardownTestServices();
 
 		if (existsSync(TEST_DIR)) {
@@ -248,26 +263,38 @@ describe("orchestrator parallel execution", () => {
 		test("initializes with parallel execution disabled by default", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+				},
+				createMockCallbacks(),
+			);
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(false);
-			expect(orchestrator.getParallelConfig()).toEqual({ enabled: false, maxConcurrentTasks: 1 });
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(false);
+			expect(getOrchestrator().getParallelConfig()).toEqual({
+				enabled: false,
+				maxConcurrentTasks: 1,
+			});
 		});
 
 		test("initializes with parallel execution enabled", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 4 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 4 },
+				},
+				createMockCallbacks(),
+			);
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(true);
-			expect(orchestrator.getParallelConfig()).toEqual({ enabled: true, maxConcurrentTasks: 4 });
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(true);
+			expect(getOrchestrator().getParallelConfig()).toEqual({
+				enabled: true,
+				maxConcurrentTasks: 4,
+			});
 		});
 	});
 
@@ -275,11 +302,14 @@ describe("orchestrator parallel execution", () => {
 		test("validates dependencies and computes parallel groups", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -299,20 +329,23 @@ describe("orchestrator parallel execution", () => {
 
 			writePrdFile(prd);
 
-			const result = orchestrator.initializeParallelExecution(prd);
+			const result = getOrchestrator().initializeParallelExecution(prd);
 
 			expect(result.isValid).toBe(true);
-			expect(orchestrator.getParallelExecutionGroups().length).toBeGreaterThan(0);
+			expect(getOrchestrator().getParallelExecutionGroups().length).toBeGreaterThan(0);
 		});
 
 		test("fails validation for cyclic dependencies", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -338,7 +371,7 @@ describe("orchestrator parallel execution", () => {
 
 			writePrdFile(prd);
 
-			const result = orchestrator.initializeParallelExecution(prd);
+			const result = getOrchestrator().initializeParallelExecution(prd);
 
 			expect(result.isValid).toBe(false);
 			expect(result.error).toContain("Invalid task dependencies");
@@ -347,10 +380,13 @@ describe("orchestrator parallel execution", () => {
 		test("skips initialization when parallel mode is disabled", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -359,10 +395,10 @@ describe("orchestrator parallel execution", () => {
 
 			writePrdFile(prd);
 
-			const result = orchestrator.initializeParallelExecution(prd);
+			const result = getOrchestrator().initializeParallelExecution(prd);
 
 			expect(result.isValid).toBe(true);
-			expect(orchestrator.getParallelExecutionGroups().length).toBe(0);
+			expect(getOrchestrator().getParallelExecutionGroups().length).toBe(0);
 		});
 	});
 
@@ -370,11 +406,14 @@ describe("orchestrator parallel execution", () => {
 		test("starts next parallel group and returns tasks", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -386,9 +425,9 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
+			getOrchestrator().initializeParallelExecution(prd);
 
-			const result = orchestrator.startNextParallelGroup();
+			const result = getOrchestrator().startNextParallelGroup();
 
 			expect(result.started).toBe(true);
 			expect(result.groupIndex).toBe(0);
@@ -399,11 +438,14 @@ describe("orchestrator parallel execution", () => {
 		test("returns false when no more groups available", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 10 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 10 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -411,12 +453,12 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
-			orchestrator.startNextParallelGroup();
+			getOrchestrator().initializeParallelExecution(prd);
+			getOrchestrator().startNextParallelGroup();
 
-			orchestrator.recordParallelTaskComplete("task-1", "Task 1", true);
+			getOrchestrator().recordParallelTaskComplete("task-1", "Task 1", true);
 
-			const result = orchestrator.startNextParallelGroup();
+			const result = getOrchestrator().startNextParallelGroup();
 
 			expect(result.started).toBe(false);
 			expect(result.groupIndex).toBe(-1);
@@ -427,11 +469,14 @@ describe("orchestrator parallel execution", () => {
 		test("tracks task completion within a group", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 3 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 3 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -442,14 +487,14 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
-			orchestrator.startNextParallelGroup();
+			getOrchestrator().initializeParallelExecution(prd);
+			getOrchestrator().startNextParallelGroup();
 
-			const result1 = orchestrator.recordParallelTaskComplete("task-1", "Task 1", true);
+			const result1 = getOrchestrator().recordParallelTaskComplete("task-1", "Task 1", true);
 
 			expect(result1.groupComplete).toBe(false);
 
-			const result2 = orchestrator.recordParallelTaskComplete("task-2", "Task 2", true);
+			const result2 = getOrchestrator().recordParallelTaskComplete("task-2", "Task 2", true);
 
 			expect(result2.groupComplete).toBe(true);
 			expect(result2.allSucceeded).toBe(true);
@@ -458,11 +503,14 @@ describe("orchestrator parallel execution", () => {
 		test("tracks failed tasks separately", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 3 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 3 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -473,11 +521,11 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
-			orchestrator.startNextParallelGroup();
+			getOrchestrator().initializeParallelExecution(prd);
+			getOrchestrator().startNextParallelGroup();
 
-			orchestrator.recordParallelTaskComplete("task-1", "Task 1", true);
-			const result = orchestrator.recordParallelTaskComplete(
+			getOrchestrator().recordParallelTaskComplete("task-1", "Task 1", true);
+			const result = getOrchestrator().recordParallelTaskComplete(
 				"task-2",
 				"Task 2",
 				false,
@@ -493,11 +541,14 @@ describe("orchestrator parallel execution", () => {
 		test("returns accurate summary", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 2 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -516,17 +567,17 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
+			getOrchestrator().initializeParallelExecution(prd);
 
-			const summaryBefore = orchestrator.getParallelExecutionSummary();
+			const summaryBefore = getOrchestrator().getParallelExecutionSummary();
 
 			expect(summaryBefore.totalGroups).toBeGreaterThan(0);
 			expect(summaryBefore.completedGroups).toBe(0);
 			expect(summaryBefore.isActive).toBe(false);
 
-			orchestrator.startNextParallelGroup();
+			getOrchestrator().startNextParallelGroup();
 
-			const summaryDuring = orchestrator.getParallelExecutionSummary();
+			const summaryDuring = getOrchestrator().getParallelExecutionSummary();
 
 			expect(summaryDuring.isActive).toBe(true);
 			expect(summaryDuring.currentGroupIndex).toBe(0);
@@ -535,11 +586,14 @@ describe("orchestrator parallel execution", () => {
 		test("hasMoreParallelGroups returns correct value", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 10 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 10 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -547,14 +601,14 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
+			getOrchestrator().initializeParallelExecution(prd);
 
-			expect(orchestrator.hasMoreParallelGroups()).toBe(true);
+			expect(getOrchestrator().hasMoreParallelGroups()).toBe(true);
 
-			orchestrator.startNextParallelGroup();
-			orchestrator.recordParallelTaskComplete("task-1", "Task 1", true);
+			getOrchestrator().startNextParallelGroup();
+			getOrchestrator().recordParallelTaskComplete("task-1", "Task 1", true);
 
-			expect(orchestrator.hasMoreParallelGroups()).toBe(false);
+			expect(getOrchestrator().hasMoreParallelGroups()).toBe(false);
 		});
 	});
 
@@ -562,11 +616,14 @@ describe("orchestrator parallel execution", () => {
 		test("disables parallel mode and resets state", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 4 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 4 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -577,30 +634,33 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
+			getOrchestrator().initializeParallelExecution(prd);
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(true);
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(true);
 
-			orchestrator.disableParallelExecution();
+			getOrchestrator().disableParallelExecution();
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(false);
-			expect(orchestrator.getParallelExecutionGroups().length).toBe(0);
-			expect(orchestrator.getCurrentParallelGroup()).toBeNull();
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(false);
+			expect(getOrchestrator().getParallelExecutionGroups().length).toBe(0);
+			expect(getOrchestrator().getCurrentParallelGroup()).toBeNull();
 		});
 
 		test("is idempotent when already disabled", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+				},
+				createMockCallbacks(),
+			);
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(false);
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(false);
 
-			orchestrator.disableParallelExecution();
+			getOrchestrator().disableParallelExecution();
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(false);
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(false);
 		});
 	});
 
@@ -608,11 +668,14 @@ describe("orchestrator parallel execution", () => {
 		test("resets all parallel execution state on cleanup", () => {
 			const config: RalphConfig = { agent: "cursor" };
 
-			orchestrator.initialize({
-				config,
-				iterations: 5,
-				parallelExecution: { enabled: true, maxConcurrentTasks: 4 },
-			});
+			getOrchestrator().initialize(
+				{
+					config,
+					iterations: 5,
+					parallelExecution: { enabled: true, maxConcurrentTasks: 4 },
+				},
+				createMockCallbacks(),
+			);
 
 			const prd: Prd = {
 				project: "Test",
@@ -620,14 +683,14 @@ describe("orchestrator parallel execution", () => {
 			};
 
 			writePrdFile(prd);
-			orchestrator.initializeParallelExecution(prd);
-			orchestrator.startNextParallelGroup();
+			getOrchestrator().initializeParallelExecution(prd);
+			getOrchestrator().startNextParallelGroup();
 
-			orchestrator.cleanup();
+			getOrchestrator().cleanup();
 
-			expect(orchestrator.isParallelModeEnabled()).toBe(false);
-			expect(orchestrator.getParallelExecutionGroups().length).toBe(0);
-			expect(orchestrator.getCurrentParallelGroup()).toBeNull();
+			expect(getOrchestrator().isParallelModeEnabled()).toBe(false);
+			expect(getOrchestrator().getParallelExecutionGroups().length).toBe(0);
+			expect(getOrchestrator().getCurrentParallelGroup()).toBeNull();
 		});
 	});
 });

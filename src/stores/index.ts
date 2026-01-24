@@ -7,4 +7,3 @@ export {
 	useAppStore,
 } from "./appStore.ts";
 export { useIterationStore } from "./iterationStore.ts";
-export { orchestrator } from "./orchestrator.ts";

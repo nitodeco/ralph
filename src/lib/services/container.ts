@@ -5,6 +5,7 @@ import type { GitProviderService } from "./git-provider/types.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
 import type { HandlerCoordinator } from "./handler-coordinator/types.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
+import type { Orchestrator } from "./orchestrator/types.ts";
 import type { ParallelExecutionManager } from "./parallel-execution-manager/types.ts";
 import type { PrdService } from "./prd/types.ts";
 import type { ProjectRegistryService } from "./project-registry/types.ts";
@@ -28,6 +29,7 @@ export interface ServiceContainer {
 	parallelExecutionManager: ParallelExecutionManager;
 	branchModeManager: BranchModeManager;
 	handlerCoordinator: HandlerCoordinator;
+	orchestrator: Orchestrator;
 	sleepPrevention: SleepPreventionService;
 	usageStatistics: UsageStatisticsService;
 	gitBranch: GitBranchService;
@@ -124,4 +126,8 @@ export function getBranchModeManager(): BranchModeManager {
 
 export function getHandlerCoordinator(): HandlerCoordinator {
 	return getServices().handlerCoordinator;
+}
+
+export function getOrchestrator(): Orchestrator {
+	return getServices().orchestrator;
 }

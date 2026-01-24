@@ -8,6 +8,7 @@ import { sendNotifications } from "@/lib/notifications.ts";
 import { isGitRepository } from "@/lib/paths.ts";
 import {
 	getConfigService,
+	getOrchestrator,
 	getPrdService,
 	getProjectRegistryService,
 	getSessionService,
@@ -27,7 +28,6 @@ import type {
 } from "@/types.ts";
 import { useAgentStore } from "./agentStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
-import { orchestrator } from "./orchestrator.ts";
 
 interface AppStoreState {
 	appState: AppState;
@@ -236,7 +236,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		iterationStore.setFullMode(full === true);
 		iterationStore.setStartTime(Date.now());
 
-		const { session: newSession } = orchestrator.startSession(loadedPrd, totalIters);
+		const { session: newSession } = getOrchestrator().startSession(loadedPrd, totalIters);
 
 		set({ currentSession: newSession });
 
@@ -321,7 +321,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 		iterationStore.setTotal(1);
 		iterationStore.setStartTime(Date.now());
 
-		const { session: newSession } = orchestrator.startSession(loadedPrd, 1);
+		const { session: newSession } = getOrchestrator().startSession(loadedPrd, 1);
 
 		set({ currentSession: newSession });
 
@@ -367,7 +367,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 			isInGitRepository: isInGitRepo,
 		});
 
-		const { session: resumedSession } = orchestrator.resumeSession(state.pendingSession, loadedPrd);
+		const { session: resumedSession } = getOrchestrator().resumeSession(
+			state.pendingSession,
+			loadedPrd,
+		);
 
 		const iterationStore = useIterationStore.getState();
 		const resumeFromIteration = state.pendingSession.currentIteration + 1;
@@ -463,7 +466,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
 	handleFatalError: (error: string) => {
 		const state = get();
-		const stoppedSession = orchestrator.handleFatalError(error, state.prd, state.currentSession);
+		const stoppedSession = getOrchestrator().handleFatalError(
+			error,
+			state.prd,
+			state.currentSession,
+		);
 
 		if (stoppedSession) {
 			set({ currentSession: stoppedSession });
@@ -625,13 +632,47 @@ export function setupIterationCallbacks(
 ): SetupIterationCallbacksResult {
 	const loadedConfig = getConfigService().get();
 	const effectiveMaxRuntimeMs = maxRuntimeMs ?? loadedConfig.maxRuntimeMs;
+	const orchestrator = getOrchestrator();
 
-	orchestrator.initialize({
-		config: loadedConfig,
-		iterations,
-		maxRuntimeMs: effectiveMaxRuntimeMs,
-		skipVerification,
-	});
+	orchestrator.initialize(
+		{
+			config: loadedConfig,
+			iterations,
+			maxRuntimeMs: effectiveMaxRuntimeMs,
+			skipVerification,
+		},
+		{
+			onPrdUpdate: (prd) => {
+				useAppStore.setState({ prd });
+			},
+			onRestartIteration: () => {
+				useIterationStore.getState().restartCurrentIteration();
+			},
+			onVerificationStateChange: (isVerifying, result) => {
+				useAppStore.setState({ isVerifying, lastVerificationResult: result });
+			},
+			onIterationComplete: (allTasksDone, hasPendingTasks) => {
+				const iterationStore = useIterationStore.getState();
+
+				iterationStore.markIterationComplete(allTasksDone, hasPendingTasks);
+			},
+			onFatalError: (error, prd, currentSession) => {
+				const stoppedSession = orchestrator.handleFatalError(error, prd, currentSession);
+
+				if (stoppedSession) {
+					useAppStore.setState({ currentSession: stoppedSession });
+				}
+
+				useAppStore.setState({ appState: "error" });
+			},
+			onAppStateChange: (state) => {
+				useAppStore.setState({ appState: state });
+			},
+			setMaxRuntimeMs: (runtimeMs) => {
+				useIterationStore.getState().setMaxRuntimeMs(runtimeMs);
+			},
+		},
+	);
 	orchestrator.setupIterationCallbacks();
 
 	if (orchestrator.isBranchModeEnabled()) {

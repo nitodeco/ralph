@@ -1,6 +1,7 @@
 import { useEffect } from "react";
+import { getOrchestrator } from "@/lib/services/index.ts";
 import { checkForUpdateOnStartup } from "@/lib/update.ts";
-import { orchestrator, setupIterationCallbacks, useAppStore } from "@/stores/index.ts";
+import { setupIterationCallbacks, useAppStore } from "@/stores/index.ts";
 import type { ActiveView, AppState, Session, SetManualTaskResult } from "@/types.ts";
 
 interface UseSessionLifecycleParams {
@@ -129,7 +130,7 @@ export function useSessionLifecycle(
 
 	useEffect(() => {
 		return () => {
-			orchestrator.cleanup();
+			getOrchestrator().cleanup();
 		};
 	}, []);
 }
