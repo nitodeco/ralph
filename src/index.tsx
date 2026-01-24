@@ -55,7 +55,6 @@ import {
 	printProjects,
 	printRecentSessions,
 	printRules,
-	printStats,
 	printStatus,
 	printTaskList,
 	printTaskShow,
@@ -445,9 +444,6 @@ function main(): void {
 		})
 		.with("status", () => {
 			printStatus(VERSION, verbose);
-		})
-		.with("stats", () => {
-			printStats(VERSION);
 		})
 		.with("list", () => {
 			printList(VERSION, json, verbose);

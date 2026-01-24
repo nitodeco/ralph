@@ -49,7 +49,6 @@ export {
 	printProjects,
 	printRecentSessions,
 	printRules,
-	printStats,
 	printStatus,
 	printTaskList,
 	printTaskShow,

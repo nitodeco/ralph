@@ -136,10 +136,10 @@ describe("parseArgs", () => {
 		expect(result.command).toBe("list");
 	});
 
-	test("parses stats command", () => {
-		const result = parseArgs(["node", "ralph", "stats"]);
+	test("parses usage command", () => {
+		const result = parseArgs(["node", "ralph", "usage"]);
 
-		expect(result.command).toBe("stats");
+		expect(result.command).toBe("usage");
 	});
 
 	test("parses archive command", () => {

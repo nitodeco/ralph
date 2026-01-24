@@ -24,7 +24,7 @@ Commands:
   guardrails        View and manage prompt guardrails
   analyze           Analyze failure patterns and get suggestions
   memory            View and manage session memory (lessons, patterns, notes)
-  usage             View usage statistics (sessions, iterations, tasks)
+  usage             View usage statistics (lifetime stats, sessions, daily usage)
   projects          View and manage all registered Ralph projects
   migrate           Migrate local .ralph directory to global storage
   setup             Configure global preferences (agent, PRD format)
@@ -74,6 +74,12 @@ GitHub Subcommands:
   github                   Show GitHub integration status (default)
   github set-token <token> Set GitHub personal access token (legacy)
   github clear-token       Remove GitHub credentials
+
+Usage Subcommands:
+  usage                    Show full usage statistics (default)
+  usage summary            Show condensed usage summary
+  usage sessions [n]       Show recent sessions (default: 10)
+  usage daily [n]          Show daily usage (default: 7 days)
 
 Options:
   -b, --background       Run Ralph in background/daemon mode (detached from terminal)
