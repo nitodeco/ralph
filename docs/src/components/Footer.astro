@@ -22,7 +22,12 @@ const FOOTER_NAV = [
             {...(item.isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           >
             {item.label}
-            {item.isExternal && <span class="ml-1" aria-hidden="true">↗</span>}
+            {item.isExternal && (
+              <>
+                <span class="ml-1" aria-hidden="true">↗</span>
+                <span class="sr-only">(opens in new tab)</span>
+              </>
+            )}
           </a>
         ))}
       </nav>

@@ -21,6 +21,9 @@ const externalProps = isExternal ? { target: "_blank", rel: "noopener noreferrer
 >
   <slot />
   {isExternal && (
-    <span class="inline-block ml-1" aria-hidden="true">↗</span>
+    <>
+      <span class="inline-block ml-1" aria-hidden="true">↗</span>
+      <span class="sr-only">(opens in new tab)</span>
+    </>
   )}
 </a>

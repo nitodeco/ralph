@@ -67,7 +67,12 @@ const NAV_ITEMS = [
                 {...(item.isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               >
                 {item.label}
-                {item.isExternal && <span class="ml-1" aria-hidden="true">↗</span>}
+                {item.isExternal && (
+                  <>
+                    <span class="ml-1" aria-hidden="true">↗</span>
+                    <span class="sr-only">(opens in new tab)</span>
+                  </>
+                )}
               </a>
             </li>
           ))}
@@ -91,6 +96,34 @@ const NAV_ITEMS = [
 
     if (!mobileNav || !mobileNavPanel || !mobileNavBackdrop) return;
 
+    const getFocusableElements = (): HTMLElement[] => {
+      const focusableSelectors = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+      return Array.from(mobileNavPanel?.querySelectorAll(focusableSelectors) ?? []) as HTMLElement[];
+    };
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || mobileNav?.classList.contains("hidden")) {
+        return;
+      }
+
+      const focusableElements = getFocusableElements();
+      const firstElement = focusableElements.at(0);
+      const lastElement = focusableElements.at(-1);
+
+      if (!firstElement || !lastElement) {
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    };
+
     const openMenu = () => {
       mobileNav.classList.remove("hidden");
       document.body.style.overflow = "hidden";
@@ -100,6 +133,7 @@ const NAV_ITEMS = [
         mobileNavBackdrop.classList.add("opacity-100");
       });
       closeButton?.focus();
+      document.addEventListener("keydown", trapFocus);
     };
 
     const closeMenu = () => {
@@ -107,6 +141,7 @@ const NAV_ITEMS = [
       mobileNavBackdrop.classList.remove("opacity-100");
       mobileNavBackdrop.classList.add("opacity-0");
       document.body.style.overflow = "";
+      document.removeEventListener("keydown", trapFocus);
       setTimeout(() => {
         mobileNav.classList.add("hidden");
       }, 300);
