@@ -98,6 +98,7 @@ This shows merged settings from both global and project levels.
   "memory": {
     "maxOutputBufferBytes": 5242880,
     "memoryWarningThresholdMb": 500,
+    "memoryThresholdMb": 1024,
     "enableGarbageCollectionHints": true
   }
 }
@@ -107,6 +108,7 @@ This shows merged settings from both global and project levels.
 |--------|---------|-------------|
 | `maxOutputBufferBytes` | 5242880 | Max agent output buffer (5 MB) |
 | `memoryWarningThresholdMb` | 500 | Memory warning threshold |
+| `memoryThresholdMb` | 1024 | Memory threshold that stops sessions (MB) |
 | `enableGarbageCollectionHints` | true | Enable GC hints |
 
 ## Example Configuration

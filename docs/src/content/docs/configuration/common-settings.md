@@ -197,6 +197,20 @@ Maximum size of buffered agent output. Default is 5 MB. Increase for verbose age
 
 Ralph warns when process memory exceeds this threshold.
 
+### Memory Threshold
+
+```json
+{
+  "memory": {
+    "memoryThresholdMb": 1024
+  }
+}
+```
+
+Ralph automatically stops sessions when process memory (RSS) exceeds this threshold. Default is 1024 MB. Sessions stopped due to memory threshold exit with code 137.
+
+This prevents runaway sessions from consuming excessive system resources. Set a higher value for memory-intensive projects or a lower value for resource-constrained environments.
+
 ## Environment-Specific Configs
 
 ### Development

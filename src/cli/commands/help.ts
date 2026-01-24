@@ -33,6 +33,7 @@ Commands:
 
 Analyze Subcommands:
   analyze           Show failure pattern analysis (default)
+  analyze debt      Show technical debt review
   analyze export    Export analysis as JSON
   analyze clear     Clear failure history
 
