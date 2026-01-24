@@ -1,3 +1,4 @@
+import type { BranchModeManager } from "./branch-mode-manager/types.ts";
 import type { ConfigService } from "./config/types.ts";
 import type { GitBranchService } from "./git-branch/types.ts";
 import type { GitProviderService } from "./git-provider/types.ts";
@@ -24,6 +25,7 @@ export interface ServiceContainer {
 	sessionManager: SessionManager;
 	iterationCoordinator: IterationCoordinator;
 	parallelExecutionManager: ParallelExecutionManager;
+	branchModeManager: BranchModeManager;
 	sleepPrevention: SleepPreventionService;
 	usageStatistics: UsageStatisticsService;
 	gitBranch: GitBranchService;
@@ -112,4 +114,8 @@ export function getIterationCoordinator(): IterationCoordinator {
 
 export function getParallelExecutionManager(): ParallelExecutionManager {
 	return getServices().parallelExecutionManager;
+}
+
+export function getBranchModeManager(): BranchModeManager {
+	return getServices().branchModeManager;
 }

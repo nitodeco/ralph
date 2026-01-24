@@ -1,5 +1,7 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createBranchModeManager } from "./branch-mode-manager/implementation.ts";
+import type { BranchModeManager } from "./branch-mode-manager/types.ts";
 import { createConfigService } from "./config/implementation.ts";
 import type { ConfigService } from "./config/types.ts";
 import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
@@ -272,6 +274,7 @@ export function bootstrapServices(): void {
 		sessionManager: createSessionManager(sessionManagerDeps),
 		iterationCoordinator: createIterationCoordinator(iterationCoordinatorDeps),
 		parallelExecutionManager: createParallelExecutionManager(parallelExecutionManagerDeps),
+		branchModeManager: createBranchModeManager(),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
@@ -290,6 +293,7 @@ export interface TestServiceOverrides {
 	sessionManager?: Partial<SessionManager>;
 	iterationCoordinator?: Partial<IterationCoordinator>;
 	parallelExecutionManager?: Partial<ParallelExecutionManager>;
+	branchModeManager?: Partial<BranchModeManager>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
@@ -820,6 +824,25 @@ function createMockParallelExecutionManager(
 	};
 }
 
+function createMockBranchModeManager(
+	overrides: Partial<BranchModeManager> = {},
+): BranchModeManager {
+	return {
+		isEnabled: () => false,
+		getConfig: () => null,
+		getBaseBranch: () => null,
+		getCurrentTaskBranch: () => null,
+		setEnabled: () => {},
+		setConfig: () => {},
+		initialize: () => ({ isValid: true }),
+		createTaskBranch: () => ({ success: true }),
+		completeTaskBranch: async () => ({ success: true }),
+		createPullRequestForBranch: async () => ({ success: true }),
+		reset: () => {},
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -836,6 +859,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		parallelExecutionManager: createMockParallelExecutionManager(
 			overrides.parallelExecutionManager,
 		),
+		branchModeManager: createMockBranchModeManager(overrides.branchModeManager),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),

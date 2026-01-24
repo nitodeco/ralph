@@ -12,6 +12,14 @@ export {
 	type TestServiceOverrides,
 	teardownTestServices,
 } from "./bootstrap.ts";
+export { createBranchModeManager } from "./branch-mode-manager/implementation.ts";
+export type {
+	BranchModeManager,
+	CompleteTaskBranchResult,
+	CreatePullRequestResult,
+	CreateTaskBranchResult,
+	InitializeBranchModeResult,
+} from "./branch-mode-manager/types.ts";
 export {
 	AGENT_COMMANDS,
 	CONFIG_DEFAULTS,
@@ -57,6 +65,7 @@ export type {
 } from "./config/types.ts";
 export { isPartialRalphConfig, isRalphConfig, validateConfig } from "./config/validation.ts";
 export {
+	getBranchModeManager,
 	getConfigService,
 	getGitBranchService,
 	getGitProviderService,

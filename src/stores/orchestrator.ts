@@ -4,12 +4,10 @@ import { eventBus } from "@/lib/events.ts";
 import { DecompositionHandler, VerificationHandler } from "@/lib/handlers/index.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
-import { appendProgress } from "@/lib/progress.ts";
 import type { BranchModeConfig } from "@/lib/services/config/types.ts";
 import {
+	getBranchModeManager,
 	getConfigService,
-	getGitBranchService,
-	getGitProviderService,
 	getIterationCoordinator,
 	getParallelExecutionManager,
 	getPrdService,
@@ -55,11 +53,6 @@ class SessionOrchestrator {
 
 	private parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
 
-	private branchModeEnabled = false;
-	private branchModeConfig: BranchModeConfig | null = null;
-	private baseBranch: string | null = null;
-	private currentTaskBranch: string | null = null;
-
 	initialize(options: OrchestratorConfig): void {
 		if (this.initialized) {
 			this.cleanup();
@@ -72,11 +65,13 @@ class SessionOrchestrator {
 		this.parallelConfig = options.parallelExecution ?? { enabled: false, maxConcurrentTasks: 1 };
 		this.initialized = true;
 
-		this.branchModeEnabled =
+		const branchModeManager = getBranchModeManager();
+		const branchModeEnabled =
 			options.config.workflowMode === "branches" || (options.config.branchMode?.enabled ?? false);
-		this.branchModeConfig = options.config.branchMode ?? null;
-		this.baseBranch = null;
-		this.currentTaskBranch = null;
+
+		branchModeManager.setEnabled(branchModeEnabled);
+		branchModeManager.setConfig(options.config.branchMode ?? null);
+
 		this.decompositionHandler = new DecompositionHandler({
 			config: options.config,
 			onPrdUpdate: (prd) => {
@@ -103,319 +98,40 @@ class SessionOrchestrator {
 	}
 
 	isBranchModeEnabled(): boolean {
-		return this.branchModeEnabled;
+		return getBranchModeManager().isEnabled();
 	}
 
 	getBranchModeConfig(): BranchModeConfig | null {
-		return this.branchModeConfig;
+		return getBranchModeManager().getConfig();
 	}
 
 	getCurrentTaskBranch(): string | null {
-		return this.currentTaskBranch;
+		return getBranchModeManager().getCurrentTaskBranch();
 	}
 
 	getBaseBranch(): string | null {
-		return this.baseBranch;
+		return getBranchModeManager().getBaseBranch();
 	}
 
 	initializeBranchMode(): { isValid: boolean; error?: string } {
-		if (!this.branchModeEnabled) {
-			return { isValid: true };
-		}
-
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const gitBranchService = getGitBranchService();
-		const workingStatus = gitBranchService.getWorkingDirectoryStatus();
-
-		if (!workingStatus.isClean) {
-			const errorMessage =
-				"Working directory has uncommitted changes. Please commit or stash changes before using branch mode.";
-
-			logger.warn("Branch mode initialization failed: dirty working directory", {
-				modifiedFiles: workingStatus.modifiedFiles,
-				untrackedFiles: workingStatus.untrackedFiles,
-			});
-
-			return { isValid: false, error: errorMessage };
-		}
-
-		const branchInfo = gitBranchService.getBranchInfo();
-
-		this.baseBranch = branchInfo.currentBranch;
-
-		logger.info("Branch mode initialized", {
-			baseBranch: this.baseBranch,
-			hasRemote: branchInfo.hasRemote,
-		});
-
-		appendProgress(`=== Branch Mode Enabled ===\nBase branch: ${this.baseBranch}\n`);
-
-		return { isValid: true };
+		return getBranchModeManager().initialize();
 	}
 
 	createTaskBranch(taskTitle: string, taskIndex: number): { success: boolean; error?: string } {
-		if (!this.branchModeEnabled || !this.branchModeConfig) {
-			return { success: true };
-		}
-
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const gitBranchService = getGitBranchService();
-		const result = gitBranchService.createAndCheckoutTaskBranch(
-			taskTitle,
-			taskIndex,
-			this.branchModeConfig,
-		);
-
-		if (result.status === "error") {
-			logger.error("Failed to create task branch", {
-				taskTitle,
-				taskIndex,
-				error: result.error,
-			});
-
-			return { success: false, error: result.error };
-		}
-
-		this.currentTaskBranch = result.branchName ?? null;
-
-		logger.info("Created and checked out task branch", {
-			taskTitle,
-			taskIndex,
-			branchName: this.currentTaskBranch,
-		});
-
-		appendProgress(`Switched to branch: ${this.currentTaskBranch}\n`);
-
-		return { success: true };
+		return getBranchModeManager().createTaskBranch(taskTitle, taskIndex);
 	}
 
 	async completeTaskBranch(
 		prd: Prd | null,
 	): Promise<{ success: boolean; error?: string; prUrl?: string }> {
-		if (!this.branchModeEnabled || !this.branchModeConfig || !this.currentTaskBranch) {
-			return { success: true };
-		}
-
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const gitBranchService = getGitBranchService();
-		const branchName = this.currentTaskBranch;
-		const shouldPush = this.branchModeConfig.pushAfterCommit ?? true;
-		const shouldReturn = this.branchModeConfig.returnToBaseBranch ?? true;
-		let wasPushed = false;
-
-		if (shouldPush) {
-			const pushResult = gitBranchService.pushBranch(branchName);
-
-			if (pushResult.status === "error") {
-				logger.warn("Failed to push branch", {
-					branchName,
-					error: pushResult.error,
-				});
-				appendProgress(`Warning: Failed to push branch ${branchName}: ${pushResult.error}\n`);
-			} else if (pushResult.status === "success") {
-				logger.info("Pushed branch", { branchName });
-				appendProgress(`Pushed branch: ${branchName}\n`);
-				wasPushed = true;
-			} else {
-				appendProgress(`Skipped push: ${pushResult.message}\n`);
-			}
-		}
-
-		let prUrl: string | undefined;
-
-		if (wasPushed) {
-			const prResult = await this.createPullRequestForBranch(branchName, prd);
-
-			if (prResult.prUrl) {
-				prUrl = prResult.prUrl;
-			}
-		}
-
-		if (shouldReturn && this.baseBranch) {
-			const returnResult = gitBranchService.returnToBaseBranch(this.baseBranch);
-
-			if (returnResult.status === "error") {
-				logger.error("Failed to return to base branch", {
-					baseBranch: this.baseBranch,
-					error: returnResult.error,
-				});
-
-				return { success: false, error: returnResult.error };
-			}
-
-			logger.info("Returned to base branch", { baseBranch: this.baseBranch });
-			appendProgress(`Returned to base branch: ${this.baseBranch}\n`);
-		}
-
-		this.currentTaskBranch = null;
-
-		return { success: true, prUrl };
+		return getBranchModeManager().completeTaskBranch(prd);
 	}
 
 	async createPullRequestForBranch(
 		branchName: string,
 		prd: Prd | null,
 	): Promise<{ success: boolean; prUrl?: string; error?: string }> {
-		if (!this.branchModeEnabled || !this.baseBranch) {
-			return { success: false, error: "Branch mode not enabled or no base branch" };
-		}
-
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const gitProviderConfig = loadedConfig.gitProvider;
-
-		if (!gitProviderConfig?.autoCreatePr) {
-			logger.info("Auto PR creation disabled, skipping", { branchName });
-
-			return { success: true };
-		}
-
-		const gitBranchService = getGitBranchService();
-		const remoteUrl = gitBranchService.getRemoteUrl();
-
-		if (!remoteUrl) {
-			logger.warn("No remote URL found, cannot create PR", { branchName });
-
-			return { success: false, error: "No remote URL configured" };
-		}
-
-		const gitProviderService = getGitProviderService();
-		const remoteInfo = gitProviderService.detectProvider(remoteUrl);
-
-		if (remoteInfo.provider === "none") {
-			logger.warn("Unknown git provider, cannot create PR", { remoteUrl });
-
-			return { success: false, error: `Unknown git provider for remote: ${remoteUrl}` };
-		}
-
-		const provider = gitProviderService.getProvider(remoteInfo);
-
-		if (!provider) {
-			logger.warn("Git provider not configured", {
-				provider: remoteInfo.provider,
-				branchName,
-			});
-
-			return { success: false, error: `${remoteInfo.provider} provider not configured` };
-		}
-
-		if (!provider.isConfigured) {
-			logger.warn("Git provider token not configured", {
-				provider: remoteInfo.provider,
-				branchName,
-			});
-
-			return {
-				success: false,
-				error: `${remoteInfo.provider} token not configured`,
-			};
-		}
-
-		const prTitle = prd?.project
-			? `[Ralph] ${prd.project}: ${branchName}`
-			: `[Ralph] ${branchName}`;
-
-		const prBody = this.generatePrBody(prd, branchName);
-
-		try {
-			const result = await provider.createPullRequest({
-				title: prTitle,
-				body: prBody,
-				head: branchName,
-				base: this.baseBranch,
-				isDraft: gitProviderConfig.prDraft ?? false,
-				labels: gitProviderConfig.prLabels,
-				reviewers: gitProviderConfig.prReviewers,
-			});
-
-			if (!result.success || !result.data) {
-				logger.error("Failed to create PR", {
-					branchName,
-					error: result.error,
-				});
-
-				eventBus.emit("session:pr_failed", {
-					branchName,
-					baseBranch: this.baseBranch,
-					error: result.error ?? "Unknown error",
-				});
-
-				return { success: false, error: result.error };
-			}
-
-			logger.info("Created pull request", {
-				prNumber: result.data.number,
-				prUrl: result.data.url,
-				branchName,
-				baseBranch: this.baseBranch,
-			});
-
-			appendProgress(
-				`\n=== Pull Request Created ===\nPR #${result.data.number}: ${result.data.url}\n`,
-			);
-
-			eventBus.emit("session:pr_created", {
-				prNumber: result.data.number,
-				prUrl: result.data.url,
-				branchName,
-				baseBranch: this.baseBranch,
-				isDraft: result.data.isDraft,
-			});
-
-			return { success: true, prUrl: result.data.url };
-		} catch (error) {
-			const errorMessage = getErrorMessage(error);
-
-			logger.error("Failed to create PR", {
-				branchName,
-				error: errorMessage,
-			});
-
-			eventBus.emit("session:pr_failed", {
-				branchName,
-				baseBranch: this.baseBranch,
-				error: errorMessage,
-			});
-
-			return { success: false, error: errorMessage };
-		}
-	}
-
-	private generatePrBody(prd: Prd | null, branchName: string): string {
-		const lines: string[] = ["## Summary", ""];
-
-		if (prd?.project) {
-			lines.push(`Automated PR created by Ralph for project: **${prd.project}**`);
-		} else {
-			lines.push("Automated PR created by Ralph.");
-		}
-
-		lines.push("");
-		lines.push(`Branch: \`${branchName}\``);
-
-		if (prd?.tasks && prd.tasks.length > 0) {
-			const completedTasks = prd.tasks.filter((task) => task.done);
-			const totalTasks = prd.tasks.length;
-
-			lines.push("");
-			lines.push("## Tasks Completed");
-			lines.push("");
-			lines.push(`${completedTasks.length} / ${totalTasks} tasks completed.`);
-			lines.push("");
-
-			for (const task of completedTasks) {
-				lines.push(`- [x] ${task.title}`);
-			}
-		}
-
-		lines.push("");
-		lines.push("---");
-		lines.push("*This PR was automatically created by [Ralph](https://github.com/your-org/ralph)*");
-
-		return lines.join("\n");
+		return getBranchModeManager().createPullRequestForBranch(branchName, prd);
 	}
 
 	isParallelModeEnabled(): boolean {
@@ -606,12 +322,14 @@ class SessionOrchestrator {
 			throw new Error("Orchestrator must be initialized before setting up iteration callbacks");
 		}
 
+		const branchModeManager = getBranchModeManager();
+
 		getIterationCoordinator().setupIterationCallbacks({
 			iterations: this.iterations,
 			config: this.config,
 			skipVerification: this.skipVerification,
-			branchModeEnabled: this.branchModeEnabled,
-			branchModeConfig: this.branchModeConfig,
+			branchModeEnabled: branchModeManager.isEnabled(),
+			branchModeConfig: branchModeManager.getConfig(),
 		});
 	}
 
@@ -649,12 +367,9 @@ class SessionOrchestrator {
 
 		getIterationCoordinator().clearState();
 		getParallelExecutionManager().reset();
+		getBranchModeManager().reset();
 
 		this.parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
-		this.branchModeEnabled = false;
-		this.branchModeConfig = null;
-		this.baseBranch = null;
-		this.currentTaskBranch = null;
 
 		useIterationStore.getState().clearCallbacks();
 
