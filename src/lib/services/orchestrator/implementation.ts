@@ -45,6 +45,7 @@ export function createOrchestrator(): Orchestrator {
 
 		branchModeManager.setEnabled(branchModeEnabled);
 		branchModeManager.setConfig(options.config.branchMode ?? null);
+		branchModeManager.setRalphConfig(options.config);
 
 		const handlerCoordinator = getHandlerCoordinator();
 
@@ -127,7 +128,13 @@ export function createOrchestrator(): Orchestrator {
 	}
 
 	function initializeParallelExecution(prd: Prd): { isValid: boolean; error?: string } {
-		return getParallelExecutionManager().initialize(prd, parallelConfig);
+		const parallelExecutionManager = getParallelExecutionManager();
+
+		if (config) {
+			parallelExecutionManager.setRalphConfig(config);
+		}
+
+		return parallelExecutionManager.initialize(prd, parallelConfig);
 	}
 
 	function startNextParallelGroup(): { started: boolean; groupIndex: number; tasks: PrdTask[] } {
@@ -190,11 +197,23 @@ export function createOrchestrator(): Orchestrator {
 	}
 
 	function startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
-		return getSessionManager().startSession(prd, totalIterations);
+		const sessionManager = getSessionManager();
+
+		if (config) {
+			sessionManager.setConfig(config);
+		}
+
+		return sessionManager.startSession(prd, totalIterations);
 	}
 
 	function resumeSession(pendingSession: Session, prd: Prd | null): ResumeSessionResult {
-		return getSessionManager().resumeSession(pendingSession, prd);
+		const sessionManager = getSessionManager();
+
+		if (config) {
+			sessionManager.setConfig(config);
+		}
+
+		return sessionManager.resumeSession(pendingSession, prd);
 	}
 
 	function handleFatalError(

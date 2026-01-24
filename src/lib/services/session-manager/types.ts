@@ -1,3 +1,4 @@
+import type { RalphConfig } from "@/types.ts";
 import type { Prd } from "../prd/types.ts";
 import type { Session } from "../session/types.ts";
 
@@ -17,6 +18,7 @@ export interface FatalErrorResult {
 }
 
 export interface SessionManager {
+	setConfig(config: RalphConfig): void;
 	startSession(prd: Prd | null, totalIterations: number): StartSessionResult;
 	resumeSession(pendingSession: Session, prd: Prd | null): ResumeSessionResult;
 	handleFatalError(

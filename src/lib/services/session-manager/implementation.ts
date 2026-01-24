@@ -7,6 +7,7 @@ import {
 import { getLogger } from "@/lib/logger.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { initializeProgressFile } from "@/lib/progress.ts";
+import type { RalphConfig } from "@/types.ts";
 import {
 	getConfigService,
 	getPrdService,
@@ -35,6 +36,12 @@ export interface SessionManagerDependencies {
 }
 
 export function createSessionManager(dependencies: SessionManagerDependencies): SessionManager {
+	let cachedConfig: RalphConfig | null = null;
+
+	function setConfig(config: RalphConfig): void {
+		cachedConfig = config;
+	}
+
 	function recordUsageStatistics(
 		session: Session,
 		prd: Prd | null,
@@ -62,8 +69,8 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 	}
 
 	function startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const sessionService = getSessionService();
 		const prdService = getPrdService();
 
@@ -85,8 +92,8 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 	}
 
 	function resumeSession(pendingSession: Session, _prd: Prd | null): ResumeSessionResult {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const sessionService = getSessionService();
 
 		const remainingIterations = pendingSession.totalIterations - pendingSession.currentIteration;
@@ -113,11 +120,11 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 	): FatalErrorResult {
 		const iterationState = dependencies.getIterationStoreState();
 		const agentStoreState = dependencies.getAgentStoreState();
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		logger.error("Fatal error occurred", { error });
-		sendNotifications(loadedConfig.notifications, "fatal_error", prd?.project, { error });
+		sendNotifications(config.notifications, "fatal_error", prd?.project, { error });
 
 		appendIterationError(iterationState.current, error, { fatal: true });
 		completeIterationLog({
@@ -144,6 +151,7 @@ export function createSessionManager(dependencies: SessionManagerDependencies): 
 	}
 
 	return {
+		setConfig,
 		startSession,
 		resumeSession,
 		handleFatalError,

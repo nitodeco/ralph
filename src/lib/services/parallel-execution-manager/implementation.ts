@@ -5,6 +5,7 @@ import {
 } from "@/lib/dependency-graph.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { appendProgress } from "@/lib/progress.ts";
+import type { RalphConfig } from "@/types.ts";
 import { getConfigService, getPrdService, getSessionService } from "../container.ts";
 import type { Prd, PrdTask } from "../prd/types.ts";
 import type { Session } from "../session/types.ts";
@@ -38,6 +39,7 @@ export function createParallelExecutionManager(
 	let parallelExecutionGroups: PrdTask[][] = [];
 	let currentGroupIndex = 0;
 	const parallelTaskResults: Map<string, ParallelTaskResult> = new Map();
+	let cachedConfig: RalphConfig | null = null;
 
 	function isEnabled(): boolean {
 		return parallelConfig.enabled;
@@ -55,12 +57,16 @@ export function createParallelExecutionManager(
 		return [...parallelExecutionGroups];
 	}
 
+	function setRalphConfig(config: RalphConfig): void {
+		cachedConfig = config;
+	}
+
 	function initialize(
 		prd: Prd,
 		config: ParallelExecutionConfig,
 	): { isValid: boolean; error?: string } {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const ralphConfig = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: ralphConfig.logFilePath });
 
 		parallelConfig = config;
 
@@ -107,8 +113,8 @@ export function createParallelExecutionManager(
 	}
 
 	function startNextGroup(): StartGroupResult {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		if (currentGroupIndex >= parallelExecutionGroups.length) {
 			logger.info("All parallel groups completed");
@@ -160,8 +166,8 @@ export function createParallelExecutionManager(
 	}
 
 	function recordTaskStart(task: PrdTask, processId: string): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		logger.info("Parallel task started", {
 			taskId: task.id,
@@ -188,8 +194,8 @@ export function createParallelExecutionManager(
 	}
 
 	function completeCurrentGroup(): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		if (!currentParallelGroup) {
 			return;
@@ -236,8 +242,8 @@ export function createParallelExecutionManager(
 		wasSuccessful: boolean,
 		error?: string,
 	): RecordTaskCompleteResult {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		if (!currentParallelGroup) {
 			logger.warn("No active parallel group when recording task completion", { taskId });
@@ -327,8 +333,8 @@ export function createParallelExecutionManager(
 	}
 
 	function disable(): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		if (!parallelConfig.enabled) {
 			return;
@@ -359,6 +365,7 @@ export function createParallelExecutionManager(
 		parallelExecutionGroups = [];
 		currentGroupIndex = 0;
 		parallelTaskResults.clear();
+		cachedConfig = null;
 	}
 
 	return {
@@ -366,6 +373,7 @@ export function createParallelExecutionManager(
 		getConfig,
 		getCurrentGroup,
 		getExecutionGroups,
+		setRalphConfig,
 		initialize,
 		startNextGroup,
 		recordTaskStart,

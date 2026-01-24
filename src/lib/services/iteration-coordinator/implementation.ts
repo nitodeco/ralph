@@ -109,6 +109,7 @@ export function createIterationCoordinator(
 	let verificationHandler: VerificationHandler | null = null;
 	let learningHandler: LearningHandler | null = null;
 	let technicalDebtHandler: TechnicalDebtHandler | null = null;
+	let cachedConfig: RalphConfig | null = null;
 
 	function logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {
 		if (retryContexts.length === 0) {
@@ -131,6 +132,8 @@ export function createIterationCoordinator(
 	function setupIterationCallbacks(options: IterationCallbackOptions): void {
 		const { iterations, config, skipVerification, branchModeEnabled, branchModeConfig } = options;
 		const iterationStore = dependencies.getIterationStoreState();
+
+		cachedConfig = config;
 
 		decompositionHandler = new DecompositionHandler({
 			config,
@@ -194,8 +197,8 @@ export function createIterationCoordinator(
 		_branchModeConfig: BranchModeConfig | null,
 	): void {
 		const appState = dependencies.getAppStoreState();
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const prdService = getPrdService();
 
 		logger.logIterationStart(iterationNumber, totalIterations);
@@ -225,7 +228,7 @@ export function createIterationCoordinator(
 			task: taskWithIndex
 				? { title: taskWithIndex.title, index: taskWithIndex.index, wasCompleted: false }
 				: null,
-			agentType: loadedConfig.agent,
+			agentType: config.agent,
 		});
 
 		if (branchModeEnabled && taskWithIndex) {
@@ -256,8 +259,8 @@ export function createIterationCoordinator(
 	): void {
 		const appState = dependencies.getAppStoreState();
 		const agentStore = dependencies.getAgentStoreState();
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const prdService = getPrdService();
 
 		logger.logIterationComplete(iterationNumber, totalIterations, agentStore.isComplete);
@@ -387,7 +390,7 @@ export function createIterationCoordinator(
 		agentStore.reset();
 
 		try {
-			const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
+			const cleanupResult = performIterationCleanup({ logFilePath: config.logFilePath });
 
 			if (cleanupResult.memoryStatus !== "ok") {
 				logger.warn("Memory cleanup completed with warnings", {
@@ -400,17 +403,17 @@ export function createIterationCoordinator(
 		}
 	}
 
-	function handleAllComplete(totalIterations: number, config: RalphConfig): void {
+	function handleAllComplete(totalIterations: number, _config: RalphConfig): void {
 		const appState = dependencies.getAppStoreState();
 
 		dependencies.stopAgent();
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		logger.logSessionComplete();
 		const currentPrd = getPrdService().reload();
 
-		sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
+		sendNotifications(config.notifications, "complete", currentPrd?.project, {
 			totalIterations,
 		});
 
@@ -440,7 +443,7 @@ export function createIterationCoordinator(
 						sessionId,
 						iterationLogs,
 						finalStatistics,
-						config.technicalDebtReview,
+						cachedConfig?.technicalDebtReview,
 					);
 				} catch (debtReviewError) {
 					logger.warn("Technical debt review failed", {
@@ -466,13 +469,13 @@ export function createIterationCoordinator(
 		const iterationState = dependencies.getIterationStoreState();
 
 		dependencies.stopAgent();
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		logger.logMaxIterationsReached(iterationState.total);
 		const currentPrd = getPrdService().reload();
 
-		sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
+		sendNotifications(config.notifications, "max_iterations", currentPrd?.project, {
 			completedIterations: iterationState.current,
 			totalIterations: iterationState.total,
 		});
@@ -495,8 +498,8 @@ export function createIterationCoordinator(
 		const iterationState = dependencies.getIterationStoreState();
 
 		dependencies.stopAgent();
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 
 		logger.info("Max runtime limit reached", {
 			maxRuntimeMs: (iterationState as { maxRuntimeMs?: number }).maxRuntimeMs,
@@ -504,7 +507,7 @@ export function createIterationCoordinator(
 		});
 		const currentPrd = getPrdService().reload();
 
-		sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
+		sendNotifications(config.notifications, "max_iterations", currentPrd?.project, {
 			completedIterations: iterationState.current,
 			totalIterations: iterationState.total,
 			reason: "max_runtime",
@@ -551,6 +554,7 @@ export function createIterationCoordinator(
 		verificationHandler = null;
 		learningHandler = null;
 		technicalDebtHandler = null;
+		cachedConfig = null;
 	}
 
 	return {

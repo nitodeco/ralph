@@ -1,6 +1,7 @@
 import { getErrorMessage } from "@/lib/errors.ts";
 import { getLogger } from "@/lib/logger.ts";
 import { appendProgress } from "@/lib/progress.ts";
+import type { RalphConfig } from "@/types.ts";
 import type { BranchModeConfig } from "../config/types.ts";
 import { getConfigService, getGitBranchService, getGitProviderService } from "../container.ts";
 import type { Prd } from "../prd/types.ts";
@@ -17,6 +18,7 @@ export function createBranchModeManager(): BranchModeManager {
 	let branchModeConfig: BranchModeConfig | null = null;
 	let baseBranch: string | null = null;
 	let currentTaskBranch: string | null = null;
+	let cachedConfig: RalphConfig | null = null;
 
 	function isEnabled(): boolean {
 		return branchModeEnabled;
@@ -42,13 +44,17 @@ export function createBranchModeManager(): BranchModeManager {
 		branchModeConfig = config;
 	}
 
+	function setRalphConfig(config: RalphConfig): void {
+		cachedConfig = config;
+	}
+
 	function initialize(): InitializeBranchModeResult {
 		if (!branchModeEnabled) {
 			return { isValid: true };
 		}
 
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const gitBranchService = getGitBranchService();
 		const workingStatus = gitBranchService.getWorkingDirectoryStatus();
 
@@ -83,8 +89,8 @@ export function createBranchModeManager(): BranchModeManager {
 			return { success: true };
 		}
 
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const gitBranchService = getGitBranchService();
 		const result = gitBranchService.createAndCheckoutTaskBranch(
 			taskTitle,
@@ -120,8 +126,8 @@ export function createBranchModeManager(): BranchModeManager {
 			return { success: true };
 		}
 
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const gitBranchService = getGitBranchService();
 		const branchName = currentTaskBranch;
 		const shouldPush = branchModeConfig.pushAfterCommit ?? true;
@@ -185,9 +191,9 @@ export function createBranchModeManager(): BranchModeManager {
 			return { success: false, error: "Branch mode not enabled or no base branch" };
 		}
 
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-		const gitProviderConfig = loadedConfig.gitProvider;
+		const config = cachedConfig ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
+		const gitProviderConfig = config.gitProvider;
 
 		if (!gitProviderConfig?.autoCreatePr) {
 			logger.info("Auto PR creation disabled, skipping", { branchName });
@@ -325,6 +331,7 @@ export function createBranchModeManager(): BranchModeManager {
 		branchModeConfig = null;
 		baseBranch = null;
 		currentTaskBranch = null;
+		cachedConfig = null;
 	}
 
 	return {
@@ -334,6 +341,7 @@ export function createBranchModeManager(): BranchModeManager {
 		getCurrentTaskBranch,
 		setEnabled,
 		setConfig,
+		setRalphConfig,
 		initialize,
 		createTaskBranch,
 		completeTaskBranch,

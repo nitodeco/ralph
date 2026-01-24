@@ -1,3 +1,4 @@
+import type { RalphConfig } from "@/types.ts";
 import type { BranchModeConfig } from "../config/types.ts";
 import type { Prd } from "../prd/types.ts";
 
@@ -31,6 +32,7 @@ export interface BranchModeManager {
 
 	setEnabled(enabled: boolean): void;
 	setConfig(config: BranchModeConfig | null): void;
+	setRalphConfig(config: RalphConfig): void;
 
 	initialize(): InitializeBranchModeResult;
 	createTaskBranch(taskTitle: string, taskIndex: number): CreateTaskBranchResult;

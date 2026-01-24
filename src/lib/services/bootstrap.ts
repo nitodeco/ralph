@@ -775,6 +775,7 @@ function createMockSessionManager(overrides: Partial<SessionManager> = {}): Sess
 	});
 
 	return {
+		setConfig: () => {},
 		startSession: (_prd, totalIterations) => ({
 			session: createMockSession(totalIterations, 0),
 			taskIndex: 0,
@@ -814,6 +815,7 @@ function createMockParallelExecutionManager(
 		getConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
 		getCurrentGroup: () => null,
 		getExecutionGroups: () => [],
+		setRalphConfig: () => {},
 		initialize: () => ({ isValid: true }),
 		startNextGroup: () => ({ started: false, groupIndex: -1, tasks: [] }),
 		recordTaskStart: () => {},
@@ -842,6 +844,7 @@ function createMockBranchModeManager(
 		getCurrentTaskBranch: () => null,
 		setEnabled: () => {},
 		setConfig: () => {},
+		setRalphConfig: () => {},
 		initialize: () => ({ isValid: true }),
 		createTaskBranch: () => ({ success: true }),
 		completeTaskBranch: async () => ({ success: true }),

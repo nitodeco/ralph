@@ -1,3 +1,4 @@
+import type { RalphConfig } from "@/types.ts";
 import type { Prd, PrdTask } from "../prd/types.ts";
 
 export interface ParallelExecutionConfig {
@@ -44,6 +45,7 @@ export interface ParallelExecutionManager {
 	getCurrentGroup(): ParallelGroupState | null;
 	getExecutionGroups(): PrdTask[][];
 
+	setRalphConfig(config: RalphConfig): void;
 	initialize(prd: Prd, config: ParallelExecutionConfig): { isValid: boolean; error?: string };
 	startNextGroup(): StartGroupResult;
 	recordTaskStart(task: PrdTask, processId: string): void;

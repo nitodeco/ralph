@@ -41,8 +41,8 @@ export function createHandlerCoordinator(): HandlerCoordinator {
 	}
 
 	function setupSubscriptions(): void {
-		const loadedConfig = getConfigService().get();
-		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const config = currentConfig?.config ?? getConfigService().get();
+		const logger = getLogger({ logFilePath: config.logFilePath });
 		const iterationCoordinator = getIterationCoordinator();
 
 		unsubscribers.push(
@@ -120,27 +120,22 @@ export function createHandlerCoordinator(): HandlerCoordinator {
 				const verificationResult = await verificationHandler.run(verificationConfig);
 
 				if (!verificationResult.passed) {
-					const loadedConfig = getConfigService().get();
+					const config = currentConfig?.config ?? getConfigService().get();
 					const reloadedPrd = prdService.reload();
 					const iterationStore = getIterationCoordinator();
 
-					sendNotifications(
-						loadedConfig.notifications,
-						"verification_failed",
-						reloadedPrd?.project,
-						{
-							failedChecks: verificationResult.failedChecks,
-							iteration: (iterationStore as unknown as { current?: number }).current ?? 0,
-						},
-					);
+					sendNotifications(config.notifications, "verification_failed", reloadedPrd?.project, {
+						failedChecks: verificationResult.failedChecks,
+						iteration: (iterationStore as unknown as { current?: number }).current ?? 0,
+					});
 
 					currentCallbacks.onIterationComplete(false, hasPendingTasks);
 
 					return;
 				}
 			} catch (verificationError) {
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+				const config = currentConfig?.config ?? getConfigService().get();
+				const logger = getLogger({ logFilePath: config.logFilePath });
 
 				logger.error("Verification handler threw an error, continuing without verification", {
 					error: getErrorMessage(verificationError),
