@@ -1,4 +1,6 @@
 ---
+import Search from "./Search.astro";
+
 interface Props {
   currentPath?: string;
 }
@@ -21,17 +23,21 @@ const isActive = (href: string) => {
 ---
 
 <header class="sticky top-0 z-40 w-full border-b border-border bg-bg/80 backdrop-blur-sm">
-  <div class="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-    <a href="/ralph/" class="flex items-center gap-2 font-semibold text-text hover:text-brand transition-colors">
+  <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <a href="/ralph/" class="flex shrink-0 items-center gap-2 font-semibold text-text hover:text-brand transition-colors">
       <span class="text-xl">Ralph</span>
     </a>
+
+    <div class="hidden flex-1 justify-center md:flex">
+      <Search class="w-full max-w-xs" />
+    </div>
 
     <nav class="hidden items-center gap-6 md:flex" aria-label="Main navigation">
       {NAV_ITEMS.map((item) => (
         <a
           href={item.href}
           class:list={[
-            "text-sm font-medium transition-colors",
+            "text-sm font-medium transition-colors whitespace-nowrap",
             isActive(item.href)
               ? "text-text"
               : "text-text-muted hover:text-text",
@@ -44,26 +50,29 @@ const isActive = (href: string) => {
       ))}
     </nav>
 
-    <button
-      type="button"
-      class="flex h-9 w-9 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text md:hidden"
-      aria-label="Open menu"
-      data-mobile-menu-toggle
-    >
-      <svg
-        class="h-5 w-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
+    <div class="flex items-center gap-2 md:hidden">
+      <Search class="w-9" />
+      <button
+        type="button"
+        class="flex h-9 w-9 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text"
+        aria-label="Open menu"
+        data-mobile-menu-toggle
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M4 6h16M4 12h16M4 18h16"
-        />
-      </svg>
-    </button>
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+    </div>
   </div>
 </header>

@@ -31,7 +31,7 @@ const renderedContent = await marked.parse(rawContent, {
         </p>
       </header>
 
-      <article class="prose prose-invert prose-cyan max-w-none changelog-content" set:html={renderedContent} />
+      <article class="prose prose-invert prose-cyan max-w-none changelog-content" data-pagefind-body set:html={renderedContent} />
     </main>
   </div>
 

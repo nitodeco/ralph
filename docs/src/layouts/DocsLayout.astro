@@ -43,7 +43,7 @@ const currentPath = Astro.url.pathname;
 
       <main id="main-content" class="min-w-0 flex-1 py-8 lg:py-12">
         {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
-        <article class="prose prose-invert prose-cyan max-w-none">
+        <article class="prose prose-invert prose-cyan max-w-none" data-pagefind-body>
           <slot />
         </article>
       </main>

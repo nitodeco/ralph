@@ -18,4 +18,11 @@ export default defineConfig({
       theme: "github-dark",
     },
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ["/ralph/pagefind/pagefind.js"],
+      },
+    },
+  },
 });

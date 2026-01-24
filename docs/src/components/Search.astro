@@ -1,0 +1,394 @@
+---
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+---
+
+<div class={className}>
+  <button
+    type="button"
+    class="search-trigger flex h-9 w-full items-center gap-2 rounded-md border border-border bg-bg-elevated px-3 text-sm text-text-muted hover:bg-bg-subtle hover:text-text transition-colors"
+    aria-label="Open search"
+    aria-haspopup="dialog"
+  >
+    <svg
+      class="h-4 w-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
+    </svg>
+    <span class="hidden flex-1 text-left sm:inline">Search docs...</span>
+    <kbd class="hidden rounded border border-border bg-bg px-1.5 py-0.5 text-xs font-medium text-text-subtle sm:inline">
+      <span class="search-kbd-mac hidden">⌘K</span>
+      <span class="search-kbd-other hidden">Ctrl K</span>
+    </kbd>
+  </button>
+</div>
+
+<div
+  id="search-modal"
+  class="fixed inset-0 z-50 hidden items-start justify-center pt-[10vh]"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="search-modal-title"
+>
+  <div class="search-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+  <div class="search-container relative mx-4 w-full max-w-2xl rounded-lg border border-border bg-bg-elevated shadow-2xl">
+    <h2 id="search-modal-title" class="sr-only">Search documentation</h2>
+
+    <div class="flex items-center gap-3 border-b border-border px-4 py-3">
+      <svg
+        class="h-5 w-5 shrink-0 text-text-muted"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        />
+      </svg>
+      <input
+        id="search-input"
+        type="text"
+        class="flex-1 bg-transparent text-text placeholder:text-text-subtle focus:outline-none"
+        placeholder="Search documentation..."
+        autocomplete="off"
+        aria-describedby="search-results-status"
+      />
+      <button
+        type="button"
+        class="search-close flex h-6 items-center gap-1 rounded border border-border bg-bg px-1.5 text-xs font-medium text-text-subtle hover:text-text transition-colors"
+        aria-label="Close search"
+      >
+        <span>esc</span>
+      </button>
+    </div>
+
+    <div
+      id="search-results-status"
+      class="sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <div id="search-results" class="max-h-[60vh] overflow-y-auto p-2">
+      <div class="search-empty px-4 py-8 text-center text-text-muted">
+        <p>Start typing to search the docs...</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-text-subtle">
+      <div class="flex items-center gap-4">
+        <span class="flex items-center gap-1">
+          <kbd class="rounded border border-border bg-bg px-1 py-0.5 font-mono">↑</kbd>
+          <kbd class="rounded border border-border bg-bg px-1 py-0.5 font-mono">↓</kbd>
+          <span>to navigate</span>
+        </span>
+        <span class="flex items-center gap-1">
+          <kbd class="rounded border border-border bg-bg px-1.5 py-0.5 font-mono">↵</kbd>
+          <span>to select</span>
+        </span>
+      </div>
+      <span class="text-text-subtle">Powered by Pagefind</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface PagefindResult {
+    id: string;
+    data: () => Promise<PagefindResultData>;
+  }
+
+  interface PagefindResultData {
+    url: string;
+    meta: {
+      title?: string;
+    };
+    excerpt: string;
+    sub_results?: Array<{
+      url: string;
+      title: string;
+      excerpt: string;
+    }>;
+  }
+
+  interface PagefindInstance {
+    search: (query: string) => Promise<{ results: PagefindResult[] }>;
+    debouncedSearch: (query: string, options?: { debounceTimeoutMs?: number }) => Promise<{ results: PagefindResult[] } | null>;
+  }
+
+  let pagefind: PagefindInstance | null = null;
+  let selectedIndex = -1;
+
+  async function initPagefind(): Promise<PagefindInstance | null> {
+    if (pagefind) {
+      return pagefind;
+    }
+
+    try {
+      const pagefindPath = `${window.location.origin}/ralph/pagefind/pagefind.js`;
+      pagefind = await import(/* @vite-ignore */ pagefindPath);
+
+      return pagefind;
+    } catch {
+      console.warn("Pagefind not available. Search will not work in dev mode.");
+
+      return null;
+    }
+  }
+
+  function openModal(): void {
+    const modal = document.getElementById("search-modal");
+    const input = document.getElementById("search-input") as HTMLInputElement;
+
+    if (modal && input) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      input.focus();
+      document.body.style.overflow = "hidden";
+    }
+  }
+
+  function closeModal(): void {
+    const modal = document.getElementById("search-modal");
+    const input = document.getElementById("search-input") as HTMLInputElement;
+
+    if (modal && input) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      input.value = "";
+      document.body.style.overflow = "";
+      selectedIndex = -1;
+      resetResults();
+    }
+  }
+
+  function resetResults(): void {
+    const resultsContainer = document.getElementById("search-results");
+    const statusElement = document.getElementById("search-results-status");
+
+    if (resultsContainer) {
+      resultsContainer.innerHTML = `
+        <div class="search-empty px-4 py-8 text-center text-text-muted">
+          <p>Start typing to search the docs...</p>
+        </div>
+      `;
+    }
+
+    if (statusElement) {
+      statusElement.textContent = "";
+    }
+  }
+
+  function renderResults(results: PagefindResultData[]): void {
+    const resultsContainer = document.getElementById("search-results");
+    const statusElement = document.getElementById("search-results-status");
+
+    if (!resultsContainer) {
+      return;
+    }
+
+    if (results.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="search-empty px-4 py-8 text-center text-text-muted">
+          <p>No results found.</p>
+        </div>
+      `;
+
+      if (statusElement) {
+        statusElement.textContent = "No results found";
+      }
+
+      return;
+    }
+
+    const html = results
+      .map(
+        (result, index) => `
+        <a
+          href="${result.url}"
+          class="search-result block rounded-md px-4 py-3 hover:bg-bg-subtle transition-colors ${index === selectedIndex ? "bg-bg-subtle" : ""}"
+          data-index="${index}"
+        >
+          <div class="font-medium text-text">${result.meta.title ?? "Untitled"}</div>
+          <div class="mt-1 text-sm text-text-muted line-clamp-2">${result.excerpt}</div>
+        </a>
+      `
+      )
+      .join("");
+
+    resultsContainer.innerHTML = html;
+
+    if (statusElement) {
+      statusElement.textContent = `${results.length} result${results.length === 1 ? "" : "s"} found`;
+    }
+  }
+
+  function updateSelection(newIndex: number): void {
+    const results = document.querySelectorAll(".search-result");
+
+    if (results.length === 0) {
+      return;
+    }
+
+    selectedIndex = Math.max(0, Math.min(newIndex, results.length - 1));
+
+    for (const [i, result] of results.entries()) {
+      if (i === selectedIndex) {
+        result.classList.add("bg-bg-subtle");
+        result.scrollIntoView({ block: "nearest" });
+      } else {
+        result.classList.remove("bg-bg-subtle");
+      }
+    }
+  }
+
+  function selectResult(): void {
+    const results = document.querySelectorAll(".search-result");
+
+    if (selectedIndex >= 0 && selectedIndex < results.length) {
+      const result = results[selectedIndex] as HTMLAnchorElement;
+      window.location.href = result.href;
+    }
+  }
+
+  let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  async function handleSearch(query: string): Promise<void> {
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
+    }
+
+    if (!query.trim()) {
+      resetResults();
+
+      return;
+    }
+
+    const pf = await initPagefind();
+
+    if (!pf) {
+      return;
+    }
+
+    debounceTimeout = setTimeout(async () => {
+      const searchResults = await pf.search(query);
+      const resultsData: PagefindResultData[] = [];
+
+      for (const result of searchResults.results.slice(0, 10)) {
+        const resultData = await result.data();
+        resultsData.push(resultData);
+      }
+
+      selectedIndex = -1;
+      renderResults(resultsData);
+    }, 150);
+  }
+
+  function initSearch(): void {
+    const triggers = document.querySelectorAll(".search-trigger");
+    const closeButtons = document.querySelectorAll(".search-close");
+    const backdrop = document.querySelector(".search-backdrop");
+    const input = document.getElementById("search-input") as HTMLInputElement;
+
+    for (const trigger of triggers) {
+      trigger.addEventListener("click", openModal);
+    }
+
+    for (const button of closeButtons) {
+      button.addEventListener("click", closeModal);
+    }
+
+    backdrop?.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", (event: KeyboardEvent) => {
+      const modal = document.getElementById("search-modal");
+      const isModalOpen = modal && !modal.classList.contains("hidden");
+
+      const isModKey = event.metaKey || event.ctrlKey;
+      if (isModKey && event.key === "k") {
+        event.preventDefault();
+        if (isModalOpen) {
+          closeModal();
+        } else {
+          openModal();
+        }
+
+        return;
+      }
+
+      if (event.key === "/" && !isModalOpen) {
+        const activeElement = document.activeElement;
+        const isInputFocused =
+          activeElement instanceof HTMLInputElement ||
+          activeElement instanceof HTMLTextAreaElement ||
+          (activeElement as HTMLElement)?.isContentEditable;
+
+        if (!isInputFocused) {
+          event.preventDefault();
+          openModal();
+        }
+      }
+
+      if (event.key === "Escape" && isModalOpen) {
+        event.preventDefault();
+        closeModal();
+      }
+
+      if (isModalOpen) {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          updateSelection(selectedIndex + 1);
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          updateSelection(selectedIndex - 1);
+        } else if (event.key === "Enter") {
+          event.preventDefault();
+          selectResult();
+        }
+      }
+    });
+
+    input?.addEventListener("input", (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      handleSearch(target.value);
+    });
+  }
+
+  function updateKeyboardHint(): void {
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const macHints = document.querySelectorAll(".search-kbd-mac");
+    const otherHints = document.querySelectorAll(".search-kbd-other");
+
+    for (const hint of macHints) {
+      hint.classList.toggle("hidden", !isMac);
+    }
+
+    for (const hint of otherHints) {
+      hint.classList.toggle("hidden", isMac);
+    }
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    initSearch();
+    updateKeyboardHint();
+  });
+  initSearch();
+  updateKeyboardHint();
+</script>
