@@ -1,6 +1,6 @@
 import type { IterationLog, SessionStatistics } from "@/types.ts";
 import { appendProgress } from "../progress.ts";
-import type { TechnicalDebtStateCallback } from "./types.ts";
+import type { Handler, TechnicalDebtStateCallback } from "./types.ts";
 
 export type TechnicalDebtSeverity = "low" | "medium" | "high" | "critical";
 
@@ -49,7 +49,7 @@ export interface TechnicalDebtConfig {
 	analyzePerformance?: boolean;
 }
 
-interface TechnicalDebtHandlerOptions {
+export interface TechnicalDebtHandlerOptions {
 	onStateChange?: TechnicalDebtStateCallback;
 }
 
@@ -468,7 +468,7 @@ export function formatTechnicalDebtReport(report: TechnicalDebtReport): string {
 	return lines.join("\n");
 }
 
-export class TechnicalDebtHandler {
+export class TechnicalDebtHandler implements Handler {
 	private lastReport: TechnicalDebtReport | null = null;
 	private isRunning = false;
 	private onStateChange?: TechnicalDebtStateCallback;

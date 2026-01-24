@@ -4,17 +4,18 @@ import { getLogger } from "@/lib/logger.ts";
 import { appendProgress } from "@/lib/progress.ts";
 import { getPrdService } from "@/lib/services/index.ts";
 import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
-import type { PrdUpdateCallback, RestartIterationCallback } from "./types.ts";
+import type { Handler, PrdUpdateCallback, RestartIterationCallback } from "./types.ts";
 
-interface DecompositionHandlerOptions {
+export interface DecompositionHandlerOptions {
 	config: RalphConfig;
 	onPrdUpdate: PrdUpdateCallback;
 	onRestartIteration: RestartIterationCallback;
 }
 
-export class DecompositionHandler {
+export class DecompositionHandler implements Handler {
 	private config: RalphConfig;
 	private decompositionCountByTask = new Map<string, number>();
+	private isRunning = false;
 	private onPrdUpdate: PrdUpdateCallback;
 	private onRestartIteration: RestartIterationCallback;
 
@@ -26,53 +27,64 @@ export class DecompositionHandler {
 
 	reset(): void {
 		this.decompositionCountByTask = new Map();
+		this.isRunning = false;
+	}
+
+	getIsRunning(): boolean {
+		return this.isRunning;
 	}
 
 	handle(request: DecompositionRequest, currentPrd: Prd | null): boolean {
-		const logger = getLogger({ logFilePath: this.config.logFilePath });
-		const maxDecompositions =
-			this.config.maxDecompositionsPerTask ?? DEFAULTS.maxDecompositionsPerTask;
-		const taskKey = request.originalTaskTitle.toLowerCase();
-		const currentCount = this.decompositionCountByTask.get(taskKey) ?? 0;
+		this.isRunning = true;
 
-		if (currentCount >= maxDecompositions) {
-			logger.warn("Max decompositions reached for task, proceeding without decomposition", {
-				task: request.originalTaskTitle,
-				maxDecompositions,
-				currentCount,
+		try {
+			const logger = getLogger({ logFilePath: this.config.logFilePath });
+			const maxDecompositions =
+				this.config.maxDecompositionsPerTask ?? DEFAULTS.maxDecompositionsPerTask;
+			const taskKey = request.originalTaskTitle.toLowerCase();
+			const currentCount = this.decompositionCountByTask.get(taskKey) ?? 0;
+
+			if (currentCount >= maxDecompositions) {
+				logger.warn("Max decompositions reached for task, proceeding without decomposition", {
+					task: request.originalTaskTitle,
+					maxDecompositions,
+					currentCount,
+				});
+
+				return false;
+			}
+
+			if (!currentPrd) {
+				logger.error("Cannot apply decomposition: PRD not found");
+
+				return false;
+			}
+
+			const decompositionResult = applyDecomposition(currentPrd, request);
+
+			if (!decompositionResult.success || !decompositionResult.updatedPrd) {
+				logger.error("Failed to apply decomposition", { error: decompositionResult.error });
+
+				return false;
+			}
+
+			getPrdService().save(decompositionResult.updatedPrd);
+			this.decompositionCountByTask.set(taskKey, currentCount + 1);
+
+			logger.info("Task decomposed successfully", {
+				originalTask: request.originalTaskTitle,
+				subtasksCreated: decompositionResult.subtasksCreated,
+				reason: request.reason,
 			});
 
-			return false;
+			appendProgress(formatDecompositionForProgress(request));
+
+			this.onPrdUpdate(decompositionResult.updatedPrd);
+			this.onRestartIteration();
+
+			return true;
+		} finally {
+			this.isRunning = false;
 		}
-
-		if (!currentPrd) {
-			logger.error("Cannot apply decomposition: PRD not found");
-
-			return false;
-		}
-
-		const decompositionResult = applyDecomposition(currentPrd, request);
-
-		if (!decompositionResult.success || !decompositionResult.updatedPrd) {
-			logger.error("Failed to apply decomposition", { error: decompositionResult.error });
-
-			return false;
-		}
-
-		getPrdService().save(decompositionResult.updatedPrd);
-		this.decompositionCountByTask.set(taskKey, currentCount + 1);
-
-		logger.info("Task decomposed successfully", {
-			originalTask: request.originalTaskTitle,
-			subtasksCreated: decompositionResult.subtasksCreated,
-			reason: request.reason,
-		});
-
-		appendProgress(formatDecompositionForProgress(request));
-
-		this.onPrdUpdate(decompositionResult.updatedPrd);
-		this.onRestartIteration();
-
-		return true;
 	}
 }

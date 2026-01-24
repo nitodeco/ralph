@@ -1,6 +1,11 @@
 import type { Prd, VerificationResult } from "@/types.ts";
 import type { TechnicalDebtReport } from "./TechnicalDebtHandler.ts";
 
+export interface Handler {
+	reset(): void;
+	getIsRunning(): boolean;
+}
+
 export type PrdUpdateCallback = (prd: Prd) => void;
 export type RestartIterationCallback = () => void;
 export type VerificationStateCallback = (

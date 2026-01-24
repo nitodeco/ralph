@@ -1,13 +1,13 @@
 import { appendProgress } from "@/lib/progress.ts";
 import { formatVerificationResult, runVerification } from "@/lib/verification.ts";
 import type { VerificationConfig, VerificationResult } from "@/types.ts";
-import type { VerificationStateCallback } from "./types.ts";
+import type { Handler, VerificationStateCallback } from "./types.ts";
 
-interface VerificationHandlerOptions {
+export interface VerificationHandlerOptions {
 	onStateChange: VerificationStateCallback;
 }
 
-export class VerificationHandler {
+export class VerificationHandler implements Handler {
 	private lastResult: VerificationResult | null = null;
 	private isRunning = false;
 	private onStateChange: VerificationStateCallback;
