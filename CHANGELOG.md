@@ -1,5 +1,12 @@
 # ralph
 
+## 0.14.4
+
+### Patch Changes
+
+- 2cb2159: Add interactive keyboard navigation to /help with arrow keys and Enter to select commands
+- 62dc2c2: Fix input stability
+
 ## 0.14.3
 
 ### Patch Changes
