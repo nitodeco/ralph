@@ -1,0 +1,129 @@
+---
+import SidebarNav from "./SidebarNav.astro";
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = "" } = Astro.props;
+
+const NAV_ITEMS = [
+  { label: "Docs", href: "/ralph/docs/" },
+  { label: "Changelog", href: "/ralph/changelog/" },
+  { label: "GitHub", href: "https://github.com/nitodeco/ralph", isExternal: true },
+];
+---
+
+<div
+  id="mobile-nav"
+  class="fixed inset-0 z-50 hidden md:hidden"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Navigation menu"
+>
+  <div
+    id="mobile-nav-backdrop"
+    class="fixed inset-0 bg-bg/80 backdrop-blur-sm transition-opacity duration-300 opacity-0"
+    aria-hidden="true"
+  ></div>
+
+  <div
+    id="mobile-nav-panel"
+    class="fixed inset-y-0 left-0 w-full max-w-xs bg-bg border-r border-border shadow-lg transition-transform duration-300 -translate-x-full"
+  >
+    <div class="flex h-14 items-center justify-between border-b border-border px-4">
+      <a href="/ralph/" class="font-semibold text-text">Ralph</a>
+      <button
+        type="button"
+        id="mobile-nav-close"
+        class="flex h-9 w-9 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text"
+        aria-label="Close menu"
+      >
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+
+    <div class="overflow-y-auto h-[calc(100vh-3.5rem)]">
+      <nav class="border-b border-border px-4 py-4" aria-label="Main navigation">
+        <ul class="space-y-1">
+          {NAV_ITEMS.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class="block rounded-md px-3 py-2 text-sm font-medium text-text-muted hover:bg-bg-elevated hover:text-text transition-colors"
+                {...(item.isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              >
+                {item.label}
+                {item.isExternal && <span class="ml-1" aria-hidden="true">↗</span>}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div class="px-4 py-6">
+        <SidebarNav currentPath={currentPath} />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initMobileNav() {
+    const mobileNav = document.getElementById("mobile-nav");
+    const mobileNavPanel = document.getElementById("mobile-nav-panel");
+    const mobileNavBackdrop = document.getElementById("mobile-nav-backdrop");
+    const closeButton = document.getElementById("mobile-nav-close");
+    const openButton = document.querySelector("[data-mobile-menu-toggle]");
+
+    if (!mobileNav || !mobileNavPanel || !mobileNavBackdrop) return;
+
+    const openMenu = () => {
+      mobileNav.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => {
+        mobileNavPanel.classList.remove("-translate-x-full");
+        mobileNavBackdrop.classList.remove("opacity-0");
+        mobileNavBackdrop.classList.add("opacity-100");
+      });
+      closeButton?.focus();
+    };
+
+    const closeMenu = () => {
+      mobileNavPanel.classList.add("-translate-x-full");
+      mobileNavBackdrop.classList.remove("opacity-100");
+      mobileNavBackdrop.classList.add("opacity-0");
+      document.body.style.overflow = "";
+      setTimeout(() => {
+        mobileNav.classList.add("hidden");
+      }, 300);
+      (openButton as HTMLElement)?.focus();
+    };
+
+    openButton?.addEventListener("click", openMenu);
+    closeButton?.addEventListener("click", closeMenu);
+    mobileNavBackdrop?.addEventListener("click", closeMenu);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !mobileNav.classList.contains("hidden")) {
+        closeMenu();
+      }
+    });
+  }
+
+  document.addEventListener("astro:page-load", initMobileNav);
+  initMobileNav();
+</script>

@@ -1,12 +1,18 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
 import Button from "@/components/Button.astro";
+
+const currentPath = Astro.url.pathname;
 ---
 
 <BaseLayout title="Ralph">
-  <main id="main-content" class="flex flex-col items-center justify-center min-h-screen px-4">
+  <Header currentPath={currentPath} />
+
+  <main id="main-content" class="flex flex-1 flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4">
     <h1 class="text-4xl font-bold mb-4">Ralph</h1>
-    <p class="text-[var(--color-text-muted)] text-lg mb-8 text-center max-w-xl">
+    <p class="text-text-muted text-lg mb-8 text-center max-w-xl">
       CLI tool for long-running PRD-driven development with AI coding agents.
     </p>
     <div class="flex gap-4">
@@ -16,4 +22,6 @@ import Button from "@/components/Button.astro";
       </Button>
     </div>
   </main>
+
+  <Footer />
 </BaseLayout>

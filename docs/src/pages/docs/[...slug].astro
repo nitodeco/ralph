@@ -1,0 +1,58 @@
+---
+import { getCollection, render } from "astro:content";
+import DocsLayout from "@/layouts/DocsLayout.astro";
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+const SECTION_LABELS_BY_SLUG: Record<string, string> = {
+  "getting-started": "Getting Started",
+  "core-concepts": "Core Concepts",
+  "cli-reference": "CLI Reference",
+  "configuration": "Configuration",
+  "github-integration": "GitHub Integration",
+  "troubleshooting": "Troubleshooting",
+  "contributing": "Contributing",
+  "faq": "FAQ",
+};
+
+const formatSectionLabel = (slug: string): string =>
+  SECTION_LABELS_BY_SLUG[slug] ??
+  slug
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs");
+
+  return docs
+    .filter((doc) => doc.id !== "index")
+    .map((doc) => ({
+      params: { slug: doc.id },
+      props: { doc },
+    }));
+}
+
+const { doc } = Astro.props;
+const { Content } = await render(doc);
+
+const pathSegments = doc.id.split("/");
+const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: "/ralph/docs/" }];
+
+if (pathSegments.length > 1) {
+  const sectionSlug = pathSegments.at(0)!;
+  breadcrumbs.push({
+    label: formatSectionLabel(sectionSlug),
+    href: `/ralph/docs/${sectionSlug}/`,
+  });
+}
+
+breadcrumbs.push({ label: doc.data.sidebar.label ?? doc.data.title });
+---
+
+<DocsLayout title={doc.data.title} description={doc.data.description} breadcrumbs={breadcrumbs}>
+  <Content />
+</DocsLayout>

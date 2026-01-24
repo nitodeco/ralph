@@ -1,0 +1,92 @@
+---
+import { getCollection } from "astro:content";
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = "" } = Astro.props;
+
+const docs = await getCollection("docs");
+const sortedDocs = docs.sort((a, b) => a.data.sidebar.order - b.data.sidebar.order);
+
+interface NavItem {
+  title: string;
+  href: string;
+  order: number;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const SECTION_TITLES_BY_PREFIX: Record<string, string> = {
+  "getting-started": "Getting Started",
+  "core-concepts": "Core Concepts",
+  "guides": "Guides",
+  "reference": "Reference",
+};
+
+const navItemsBySection = sortedDocs.reduce<Record<string, NavItem[]>>((acc, doc) => {
+  const pathSegments = doc.id.split("/");
+  const isNested = pathSegments.length > 1;
+  const sectionKey = isNested ? pathSegments[0] : "root";
+
+  const href = `/ralph/docs/${doc.id === "index" ? "" : doc.id}/`;
+  const item: NavItem = {
+    title: doc.data.sidebar.label ?? doc.data.title,
+    href,
+    order: doc.data.sidebar.order,
+  };
+
+  const existingItems = acc[sectionKey] ?? [];
+
+  return {
+    ...acc,
+    [sectionKey]: [...existingItems, item],
+  };
+}, {});
+
+const sections: NavSection[] = Object.entries(navItemsBySection).map(([key, items]) => ({
+  title: key === "root" ? "Overview" : (SECTION_TITLES_BY_PREFIX[key] ?? key),
+  items: items.sort((a, b) => a.order - b.order),
+}));
+
+const isActive = (href: string) => {
+  const normalizedCurrent = currentPath.endsWith("/") ? currentPath : `${currentPath}/`;
+  const normalizedHref = href.endsWith("/") ? href : `${href}/`;
+
+  return normalizedCurrent === normalizedHref;
+};
+---
+
+<aside class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-64 shrink-0 overflow-y-auto border-r border-border py-8 lg:block">
+  <nav class="px-4" aria-label="Documentation navigation">
+    {sections.map((section) => (
+      <div class="mb-6">
+        <h3 class="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-text-subtle">
+          {section.title}
+        </h3>
+        <ul class="space-y-1">
+          {section.items.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class:list={[
+                  "block rounded-md px-2 py-1.5 text-sm transition-colors",
+                  isActive(item.href)
+                    ? "bg-bg-elevated text-brand font-medium"
+                    : "text-text-muted hover:bg-bg-subtle hover:text-text",
+                ]}
+                aria-current={isActive(item.href) ? "page" : undefined}
+              >
+                {item.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </nav>
+</aside>

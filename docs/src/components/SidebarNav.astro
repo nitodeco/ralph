@@ -1,0 +1,121 @@
+---
+import { getCollection } from "astro:content";
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = "" } = Astro.props;
+
+interface NavItem {
+  title: string;
+  href: string;
+  order: number;
+  label?: string;
+}
+
+interface NavSection {
+  section: string;
+  items: NavItem[];
+}
+
+const docs = await getCollection("docs");
+
+const buildNavigation = (entries: typeof docs): NavSection[] => {
+  const sectionItemsBySection: Record<string, NavItem[]> = {};
+
+  for (const entry of entries) {
+    const pathParts = entry.id.split("/");
+    const section = pathParts.length > 1 ? pathParts.at(0)! : "Getting Started";
+    const href = `/ralph/docs/${entry.id === "index" ? "" : entry.id}/`;
+
+    const item: NavItem = {
+      title: entry.data.title,
+      href,
+      order: entry.data.sidebar.order,
+      label: entry.data.sidebar.label,
+    };
+
+    if (!sectionItemsBySection[section]) {
+      sectionItemsBySection[section] = [];
+    }
+    sectionItemsBySection[section].push(item);
+  }
+
+  const SECTION_ORDER = [
+    "Getting Started",
+    "getting-started",
+    "core-concepts",
+    "cli-reference",
+    "configuration",
+    "github-integration",
+    "troubleshooting",
+    "contributing",
+    "faq",
+  ];
+
+  return Object.entries(sectionItemsBySection)
+    .map(([section, items]) => ({
+      section: formatSectionName(section),
+      items: items.sort((a, b) => a.order - b.order),
+      rawSection: section,
+    }))
+    .sort((a, b) => {
+      const indexA = SECTION_ORDER.indexOf(a.rawSection);
+      const indexB = SECTION_ORDER.indexOf(b.rawSection);
+      const orderA = indexA === -1 ? 999 : indexA;
+      const orderB = indexB === -1 ? 999 : indexB;
+
+      return orderA - orderB;
+    })
+    .map(({ section, items }) => ({ section, items }));
+};
+
+const formatSectionName = (name: string): string => {
+  if (name === "Getting Started") {
+    return name;
+  }
+
+  return name
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const isActive = (href: string) => {
+  const normalizedCurrent = currentPath.replace(/\/$/, "");
+  const normalizedHref = href.replace(/\/$/, "");
+
+  return normalizedCurrent === normalizedHref;
+};
+
+const navigation = buildNavigation(docs);
+---
+
+<nav class="space-y-6" aria-label="Docs navigation">
+  {navigation.map((section) => (
+    <div>
+      <h3 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-text-subtle">
+        {section.section}
+      </h3>
+      <ul class="space-y-1" role="list">
+        {section.items.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class:list={[
+                "block rounded-md px-3 py-2 text-sm transition-colors",
+                isActive(item.href)
+                  ? "bg-brand/10 text-brand font-medium"
+                  : "text-text-muted hover:bg-bg-elevated hover:text-text",
+              ]}
+              aria-current={isActive(item.href) ? "page" : undefined}
+            >
+              {item.label ?? item.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</nav>

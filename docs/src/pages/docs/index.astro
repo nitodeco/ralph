@@ -1,0 +1,19 @@
+---
+import { getCollection, render } from "astro:content";
+import DocsLayout from "@/layouts/DocsLayout.astro";
+
+const docs = await getCollection("docs");
+const introDoc = docs.find((doc) => doc.id === "index");
+
+if (!introDoc) {
+  return Astro.redirect("/ralph/");
+}
+
+const { Content } = await render(introDoc);
+
+const breadcrumbs = [{ label: "Docs", href: "/ralph/docs/" }, { label: introDoc.data.title }];
+---
+
+<DocsLayout title={introDoc.data.title} description={introDoc.data.description} breadcrumbs={breadcrumbs}>
+  <Content />
+</DocsLayout>
