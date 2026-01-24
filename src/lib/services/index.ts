@@ -76,7 +76,6 @@ export {
 	getParallelExecutionManager,
 	getPrdService,
 	getProjectRegistryService,
-	getRulesService,
 	getServices,
 	getSessionManager,
 	getSessionMemoryService,
@@ -184,16 +183,6 @@ export type {
 	RegisterProjectOptions,
 } from "./project-registry/types.ts";
 export { REGISTRY_VERSION } from "./project-registry/types.ts";
-export { formatRulesForPrompt } from "./rules/formatters.ts";
-export { createRulesService } from "./rules/implementation.ts";
-export type {
-	AddRuleOptions,
-	CustomRule,
-	RuleScope,
-	RulesFile,
-	RulesService,
-} from "./rules/types.ts";
-export { isCustomRule, isRulesFile } from "./rules/validation.ts";
 export {
 	createSleepPreventionService,
 	type SleepPreventionService,

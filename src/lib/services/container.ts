@@ -9,7 +9,6 @@ import type { Orchestrator } from "./orchestrator/types.ts";
 import type { ParallelExecutionManager } from "./parallel-execution-manager/types.ts";
 import type { PrdService } from "./prd/types.ts";
 import type { ProjectRegistryService } from "./project-registry/types.ts";
-import type { RulesService } from "./rules/types.ts";
 import type { SleepPreventionService } from "./SleepPreventionService.ts";
 import type { SessionService } from "./session/types.ts";
 import type { SessionManager } from "./session-manager/types.ts";
@@ -20,7 +19,6 @@ export interface ServiceContainer {
 	projectRegistry: ProjectRegistryService;
 	config: ConfigService;
 	guardrails: GuardrailsService;
-	rules: RulesService;
 	prd: PrdService;
 	sessionMemory: SessionMemoryService;
 	session: SessionService;
@@ -82,10 +80,6 @@ export function getSessionService(): SessionService {
 
 export function getGuardrailsService(): GuardrailsService {
 	return getServices().guardrails;
-}
-
-export function getRulesService(): RulesService {
-	return getServices().rules;
 }
 
 export function getProjectRegistryService(): ProjectRegistryService {

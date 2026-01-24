@@ -21,7 +21,6 @@ import {
 	PlanView,
 	ProjectsView,
 	ResumePromptView,
-	RulesView,
 	StatusView,
 	TasksView,
 	UsageView,
@@ -92,10 +91,6 @@ export function ViewRouter({
 
 	if (activeView === "guardrails") {
 		return <GuardrailsView version={version} onClose={onHelpClose} />;
-	}
-
-	if (activeView === "rules") {
-		return <RulesView version={version} onClose={onHelpClose} />;
 	}
 
 	if (activeView === "analyze") {

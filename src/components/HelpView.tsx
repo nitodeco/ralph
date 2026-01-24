@@ -230,11 +230,6 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
 									<Text>View and manage guardrails</Text>
 								</Text>
 								<Text>
-									<Text dimColor>/rules</Text>
-									{"                 "}
-									<Text>View and manage rules</Text>
-								</Text>
-								<Text>
 									<Text dimColor>/memory</Text>
 									{"                "}
 									<Text>View and manage session memory</Text>

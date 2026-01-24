@@ -13,7 +13,6 @@ export type Command =
 	| "archive"
 	| "clear"
 	| "guardrails"
-	| "rules"
 	| "analyze"
 	| "memory"
 	| "migrate"
@@ -38,8 +37,6 @@ export type GuardrailsSubcommand = "list" | "add" | "remove" | "toggle" | "gener
 export interface GuardrailsGenerateOptions {
 	apply?: boolean;
 }
-
-export type RulesSubcommand = "list" | "add" | "remove";
 
 export type AnalyzeSubcommand = "patterns" | "export" | "clear";
 export type MemorySubcommand = "list" | "clear" | "export";
@@ -116,9 +113,6 @@ export interface ParsedArgs {
 	dependencySubcommand?: DependencySubcommand;
 	dependencySetOptions?: DependencySetOptions;
 	dependencyModifyOptions?: DependencyModifyOptions;
-	rulesSubcommand?: RulesSubcommand;
-	rulesArg?: string;
-	rulesGlobal?: boolean;
 	usageSubcommand?: UsageSubcommand;
 	usageLimit?: number;
 	githubSubcommand?: GitHubSubcommand;

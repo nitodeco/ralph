@@ -28,8 +28,6 @@ import type {
 	ProjectRegistry,
 	ProjectRegistryService,
 } from "./project-registry/types.ts";
-import { createRulesService } from "./rules/implementation.ts";
-import type { RulesService } from "./rules/types.ts";
 import {
 	createSleepPreventionService,
 	type SleepPreventionService,
@@ -271,7 +269,6 @@ export function bootstrapServices(): void {
 		projectRegistry: createProjectRegistryService(),
 		config: createConfigService(),
 		guardrails: createGuardrailsService(),
-		rules: createRulesService(),
 		prd: createPrdService(),
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
@@ -292,7 +289,6 @@ export interface TestServiceOverrides {
 	projectRegistry?: Partial<ProjectRegistryService>;
 	config?: Partial<ConfigService>;
 	guardrails?: Partial<GuardrailsService>;
-	rules?: Partial<RulesService>;
 	prd?: Partial<PrdService>;
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
@@ -564,37 +560,6 @@ function createMockGuardrailsService(
 		toggle: () => null,
 		getById: () => null,
 		getActive: () => defaultGuardrails,
-		formatForPrompt: () => "",
-		...overrides,
-	};
-}
-
-function createMockRulesService(overrides: Partial<RulesService> = {}): RulesService {
-	return {
-		get: () => [],
-		getGlobal: () => [],
-		getProject: () => [],
-		load: () => [],
-		loadGlobal: () => [],
-		loadProject: () => [],
-		save: () => {},
-		saveGlobal: () => {},
-		saveProject: () => {},
-		exists: () => false,
-		existsGlobal: () => false,
-		existsProject: () => false,
-		initialize: () => {},
-		invalidate: () => {},
-		invalidateGlobal: () => {},
-		invalidateProject: () => {},
-		add: (options) => ({
-			id: `rule-${Date.now()}`,
-			instruction: options.instruction,
-			addedAt: new Date().toISOString(),
-		}),
-		remove: () => true,
-		getById: () => null,
-		getByIdInScope: () => null,
 		formatForPrompt: () => "",
 		...overrides,
 	};
@@ -938,7 +903,6 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		projectRegistry: createMockProjectRegistryService(overrides.projectRegistry),
 		config: createMockConfigService(overrides.config),
 		guardrails: createMockGuardrailsService(overrides.guardrails),
-		rules: createMockRulesService(overrides.rules),
 		prd: createMockPrdService(overrides.prd),
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 		session: createMockSessionService(overrides.session),

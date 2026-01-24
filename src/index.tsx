@@ -23,8 +23,6 @@ import {
 	handleProgressAdd,
 	handleProgressClear,
 	handleProjectsPrune,
-	handleRulesAdd,
-	handleRulesRemove,
 	handleStopCommand,
 	handleTaskAdd,
 	handleTaskDone,
@@ -54,7 +52,6 @@ import {
 	printProgress,
 	printProjects,
 	printRecentSessions,
-	printRules,
 	printStatus,
 	printTaskList,
 	printTaskShow,
@@ -349,9 +346,6 @@ function main(): void {
 		dependencySubcommand,
 		dependencySetOptions,
 		dependencyModifyOptions,
-		rulesSubcommand,
-		rulesArg,
-		rulesGlobal,
 		usageSubcommand,
 		usageLimit,
 		githubSubcommand,
@@ -486,12 +480,6 @@ function main(): void {
 				.with("toggle", () => handleGuardrailsToggle(guardrailsArg ?? ""))
 				.with("generate", () => handleGuardrailsGenerate(guardrailsGenerateOptions ?? {}, json))
 				.otherwise(() => printGuardrails(VERSION, json));
-		})
-		.with("rules", () => {
-			match(rulesSubcommand)
-				.with("add", () => handleRulesAdd(rulesArg ?? "", rulesGlobal ?? false))
-				.with("remove", () => handleRulesRemove(rulesArg ?? ""))
-				.otherwise(() => printRules(VERSION, json));
 		})
 		.with("analyze", () => {
 			match(analyzeSubcommand)

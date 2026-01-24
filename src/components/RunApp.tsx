@@ -83,7 +83,6 @@ export function RunApp({
 		dismissHelp,
 		nextTaskMessage,
 		guardrailMessage,
-		ruleMessage,
 		memoryMessage,
 		refreshMessage,
 		clearMessage,
@@ -189,7 +188,6 @@ export function RunApp({
 				agentIsStreaming={agentIsStreaming}
 				nextTaskMessage={displayedMessage}
 				guardrailMessage={guardrailMessage}
-				ruleMessage={ruleMessage}
 				memoryMessage={memoryMessage}
 				refreshMessage={refreshMessage}
 				clearMessage={clearMessage}

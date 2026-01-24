@@ -11,7 +11,6 @@ export { NotInitializedView } from "./NotInitializedView.tsx";
 export { PlanView } from "./PlanView.tsx";
 export { ProjectsView } from "./ProjectsView.tsx";
 export { ResumePromptView } from "./ResumePromptView.tsx";
-export { RulesView } from "./RulesView.tsx";
 export { StatusView } from "./StatusView.tsx";
 export { TasksView } from "./TasksView.tsx";
 export { UsageView } from "./UsageView.tsx";

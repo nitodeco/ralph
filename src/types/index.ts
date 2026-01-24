@@ -57,7 +57,6 @@ export type {
 	ParsedArgs,
 	ProgressSubcommand,
 	ProjectsSubcommand,
-	RulesSubcommand,
 	TaskAddOptions,
 	TaskEditOptions,
 	TaskListOutput,

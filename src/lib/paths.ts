@@ -16,7 +16,6 @@ export const GLOBAL_RALPH_DIR = join(homedir(), ".ralph");
 export const REGISTRY_PATH = join(GLOBAL_RALPH_DIR, "registry.json");
 export const PROJECTS_DIR = join(GLOBAL_RALPH_DIR, "projects");
 export const GLOBAL_CONFIG_PATH = join(GLOBAL_RALPH_DIR, "config.json");
-export const GLOBAL_RULES_PATH = join(GLOBAL_RALPH_DIR, "rules.json");
 export const LOCAL_BIN_DIR = join(homedir(), ".local", "bin");
 export const SYSTEM_BIN_DIR = "/usr/local/bin";
 
@@ -76,14 +75,6 @@ export function getSessionMemoryFilePath(): string {
 
 export function getCommandHistoryFilePath(): string {
 	return getProjectFilePath("command-history.json");
-}
-
-export function getRulesFilePath(): string {
-	return getProjectFilePath("rules.json");
-}
-
-export function getGlobalRulesFilePath(): string {
-	return GLOBAL_RULES_PATH;
 }
 
 export function getUsageStatisticsFilePath(): string {

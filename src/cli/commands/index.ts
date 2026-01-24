@@ -32,7 +32,6 @@ export { handleMemoryClear, handleMemoryExport, printMemory } from "./memory.ts"
 export { handleMigrateCommand, printMigrateStatus } from "./migrate.ts";
 export { handleProgressAdd, handleProgressClear, printProgress } from "./progress.ts";
 export { handleProjectsPrune, printCurrentProject, printProjects } from "./projects.ts";
-export { handleRulesAdd, handleRulesRemove, printRules } from "./rules.ts";
 export { printStatus } from "./status.ts";
 export { handleStopCommand } from "./stop.ts";
 export {

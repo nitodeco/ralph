@@ -125,12 +125,6 @@ const HELP_COMMANDS: HelpCommand[] = [
 	},
 	{
 		section: "Views & Info",
-		command: "/rules",
-		description: "View and manage rules",
-		executeValue: "/rules",
-	},
-	{
-		section: "Views & Info",
 		command: "/memory",
 		description: "View and manage session memory",
 		executeValue: "/memory",

@@ -13,7 +13,6 @@ import type {
 	ParsedArgs,
 	ProgressSubcommand,
 	ProjectsSubcommand,
-	RulesSubcommand,
 	TaskAddOptions,
 	TaskEditOptions,
 	TaskSubcommand,
@@ -52,7 +51,6 @@ const VALID_DEPENDENCY_SUBCOMMANDS: DependencySubcommand[] = [
 	"add",
 	"remove",
 ];
-const VALID_RULES_SUBCOMMANDS: RulesSubcommand[] = ["list", "add", "remove"];
 const VALID_USAGE_SUBCOMMANDS: UsageSubcommand[] = ["show", "summary", "sessions", "daily"];
 const VALID_GITHUB_SUBCOMMANDS: GitHubSubcommand[] = ["show", "set-token", "clear-token"];
 const VALID_AUTH_SUBCOMMANDS: AuthSubcommand[] = ["login", "logout", "status"];
@@ -331,27 +329,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 		}
 	}
 
-	let rulesSubcommand: RulesSubcommand | undefined;
-	let rulesArg: string | undefined;
-	let rulesGlobal: boolean | undefined;
-
-	if (command === "rules") {
-		const subcommand = filteredArgs.at(1) as RulesSubcommand | undefined;
-
-		rulesGlobal = relevantArgs.includes("--global") || relevantArgs.includes("-g");
-		const rulesFilteredArgs = filteredArgs.filter((arg) => arg !== "--global" && arg !== "-g");
-
-		if (subcommand && VALID_RULES_SUBCOMMANDS.includes(subcommand)) {
-			rulesSubcommand = subcommand;
-			rulesArg = rulesFilteredArgs.slice(2).join(" ");
-		} else if (subcommand && !subcommand.startsWith("-")) {
-			rulesSubcommand = "add";
-			rulesArg = rulesFilteredArgs.slice(1).join(" ");
-		} else {
-			rulesSubcommand = "list";
-		}
-	}
-
 	let usageSubcommand: UsageSubcommand | undefined;
 	let usageLimit: number | undefined;
 
@@ -430,9 +407,6 @@ export function parseArgs(args: string[]): ParsedArgs {
 		dependencySubcommand,
 		dependencySetOptions,
 		dependencyModifyOptions,
-		rulesSubcommand,
-		rulesArg,
-		rulesGlobal,
 		usageSubcommand,
 		usageLimit,
 		githubSubcommand,
