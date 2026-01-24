@@ -1,5 +1,11 @@
 # ralph
 
+## 0.14.5
+
+### Patch Changes
+
+- d478666: Simplify terminal UI by removing progress bar and ETA from iteration progress display
+
 ## 0.14.4
 
 ### Patch Changes
