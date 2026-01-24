@@ -46,6 +46,10 @@ async function generateAssets() {
 	await mkdir(ogDir, { recursive: true });
 
 	console.log("Generating favicons...");
+
+	await writeFile(join(faviconDir, "favicon.svg"), faviconSvg);
+	console.log("  ✓ favicon.svg");
+
 	const faviconBuffer = Buffer.from(faviconSvg);
 
 	await sharp(faviconBuffer)
