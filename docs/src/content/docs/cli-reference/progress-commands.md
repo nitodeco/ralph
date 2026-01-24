@@ -1,83 +1,157 @@
 ---
-title: progress Commands
-description: CLI reference for Ralph progress tracking commands.
+title: Progress Commands
+description: Reference for Ralph progress tracking commands.
 sidebar:
   order: 3
   label: progress
 ---
 
-# progress Commands
+# Progress Commands
 
-The `progress` command group manages progress notes for your session.
+Progress commands manage notes that track what has been accomplished during a session. These provide context for the AI agent and help you understand what happened.
 
-Progress notes are timestamped entries that record what's been accomplished. They provide context across sessions and help you understand what happened while Ralph was running.
+## ralph progress
 
-## `ralph progress show`
-
-Display all progress notes for the current session.
+Show all progress notes.
 
 ```bash
-ralph progress show
+ralph progress
 ```
+
+Alias: `ralph progress show`
 
 **Output:**
 
 ```
 Progress:
 
-[2024-01-15 10:30] Created user model with email and password fields
-[2024-01-15 10:45] Implemented bcrypt password hashing
-[2024-01-15 11:00] Added login endpoint with JWT token generation
-
-3 notes
+1. [2024-01-15 10:30] Set up TypeScript configuration
+2. [2024-01-15 10:45] Added Prisma schema for users
+3. [2024-01-15 11:00] Implemented user registration endpoint
 ```
 
-## `ralph progress add`
+**Options:**
 
-Add a progress note manually.
+| Option | Description |
+|--------|-------------|
+| `--json` | Output in JSON format |
+
+## ralph progress add
+
+Add a new progress note.
 
 ```bash
-ralph progress add "Refactored auth middleware for better error handling"
+ralph progress add "Completed user authentication, all tests passing"
 ```
 
-The note is timestamped automatically.
+**Arguments:**
 
-### Multi-word Notes
+| Argument | Description |
+|----------|-------------|
+| `<text>` | The progress note text |
 
-Wrap your note in quotes:
+**Behavior:**
+
+- Adds a timestamped note to the progress log
+- Notes persist across sessions
+- Used by AI agents to record what they've done
+
+**Usage by AI agents:**
+
+The AI agent calls this command to record progress, giving context for future iterations:
 
 ```bash
-ralph progress add "Fixed bug where login failed for users with special characters in password"
+ralph progress add "Fixed type errors in UserService, refactored to use dependency injection"
 ```
 
-## Automatic Progress Notes
+## ralph progress clear
 
-Ralph automatically adds progress notes when:
+Remove all progress notes.
 
-- A task is marked complete
-- The agent reports significant progress
-- An iteration succeeds or fails
-
-You don't need to manually track everything—Ralph does most of it automatically.
-
-## Progress Persistence
-
-Progress notes are stored in your project's Ralph directory:
-
-```
-~/.ralph/projects/<project>/session.json
+```bash
+ralph progress clear
 ```
 
-They persist across CLI sessions and can be reviewed anytime.
+**Use cases:**
 
-## Use Cases
+- Start fresh after completing a major milestone
+- Reset for a new development phase
+- Clean up before archiving
 
-Progress notes are useful for:
+**Safety:**
 
-- **Handoffs**: See what was done before resuming work
-- **Debugging**: Understand what happened when something went wrong
-- **Documentation**: Generate changelogs or status updates
+Progress notes are automatically archived before clearing when you run `ralph archive` or `ralph clear`.
 
-## Related
+## How Progress Notes Are Used
 
-- [Sessions](/ralph/docs/core-concepts/sessions-and-iterations/) - How progress fits into sessions
+### During Sessions
+
+Progress notes provide context to the AI agent at the start of each iteration. This helps the agent:
+
+- Understand what has already been done
+- Avoid repeating work
+- Build on previous progress
+
+### For Retries
+
+When an iteration fails and retries, progress notes help the agent understand the state of the project.
+
+### For Review
+
+After a session, progress notes give you a log of what was accomplished:
+
+```bash
+ralph progress
+```
+
+## Best Practices
+
+### Be Specific
+
+Good progress notes explain what was done and why:
+
+```bash
+ralph progress add "Added user validation middleware to protect API endpoints"
+```
+
+### Record Decisions
+
+Note important decisions made during implementation:
+
+```bash
+ralph progress add "Using JWT for auth instead of sessions for stateless API"
+```
+
+### Note Blockers
+
+If something was skipped or blocked:
+
+```bash
+ralph progress add "Skipped email verification - needs SMTP config"
+```
+
+## JSON Output
+
+```bash
+ralph progress --json
+```
+
+```json
+{
+  "notes": [
+    {
+      "timestamp": "2024-01-15T10:30:00Z",
+      "text": "Set up TypeScript configuration"
+    },
+    {
+      "timestamp": "2024-01-15T10:45:00Z",
+      "text": "Added Prisma schema for users"
+    }
+  ]
+}
+```
+
+## Next Steps
+
+- [Session Commands](/ralph/docs/cli-reference/session-commands/) — Managing session state
+- [Guardrails Commands](/ralph/docs/cli-reference/guardrails-commands/) — Setting project guardrails

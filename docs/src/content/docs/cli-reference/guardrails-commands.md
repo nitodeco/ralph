@@ -1,99 +1,178 @@
 ---
-title: guardrails Commands
-description: CLI reference for Ralph guardrails management commands.
+title: Guardrails Commands
+description: Reference for Ralph guardrails management commands.
 sidebar:
   order: 5
   label: guardrails
 ---
 
-# guardrails Commands
+# Guardrails Commands
 
-The `guardrails` command group manages prompt guardrails that guide the AI agent's behavior.
+Guardrails are rules and instructions that constrain the AI agent's behavior. They help ensure the agent follows your project's coding standards and avoids certain patterns.
 
-Guardrails are additional instructions that get injected into every agent prompt, helping prevent common mistakes and enforce project standards.
+## ralph guardrails
 
-## `ralph guardrails show`
-
-Display current guardrails.
+List all configured guardrails.
 
 ```bash
-ralph guardrails show
+ralph guardrails
 ```
+
+Alias: `ralph guardrails list`
 
 **Output:**
 
 ```
 Guardrails:
 
-1. Always run `bun check` before committing
-2. Never modify files in the vendor/ directory
-3. Use TypeScript strict mode
+[✓] 1. Always use TypeScript strict mode
+[✓] 2. Never commit .env files
+[ ] 3. Use Prisma for database access (disabled)
 ```
 
-## `ralph guardrails add`
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--json` | Output in JSON format |
+
+## ralph guardrails add
 
 Add a new guardrail.
 
 ```bash
-ralph guardrails add "Always add tests for new functions"
+ralph guardrails add "Always use async/await instead of .then()"
 ```
 
-Guardrails are numbered in the order they're added.
+**Arguments:**
 
-## `ralph guardrails remove`
+| Argument | Description |
+|----------|-------------|
+| `<text>` | The guardrail instruction |
 
-Remove a guardrail by number.
+**Examples:**
 
 ```bash
-ralph guardrails remove 2
+ralph guardrails add "Use functional React components, no class components"
+ralph guardrails add "All API endpoints must validate input with Zod"
+ralph guardrails add "Never use any type, always provide explicit types"
 ```
 
-## `ralph guardrails clear`
+## ralph guardrails remove
 
-Remove all guardrails.
+Remove a guardrail by its ID.
 
 ```bash
-ralph guardrails clear
+ralph guardrails remove 3
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<id>` | The guardrail number |
+
+## ralph guardrails toggle
+
+Enable or disable a guardrail.
+
+```bash
+ralph guardrails toggle 3
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<id>` | The guardrail number |
+
+Disabled guardrails are not included in the agent prompt but remain in your configuration for easy re-enabling.
+
+## ralph guardrails generate
+
+Auto-generate guardrails from codebase analysis.
+
+```bash
+ralph guardrails generate
+```
+
+Analyzes your codebase to suggest guardrails based on:
+
+- Detected frameworks and libraries
+- Existing patterns in code
+- Configuration files (tsconfig, eslint, etc.)
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--apply` | Immediately add generated guardrails |
+
+**Example:**
+
+```bash
+# Review suggestions first
+ralph guardrails generate
+
+# Auto-apply suggestions
+ralph guardrails generate --apply
+```
+
+## How Guardrails Work
+
+Guardrails are injected into the AI agent prompt at the start of each iteration:
+
+```
+## Project Guardrails
+
+You must follow these rules:
+1. Always use TypeScript strict mode
+2. Never commit .env files
+3. Use functional React components
+```
+
+The agent sees these instructions and follows them when implementing tasks.
+
+## Guardrail Storage
+
+Guardrails are stored in `~/.ralph/projects/<project>/guardrails.json`:
+
+```json
+{
+  "guardrails": [
+    {"id": 1, "text": "Always use TypeScript strict mode", "enabled": true},
+    {"id": 2, "text": "Never commit .env files", "enabled": true}
+  ]
+}
 ```
 
 ## Best Practices
 
 ### Be Specific
 
+Vague guardrails don't help:
+
 ```bash
+# Bad
+ralph guardrails add "Write good code"
+
 # Good
-ralph guardrails add "Run 'bun run typecheck' before marking tasks complete"
-
-# Too vague
-ralph guardrails add "Check types"
+ralph guardrails add "Use early returns to reduce nesting, max 2 levels deep"
 ```
 
-### Focus on Prevention
+### Include Context
 
-Use guardrails to prevent mistakes you've seen the agent make:
+Explain why when it helps:
 
 ```bash
-ralph guardrails add "Never delete test files"
-ralph guardrails add "Do not modify the database schema without migration"
+ralph guardrails add "Use Bun instead of npm - this is a Bun project"
 ```
 
-### Keep It Manageable
+### Don't Over-constrain
 
-Too many guardrails can overwhelm the agent. Focus on the most important ones:
+Too many guardrails slow down the agent and can cause conflicts. Focus on important rules.
 
-- Code quality requirements
-- Files/directories to avoid
-- Required verification steps
-- Project-specific patterns
+## Next Steps
 
-## Storage
-
-Guardrails are stored per-project in:
-
-```
-~/.ralph/projects/<project>/guardrails.json
-```
-
-## Related
-
-- [Verification & Retries](/ralph/docs/core-concepts/verification-and-retries/) - How guardrails fit into verification
+- [GitHub Commands](/ralph/docs/cli-reference/github-commands/) — GitHub integration
+- [Configuration](/ralph/docs/configuration/overview/) — Full configuration reference

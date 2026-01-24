@@ -25,9 +25,13 @@ const buildNavigation = (entries: typeof docs): NavSection[] => {
   const sectionItemsBySection: Record<string, NavItem[]> = {};
 
   for (const entry of entries) {
+    if (entry.id === "index") {
+      continue;
+    }
+
     const pathParts = entry.id.split("/");
-    const section = pathParts.length > 1 ? pathParts.at(0)! : "Getting Started";
-    const href = `/ralph/docs/${entry.id === "index" ? "" : entry.id}/`;
+    const section = pathParts.at(0)!;
+    const href = `/ralph/docs/${entry.id}/`;
 
     const item: NavItem = {
       title: entry.data.title,
