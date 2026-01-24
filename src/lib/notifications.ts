@@ -45,6 +45,61 @@ function getEventMessage(event: NotificationEvent, projectName?: string): string
 		.exhaustive();
 }
 
+function getTerminalBundleId(): string {
+	const terminalProgram = process.env.TERM_PROGRAM ?? "Apple_Terminal";
+
+	return match(terminalProgram)
+		.with("iTerm.app", () => "com.googlecode.iterm2")
+		.with("Apple_Terminal", () => "com.apple.Terminal")
+		.with("Hyper", () => "co.zeit.hyper")
+		.with("Alacritty", () => "org.alacritty")
+		.with("kitty", () => "net.kovidgoyal.kitty")
+		.with("WezTerm", () => "com.github.wez.wezterm")
+		.with("Ghostty", () => "com.mitchellh.ghostty")
+		.otherwise(() => "com.apple.Terminal");
+}
+
+function isTerminalNotifierAvailable(): boolean {
+	try {
+		execSync("which terminal-notifier", { stdio: "ignore" });
+
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function sendNotificationWithTerminalNotifier(title: string, message: string): boolean {
+	const bundleId = getTerminalBundleId();
+	const escapedTitle = title.replace(/'/g, "'\\''");
+	const escapedMessage = message.replace(/'/g, "'\\''");
+
+	try {
+		execSync(
+			`terminal-notifier -title '${escapedTitle}' -message '${escapedMessage}' -activate '${bundleId}'`,
+			{ stdio: "ignore" },
+		);
+
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function sendNotificationWithAppleScript(title: string, message: string): boolean {
+	const escapedTitle = title.replace(/"/g, '\\"');
+	const escapedMessage = message.replace(/"/g, '\\"');
+	const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`;
+
+	try {
+		execSync(`osascript -e '${script}'`, { stdio: "ignore" });
+
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export async function sendSystemNotification(
 	event: NotificationEvent,
 	projectName?: string,
@@ -58,17 +113,11 @@ export async function sendSystemNotification(
 	const title = getEventTitle(event);
 	const message = getEventMessage(event, projectName);
 
-	try {
-		const escapedTitle = title.replace(/"/g, '\\"');
-		const escapedMessage = message.replace(/"/g, '\\"');
-		const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`;
-
-		execSync(`osascript -e '${script}'`, { stdio: "ignore" });
-
-		return true;
-	} catch {
-		return false;
+	if (isTerminalNotifierAvailable()) {
+		return sendNotificationWithTerminalNotifier(title, message);
 	}
+
+	return sendNotificationWithAppleScript(title, message);
 }
 
 export async function sendWebhookNotification(
