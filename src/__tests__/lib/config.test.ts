@@ -207,7 +207,7 @@ describe("applyDefaults", () => {
 		expect(result.agent).toBe(CONFIG_DEFAULTS.agent);
 		expect(result.maxRetries).toBe(CONFIG_DEFAULTS.maxRetries);
 		expect(result.retryDelayMs).toBe(CONFIG_DEFAULTS.retryDelayMs);
-		expect(result.logFilePath).toBe(CONFIG_DEFAULTS.logFilePath);
+		expect(result.logFilePath).toBeUndefined();
 		expect(result.agentTimeoutMs).toBe(CONFIG_DEFAULTS.agentTimeoutMs);
 		expect(result.stuckThresholdMs).toBe(CONFIG_DEFAULTS.stuckThresholdMs);
 	});

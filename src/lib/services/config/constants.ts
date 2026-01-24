@@ -15,7 +15,6 @@ export const DEFAULTS = {
 	maxOutputBufferBytes: 5 * 1024 * 1024,
 	memoryWarningThresholdMb: 500,
 	enableGcHints: true,
-	logFilePath: ".ralph/ralph.log",
 	iterationDelayMs: 2000,
 	iterations: 10,
 	retryWithContext: true,
@@ -41,12 +40,11 @@ export const DEFAULT_GIT_PROVIDER: GitProviderConfig = {
 };
 
 export const CONFIG_DEFAULTS: Required<
-	Omit<RalphConfig, "lastUpdateCheck" | "skipVersion" | "hasAcknowledgedWarning">
+	Omit<RalphConfig, "lastUpdateCheck" | "skipVersion" | "hasAcknowledgedWarning" | "logFilePath">
 > = {
 	agent: DEFAULTS.agent,
 	maxRetries: DEFAULTS.maxRetries,
 	retryDelayMs: DEFAULTS.retryDelayMs,
-	logFilePath: DEFAULTS.logFilePath,
 	agentTimeoutMs: DEFAULTS.agentTimeoutMs,
 	stuckThresholdMs: DEFAULTS.stuckThresholdMs,
 	notifications: {

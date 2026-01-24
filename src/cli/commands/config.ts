@@ -66,7 +66,7 @@ export function printConfig(version: string, jsonOutput: boolean, verbose = fals
 	);
 
 	console.log("\n  Logging:");
-	console.log(`    logFilePath:      ${effective.logFilePath}`);
+	console.log(`    logFilePath:      ${effective.logFilePath ?? "(auto-resolved)"}`);
 
 	console.log("\n  Notifications:");
 

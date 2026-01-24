@@ -316,7 +316,10 @@ export function handleShutdownSignal(signal: ShutdownSignal): void {
 	deletePidFile();
 	logger.info("Shutdown complete", { signal });
 
-	process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
+	if (process.stdout.isTTY) {
+		process.stdout.write("\x1b[?25h\x1b[2J\x1b[3J\x1b[H");
+	}
+
 	process.exit(0);
 }
 

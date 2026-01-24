@@ -11,7 +11,7 @@ const FIELD_SUGGESTIONS: Record<string, string> = {
 		'Must be a non-negative integer in milliseconds. Set to 0 to disable. Recommended: 600000 (10 min). Example: "agentTimeoutMs": 600000',
 	stuckThresholdMs:
 		'Must be a non-negative integer in milliseconds. Set to 0 to disable. Recommended: 180000 (3 min). Example: "stuckThresholdMs": 180000',
-	logFilePath: 'Must be a valid file path. Example: "logFilePath": ".ralph/ralph.log"',
+	logFilePath: "Optional. Custom log file path. Defaults to project directory in ~/.ralph/",
 	"notifications.webhookUrl":
 		'Must be a valid HTTP or HTTPS URL. Example: "webhookUrl": "https://hooks.slack.com/..."',
 	"memory.maxOutputBufferBytes":
@@ -128,7 +128,9 @@ export function getConfigSummary(config: RalphConfig): string {
 	lines.push("");
 
 	lines.push("Logging:");
-	lines.push(`  Log File:           ${config.logFilePath ?? CONFIG_DEFAULTS.logFilePath}`);
+	lines.push(
+		`  Log File:           ${config.logFilePath ?? "(auto-resolved to project directory)"}`,
+	);
 	lines.push("");
 
 	lines.push("Notifications:");

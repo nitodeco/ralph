@@ -78,6 +78,7 @@ import {
 	writePidFile,
 } from "@/lib/daemon.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
+import { getLogger } from "@/lib/logger.ts";
 import { bootstrapServices, getSleepPreventionService } from "@/lib/services/index.ts";
 import { orchestrator, useAgentStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
@@ -165,7 +166,7 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 
 	if (daemonPid !== null) {
 		console.log(`Ralph started in background mode (PID: ${daemonPid})`);
-		console.log(`Logs are being written to: ${config.logFilePath ?? ".ralph/ralph.log"}`);
+		console.log(`Logs are being written to: ${config.logFilePath ?? getLogger().getLogFilePath()}`);
 		console.log("Use 'ralph status' to check progress");
 		console.log("Use 'ralph stop' to stop the background process");
 	} else {

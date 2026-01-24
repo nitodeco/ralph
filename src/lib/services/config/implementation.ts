@@ -17,7 +17,7 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 		agent: config.agent ?? defaults.agent,
 		maxRetries: config.maxRetries ?? defaults.maxRetries,
 		retryDelayMs: config.retryDelayMs ?? defaults.retryDelayMs,
-		logFilePath: config.logFilePath ?? defaults.logFilePath,
+		logFilePath: config.logFilePath,
 		agentTimeoutMs: config.agentTimeoutMs ?? defaults.agentTimeoutMs,
 		stuckThresholdMs: config.stuckThresholdMs ?? defaults.stuckThresholdMs,
 		lastUpdateCheck: config.lastUpdateCheck,

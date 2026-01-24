@@ -19,7 +19,12 @@
 		"release": "bun run build",
 		"test": "bun test",
 		"test:coverage": "bun test --coverage",
-		"knip": "knip"
+		"knip": "knip",
+		"docs:dev": "bun run --cwd docs dev",
+		"docs:start": "bun run --cwd docs start",
+		"docs:build": "bun run --cwd docs build",
+		"docs:preview": "bun run --cwd docs preview",
+		"docs:check": "bun run --cwd docs check"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.11",
