@@ -6,19 +6,8 @@ import {
 import { getErrorMessage } from "@/lib/errors.ts";
 import type { AgentCompleteEvent } from "@/lib/events.ts";
 import { eventBus } from "@/lib/events.ts";
-import {
-	DecompositionHandler,
-	LearningHandler,
-	TechnicalDebtHandler,
-	VerificationHandler,
-} from "@/lib/handlers/index.ts";
-import {
-	completeIterationLog,
-	iterateIterationLogs,
-	startIterationLog,
-} from "@/lib/iteration-logs.ts";
+import { DecompositionHandler, VerificationHandler } from "@/lib/handlers/index.ts";
 import { getLogger } from "@/lib/logger.ts";
-import { performIterationCleanup } from "@/lib/memory.ts";
 import { sendNotifications } from "@/lib/notifications.ts";
 import { appendProgress } from "@/lib/progress.ts";
 import type { BranchModeConfig } from "@/lib/services/config/types.ts";
@@ -26,29 +15,13 @@ import {
 	getConfigService,
 	getGitBranchService,
 	getGitProviderService,
+	getIterationCoordinator,
 	getPrdService,
 	getSessionManager,
 	getSessionService,
 } from "@/lib/services/index.ts";
 import type { PrdTask } from "@/lib/services/prd/types.ts";
-import {
-	calculateStatisticsFromLogs,
-	displayStatisticsReport,
-	logStatisticsToProgress,
-} from "@/lib/statistics.ts";
-import type {
-	DecompositionRequest,
-	DecompositionSubtask,
-	IterationLog,
-	IterationLogDecomposition,
-	IterationLogRetryContext,
-	IterationLogStatus,
-	IterationLogVerification,
-	Prd,
-	RalphConfig,
-	Session,
-} from "@/types.ts";
-import { useAgentStore } from "./agentStore.ts";
+import type { Prd, RalphConfig, Session } from "@/types.ts";
 import { useAppStore } from "./appStore.ts";
 import { useIterationStore } from "./iterationStore.ts";
 
@@ -92,12 +65,8 @@ class SessionOrchestrator {
 	private skipVerification = false;
 	private unsubscribers: (() => void)[] = [];
 	private initialized = false;
-	private lastRetryContexts: IterationLogRetryContext[] = [];
-	private lastDecomposition: DecompositionRequest | null = null;
 	private decompositionHandler: DecompositionHandler | null = null;
 	private verificationHandler: VerificationHandler | null = null;
-	private learningHandler: LearningHandler | null = null;
-	private technicalDebtHandler: TechnicalDebtHandler | null = null;
 
 	private parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
 	private currentParallelGroup: ParallelGroupState | null = null;
@@ -121,8 +90,6 @@ class SessionOrchestrator {
 		this.skipVerification = options.skipVerification ?? false;
 		this.parallelConfig = options.parallelExecution ?? { enabled: false, maxConcurrentTasks: 1 };
 		this.initialized = true;
-		this.lastRetryContexts = [];
-		this.lastDecomposition = null;
 		this.currentParallelGroup = null;
 		this.parallelExecutionGroups = [];
 		this.currentGroupIndex = 0;
@@ -145,18 +112,6 @@ class SessionOrchestrator {
 		this.verificationHandler = new VerificationHandler({
 			onStateChange: (isVerifying, result) => {
 				useAppStore.setState({ isVerifying, lastVerificationResult: result });
-			},
-		});
-		this.learningHandler = new LearningHandler({
-			enabled: options.config.learningEnabled !== false,
-			logFilePath: options.config.logFilePath,
-		});
-		this.technicalDebtHandler = new TechnicalDebtHandler({
-			onStateChange: (isReviewing, report) => {
-				useAppStore.setState({
-					isReviewingTechnicalDebt: isReviewing,
-					lastTechnicalDebtReport: report,
-				});
 			},
 		});
 		this.setupSubscriptions();
@@ -832,6 +787,7 @@ class SessionOrchestrator {
 	private setupSubscriptions(): void {
 		const loadedConfig = getConfigService().get();
 		const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
+		const iterationCoordinator = getIterationCoordinator();
 
 		this.unsubscribers.push(
 			eventBus.on("agent:complete", (event) => {
@@ -857,7 +813,7 @@ class SessionOrchestrator {
 			eventBus.on("agent:error", (event) => {
 				try {
 					if (event.retryContexts) {
-						this.lastRetryContexts = event.retryContexts;
+						iterationCoordinator.setLastRetryContexts(event.retryContexts);
 					}
 
 					if (event.isFatal) {
@@ -875,9 +831,10 @@ class SessionOrchestrator {
 	}
 
 	private async handleAgentComplete(event: AgentCompleteEvent): Promise<void> {
+		const iterationCoordinator = getIterationCoordinator();
+
 		if (event.retryContexts) {
-			this.lastRetryContexts = event.retryContexts;
-			this.logRetryContextsToProgress(event.retryContexts);
+			iterationCoordinator.setLastRetryContexts(event.retryContexts);
 		}
 
 		const prdService = getPrdService();
@@ -887,8 +844,7 @@ class SessionOrchestrator {
 			const handled = this.decompositionHandler.handle(event.decompositionRequest, currentPrd);
 
 			if (handled) {
-				this.lastDecomposition = event.decompositionRequest;
-				useAppStore.setState({ lastDecomposition: event.decompositionRequest });
+				iterationCoordinator.setLastDecomposition(event.decompositionRequest);
 
 				return;
 			}
@@ -948,372 +904,21 @@ class SessionOrchestrator {
 		iterationStore.markIterationComplete(allTasksActuallyDone, hasPendingTasks);
 	}
 
-	private logRetryContextsToProgress(retryContexts: IterationLogRetryContext[]): void {
-		if (retryContexts.length === 0) {
-			return;
-		}
-
-		const lines: string[] = ["=== Retry Analysis ==="];
-
-		for (const context of retryContexts) {
-			lines.push(`Retry attempt ${context.attemptNumber}:`);
-			lines.push(`  Category: ${context.failureCategory}`);
-			lines.push(`  Root cause: ${context.rootCause}`);
-		}
-
-		lines.push("");
-
-		appendProgress(lines.join("\n"));
-	}
-
 	getConfig(): RalphConfig | null {
 		return this.config;
 	}
 
 	setupIterationCallbacks(): void {
-		const iterationStore = useIterationStore.getState();
-		const iterations = this.iterations;
+		if (!this.config) {
+			throw new Error("Orchestrator must be initialized before setting up iteration callbacks");
+		}
 
-		iterationStore.setCallbacks({
-			onIterationStart: (iterationNumber: number) => {
-				const appState = useAppStore.getState();
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-				const prdService = getPrdService();
-
-				logger.logIterationStart(iterationNumber, iterations);
-				const currentPrd = prdService.reload();
-				const taskWithIndex = currentPrd ? prdService.getNextTaskWithIndex(currentPrd) : null;
-
-				useAgentStore.getState().reset();
-
-				if (currentPrd) {
-					appState.setPrd(currentPrd);
-				}
-
-				if (appState.currentSession) {
-					const sessionService = getSessionService();
-					const updatedSession = sessionService.recordIterationStart(
-						appState.currentSession,
-						iterationNumber,
-					);
-
-					sessionService.save(updatedSession);
-					useAppStore.setState({ currentSession: updatedSession });
-				}
-
-				startIterationLog({
-					iteration: iterationNumber,
-					totalIterations: iterations,
-					task: taskWithIndex
-						? { title: taskWithIndex.title, index: taskWithIndex.index, wasCompleted: false }
-						: null,
-					agentType: loadedConfig.agent,
-				});
-
-				if (this.branchModeEnabled && taskWithIndex) {
-					const branchResult = this.createTaskBranch(taskWithIndex.title, taskWithIndex.index);
-
-					if (!branchResult.success) {
-						logger.error("Failed to create task branch, continuing without branch mode", {
-							error: branchResult.error,
-						});
-					}
-				}
-
-				const specificTask = appState.getEffectiveNextTask();
-
-				if (specificTask && appState.manualNextTask) {
-					appState.clearManualNextTask();
-				}
-
-				useAgentStore.getState().start(specificTask);
-			},
-			onIterationComplete: (iterationNumber: number) => {
-				const appState = useAppStore.getState();
-				const agentStore = useAgentStore.getState();
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-				const prdService = getPrdService();
-
-				logger.logIterationComplete(iterationNumber, iterations, agentStore.isComplete);
-				const currentPrd = prdService.reload();
-
-				if (appState.currentSession) {
-					const sessionService = getSessionService();
-					const wasSuccessful = !agentStore.error && agentStore.isComplete;
-					let updatedSession = sessionService.recordIterationEnd(
-						appState.currentSession,
-						iterationNumber,
-						wasSuccessful,
-					);
-					const taskIndex = currentPrd ? prdService.getCurrentTaskIndex(currentPrd) : 0;
-
-					updatedSession = sessionService.updateIteration(
-						updatedSession,
-						iterationNumber,
-						taskIndex,
-						appState.elapsedTime,
-					);
-					sessionService.save(updatedSession);
-					useAppStore.setState({ currentSession: updatedSession });
-				}
-
-				const lastVerificationResult = this.verificationHandler?.getLastResult() ?? null;
-				const verificationFailed = lastVerificationResult ? !lastVerificationResult.passed : false;
-				const wasDecomposed = this.lastDecomposition !== null;
-
-				const iterationStatus: IterationLogStatus = agentStore.error
-					? "failed"
-					: wasDecomposed
-						? "decomposed"
-						: verificationFailed
-							? "verification_failed"
-							: agentStore.isComplete
-								? "completed"
-								: "completed";
-
-				const taskWithIndex = currentPrd ? prdService.getNextTaskWithIndex(currentPrd) : null;
-				const taskTitle = taskWithIndex?.title ?? "Unknown task";
-				const wasSuccessful = !agentStore.error && agentStore.isComplete && !verificationFailed;
-				const failedChecks = lastVerificationResult ? lastVerificationResult.failedChecks : [];
-
-				try {
-					this.learningHandler?.recordIterationOutcome({
-						iteration: iterationNumber,
-						wasSuccessful,
-						agentError: agentStore.error,
-						output: agentStore.output,
-						exitCode: agentStore.exitCode,
-						taskTitle,
-						retryCount: agentStore.retryCount,
-						retryContexts: this.lastRetryContexts,
-						verificationFailed,
-						failedChecks,
-					});
-				} catch (learningError) {
-					logger.warn("Learning handler threw an error", {
-						error: getErrorMessage(learningError),
-					});
-				}
-
-				const retryContextsForLog =
-					this.lastRetryContexts.length > 0 ? [...this.lastRetryContexts] : undefined;
-
-				this.lastRetryContexts = [];
-
-				const verificationForLog: IterationLogVerification | undefined = lastVerificationResult
-					? {
-							ran: true,
-							passed: lastVerificationResult.passed,
-							checks: lastVerificationResult.checks.map((check) => ({
-								name: check.name,
-								passed: check.passed,
-								durationMs: check.durationMs,
-							})),
-							failedChecks: lastVerificationResult.failedChecks,
-							totalDurationMs: lastVerificationResult.totalDurationMs,
-						}
-					: undefined;
-
-				this.verificationHandler?.reset();
-
-				const decompositionForLog: IterationLogDecomposition | undefined = this.lastDecomposition
-					? {
-							originalTaskTitle: this.lastDecomposition.originalTaskTitle,
-							reason: this.lastDecomposition.reason,
-							subtasksCreated: this.lastDecomposition.suggestedSubtasks.map(
-								(subtask: DecompositionSubtask) => subtask.title,
-							),
-						}
-					: undefined;
-
-				this.lastDecomposition = null;
-				useAppStore.setState({ lastDecomposition: null });
-
-				try {
-					completeIterationLog({
-						iteration: iterationNumber,
-						status: iterationStatus,
-						exitCode: agentStore.exitCode,
-						retryCount: agentStore.retryCount,
-						outputLength: agentStore.output.length,
-						taskWasCompleted: agentStore.isComplete,
-						retryContexts: retryContextsForLog,
-						verification: verificationForLog,
-						decomposition: decompositionForLog,
-					});
-				} catch (logError) {
-					logger.warn("Failed to complete iteration log", {
-						error: getErrorMessage(logError),
-					});
-				}
-
-				if (this.branchModeEnabled && wasSuccessful && agentStore.isComplete) {
-					const reloadedPrd = prdService.reload();
-
-					this.completeTaskBranch(reloadedPrd).then((branchResult) => {
-						if (!branchResult.success) {
-							logger.error("Failed to complete task branch workflow", {
-								error: branchResult.error,
-							});
-						}
-					});
-				}
-
-				agentStore.reset();
-
-				try {
-					const cleanupResult = performIterationCleanup({ logFilePath: loadedConfig.logFilePath });
-
-					if (cleanupResult.memoryStatus !== "ok") {
-						logger.warn("Memory cleanup completed with warnings", {
-							status: cleanupResult.memoryStatus,
-							tempFilesRemoved: cleanupResult.tempFilesRemoved,
-						});
-					}
-				} catch (cleanupError) {
-					logger.warn("Memory cleanup failed", { error: getErrorMessage(cleanupError) });
-				}
-			},
-			onAllComplete: () => {
-				const appState = useAppStore.getState();
-
-				useAgentStore.getState().stop();
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-				logger.logSessionComplete();
-				const currentPrd = getPrdService().reload();
-
-				sendNotifications(loadedConfig.notifications, "complete", currentPrd?.project, {
-					totalIterations: iterations,
-				});
-
-				if (appState.currentSession) {
-					const sessionService = getSessionService();
-					const finalStatistics = calculateStatisticsFromLogs(appState.currentSession);
-
-					displayStatisticsReport(finalStatistics);
-					logStatisticsToProgress(finalStatistics);
-
-					if (this.technicalDebtHandler) {
-						try {
-							const MAX_LOGS_FOR_ANALYSIS = 100;
-							const iterationLogs: IterationLog[] = [];
-
-							for (const log of iterateIterationLogs()) {
-								iterationLogs.push(log);
-
-								if (iterationLogs.length >= MAX_LOGS_FOR_ANALYSIS) {
-									break;
-								}
-							}
-
-							const sessionId = `session-${appState.currentSession.startTime}`;
-							const technicalDebtReport = this.technicalDebtHandler.run(
-								sessionId,
-								iterationLogs,
-								finalStatistics,
-								this.config?.technicalDebtReview,
-							);
-
-							if (technicalDebtReport.totalItems > 0) {
-								eventBus.emit("session:technical_debt_review", {
-									totalItems: technicalDebtReport.totalItems,
-									criticalItems: technicalDebtReport.itemsBySeverity.critical,
-									highItems: technicalDebtReport.itemsBySeverity.high,
-									hasRecommendations: technicalDebtReport.recommendations.length > 0,
-								});
-							}
-						} catch (debtReviewError) {
-							logger.warn("Technical debt review failed", {
-								error: getErrorMessage(debtReviewError),
-							});
-						}
-					}
-
-					getSessionManager().recordUsageStatistics(
-						appState.currentSession,
-						currentPrd,
-						"completed",
-					);
-
-					const completedSession = sessionService.updateStatus(
-						appState.currentSession,
-						"completed",
-					);
-
-					sessionService.save(completedSession);
-					sessionService.delete();
-					useAppStore.setState({ currentSession: null });
-				}
-
-				eventBus.emit("session:complete", { totalIterations: iterations });
-				useAppStore.setState({ appState: "complete" });
-			},
-			onMaxIterations: () => {
-				const appState = useAppStore.getState();
-				const iterationState = useIterationStore.getState();
-
-				useAgentStore.getState().stop();
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-				logger.logMaxIterationsReached(iterationState.total);
-				const currentPrd = getPrdService().reload();
-
-				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
-					completedIterations: iterationState.current,
-					totalIterations: iterationState.total,
-				});
-
-				if (appState.currentSession) {
-					getSessionManager().recordUsageStatistics(appState.currentSession, currentPrd, "stopped");
-
-					const sessionService = getSessionService();
-					const stoppedSession = sessionService.updateStatus(appState.currentSession, "stopped");
-
-					sessionService.save(stoppedSession);
-					useAppStore.setState({ currentSession: stoppedSession });
-				}
-
-				eventBus.emit("session:stop", { reason: "max_iterations" });
-				useAppStore.setState({ appState: "max_iterations" });
-			},
-			onMaxRuntime: () => {
-				const appState = useAppStore.getState();
-				const iterationState = useIterationStore.getState();
-
-				useAgentStore.getState().stop();
-				const loadedConfig = getConfigService().get();
-				const logger = getLogger({ logFilePath: loadedConfig.logFilePath });
-
-				logger.info("Max runtime limit reached", {
-					maxRuntimeMs: iterationState.maxRuntimeMs,
-					completedIterations: iterationState.current,
-				});
-				const currentPrd = getPrdService().reload();
-
-				sendNotifications(loadedConfig.notifications, "max_iterations", currentPrd?.project, {
-					completedIterations: iterationState.current,
-					totalIterations: iterationState.total,
-					reason: "max_runtime",
-				});
-
-				if (appState.currentSession) {
-					getSessionManager().recordUsageStatistics(appState.currentSession, currentPrd, "stopped");
-
-					const sessionService = getSessionService();
-					const stoppedSession = sessionService.updateStatus(appState.currentSession, "stopped");
-
-					sessionService.save(stoppedSession);
-					useAppStore.setState({ currentSession: stoppedSession });
-				}
-
-				eventBus.emit("session:stop", { reason: "max_runtime" });
-				useAppStore.setState({ appState: "max_runtime" });
-			},
+		getIterationCoordinator().setupIterationCallbacks({
+			iterations: this.iterations,
+			config: this.config,
+			skipVerification: this.skipVerification,
+			branchModeEnabled: this.branchModeEnabled,
+			branchModeConfig: this.branchModeConfig,
 		});
 	}
 
@@ -1344,15 +949,12 @@ class SessionOrchestrator {
 
 		this.unsubscribers = [];
 		this.initialized = false;
-		this.lastRetryContexts = [];
-		this.lastDecomposition = null;
 		this.decompositionHandler?.reset();
 		this.verificationHandler?.reset();
-		this.technicalDebtHandler?.reset();
 		this.decompositionHandler = null;
 		this.verificationHandler = null;
-		this.learningHandler = null;
-		this.technicalDebtHandler = null;
+
+		getIterationCoordinator().clearState();
 
 		this.parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
 		this.currentParallelGroup = null;

@@ -82,9 +82,10 @@ import {
 	bootstrapServices,
 	getConfigService,
 	getSleepPreventionService,
+	setIterationCoordinatorDependencies,
 	setSessionManagerDependencies,
 } from "@/lib/services/index.ts";
-import { orchestrator, useAgentStore, useIterationStore } from "@/stores/index.ts";
+import { orchestrator, useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
 import type { Command } from "@/types.ts";
 import packageJson from "../package.json";
 
@@ -199,6 +200,67 @@ function main(): void {
 			return {
 				current: state.current,
 			};
+		},
+	});
+
+	setIterationCoordinatorDependencies({
+		getAppStoreState: () => {
+			const state = useAppStore.getState();
+
+			return {
+				prd: state.prd,
+				currentSession: state.currentSession,
+				elapsedTime: state.elapsedTime,
+				manualNextTask: state.manualNextTask,
+				isVerifying: state.isVerifying,
+				isReviewingTechnicalDebt: state.isReviewingTechnicalDebt,
+				lastVerificationResult: state.lastVerificationResult,
+				lastTechnicalDebtReport: state.lastTechnicalDebtReport,
+				lastDecomposition: state.lastDecomposition,
+				getEffectiveNextTask: state.getEffectiveNextTask,
+				clearManualNextTask: state.clearManualNextTask,
+				setPrd: state.setPrd,
+			};
+		},
+		setAppStoreState: (newState) => {
+			useAppStore.setState(newState);
+		},
+		getAgentStoreState: () => {
+			const state = useAgentStore.getState();
+
+			return {
+				isComplete: state.isComplete,
+				error: state.error,
+				output: state.output,
+				exitCode: state.exitCode,
+				retryCount: state.retryCount,
+				reset: state.reset,
+			};
+		},
+		getIterationStoreState: () => {
+			const state = useIterationStore.getState();
+
+			return {
+				current: state.current,
+				total: state.total,
+				setCallbacks: state.setCallbacks,
+				restartCurrentIteration: state.restartCurrentIteration,
+			};
+		},
+		startAgent: (specificTask) => {
+			useAgentStore.getState().start(specificTask);
+		},
+		stopAgent: () => {
+			useAgentStore.getState().stop();
+		},
+		resetAgent: () => {
+			useAgentStore.getState().reset();
+		},
+		createTaskBranch: (taskTitle, taskIndex) => {
+			return orchestrator.createTaskBranch(taskTitle, taskIndex);
+		},
+		completeTaskBranch: async (prd) => {
+			return orchestrator.completeTaskBranch(prd);
 		},
 	});
 

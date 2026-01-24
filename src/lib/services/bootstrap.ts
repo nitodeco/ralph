@@ -10,6 +10,8 @@ import { createGitProviderService, registerProvider } from "./git-provider/imple
 import type { GitProviderService } from "./git-provider/types.ts";
 import { createGuardrailsService } from "./guardrails/implementation.ts";
 import type { GuardrailsService } from "./guardrails/types.ts";
+import { createIterationCoordinator } from "./iteration-coordinator/implementation.ts";
+import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
 import { createPrdService } from "./prd/implementation.ts";
 import type { PrdService } from "./prd/types.ts";
 import { createProjectRegistryService } from "./project-registry/implementation.ts";
@@ -44,10 +46,77 @@ export interface SessionManagerStoreDependencies {
 	};
 }
 
+export interface IterationCoordinatorStoreDependencies {
+	getAppStoreState: () => {
+		prd: import("./prd/types.ts").Prd | null;
+		currentSession: import("./session/types.ts").Session | null;
+		elapsedTime: number;
+		manualNextTask: string | null;
+		isVerifying: boolean;
+		isReviewingTechnicalDebt: boolean;
+		lastVerificationResult: import("@/types.ts").VerificationResult | null;
+		lastTechnicalDebtReport:
+			| import("@/lib/handlers/TechnicalDebtHandler.ts").TechnicalDebtReport
+			| null;
+		lastDecomposition: import("@/types.ts").DecompositionRequest | null;
+		getEffectiveNextTask: () => string | null;
+		clearManualNextTask: () => void;
+		setPrd: (prd: import("./prd/types.ts").Prd) => void;
+	};
+	setAppStoreState: (
+		state: Partial<{
+			prd: import("./prd/types.ts").Prd | null;
+			currentSession: import("./session/types.ts").Session | null;
+			isVerifying: boolean;
+			isReviewingTechnicalDebt: boolean;
+			lastVerificationResult: import("@/types.ts").VerificationResult | null;
+			lastTechnicalDebtReport:
+				| import("@/lib/handlers/TechnicalDebtHandler.ts").TechnicalDebtReport
+				| null;
+			lastDecomposition: import("@/types.ts").DecompositionRequest | null;
+			appState: import("@/types.ts").AppState;
+		}>,
+	) => void;
+	getAgentStoreState: () => {
+		isComplete: boolean;
+		error: string | null;
+		output: string;
+		exitCode: number | null;
+		retryCount: number;
+		reset: () => void;
+	};
+	getIterationStoreState: () => {
+		current: number;
+		total: number;
+		setCallbacks: (callbacks: {
+			onIterationStart?: (iteration: number) => void;
+			onIterationComplete?: (iteration: number) => void;
+			onAllComplete?: () => void;
+			onMaxIterations?: () => void;
+			onMaxRuntime?: () => void;
+		}) => void;
+		restartCurrentIteration: () => void;
+	};
+	startAgent: (specificTask?: string | null) => void;
+	stopAgent: () => void;
+	resetAgent: () => void;
+	createTaskBranch: (taskTitle: string, taskIndex: number) => { success: boolean; error?: string };
+	completeTaskBranch: (
+		prd: import("./prd/types.ts").Prd | null,
+	) => Promise<{ success: boolean; error?: string; prUrl?: string }>;
+}
+
 let sessionManagerDependencies: SessionManagerStoreDependencies | null = null;
+let iterationCoordinatorDependencies: IterationCoordinatorStoreDependencies | null = null;
 
 export function setSessionManagerDependencies(dependencies: SessionManagerStoreDependencies): void {
 	sessionManagerDependencies = dependencies;
+}
+
+export function setIterationCoordinatorDependencies(
+	dependencies: IterationCoordinatorStoreDependencies,
+): void {
+	iterationCoordinatorDependencies = dependencies;
 }
 
 export function bootstrapServices(): void {
@@ -70,6 +139,89 @@ export function bootstrapServices(): void {
 		},
 	};
 
+	const iterationCoordinatorDeps: IterationCoordinatorStoreDependencies = {
+		getAppStoreState: () => {
+			if (!iterationCoordinatorDependencies) {
+				return {
+					prd: null,
+					currentSession: null,
+					elapsedTime: 0,
+					manualNextTask: null,
+					isVerifying: false,
+					isReviewingTechnicalDebt: false,
+					lastVerificationResult: null,
+					lastTechnicalDebtReport: null,
+					lastDecomposition: null,
+					getEffectiveNextTask: () => null,
+					clearManualNextTask: () => {},
+					setPrd: () => {},
+				};
+			}
+
+			return iterationCoordinatorDependencies.getAppStoreState();
+		},
+		setAppStoreState: (state) => {
+			if (iterationCoordinatorDependencies) {
+				iterationCoordinatorDependencies.setAppStoreState(state);
+			}
+		},
+		getAgentStoreState: () => {
+			if (!iterationCoordinatorDependencies) {
+				return {
+					isComplete: false,
+					error: null,
+					output: "",
+					exitCode: null,
+					retryCount: 0,
+					reset: () => {},
+				};
+			}
+
+			return iterationCoordinatorDependencies.getAgentStoreState();
+		},
+		getIterationStoreState: () => {
+			if (!iterationCoordinatorDependencies) {
+				return {
+					current: 0,
+					total: 0,
+					setCallbacks: () => {},
+					restartCurrentIteration: () => {},
+				};
+			}
+
+			return iterationCoordinatorDependencies.getIterationStoreState();
+		},
+		startAgent: (specificTask) => {
+			if (iterationCoordinatorDependencies) {
+				iterationCoordinatorDependencies.startAgent(specificTask);
+			}
+		},
+		stopAgent: () => {
+			if (iterationCoordinatorDependencies) {
+				iterationCoordinatorDependencies.stopAgent();
+			}
+		},
+		resetAgent: () => {
+			if (iterationCoordinatorDependencies) {
+				iterationCoordinatorDependencies.resetAgent();
+			}
+		},
+		createTaskBranch: (taskTitle, taskIndex) => {
+			if (!iterationCoordinatorDependencies) {
+				return { success: true };
+			}
+
+			return iterationCoordinatorDependencies.createTaskBranch(taskTitle, taskIndex);
+		},
+		completeTaskBranch: async (prd) => {
+			if (!iterationCoordinatorDependencies) {
+				return { success: true };
+			}
+
+			return iterationCoordinatorDependencies.completeTaskBranch(prd);
+		},
+	};
+
 	initializeServices({
 		projectRegistry: createProjectRegistryService(),
 		config: createConfigService(),
@@ -79,6 +231,7 @@ export function bootstrapServices(): void {
 		sessionMemory: createSessionMemoryService(),
 		session: createSessionService(),
 		sessionManager: createSessionManager(sessionManagerDeps),
+		iterationCoordinator: createIterationCoordinator(iterationCoordinatorDeps),
 		sleepPrevention: createSleepPreventionService(),
 		usageStatistics: createUsageStatisticsService(),
 		gitBranch: createGitBranchService(),
@@ -95,6 +248,7 @@ export interface TestServiceOverrides {
 	sessionMemory?: Partial<SessionMemoryService>;
 	session?: Partial<SessionService>;
 	sessionManager?: Partial<SessionManager>;
+	iterationCoordinator?: Partial<IterationCoordinator>;
 	sleepPrevention?: Partial<SleepPreventionService>;
 	usageStatistics?: Partial<UsageStatisticsService>;
 	gitBranch?: Partial<GitBranchService>;
@@ -585,6 +739,20 @@ function createMockSessionManager(overrides: Partial<SessionManager> = {}): Sess
 	};
 }
 
+function createMockIterationCoordinator(
+	overrides: Partial<IterationCoordinator> = {},
+): IterationCoordinator {
+	return {
+		setupIterationCallbacks: () => {},
+		getLastRetryContexts: () => [],
+		getLastDecomposition: () => null,
+		setLastRetryContexts: () => {},
+		setLastDecomposition: () => {},
+		clearState: () => {},
+		...overrides,
+	};
+}
+
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
 	resetServices();
 
@@ -597,6 +765,7 @@ export function bootstrapTestServices(overrides: TestServiceOverrides = {}): voi
 		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
 		session: createMockSessionService(overrides.session),
 		sessionManager: createMockSessionManager(overrides.sessionManager),
+		iterationCoordinator: createMockIterationCoordinator(overrides.iterationCoordinator),
 		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
 		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
 		gitBranch: createMockGitBranchService(overrides.gitBranch),

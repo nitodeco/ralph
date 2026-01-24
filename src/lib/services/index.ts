@@ -3,7 +3,9 @@ export { AgentProcessManager, type ProcessEntry, type ProcessInfo } from "./Agen
 export {
 	bootstrapServices,
 	bootstrapTestServices,
+	type IterationCoordinatorStoreDependencies,
 	type SessionManagerStoreDependencies,
+	setIterationCoordinatorDependencies,
 	setSessionManagerDependencies,
 	type TestServiceOverrides,
 	teardownTestServices,
@@ -57,6 +59,7 @@ export {
 	getGitBranchService,
 	getGitProviderService,
 	getGuardrailsService,
+	getIterationCoordinator,
 	getPrdService,
 	getProjectRegistryService,
 	getRulesService,
@@ -111,6 +114,14 @@ export type {
 export { VALID_GUARDRAIL_CATEGORIES, VALID_GUARDRAIL_TRIGGERS } from "./guardrails/types.ts";
 export { isGuardrailsFile, isPromptGuardrail } from "./guardrails/validation.ts";
 export { IterationTimer } from "./IterationTimer.ts";
+export {
+	createIterationCoordinator,
+	type IterationCoordinatorDependencies,
+} from "./iteration-coordinator/implementation.ts";
+export type {
+	IterationCallbackOptions,
+	IterationCoordinator,
+} from "./iteration-coordinator/types.ts";
 export { createPrdService } from "./prd/implementation.ts";
 export type {
 	CanWorkResult,
