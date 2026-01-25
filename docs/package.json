@@ -20,7 +20,8 @@
 		"marked": "17.0.1",
 		"pagefind": "1.4.0",
 		"tailwindcss": "4.1.18",
-		"typescript": "5.9.3"
+		"typescript": "5.9.3",
+		"unist-util-visit": "5.0.0"
 	},
 	"devDependencies": {
 		"sharp": "0.34.5"
