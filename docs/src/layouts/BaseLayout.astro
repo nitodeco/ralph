@@ -10,7 +10,7 @@ interface Props {
 const { title, description = "CLI tool for long-running PRD-driven development with AI coding agents", ogImage } = Astro.props;
 const pageTitle = `${title} · Ralph`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
-const ogImageUrl = ogImage ?? new URL("/og/og-image.png", Astro.site).toString();
+const ogImageUrl = ogImage ?? new URL(`${import.meta.env.BASE_URL}og/og-image.png`, Astro.site).toString();
 ---
 
 <!doctype html>
@@ -24,18 +24,18 @@ const ogImageUrl = ogImage ?? new URL("/og/og-image.png", Astro.site).toString()
 
     <title>{pageTitle}</title>
 
-    <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/jetbrainsmono.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" as="image" href="/ralph.webp" type="image/webp" />
+    <link rel="preload" href={`${import.meta.env.BASE_URL}fonts/geist.woff2`} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={`${import.meta.env.BASE_URL}fonts/jetbrainsmono.woff2`} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" as="image" href={`${import.meta.env.BASE_URL}ralph.webp`} type="image/webp" />
 
     <link rel="dns-prefetch" href="https://github.com" />
     <link rel="preconnect" href="https://github.com" crossorigin />
     <link rel="canonical" href={canonicalUrl} />
 
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-    <link rel="manifest" href="/favicon/site.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href={`${import.meta.env.BASE_URL}favicon/favicon-32x32.png`} />
+    <link rel="icon" type="image/png" sizes="16x16" href={`${import.meta.env.BASE_URL}favicon/favicon-16x16.png`} />
+    <link rel="apple-touch-icon" sizes="180x180" href={`${import.meta.env.BASE_URL}favicon/apple-touch-icon.png`} />
+    <link rel="manifest" href={`${import.meta.env.BASE_URL}favicon/site.webmanifest`} />
 
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
@@ -53,7 +53,7 @@ const ogImageUrl = ogImage ?? new URL("/og/og-image.png", Astro.site).toString()
     <meta name="twitter:image" content={ogImageUrl} />
     <meta name="twitter:image:alt" content="Ralph - PRD-driven development with AI coding agents" />
 
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="sitemap" href={`${import.meta.env.BASE_URL}sitemap-index.xml`} />
   </head>
   <body class="min-h-screen bg-bg text-text">
     <div class="noise-overlay" aria-hidden="true"></div>

@@ -31,7 +31,7 @@ const buildNavigation = (entries: typeof docs): NavSection[] => {
 
     const pathParts = entry.id.split("/");
     const section = pathParts.at(0)!;
-    const href = `/docs/${entry.id}`;
+    const href = `${import.meta.env.BASE_URL}docs/${entry.id}`;
 
     const item: NavItem = {
       title: entry.data.title,

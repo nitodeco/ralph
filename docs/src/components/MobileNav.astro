@@ -8,8 +8,8 @@ interface Props {
 const { currentPath = "" } = Astro.props;
 
 const NAV_ITEMS = [
-  { label: "Docs", href: "/docs" },
-  { label: "Changelog", href: "/changelog/" },
+  { label: "Docs", href: `${import.meta.env.BASE_URL}docs` },
+  { label: "Changelog", href: `${import.meta.env.BASE_URL}changelog/` },
   { label: "GitHub", href: "https://github.com/nitodeco/ralph", isExternal: true },
 ];
 ---
@@ -32,7 +32,7 @@ const NAV_ITEMS = [
     class="fixed inset-y-0 left-0 w-full max-w-xs bg-bg border-r border-border shadow-lg transition-transform duration-300 -translate-x-full"
   >
     <div class="flex h-14 items-center justify-between border-b border-border px-4">
-      <a href="/" class="font-semibold text-text">Ralph</a>
+      <a href={import.meta.env.BASE_URL} class="font-semibold text-text">Ralph</a>
       <button
         type="button"
         id="mobile-nav-close"

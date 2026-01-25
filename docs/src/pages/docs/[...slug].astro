@@ -40,7 +40,7 @@ const { doc } = Astro.props;
 const { Content, headings } = await render(doc);
 
 const pathSegments = doc.id.split("/");
-const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: "/docs" }];
+const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: `${import.meta.env.BASE_URL}docs` }];
 
 if (pathSegments.length > 1) {
   const sectionSlug = pathSegments.at(0)!;

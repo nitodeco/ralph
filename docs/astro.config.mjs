@@ -5,7 +5,7 @@ import compress from "astro-compress";
 
 export default defineConfig({
   site: "https://nitodeco.github.io",
-  base: "",
+  base: "/ralph/",
   trailingSlash: "ignore",
   output: "static",
   compressHTML: true,

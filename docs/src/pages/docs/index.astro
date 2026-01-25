@@ -6,14 +6,14 @@ const docs = await getCollection("docs");
 const introDoc = docs.find((doc) => doc.id === "getting-started/introduction");
 
 if (!introDoc) {
-  return Astro.redirect("/");
+  return Astro.redirect(import.meta.env.BASE_URL);
 }
 
 const { Content, headings } = await render(introDoc);
 
 const breadcrumbs = [
-  { label: "Docs", href: "/docs" },
-  { label: "Getting Started", href: "/docs/getting-started/introduction" },
+  { label: "Docs", href: `${import.meta.env.BASE_URL}docs` },
+  { label: "Getting Started", href: `${import.meta.env.BASE_URL}docs/getting-started/introduction` },
   { label: "Introduction" },
 ];
 ---

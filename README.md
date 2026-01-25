@@ -12,6 +12,7 @@
 </div>
 
 Ralph automates the process of working through a Product Requirements Document (PRD) by orchestrating AI coding agents (Cursor, Claude Code, or Codex) to complete tasks one at a time.
+Ralph is inspired by the Ralph loop methodology created by Geoffrey Huntley and outlines in this article: https://ghuntley.com/ralph/
 
 ## Installation
 

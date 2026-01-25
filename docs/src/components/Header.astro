@@ -8,14 +8,17 @@ interface Props {
 const { currentPath = "" } = Astro.props;
 
 const NAV_ITEMS = [
-  { label: "Docs", href: "/docs" },
-  { label: "Changelog", href: "/changelog/" },
+  { label: "Docs", href: `${import.meta.env.BASE_URL}docs` },
+  { label: "Changelog", href: `${import.meta.env.BASE_URL}changelog/` },
   { label: "GitHub", href: "https://github.com/nitodeco/ralph", isExternal: true },
 ];
 
 const isActive = (href: string) => {
-  if (href === "/docs") {
-    return currentPath.startsWith("/docs");
+  const basePath = import.meta.env.BASE_URL;
+  const docsPath = `${basePath}docs`;
+
+  if (href === docsPath) {
+    return currentPath.startsWith(docsPath);
   }
 
   return currentPath === href || currentPath.startsWith(href);
@@ -24,9 +27,9 @@ const isActive = (href: string) => {
 
 <header class="sticky top-0 z-40 w-full border-b border-border-subtle bg-bg/80 backdrop-blur-md" role="banner">
   <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-    <a href="/" class="flex shrink-0 items-center gap-2 font-mono text-text hover:text-brand transition-colors" aria-label="Ralph - Home">
+    <a href={import.meta.env.BASE_URL} class="flex shrink-0 items-center gap-2 font-mono text-text hover:text-brand transition-colors" aria-label="Ralph - Home">
       <img
-        src="/ralph.webp"
+        src={`${import.meta.env.BASE_URL}ralph.webp`}
         alt="Ralph"
         width="108"
         height="32"
