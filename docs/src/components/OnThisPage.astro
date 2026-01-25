@@ -16,22 +16,29 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
 {filteredHeadings.length > 0 && (
   <nav class="on-this-page" aria-label="On this page">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-text-subtle mb-3">
+    <h4 class="text-xs font-semibold uppercase tracking-wider text-text-subtle mb-4 flex items-center gap-2">
+      <span class="toc-accent"></span>
       On this page
     </h4>
-    <ul class="space-y-2 text-sm">
-      {filteredHeadings.map((heading) => (
-        <li class:list={[heading.depth === 3 && "ml-3"]}>
-          <a
-            href={`#${heading.slug}`}
-            class="block text-text-muted hover:text-brand transition-colors py-0.5 toc-link"
-            data-heading-slug={heading.slug}
-          >
-            {heading.text}
-          </a>
-        </li>
-      ))}
-    </ul>
+    <div class="toc-container relative">
+      <div class="toc-progress-track"></div>
+      <div class="toc-progress-fill" id="toc-progress"></div>
+      <ul class="toc-list space-y-1 text-sm pl-3">
+        {filteredHeadings.map((heading, index) => (
+          <li class:list={["toc-item relative", heading.depth === 3 && "ml-3"]}>
+            <span class="toc-dot" data-index={index}></span>
+            <a
+              href={`#${heading.slug}`}
+              class="toc-link block text-text-muted hover:text-text transition-all duration-150 py-1"
+              data-heading-slug={heading.slug}
+              data-index={index}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   </nav>
 )}
 
@@ -39,6 +46,8 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
   const updateActiveLink = () => {
     const headings = document.querySelectorAll("h2[id], h3[id]");
     const tocLinks = document.querySelectorAll(".toc-link");
+    const tocDots = document.querySelectorAll(".toc-dot");
+    const progressFill = document.getElementById("toc-progress");
 
     if (headings.length === 0 || tocLinks.length === 0) return;
 
@@ -68,14 +77,27 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
     }
 
     tocLinks.forEach((link, i) => {
+      const dot = tocDots[i];
       if (i === activeIndex) {
         link.classList.remove("text-text-muted");
         link.classList.add("text-brand", "font-medium");
+        dot?.classList.add("active");
+      } else if (i < activeIndex) {
+        link.classList.remove("text-brand", "font-medium");
+        link.classList.add("text-text-muted");
+        dot?.classList.remove("active");
+        dot?.classList.add("passed");
       } else {
         link.classList.remove("text-brand", "font-medium");
         link.classList.add("text-text-muted");
+        dot?.classList.remove("active", "passed");
       }
     });
+
+    if (progressFill && tocLinks.length > 0) {
+      const progressPercent = ((activeIndex + 1) / tocLinks.length) * 100;
+      progressFill.style.height = `${progressPercent}%`;
+    }
   };
 
   updateActiveLink();
@@ -96,5 +118,72 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
   .on-this-page {
     position: sticky;
     top: 6rem;
+  }
+
+  .toc-accent {
+    width: 2px;
+    height: 12px;
+    background: var(--color-brand);
+    border-radius: 1px;
+    opacity: 0.6;
+  }
+
+  .toc-container {
+    position: relative;
+  }
+
+  .toc-progress-track {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
+    border-radius: 1px;
+  }
+
+  .toc-progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2px;
+    height: 0;
+    background: var(--color-brand);
+    border-radius: 1px;
+    transition: height 0.15s ease;
+    box-shadow: var(--glow-brand-subtle);
+  }
+
+  .toc-dot {
+    position: absolute;
+    left: -11px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-border);
+    border: 2px solid var(--color-bg);
+    transition: all 0.15s ease;
+    z-index: 1;
+  }
+
+  .toc-dot.active {
+    background: var(--color-brand);
+    box-shadow: var(--glow-brand);
+    transform: translateY(-50%) scale(1.2);
+  }
+
+  .toc-dot.passed {
+    background: var(--color-brand);
+    opacity: 0.5;
+  }
+
+  .toc-link {
+    position: relative;
+  }
+
+  .toc-link.text-brand {
+    text-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
   }
 </style>

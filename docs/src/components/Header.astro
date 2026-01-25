@@ -22,32 +22,32 @@ const isActive = (href: string) => {
 };
 ---
 
-<header class="sticky top-0 z-40 w-full border-b border-border bg-bg/80 backdrop-blur-sm">
+<header class="header sticky top-0 z-40 w-full border-b border-border bg-bg/80 backdrop-blur-md">
   <div class="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-    <a href="/ralph/" class="flex shrink-0 items-center gap-2 font-semibold text-text hover:text-brand transition-colors">
-      <span class="text-xl">Ralph</span>
+    <a href="/ralph/" class="logo-link group flex shrink-0 items-center gap-2 font-semibold text-text transition-all duration-200">
+      <span class="text-xl group-hover:text-brand transition-colors">Ralph</span>
     </a>
 
     <div class="hidden flex-1 justify-center md:flex">
       <Search class="w-full max-w-xs" />
     </div>
 
-    <nav class="hidden items-center gap-6 md:flex" aria-label="Main navigation">
+    <nav class="hidden items-center gap-1 md:flex" aria-label="Main navigation">
       {NAV_ITEMS.map((item) => (
         <a
           href={item.href}
           class:list={[
-            "text-sm font-medium transition-colors whitespace-nowrap",
+            "nav-link relative px-3 py-1.5 text-sm font-medium transition-all duration-200 rounded-md",
             isActive(item.href)
-              ? "text-text"
-              : "text-text-muted hover:text-text",
+              ? "text-text bg-bg-elevated"
+              : "text-text-muted hover:text-text hover:bg-bg-elevated/50",
           ]}
           {...(item.isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
         >
           {item.label}
           {item.isExternal && (
             <>
-              <span class="ml-1" aria-hidden="true">↗</span>
+              <span class="ml-1 opacity-50" aria-hidden="true">↗</span>
               <span class="sr-only">(opens in new tab)</span>
             </>
           )}
@@ -59,7 +59,7 @@ const isActive = (href: string) => {
       <Search class="w-9" />
       <button
         type="button"
-        class="flex h-9 w-9 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text"
+        class="flex h-9 w-9 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text transition-colors"
         aria-label="Open menu"
         data-mobile-menu-toggle
       >
@@ -80,4 +80,38 @@ const isActive = (href: string) => {
       </button>
     </div>
   </div>
+  <div class="header-border-gradient"></div>
 </header>
+
+<style>
+  .header {
+    position: relative;
+  }
+
+  .header-border-gradient {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gradient-header);
+    opacity: 0.5;
+  }
+
+  .logo-link:hover {
+    text-shadow: var(--glow-brand-subtle);
+  }
+
+  .nav-link.text-text::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 2px;
+    background: var(--color-brand);
+    border-radius: 1px;
+    opacity: 0.6;
+  }
+</style>

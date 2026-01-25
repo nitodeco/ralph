@@ -8,15 +8,15 @@ interface Props {
 const { variant = "primary", href, class: className = "" } = Astro.props;
 
 const baseStyles =
-  "inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] disabled:opacity-50 disabled:pointer-events-none";
+  "btn inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] disabled:opacity-50 disabled:pointer-events-none";
 
 const VARIANT_STYLES_BY_VARIANT = {
   primary:
-    "bg-brand text-[var(--color-bg)] hover:bg-brand-hover focus-visible:ring-brand",
+    "btn-primary bg-gradient-to-r from-brand to-brand-subtle text-[var(--color-bg)] hover:shadow-[var(--glow-brand)] focus-visible:ring-brand",
   secondary:
-    "bg-[var(--color-bg-elevated)] text-[var(--color-text)] border border-[var(--color-border)] hover:bg-[var(--color-bg-subtle)] focus-visible:ring-brand",
+    "btn-secondary bg-[var(--color-bg-elevated)] text-[var(--color-text)] border border-[var(--color-border)] hover:border-[var(--color-brand-subtle)] focus-visible:ring-brand",
   ghost:
-    "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-elevated)] focus-visible:ring-brand",
+    "btn-ghost text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-elevated)] focus-visible:ring-brand",
 };
 
 const styles = `${baseStyles} ${VARIANT_STYLES_BY_VARIANT[variant]} ${className}`;
@@ -33,3 +33,46 @@ const styles = `${baseStyles} ${VARIANT_STYLES_BY_VARIANT[variant]} ${className}
     </button>
   )
 }
+
+<style>
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary {
+    position: relative;
+    background-size: 100% 100%;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background-size: 150% 100%;
+  }
+
+  .btn-secondary {
+    position: relative;
+  }
+
+  .btn-secondary::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background: var(--gradient-brand);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+  }
+
+  .btn-secondary:hover::before {
+    opacity: 0.5;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-bg-subtle);
+  }
+</style>

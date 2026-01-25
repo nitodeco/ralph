@@ -49,7 +49,7 @@ The generated file looks like:
 
 ```markdown
 ---
-"@nitodeco/ralph": minor
+"ralph": minor
 ---
 
 Add session memory export feature
@@ -153,7 +153,7 @@ If you selected the wrong change type, edit the changeset file directly:
 
 ```markdown
 ---
-"@nitodeco/ralph": patch  # change from minor to patch
+"ralph": patch  # change from minor to patch
 ---
 ```
 

@@ -104,7 +104,7 @@ Check on it with `ralph status`.
 
 ### Can I edit the PRD manually?
 
-Yes, but it's recommended to use Ralph commands (`ralph task done`, `ralph task undone`) for status changes. The PRD file is at `~/.ralph/projects/<project>/prd.md`.
+Yes, but it's recommended to use Ralph commands (`ralph task done`, `ralph task undone`) for status changes. The PRD file is at `~/.ralph/projects/<project>/prd.json`.
 
 ### How do I add more tasks?
 

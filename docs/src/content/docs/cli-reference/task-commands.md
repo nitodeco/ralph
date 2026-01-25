@@ -109,6 +109,82 @@ ralph task undone 3
 - Reset progress for testing
 - Change the order of task execution
 
+## ralph task add
+
+Add a new task to the PRD.
+
+```bash
+ralph task add --title "Implement user authentication" --description "Add JWT-based auth"
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--title` | Task title |
+| `--description` | Task description |
+| `--steps` | Implementation steps (can be specified multiple times) |
+| `--stdin` | Read task data from stdin |
+
+**Examples:**
+
+```bash
+ralph task add --title "Add login endpoint" --description "Create POST /api/login"
+
+ralph task add --title "Setup database" --steps "Install Prisma" --steps "Create schema"
+```
+
+## ralph task edit
+
+Edit an existing task.
+
+```bash
+ralph task edit 3 --title "Updated title"
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<id>` | Task number to edit |
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--title` | New task title |
+| `--description` | New task description |
+| `--steps` | New implementation steps |
+| `--stdin` | Read task data from stdin |
+
+## ralph task show
+
+Show detailed information about a specific task.
+
+```bash
+ralph task show 3
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<id>` | Task number to show |
+
+## ralph task remove
+
+Remove a task from the PRD.
+
+```bash
+ralph task remove 3
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `<id>` | Task number to remove |
+
 ## Task Identification
 
 Tasks can be identified by:
@@ -154,5 +230,6 @@ ralph task list --json
 
 ## Next Steps
 
+- [Dependency Commands](/ralph/docs/cli-reference/dependency-commands/) — Managing task dependencies
 - [Progress Commands](/ralph/docs/cli-reference/progress-commands/) — Recording progress notes
 - [Session Commands](/ralph/docs/cli-reference/session-commands/) — Managing sessions

@@ -9,7 +9,7 @@ const { class: className = "" } = Astro.props;
 <div class={className}>
   <button
     type="button"
-    class="search-trigger flex h-9 w-full items-center gap-2 rounded-md border border-border bg-bg-elevated px-3 text-sm text-text-muted hover:bg-bg-subtle hover:text-text transition-colors"
+    class="search-trigger flex h-9 w-full items-center gap-2 rounded-md border border-border bg-bg-elevated px-3 text-sm text-text-muted hover:bg-bg-subtle hover:text-text hover:border-brand/30 transition-all duration-150"
     aria-label="Open search"
     aria-haspopup="dialog"
   >
@@ -37,19 +37,20 @@ const { class: className = "" } = Astro.props;
 
 <div
   id="search-modal"
-  class="fixed inset-0 z-50 hidden items-start justify-center pt-[10vh]"
+  class="search-modal fixed inset-0 z-50 hidden items-start justify-center pt-[10vh]"
   role="dialog"
   aria-modal="true"
   aria-labelledby="search-modal-title"
 >
-  <div class="search-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div class="search-backdrop fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
 
-  <div class="search-container relative mx-4 w-full max-w-2xl rounded-lg border border-border bg-bg-elevated shadow-2xl">
+  <div class="search-container relative mx-4 w-full max-w-2xl rounded-xl border border-border bg-bg-elevated shadow-2xl">
+    <div class="search-container-glow"></div>
     <h2 id="search-modal-title" class="sr-only">Search documentation</h2>
 
     <div class="flex items-center gap-3 border-b border-border px-4 py-3">
       <svg
-        class="h-5 w-5 shrink-0 text-text-muted"
+        class="h-5 w-5 shrink-0 text-brand"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -72,7 +73,7 @@ const { class: className = "" } = Astro.props;
       />
       <button
         type="button"
-        class="search-close flex h-6 items-center gap-1 rounded border border-border bg-bg px-1.5 text-xs font-medium text-text-subtle hover:text-text transition-colors"
+        class="search-close flex h-6 items-center gap-1 rounded border border-border bg-bg px-1.5 text-xs font-medium text-text-subtle hover:text-text hover:border-text-subtle transition-colors"
         aria-label="Close search"
       >
         <span>esc</span>
@@ -92,19 +93,23 @@ const { class: className = "" } = Astro.props;
       </div>
     </div>
 
-    <div class="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-text-subtle">
+    <div class="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-text-subtle">
       <div class="flex items-center gap-4">
-        <span class="flex items-center gap-1">
-          <kbd class="rounded border border-border bg-bg px-1 py-0.5 font-mono">↑</kbd>
-          <kbd class="rounded border border-border bg-bg px-1 py-0.5 font-mono">↓</kbd>
-          <span>to navigate</span>
+        <span class="flex items-center gap-1.5">
+          <kbd class="kbd-hint">↑</kbd>
+          <kbd class="kbd-hint">↓</kbd>
+          <span>navigate</span>
         </span>
-        <span class="flex items-center gap-1">
-          <kbd class="rounded border border-border bg-bg px-1.5 py-0.5 font-mono">↵</kbd>
-          <span>to select</span>
+        <span class="flex items-center gap-1.5">
+          <kbd class="kbd-hint">↵</kbd>
+          <span>select</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <kbd class="kbd-hint">/</kbd>
+          <span>search</span>
         </span>
       </div>
-      <span class="text-text-subtle">Powered by Pagefind</span>
+      <span class="text-text-subtle/70">Powered by Pagefind</span>
     </div>
   </div>
 </div>
@@ -156,10 +161,12 @@ const { class: className = "" } = Astro.props;
   function openModal(): void {
     const modal = document.getElementById("search-modal");
     const input = document.getElementById("search-input") as HTMLInputElement;
+    const container = modal?.querySelector(".search-container");
 
     if (modal && input) {
       modal.classList.remove("hidden");
       modal.classList.add("flex");
+      container?.classList.add("animate-scale-in");
       input.focus();
       document.body.style.overflow = "hidden";
     }
@@ -223,7 +230,7 @@ const { class: className = "" } = Astro.props;
         (result, index) => `
         <a
           href="${result.url}"
-          class="search-result block rounded-md px-4 py-3 hover:bg-bg-subtle transition-colors ${index === selectedIndex ? "bg-bg-subtle" : ""}"
+          class="search-result block rounded-lg px-4 py-3 transition-all duration-150 ${index === selectedIndex ? "bg-brand/10 border-l-2 border-brand" : "hover:bg-bg-subtle"}"
           data-index="${index}"
         >
           <div class="font-medium text-text">${result.meta.title ?? "Untitled"}</div>
@@ -251,10 +258,12 @@ const { class: className = "" } = Astro.props;
 
     for (const [i, result] of results.entries()) {
       if (i === selectedIndex) {
-        result.classList.add("bg-bg-subtle");
+        result.classList.add("bg-brand/10", "border-l-2", "border-brand");
+        result.classList.remove("hover:bg-bg-subtle");
         result.scrollIntoView({ block: "nearest" });
       } else {
-        result.classList.remove("bg-bg-subtle");
+        result.classList.remove("bg-brand/10", "border-l-2", "border-brand");
+        result.classList.add("hover:bg-bg-subtle");
       }
     }
   }
@@ -392,3 +401,79 @@ const { class: className = "" } = Astro.props;
   initSearch();
   updateKeyboardHint();
 </script>
+
+<style>
+  .search-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .search-container-glow {
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-brand) 50%,
+      transparent 100%
+    );
+    opacity: 0.5;
+  }
+
+  .search-modal {
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .kbd-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.25rem;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, monospace;
+    font-size: 0.65rem;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    color: var(--color-text-subtle);
+  }
+
+  .search-result {
+    position: relative;
+  }
+
+  .search-result.bg-brand\/10 {
+    background: rgba(34, 211, 238, 0.08);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .search-modal,
+    .animate-scale-in {
+      animation: none;
+    }
+  }
+</style>

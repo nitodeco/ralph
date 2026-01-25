@@ -96,22 +96,23 @@ const isActive = (href: string) => {
 const navigation = buildNavigation(docs);
 ---
 
-<nav class="space-y-6" aria-label="Docs navigation">
+<nav class="sidebar-nav space-y-6" aria-label="Docs navigation">
   {navigation.map((section) => (
-    <div>
-      <h3 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-text-subtle">
+    <div class="sidebar-section">
+      <h3 class="section-header mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-text-subtle flex items-center gap-2">
+        <span class="section-accent"></span>
         {section.section}
       </h3>
-      <ul class="space-y-1" role="list">
+      <ul class="space-y-0.5" role="list">
         {section.items.map((item) => (
           <li>
             <a
               href={item.href}
               class:list={[
-                "block rounded-md px-3 py-2 text-sm transition-colors",
+                "sidebar-link block rounded-md px-3 py-2 text-sm transition-all duration-150",
                 isActive(item.href)
-                  ? "bg-brand/10 text-brand font-medium"
-                  : "text-text-muted hover:bg-bg-elevated hover:text-text",
+                  ? "sidebar-link-active bg-gradient-to-r from-brand/15 to-brand/5 text-brand font-medium"
+                  : "text-text-muted hover:text-text hover:bg-bg-elevated hover:translate-x-0.5",
               ]}
               aria-current={isActive(item.href) ? "page" : undefined}
             >
@@ -123,3 +124,52 @@ const navigation = buildNavigation(docs);
     </div>
   ))}
 </nav>
+
+<style>
+  .section-accent {
+    width: 2px;
+    height: 12px;
+    background: var(--color-brand);
+    border-radius: 1px;
+    opacity: 0.6;
+  }
+
+  .sidebar-link-active {
+    position: relative;
+  }
+
+  .sidebar-link-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 16px;
+    background: var(--color-brand);
+    border-radius: 1px;
+    box-shadow: var(--glow-brand-subtle);
+  }
+
+  .sidebar-link:not(.sidebar-link-active) {
+    position: relative;
+  }
+
+  .sidebar-link:not(.sidebar-link-active)::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 0;
+    background: var(--color-brand);
+    border-radius: 1px;
+    opacity: 0.4;
+    transition: height 0.15s ease;
+  }
+
+  .sidebar-link:not(.sidebar-link-active):hover::before {
+    height: 12px;
+  }
+</style>

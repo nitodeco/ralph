@@ -9,22 +9,26 @@ const { code, lang = "text", filename } = Astro.props;
 const id = `code-${Math.random().toString(36).slice(2, 9)}`;
 ---
 
-<div class="code-block relative group my-4">
+<div class="code-block relative group my-6">
   {filename && (
-    <div class="code-filename text-xs text-text-subtle px-4 py-2 border-b border-border bg-bg-elevated rounded-t-lg font-mono">
+    <div class="code-filename flex items-center gap-2 text-xs text-text-subtle px-4 py-2.5 border-b border-border bg-bg-elevated rounded-t-lg font-mono">
+      <svg class="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
       {filename}
     </div>
   )}
-  <div class="relative">
+  <div class="code-content relative">
+    <div class="code-gradient-border"></div>
     <pre
       class:list={[
         "bg-bg-elevated border border-border overflow-x-auto p-4",
-        filename ? "rounded-b-lg" : "rounded-lg",
+        filename ? "rounded-b-lg border-t-0" : "rounded-lg",
       ]}
     ><code id={id} class={`language-${lang}`}>{code}</code></pre>
     <button
       type="button"
-      class="copy-button absolute top-2 right-2 p-2 rounded-md bg-bg-subtle border border-border text-text-muted hover:text-text hover:bg-bg-elevated transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+      class="copy-button absolute top-3 right-3 p-2 rounded-md bg-bg-subtle/80 backdrop-blur-sm border border-border text-text-muted hover:text-text hover:bg-bg-elevated hover:border-brand/30 transition-all duration-150 opacity-0 group-hover:opacity-100 focus:opacity-100"
       data-code-id={id}
       aria-label="Copy code to clipboard"
     >
@@ -76,10 +80,12 @@ const id = `code-${Math.random().toString(36).slice(2, 9)}`;
         if (copyIcon && checkIcon) {
           copyIcon.classList.add("hidden");
           checkIcon.classList.remove("hidden");
+          button.classList.add("text-green-400", "border-green-400/30");
 
           setTimeout(() => {
             copyIcon.classList.remove("hidden");
             checkIcon.classList.add("hidden");
+            button.classList.remove("text-green-400", "border-green-400/30");
           }, 2000);
         }
       } catch {
@@ -98,6 +104,62 @@ const id = `code-${Math.random().toString(36).slice(2, 9)}`;
     font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
       Liberation Mono, monospace;
     font-size: 0.875rem;
-    line-height: 1.5;
+    line-height: 1.6;
+  }
+
+  .code-content {
+    position: relative;
+  }
+
+  .code-gradient-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-brand) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .code-block:hover .code-gradient-border {
+    opacity: 0.3;
+  }
+
+  .code-block:hover pre {
+    box-shadow: var(--glow-brand-subtle);
+  }
+
+  .code-filename {
+    position: relative;
+  }
+
+  .code-filename::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--color-brand) 50%,
+      transparent 100%
+    );
+    opacity: 0.2;
+  }
+
+  .copy-button {
+    transform: translateY(0);
+  }
+
+  .copy-button:active {
+    transform: scale(0.95);
   }
 </style>

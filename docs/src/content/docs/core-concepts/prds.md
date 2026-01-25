@@ -16,9 +16,9 @@ When you run `ralph init`, Ralph:
 
 1. Asks you to describe what you want to build
 2. Uses AI to generate a structured PRD with tasks
-3. Stores the PRD in `~/.ralph/projects/<project>/prd.md`
+3. Stores the PRD in `~/.ralph/projects/<project>/prd.json`
 
-The PRD is stored as JSON internally but can be viewed and edited through Ralph commands.
+The PRD is stored as JSON and can be viewed and edited through Ralph commands.
 
 ## Task Structure
 

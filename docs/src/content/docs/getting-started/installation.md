@@ -35,12 +35,6 @@ Ralph requires:
 
 ## Manual Installation
 
-### From npm
-
-```bash
-npm install -g @nitodeco/ralph
-```
-
 ### From Source
 
 Clone the repository and build:

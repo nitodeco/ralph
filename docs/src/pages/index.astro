@@ -71,23 +71,23 @@ const steps = [
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Ralph",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "macOS, Linux",
-  description:
+  "name": "Ralph",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Linux",
+  "description":
     "CLI tool for long-running PRD-driven development with AI coding agents. Orchestrates iterative agent runs with retries, verification, progress tracking, and GitHub integration.",
-  url: "https://nitodeco.github.io/ralph/",
-  author: {
+  "url": "https://nitodeco.github.io/ralph/",
+  "author": {
     "@type": "Person",
-    name: "nitodeco",
-    url: "https://github.com/nitodeco",
+    "name": "nitodeco",
+    "url": "https://github.com/nitodeco",
   },
-  offers: {
+  "offers": {
     "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
+    "price": "0",
+    "priceCurrency": "USD",
   },
-  license: "https://opensource.org/licenses/MIT",
+  "license": "https://opensource.org/licenses/MIT",
 };
 ---
 
@@ -98,22 +98,21 @@ const jsonLd = {
   <Header currentPath={currentPath} />
 
   <main id="main-content" class="flex flex-1 flex-col">
-    <section
-      class="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-16 sm:py-24"
-    >
-      <div class="text-center max-w-3xl mx-auto">
-        <h1
-          class="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-[var(--color-text-muted)] bg-clip-text text-transparent"
-        >
-          Ralph
+    <section class="hero-section relative flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-16 sm:py-24 overflow-hidden">
+      <div class="hero-grid"></div>
+      <div class="hero-grid-overlay"></div>
+      <div class="hero-bg-gradient"></div>
+      <div class="hero-bg-glow"></div>
+
+      <div class="hero-content relative text-center max-w-3xl mx-auto opacity-0 animate-fade-in-up">
+        <h1 class="hero-title text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
+          <span class="hero-title-text">Ralph</span>
         </h1>
-        <p
-          class="text-xl sm:text-2xl text-[var(--color-text-muted)] mb-10 leading-relaxed"
-        >
+        <p class="text-xl sm:text-2xl text-[var(--color-text-muted)] mb-10 leading-relaxed">
           Long-running PRD-driven development with AI coding agents.
-          <span class="block mt-2 text-lg sm:text-xl text-[var(--color-text-subtle)]"
-            >Define tasks. Start a session. Ship code.</span
-          >
+          <span class="block mt-2 text-lg sm:text-xl text-[var(--color-text-subtle)]">
+            Define tasks. Start a session. Ship code.
+          </span>
         </p>
         <div class="flex flex-wrap justify-center gap-4 mb-12">
           <Button href="/ralph/docs/">Read the docs</Button>
@@ -123,85 +122,82 @@ const jsonLd = {
         </div>
       </div>
 
-      <InstallSnippet />
+      <div class="opacity-0 animate-fade-in-up stagger-2">
+        <InstallSnippet />
+      </div>
     </section>
 
-    <section class="px-4 py-16 sm:py-24 border-t border-[var(--color-border)]">
-      <div class="max-w-6xl mx-auto">
-        <h2
-          class="text-3xl sm:text-4xl font-bold text-center mb-4"
-        >
-          Features
-        </h2>
-        <p
-          class="text-[var(--color-text-muted)] text-center mb-12 max-w-2xl mx-auto"
-        >
-          Everything you need to orchestrate AI-driven development at scale.
-        </p>
+    <section class="features-section relative px-4 py-20 sm:py-28 border-t border-[var(--color-border)] overflow-hidden">
+      <div class="features-grid"></div>
+      <div class="max-w-6xl mx-auto relative">
+        <div class="text-center mb-14 opacity-0 animate-fade-in-up">
+          <h2 class="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
+            Features
+          </h2>
+          <p class="text-[var(--color-text-muted)] max-w-2xl mx-auto">
+            Everything you need to orchestrate AI-driven development at scale.
+          </p>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {
-            features.map((feature) => (
+          {features.map((feature, index) => (
+            <div class:list={["opacity-0 animate-fade-in-up", `stagger-${index + 1}`]}>
               <FeatureCard
                 title={feature.title}
                 description={feature.description}
                 icon={feature.icon}
               />
-            ))
-          }
+            </div>
+          ))}
         </div>
       </div>
     </section>
 
-    <section
-      class="px-4 py-16 sm:py-24 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border)]"
-    >
-      <div class="max-w-4xl mx-auto">
-        <h2
-          class="text-3xl sm:text-4xl font-bold text-center mb-4"
-        >
-          How it works
-        </h2>
-        <p
-          class="text-[var(--color-text-muted)] text-center mb-12 max-w-2xl mx-auto"
-        >
-          Three steps from requirements to shipped code.
-        </p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {
-            steps.map((step) => (
-              <div class="text-center">
-                <div class="w-12 h-12 rounded-full bg-[var(--color-brand)] text-[var(--color-bg)] flex items-center justify-center text-xl font-bold mx-auto mb-4">
+    <section class="steps-section relative px-4 py-20 sm:py-28 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border)] overflow-hidden">
+      <div class="steps-bg-gradient"></div>
+      <div class="max-w-4xl mx-auto relative">
+        <div class="text-center mb-14 opacity-0 animate-fade-in-up">
+          <h2 class="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
+            How it works
+          </h2>
+          <p class="text-[var(--color-text-muted)] max-w-2xl mx-auto">
+            Three steps from requirements to shipped code.
+          </p>
+        </div>
+        <div class="steps-grid grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+          <div class="steps-connector hidden md:block"></div>
+          {steps.map((step, index) => (
+            <div class:list={["step-item text-center relative opacity-0 animate-fade-in-up", `stagger-${index + 1}`]}>
+              <div class="step-number-wrapper relative inline-flex mb-6">
+                <div class="step-number w-14 h-14 rounded-full bg-gradient-to-br from-brand to-brand-subtle text-[var(--color-bg)] flex items-center justify-center text-xl font-bold">
                   {step.number}
                 </div>
-                <h3 class="text-lg font-semibold mb-2">{step.title}</h3>
-                <p class="text-[var(--color-text-muted)] text-sm">
-                  {step.description}
-                </p>
+                <div class="step-glow"></div>
               </div>
-            ))
-          }
+              <h3 class="text-lg font-semibold mb-2">{step.title}</h3>
+              <p class="text-[var(--color-text-muted)] text-sm leading-relaxed">
+                {step.description}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
 
-    <section class="px-4 py-16 sm:py-24 border-t border-[var(--color-border)]">
-      <div class="max-w-2xl mx-auto text-center">
-        <h2
-          class="text-3xl sm:text-4xl font-bold mb-4"
-        >
+    <section class="cta-section relative px-4 py-20 sm:py-28 border-t border-[var(--color-border)] overflow-hidden">
+      <div class="cta-grid"></div>
+      <div class="cta-bg-gradient"></div>
+      <div class="max-w-2xl mx-auto text-center relative opacity-0 animate-fade-in-up">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
           Ready to start?
         </h2>
         <p class="text-[var(--color-text-muted)] mb-8">
           Install Ralph and begin your first PRD-driven session.
         </p>
         <div class="flex flex-wrap justify-center gap-4">
-          <Button href="/ralph/docs/getting-started/installation/"
-            >Installation guide</Button
-          >
-          <Button
-            variant="secondary"
-            href="/ralph/docs/getting-started/quickstart/"
-          >
+          <Button href="/ralph/docs/getting-started/installation/">
+            Installation guide
+          </Button>
+          <Button variant="secondary" href="/ralph/docs/getting-started/quickstart/">
             Quickstart
           </Button>
         </div>
@@ -213,3 +209,202 @@ const jsonLd = {
 
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>
+
+<style>
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid-color-strong) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color-strong) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: 32px 32px;
+    mask-image: radial-gradient(ellipse 50% 40% at 50% 30%, black 0%, transparent 60%);
+    -webkit-mask-image: radial-gradient(ellipse 50% 40% at 50% 30%, black 0%, transparent 60%);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .hero-bg-gradient {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 1400px;
+    height: 100%;
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 0%,
+      rgba(34, 211, 238, 0.08) 0%,
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+
+  .hero-bg-glow {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(
+      circle,
+      rgba(34, 211, 238, 0.1) 0%,
+      transparent 70%
+    );
+    filter: blur(60px);
+    pointer-events: none;
+  }
+
+  .features-grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, var(--grid-color-strong) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image:
+      linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%),
+      linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image:
+      linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%),
+      linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .hero-title-text {
+    background: linear-gradient(
+      135deg,
+      var(--color-text) 0%,
+      var(--color-text) 40%,
+      var(--color-brand) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .steps-bg-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(
+      180deg,
+      rgba(34, 211, 238, 0.02) 0%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  .steps-connector {
+    position: absolute;
+    top: 28px;
+    left: calc(16.67% + 28px);
+    right: calc(16.67% + 28px);
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--color-brand) 0%,
+      var(--color-brand-subtle) 50%,
+      var(--color-brand) 100%
+    );
+    opacity: 0.3;
+  }
+
+  .step-glow {
+    position: absolute;
+    inset: -4px;
+    background: var(--color-brand);
+    border-radius: 50%;
+    filter: blur(12px);
+    opacity: 0.2;
+    z-index: -1;
+  }
+
+  .step-item:hover .step-glow {
+    opacity: 0.4;
+  }
+
+  .step-item:hover .step-number {
+    box-shadow: var(--glow-brand);
+    transform: scale(1.05);
+  }
+
+  .step-number {
+    transition: all 0.2s ease;
+  }
+
+  .cta-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 70% 80% at 50% 100%, black 0%, transparent 60%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 100%, black 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .cta-bg-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 800px;
+    height: 300px;
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 100%,
+      rgba(34, 211, 238, 0.05) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-6 { animation-delay: 0.6s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up {
+      opacity: 1;
+      animation: none;
+    }
+  }
+</style>

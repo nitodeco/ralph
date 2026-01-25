@@ -35,6 +35,10 @@ ralph <command> [options] # Run a specific command
 | `task current` | Show the next pending task |
 | `task done <id>` | Mark a task as done |
 | `task undone <id>` | Mark a task as not done |
+| `task add` | Add a new task |
+| `task edit <id>` | Edit an existing task |
+| `task show <id>` | Show task details |
+| `task remove <id>` | Remove a task |
 
 ## Progress Commands
 
@@ -68,6 +72,21 @@ ralph <command> [options] # Run a specific command
 | `guardrails remove <id>` | Remove a guardrail |
 | `guardrails toggle <id>` | Enable/disable a guardrail |
 | `guardrails generate` | Auto-generate guardrails |
+
+## Dependency Commands
+
+| Command | Description |
+|---------|-------------|
+| `dependency` | Show dependency graph |
+| `dependency graph` | Show dependency graph |
+| `dependency validate` | Validate task dependencies |
+| `dependency ready` | Show tasks ready to start |
+| `dependency blocked` | Show blocked tasks |
+| `dependency order` | Show execution order |
+| `dependency show <id>` | Show dependencies for a task |
+| `dependency set <id> [deps...]` | Set dependencies for a task |
+| `dependency add <id> <dep>` | Add a dependency to a task |
+| `dependency remove <id> <dep>` | Remove a dependency from a task |
 
 ## Analysis Commands
 
@@ -118,5 +137,6 @@ ralph <command> [options] # Run a specific command
 ## Next Steps
 
 - [Task Commands](/ralph/docs/cli-reference/task-commands/) — Detailed task command reference
+- [Dependency Commands](/ralph/docs/cli-reference/dependency-commands/) — Managing task dependencies
 - [Progress Commands](/ralph/docs/cli-reference/progress-commands/) — Working with progress notes
 - [Session Commands](/ralph/docs/cli-reference/session-commands/) — Managing sessions

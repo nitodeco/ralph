@@ -8,7 +8,8 @@ const FOOTER_NAV = [
 ];
 ---
 
-<footer class="border-t border-border bg-bg">
+<footer class="footer relative border-t border-border bg-bg">
+  <div class="footer-border-gradient"></div>
   <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
       <a href="/ralph/" class="font-semibold text-text hover:text-brand transition-colors">
@@ -18,13 +19,13 @@ const FOOTER_NAV = [
         {FOOTER_NAV.map((item) => (
           <a
             href={item.href}
-            class="text-sm text-text-muted hover:text-text transition-colors"
+            class="footer-link text-sm text-text-muted hover:text-text transition-colors"
             {...(item.isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           >
             {item.label}
             {item.isExternal && (
               <>
-                <span class="ml-1" aria-hidden="true">↗</span>
+                <span class="ml-1 opacity-50" aria-hidden="true">↗</span>
                 <span class="sr-only">(opens in new tab)</span>
               </>
             )}
@@ -37,3 +38,38 @@ const FOOTER_NAV = [
     </p>
   </div>
 </footer>
+
+<style>
+  .footer {
+    position: relative;
+  }
+
+  .footer-border-gradient {
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gradient-header);
+    opacity: 0.3;
+  }
+
+  .footer-link {
+    position: relative;
+  }
+
+  .footer-link::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--color-brand);
+    transition: width 0.2s ease;
+  }
+
+  .footer-link:hover::after {
+    width: 100%;
+  }
+</style>

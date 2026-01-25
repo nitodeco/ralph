@@ -8,12 +8,71 @@ interface Props {
 const { title, description, icon } = Astro.props;
 ---
 
-<div
-  class="p-6 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg hover:border-[var(--color-brand-subtle)] transition-colors"
->
-  <div class="text-3xl mb-3" aria-hidden="true">{icon}</div>
-  <h3 class="text-lg font-semibold mb-2">{title}</h3>
-  <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">
-    {description}
-  </p>
+<div class="feature-card group relative p-6 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl transition-all duration-200">
+  <div class="feature-card-glow"></div>
+  <div class="feature-card-gradient"></div>
+  <div class="relative">
+    <div class="feature-icon text-3xl mb-4" aria-hidden="true">{icon}</div>
+    <h3 class="text-lg font-semibold mb-2 text-text">{title}</h3>
+    <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">
+      {description}
+    </p>
+  </div>
 </div>
+
+<style>
+  .feature-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card:hover {
+    border-color: var(--color-brand-subtle);
+    transform: translateY(-2px);
+    box-shadow: var(--glow-brand-subtle);
+  }
+
+  .feature-card-glow {
+    position: absolute;
+    inset: -1px;
+    background: var(--gradient-brand);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+    pointer-events: none;
+  }
+
+  .feature-card:hover .feature-card-glow {
+    opacity: 0.4;
+  }
+
+  .feature-card-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: var(--gradient-card);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .feature-card:hover .feature-card-gradient {
+    opacity: 1;
+  }
+
+  .feature-icon {
+    filter: grayscale(0.2);
+    transition: filter 0.2s ease, transform 0.2s ease;
+  }
+
+  .feature-card:hover .feature-icon {
+    filter: grayscale(0);
+    transform: scale(1.1);
+  }
+</style>

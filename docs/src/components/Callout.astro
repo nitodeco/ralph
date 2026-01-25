@@ -20,24 +20,56 @@ const TITLE_BY_TYPE = {
   success: "Success",
 };
 
-const STYLE_BY_TYPE = {
-  info: "border-cyan-500/30 bg-cyan-500/5 text-cyan-400",
-  warn: "border-yellow-500/30 bg-yellow-500/5 text-yellow-400",
-  danger: "border-red-500/30 bg-red-500/5 text-red-400",
-  success: "border-green-500/30 bg-green-500/5 text-green-400",
+const COLORS_BY_TYPE = {
+  info: {
+    border: "border-l-cyan-500",
+    bg: "bg-cyan-500/5",
+    text: "text-cyan-400",
+    glow: "0 0 12px rgba(34, 211, 238, 0.15)",
+  },
+  warn: {
+    border: "border-l-yellow-500",
+    bg: "bg-yellow-500/5",
+    text: "text-yellow-400",
+    glow: "0 0 12px rgba(234, 179, 8, 0.15)",
+  },
+  danger: {
+    border: "border-l-red-500",
+    bg: "bg-red-500/5",
+    text: "text-red-400",
+    glow: "0 0 12px rgba(239, 68, 68, 0.15)",
+  },
+  success: {
+    border: "border-l-green-500",
+    bg: "bg-green-500/5",
+    text: "text-green-400",
+    glow: "0 0 12px rgba(34, 197, 94, 0.15)",
+  },
 };
 
 const displayTitle = title ?? TITLE_BY_TYPE[type];
+const colors = COLORS_BY_TYPE[type];
 ---
 
-<aside class:list={["callout rounded-lg border p-4 my-4", STYLE_BY_TYPE[type]]} role="note">
+<aside
+  class:list={[
+    "callout relative rounded-lg border border-border/50 p-4 my-6",
+    colors.bg,
+  ]}
+  role="note"
+  data-type={type}
+>
+  <div class="callout-border-gradient" data-type={type}></div>
   <div class="flex items-start gap-3">
-    <div class="flex-shrink-0 mt-0.5" set:html={ICON_BY_TYPE[type]} />
+    <div
+      class:list={["callout-icon flex-shrink-0 mt-0.5", colors.text]}
+      set:html={ICON_BY_TYPE[type]}
+    />
     <div class="flex-1 min-w-0">
       {displayTitle && (
-        <p class="font-semibold text-sm mb-1">{displayTitle}</p>
+        <p class:list={["font-semibold text-sm mb-1.5", colors.text]}>{displayTitle}</p>
       )}
-      <div class="text-sm text-text-muted callout-content">
+      <div class="text-sm text-text-muted callout-content leading-relaxed">
         <slot />
       </div>
     </div>
@@ -45,6 +77,73 @@ const displayTitle = title ?? TITLE_BY_TYPE[type];
 </aside>
 
 <style>
+  .callout {
+    border-left-width: 3px;
+    border-left-style: solid;
+    overflow: hidden;
+  }
+
+  .callout[data-type="info"] {
+    border-left-color: rgb(34 211 238);
+  }
+
+  .callout[data-type="warn"] {
+    border-left-color: rgb(234 179 8);
+  }
+
+  .callout[data-type="danger"] {
+    border-left-color: rgb(239 68 68);
+  }
+
+  .callout[data-type="success"] {
+    border-left-color: rgb(34 197 94);
+  }
+
+  .callout-border-gradient {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    bottom: 0;
+    width: 3px;
+    pointer-events: none;
+  }
+
+  .callout-border-gradient[data-type="info"] {
+    background: linear-gradient(180deg, rgb(34 211 238) 0%, rgba(34, 211, 238, 0.2) 100%);
+  }
+
+  .callout-border-gradient[data-type="warn"] {
+    background: linear-gradient(180deg, rgb(234 179 8) 0%, rgba(234, 179, 8, 0.2) 100%);
+  }
+
+  .callout-border-gradient[data-type="danger"] {
+    background: linear-gradient(180deg, rgb(239 68 68) 0%, rgba(239, 68, 68, 0.2) 100%);
+  }
+
+  .callout-border-gradient[data-type="success"] {
+    background: linear-gradient(180deg, rgb(34 197 94) 0%, rgba(34, 197, 94, 0.2) 100%);
+  }
+
+  .callout-icon {
+    filter: drop-shadow(var(--glow-brand-subtle));
+  }
+
+  .callout[data-type="info"] .callout-icon {
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.3));
+  }
+
+  .callout[data-type="warn"] .callout-icon {
+    filter: drop-shadow(0 0 8px rgba(234, 179, 8, 0.3));
+  }
+
+  .callout[data-type="danger"] .callout-icon {
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.3));
+  }
+
+  .callout[data-type="success"] .callout-icon {
+    filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.3));
+  }
+
   .callout-content :global(p) {
     margin-bottom: 0.5rem;
   }
@@ -54,6 +153,17 @@ const displayTitle = title ?? TITLE_BY_TYPE[type];
   }
 
   .callout-content :global(code) {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .callout-content :global(a) {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .callout-content :global(a:hover) {
+    opacity: 0.8;
   }
 </style>
