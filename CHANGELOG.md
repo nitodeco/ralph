@@ -1,5 +1,19 @@
 # ralph
 
+## 0.15.0
+
+### Minor Changes
+
+- 4bcff45: Add memory monitor to stop sessions when process memory exceeds threshold. Configure with `memory.memoryThresholdMb` (default 1024 MB).
+- 7b4518b: Remove rules feature and merge into guardrails. Use guardrails for all prompt instructions.
+
+### Patch Changes
+
+- 024e633: Add Codex agent option to /init command
+- f0a5596: Fix macOS notification click behavior to focus terminal when clicked
+- 1073efd: Fix technical debt review visibility: added TechnicalDebtSummary component to display report summary in UI when session completes, and added `ralph analyze debt` CLI command to view technical debt report on-demand with JSON output support
+- b6d6e01: Refactor orchestrator into service composition architecture
+
 ## 0.14.5
 
 ### Patch Changes
