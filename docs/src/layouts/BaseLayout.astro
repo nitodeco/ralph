@@ -10,7 +10,7 @@ interface Props {
 const { title, description = "CLI tool for long-running PRD-driven development with AI coding agents", ogImage } = Astro.props;
 const pageTitle = `${title} · Ralph`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
-const ogImageUrl = ogImage ?? new URL("/ralph/og/og-image.png", Astro.site).toString();
+const ogImageUrl = ogImage ?? new URL("/og/og-image.png", Astro.site).toString();
 ---
 
 <!doctype html>
@@ -20,18 +20,22 @@ const ogImageUrl = ogImage ?? new URL("/ralph/og/og-image.png", Astro.site).toSt
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a0a0a" />
 
     <title>{pageTitle}</title>
+
+    <link rel="preload" href="/fonts/geist.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/jetbrainsmono.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" as="image" href="/ralph.webp" type="image/webp" />
 
     <link rel="dns-prefetch" href="https://github.com" />
     <link rel="preconnect" href="https://github.com" crossorigin />
     <link rel="canonical" href={canonicalUrl} />
 
-    <link rel="icon" type="image/svg+xml" href="/ralph/favicon/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/ralph/favicon/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/ralph/favicon/favicon-16x16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/ralph/favicon/apple-touch-icon.png" />
-    <link rel="manifest" href="/ralph/favicon/site.webmanifest" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="/favicon/site.webmanifest" />
 
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
@@ -49,9 +53,11 @@ const ogImageUrl = ogImage ?? new URL("/ralph/og/og-image.png", Astro.site).toSt
     <meta name="twitter:image" content={ogImageUrl} />
     <meta name="twitter:image:alt" content="Ralph - PRD-driven development with AI coding agents" />
 
-    <link rel="sitemap" href="/ralph/sitemap-index.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
   </head>
   <body class="min-h-screen bg-bg text-text">
+    <div class="noise-overlay" aria-hidden="true"></div>
+    <a href="#main-nav" class="skip-link">Skip to navigation</a>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <slot />
   </body>

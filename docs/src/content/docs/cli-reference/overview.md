@@ -1,6 +1,6 @@
 ---
 title: Command Overview
-description: Complete reference for all Ralph CLI commands and their options.
+description: Complete reference for all Ralph CLI commands including task management, sessions, progress tracking, guardrails, dependencies, GitHub integration, and configuration options.
 sidebar:
   order: 1
   label: Overview
@@ -136,7 +136,7 @@ ralph <command> [options] # Run a specific command
 
 ## Next Steps
 
-- [Task Commands](/ralph/docs/cli-reference/task-commands/) — Detailed task command reference
-- [Dependency Commands](/ralph/docs/cli-reference/dependency-commands/) — Managing task dependencies
-- [Progress Commands](/ralph/docs/cli-reference/progress-commands/) — Working with progress notes
-- [Session Commands](/ralph/docs/cli-reference/session-commands/) — Managing sessions
+- [Task Commands](/docs/cli-reference/task-commands/) — Detailed task command reference
+- [Dependency Commands](/docs/cli-reference/dependency-commands/) — Managing task dependencies
+- [Progress Commands](/docs/cli-reference/progress-commands/) — Working with progress notes
+- [Session Commands](/docs/cli-reference/session-commands/) — Managing sessions

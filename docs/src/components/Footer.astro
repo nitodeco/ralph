@@ -1,75 +1,48 @@
 ---
 const FOOTER_NAV = [
-  { label: "Docs", href: "/ralph/docs/" },
-  { label: "Changelog", href: "/ralph/changelog/" },
+  { label: "Docs", href: "/docs" },
+  { label: "Changelog", href: "/changelog/" },
   { label: "GitHub", href: "https://github.com/nitodeco/ralph", isExternal: true },
   { label: "License", href: "https://github.com/nitodeco/ralph/blob/main/LICENSE", isExternal: true },
-  { label: "Contributing", href: "https://github.com/nitodeco/ralph/blob/main/CONTRIBUTING.md", isExternal: true },
 ];
 ---
 
-<footer class="footer relative border-t border-border bg-bg">
-  <div class="footer-border-gradient"></div>
-  <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-      <a href="/ralph/" class="font-semibold text-text hover:text-brand transition-colors">
-        Ralph
+<footer class="border-t border-border-subtle bg-bg" role="contentinfo">
+  <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
+      <a href="/" class="flex shrink-0 items-center gap-2 font-mono text-text hover:text-brand transition-colors" aria-label="Ralph - Home">
+        <img
+          src="/ralph.webp"
+          alt="Ralph"
+          class="h-8 w-auto max-w-[140px] object-contain"
+        />
       </a>
-      <nav class="flex flex-wrap justify-center gap-4 sm:gap-6" aria-label="Footer navigation">
+
+      <nav class="flex flex-wrap justify-center gap-6" aria-label="Footer navigation">
         {FOOTER_NAV.map((item) => (
           <a
             href={item.href}
-            class="footer-link text-sm text-text-muted hover:text-text transition-colors"
+            class="text-sm text-text-muted hover:text-text transition-colors"
             {...(item.isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           >
-            {item.label}
-            {item.isExternal && (
-              <>
-                <span class="ml-1 opacity-50" aria-hidden="true">↗</span>
-                <span class="sr-only">(opens in new tab)</span>
-              </>
-            )}
+            <span class="flex items-center gap-1">
+              {item.label}
+              {item.isExternal && (
+                <svg class="w-3 h-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M7 17L17 7M17 7H7M17 7V17" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              )}
+            </span>
+            {item.isExternal && <span class="sr-only">(opens in new tab)</span>}
           </a>
         ))}
       </nav>
     </div>
-    <p class="mt-6 text-center text-sm text-text-subtle">
-      Released under the MIT License.
-    </p>
+
+    <div class="mt-8 pt-6 border-t border-border-subtle">
+      <p class="text-xs text-text-subtle text-center font-mono">
+        MIT License
+      </p>
+    </div>
   </div>
 </footer>
-
-<style>
-  .footer {
-    position: relative;
-  }
-
-  .footer-border-gradient {
-    position: absolute;
-    top: -1px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--gradient-header);
-    opacity: 0.3;
-  }
-
-  .footer-link {
-    position: relative;
-  }
-
-  .footer-link::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background: var(--color-brand);
-    transition: width 0.2s ease;
-  }
-
-  .footer-link:hover::after {
-    width: 100%;
-  }
-</style>

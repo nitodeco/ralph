@@ -6,18 +6,18 @@ const docs = await getCollection("docs");
 const introDoc = docs.find((doc) => doc.id === "getting-started/introduction");
 
 if (!introDoc) {
-  return Astro.redirect("/ralph/");
+  return Astro.redirect("/");
 }
 
 const { Content, headings } = await render(introDoc);
 
 const breadcrumbs = [
-  { label: "Docs", href: "/ralph/docs/" },
-  { label: "Getting Started", href: "/ralph/docs/getting-started/introduction/" },
+  { label: "Docs", href: "/docs" },
+  { label: "Getting Started", href: "/docs/getting-started/introduction" },
   { label: "Introduction" },
 ];
 ---
 
-<DocsLayout title={introDoc.data.title} description={introDoc.data.description} breadcrumbs={breadcrumbs} headings={headings}>
+<DocsLayout title="Documentation" description="Complete documentation for Ralph, the CLI tool for long-running PRD-driven development with AI coding agents like Cursor, Claude Code, and Codex." breadcrumbs={breadcrumbs} headings={headings}>
   <Content />
 </DocsLayout>

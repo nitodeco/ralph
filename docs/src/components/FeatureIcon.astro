@@ -1,0 +1,66 @@
+---
+interface Props {
+  name: "document-check" | "clock-refresh" | "squares-nested" | "check-circle" | "git-branch" | "brain" | "shield";
+  class?: string;
+}
+
+const { name, class: className = "" } = Astro.props;
+
+const ICONS_BY_NAME = {
+  "document-check": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 12l2 2 4-4" />
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+    <path d="M14 2v6h6" />
+  </svg>`,
+  "clock-refresh": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 6v6l4 2" />
+    <path d="M22 12c0 5.52-4.48 10-10 10S2 17.52 2 12" stroke-dasharray="2 2" />
+  </svg>`,
+  "squares-nested": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="3" width="8" height="8" rx="1" />
+    <rect x="13" y="3" width="8" height="8" rx="1" />
+    <rect x="3" y="13" width="8" height="8" rx="1" />
+    <rect x="13" y="13" width="8" height="8" rx="1" />
+  </svg>`,
+  "check-circle": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>`,
+  "git-branch": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="6" cy="6" r="3" />
+    <circle cx="18" cy="18" r="3" />
+    <circle cx="6" cy="18" r="3" />
+    <path d="M6 9v6" />
+    <path d="M18 9a9 9 0 0 0-9 9" />
+  </svg>`,
+  "brain": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+    <path d="M12 5v13" />
+    <path d="M9 9h6" />
+    <path d="M8 13h8" />
+  </svg>`,
+  "shield": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>`,
+};
+
+const icon = ICONS_BY_NAME[name];
+---
+
+<span class:list={["feature-icon inline-flex", className]} aria-hidden="true" set:html={icon} />
+
+<style>
+  .feature-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-brand);
+  }
+
+  .feature-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+</style>

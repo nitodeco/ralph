@@ -1,6 +1,6 @@
 ---
 title: Dependency Commands
-description: Reference for Ralph task dependency management commands.
+description: Reference for Ralph task dependency management commands. View dependency graphs, validate relationships, show blocked tasks, and control task execution order with set, add, and remove.
 sidebar:
   order: 7
   label: dependency
@@ -246,5 +246,5 @@ If task order is just a preference, let Ralph handle it naturally.
 
 ## Next Steps
 
-- [Task Commands](/ralph/docs/cli-reference/task-commands/) — Managing tasks
-- [Core Concepts: Tasks](/ralph/docs/core-concepts/tasks/) — Understanding tasks
+- [Task Commands](/docs/cli-reference/task-commands/) — Managing tasks
+- [Core Concepts: Tasks](/docs/core-concepts/tasks/) — Understanding tasks

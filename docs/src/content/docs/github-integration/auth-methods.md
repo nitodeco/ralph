@@ -1,6 +1,6 @@
 ---
 title: Authentication Methods
-description: Understand the different ways to authenticate Ralph with GitHub.
+description: Understand the different ways to authenticate Ralph with GitHub including OAuth device flow and personal access tokens. Compare methods, security considerations, and troubleshooting tips.
 sidebar:
   order: 2
   label: Auth Methods
@@ -152,5 +152,5 @@ Some organizations restrict OAuth apps. Check with your admin or use a personal 
 
 ## Next Steps
 
-- [PR Creation](/ralph/docs/github-integration/pr-creation/) — Configure pull request creation
-- [Configuration](/ralph/docs/configuration/overview/) — Full configuration reference
+- [PR Creation](/docs/github-integration/pr-creation/) — Configure pull request creation
+- [Configuration](/docs/configuration/overview/) — Full configuration reference

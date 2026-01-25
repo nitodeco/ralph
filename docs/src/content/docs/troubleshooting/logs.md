@@ -1,6 +1,6 @@
 ---
 title: Where to Find Logs
-description: Locate and interpret Ralph log files for debugging.
+description: Locate and interpret Ralph log files for debugging. Find session logs, iteration logs, and global logs with patterns for success, timeout, stuck, and error states.
 sidebar:
   order: 2
   label: Logs
@@ -189,5 +189,5 @@ Include this when reporting issues.
 
 ## Next Steps
 
-- [Common Issues](/ralph/docs/troubleshooting/common-issues/) — Solutions to frequent problems
-- [FAQ](/ralph/docs/faq/) — Frequently asked questions
+- [Common Issues](/docs/troubleshooting/common-issues/) — Solutions to frequent problems
+- [FAQ](/docs/faq/) — Frequently asked questions

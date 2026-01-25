@@ -1,56 +1,32 @@
 ---
 interface Props {
   class?: string;
+  renderTrigger?: boolean;
+  renderModal?: boolean;
+  renderScript?: boolean;
 }
 
-const { class: className = "" } = Astro.props;
+const {
+  class: className = "",
+  renderTrigger = true,
+  renderModal = true,
+  renderScript = true,
+} = Astro.props;
+const base = import.meta.env.BASE_URL;
 ---
 
-<div class={className}>
-  <button
-    type="button"
-    class="search-trigger flex h-9 w-full items-center gap-2 rounded-md border border-border bg-bg-elevated px-3 text-sm text-text-muted hover:bg-bg-subtle hover:text-text hover:border-brand/30 transition-all duration-150"
-    aria-label="Open search"
-    aria-haspopup="dialog"
-  >
-    <svg
-      class="h-4 w-4 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
+{renderTrigger && (
+  <div class={className}>
+    <button
+      type="button"
+      class="search-trigger flex min-h-11 w-full items-center gap-2 rounded-md border border-border bg-bg-elevated px-3 text-sm text-text-muted hover:bg-bg-subtle hover:text-text hover:border-brand/30 transition-all duration-150"
+      aria-label="Open search"
+      aria-haspopup="dialog"
+      aria-controls="search-modal"
+      aria-expanded="false"
     >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-    <span class="hidden flex-1 text-left sm:inline">Search docs...</span>
-    <kbd class="hidden rounded border border-border bg-bg px-1.5 py-0.5 text-xs font-medium text-text-subtle sm:inline">
-      <span class="search-kbd-mac hidden">⌘K</span>
-      <span class="search-kbd-other hidden">Ctrl K</span>
-    </kbd>
-  </button>
-</div>
-
-<div
-  id="search-modal"
-  class="search-modal fixed inset-0 z-50 hidden items-start justify-center pt-[10vh]"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="search-modal-title"
->
-  <div class="search-backdrop fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
-
-  <div class="search-container relative mx-4 w-full max-w-2xl rounded-xl border border-border bg-bg-elevated shadow-2xl">
-    <div class="search-container-glow"></div>
-    <h2 id="search-modal-title" class="sr-only">Search documentation</h2>
-
-    <div class="flex items-center gap-3 border-b border-border px-4 py-3">
       <svg
-        class="h-5 w-5 shrink-0 text-brand"
+        class="h-4 w-4 shrink-0"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -63,92 +39,112 @@ const { class: className = "" } = Astro.props;
           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
         />
       </svg>
-      <input
-        id="search-input"
-        type="text"
-        class="flex-1 bg-transparent text-text placeholder:text-text-subtle focus:outline-none"
-        placeholder="Search documentation..."
-        autocomplete="off"
-        aria-describedby="search-results-status"
-      />
-      <button
-        type="button"
-        class="search-close flex h-6 items-center gap-1 rounded border border-border bg-bg px-1.5 text-xs font-medium text-text-subtle hover:text-text hover:border-text-subtle transition-colors"
-        aria-label="Close search"
-      >
-        <span>esc</span>
-      </button>
-    </div>
+      <span class="hidden flex-1 text-left sm:inline">Search docs...</span>
+      <kbd class="hidden rounded border border-border bg-bg px-1.5 py-0.5 text-xs font-medium text-text-subtle sm:inline">
+        <span class="search-kbd-mac hidden">⌘K</span>
+        <span class="search-kbd-other hidden">Ctrl K</span>
+      </kbd>
+    </button>
+  </div>
+)}
 
-    <div
-      id="search-results-status"
-      class="sr-only"
-      aria-live="polite"
-      aria-atomic="true"
-    ></div>
+{renderModal && (
+  <div
+    id="search-modal"
+    class="search-modal fixed inset-0 z-50 hidden items-start justify-center pt-[10vh]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="search-modal-title"
+    aria-hidden="true"
+  >
+    <div class="search-backdrop fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
 
-    <div id="search-results" class="max-h-[60vh] overflow-y-auto p-2">
-      <div class="search-empty px-4 py-8 text-center text-text-muted">
-        <p>Start typing to search the docs...</p>
+    <div class="search-container relative mx-4 w-full max-w-2xl rounded-xl border border-border bg-bg-elevated shadow-2xl">
+      <div class="search-container-glow"></div>
+      <h2 id="search-modal-title" class="sr-only">Search documentation</h2>
+
+      <div class="flex items-center gap-3 border-b border-border px-4 py-3">
+        <svg
+          class="h-5 w-5 shrink-0 text-brand"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+        <label for="search-input" class="sr-only">Search documentation</label>
+        <input
+          id="search-input"
+          type="text"
+          class="flex-1 bg-transparent text-text placeholder:text-text-subtle focus:outline-none"
+          placeholder="Search documentation..."
+          autocomplete="off"
+          aria-describedby="search-results-status"
+        />
+        <button
+          type="button"
+          class="search-close flex h-8 min-w-[2rem] items-center gap-1 rounded border border-border bg-bg px-2 text-xs font-medium text-text-subtle hover:text-text hover:border-text-subtle transition-colors"
+          aria-label="Close search"
+        >
+          <span>esc</span>
+        </button>
       </div>
-    </div>
 
-    <div class="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-text-subtle">
-      <div class="flex items-center gap-4">
-        <span class="flex items-center gap-1.5">
-          <kbd class="kbd-hint">↑</kbd>
-          <kbd class="kbd-hint">↓</kbd>
-          <span>navigate</span>
-        </span>
-        <span class="flex items-center gap-1.5">
-          <kbd class="kbd-hint">↵</kbd>
-          <span>select</span>
-        </span>
-        <span class="flex items-center gap-1.5">
-          <kbd class="kbd-hint">/</kbd>
-          <span>search</span>
-        </span>
+      <div
+        id="search-results-status"
+        class="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+      ></div>
+
+      <div id="search-results" class="max-h-[60vh] overflow-y-auto p-2">
+        <div class="search-empty px-4 py-8 text-center text-text-muted">
+          <p>Start typing to search the docs...</p>
+        </div>
       </div>
-      <span class="text-text-subtle/70">Powered by Pagefind</span>
+
+      <div class="flex items-center justify-between border-t border-border px-4 py-2.5 text-xs text-text-subtle">
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5">
+            <kbd class="kbd-hint">↑</kbd>
+            <kbd class="kbd-hint">↓</kbd>
+            <span>navigate</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <kbd class="kbd-hint">↵</kbd>
+            <span>select</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <kbd class="kbd-hint">/</kbd>
+            <span>search</span>
+          </span>
+        </div>
+        <span class="text-text-subtle/70">Powered by Pagefind</span>
+      </div>
     </div>
   </div>
-</div>
+)}
 
-<script>
-  interface PagefindResult {
-    id: string;
-    data: () => Promise<PagefindResultData>;
-  }
-
-  interface PagefindResultData {
-    url: string;
-    meta: {
-      title?: string;
-    };
-    excerpt: string;
-    sub_results?: Array<{
-      url: string;
-      title: string;
-      excerpt: string;
-    }>;
-  }
-
-  interface PagefindInstance {
-    search: (query: string) => Promise<{ results: PagefindResult[] }>;
-    debouncedSearch: (query: string, options?: { debounceTimeoutMs?: number }) => Promise<{ results: PagefindResult[] } | null>;
-  }
-
-  let pagefind: PagefindInstance | null = null;
+{renderScript && (
+<script is:inline define:vars={{ base }}>
+  let pagefind = null;
   let selectedIndex = -1;
+  let lastActiveElement = null;
 
-  async function initPagefind(): Promise<PagefindInstance | null> {
+  async function initPagefind() {
     if (pagefind) {
       return pagefind;
     }
 
     try {
-      const pagefindPath = `${window.location.origin}/ralph/pagefind/pagefind.js`;
-      pagefind = await import(/* @vite-ignore */ pagefindPath);
+      const pagefindPath = `${window.location.origin}${base}pagefind/pagefind.js`;
+      pagefind = await import(pagefindPath);
 
       return pagefind;
     } catch {
@@ -158,35 +154,47 @@ const { class: className = "" } = Astro.props;
     }
   }
 
-  function openModal(): void {
+  function openModal() {
     const modal = document.getElementById("search-modal");
-    const input = document.getElementById("search-input") as HTMLInputElement;
+    const input = document.getElementById("search-input");
     const container = modal?.querySelector(".search-container");
 
     if (modal && input) {
+      lastActiveElement = document.activeElement;
       modal.classList.remove("hidden");
       modal.classList.add("flex");
+      modal.setAttribute("aria-hidden", "false");
       container?.classList.add("animate-scale-in");
       input.focus();
       document.body.style.overflow = "hidden";
+      for (const trigger of document.querySelectorAll(".search-trigger")) {
+        trigger.setAttribute("aria-expanded", "true");
+      }
     }
   }
 
-  function closeModal(): void {
+  function closeModal() {
     const modal = document.getElementById("search-modal");
-    const input = document.getElementById("search-input") as HTMLInputElement;
+    const input = document.getElementById("search-input");
 
     if (modal && input) {
       modal.classList.add("hidden");
       modal.classList.remove("flex");
+      modal.setAttribute("aria-hidden", "true");
       input.value = "";
       document.body.style.overflow = "";
       selectedIndex = -1;
       resetResults();
+      for (const trigger of document.querySelectorAll(".search-trigger")) {
+        trigger.setAttribute("aria-expanded", "false");
+      }
+      if (lastActiveElement instanceof HTMLElement) {
+        lastActiveElement.focus();
+      }
     }
   }
 
-  function resetResults(): void {
+  function resetResults() {
     const resultsContainer = document.getElementById("search-results");
     const statusElement = document.getElementById("search-results-status");
 
@@ -203,7 +211,7 @@ const { class: className = "" } = Astro.props;
     }
   }
 
-  function renderResults(results: PagefindResultData[]): void {
+  function renderResults(results) {
     const resultsContainer = document.getElementById("search-results");
     const statusElement = document.getElementById("search-results-status");
 
@@ -247,7 +255,7 @@ const { class: className = "" } = Astro.props;
     }
   }
 
-  function updateSelection(newIndex: number): void {
+  function updateSelection(newIndex) {
     const results = document.querySelectorAll(".search-result");
 
     if (results.length === 0) {
@@ -268,18 +276,18 @@ const { class: className = "" } = Astro.props;
     }
   }
 
-  function selectResult(): void {
+  function selectResult() {
     const results = document.querySelectorAll(".search-result");
 
     if (selectedIndex >= 0 && selectedIndex < results.length) {
-      const result = results[selectedIndex] as HTMLAnchorElement;
+      const result = results[selectedIndex];
       window.location.href = result.href;
     }
   }
 
-  let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+  let debounceTimeout = null;
 
-  async function handleSearch(query: string): Promise<void> {
+  async function handleSearch(query) {
     if (debounceTimeout) {
       clearTimeout(debounceTimeout);
     }
@@ -298,7 +306,7 @@ const { class: className = "" } = Astro.props;
 
     debounceTimeout = setTimeout(async () => {
       const searchResults = await pf.search(query);
-      const resultsData: PagefindResultData[] = [];
+      const resultsData = [];
 
       for (const result of searchResults.results.slice(0, 10)) {
         const resultData = await result.data();
@@ -310,11 +318,45 @@ const { class: className = "" } = Astro.props;
     }, 150);
   }
 
-  function initSearch(): void {
+  let isSearchInitialized = false;
+  let keydownHandler = null;
+  let inputHandler = null;
+
+  function getFocusableElements(container) {
+    if (!container) {
+      return [];
+    }
+
+    const focusableSelectors =
+      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    return Array.from(container.querySelectorAll(focusableSelectors));
+  }
+
+  function initSearch() {
     const triggers = document.querySelectorAll(".search-trigger");
     const closeButtons = document.querySelectorAll(".search-close");
     const backdrop = document.querySelector(".search-backdrop");
-    const input = document.getElementById("search-input") as HTMLInputElement;
+    const input = document.getElementById("search-input");
+
+    if (triggers.length === 0) {
+      return;
+    }
+
+    if (isSearchInitialized) {
+      for (const trigger of triggers) {
+        trigger.removeEventListener("click", openModal);
+      }
+      for (const button of closeButtons) {
+        button.removeEventListener("click", closeModal);
+      }
+      backdrop?.removeEventListener("click", closeModal);
+      if (keydownHandler) {
+        document.removeEventListener("keydown", keydownHandler);
+      }
+      if (inputHandler && input) {
+        input.removeEventListener("input", inputHandler);
+      }
+    }
 
     for (const trigger of triggers) {
       trigger.addEventListener("click", openModal);
@@ -326,7 +368,7 @@ const { class: className = "" } = Astro.props;
 
     backdrop?.addEventListener("click", closeModal);
 
-    document.addEventListener("keydown", (event: KeyboardEvent) => {
+    keydownHandler = (event) => {
       const modal = document.getElementById("search-modal");
       const isModalOpen = modal && !modal.classList.contains("hidden");
 
@@ -347,7 +389,7 @@ const { class: className = "" } = Astro.props;
         const isInputFocused =
           activeElement instanceof HTMLInputElement ||
           activeElement instanceof HTMLTextAreaElement ||
-          (activeElement as HTMLElement)?.isContentEditable;
+          activeElement?.isContentEditable;
 
         if (!isInputFocused) {
           event.preventDefault();
@@ -361,6 +403,28 @@ const { class: className = "" } = Astro.props;
       }
 
       if (isModalOpen) {
+        if (event.key === "Tab") {
+          const focusableElements = getFocusableElements(modal);
+          const firstElement = focusableElements.at(0);
+          const lastElement = focusableElements.at(-1);
+
+          if (!firstElement || !lastElement) {
+            return;
+          }
+
+          if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+            return;
+          }
+
+          if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+            return;
+          }
+        }
+
         if (event.key === "ArrowDown") {
           event.preventDefault();
           updateSelection(selectedIndex + 1);
@@ -372,15 +436,25 @@ const { class: className = "" } = Astro.props;
           selectResult();
         }
       }
-    });
+    };
 
-    input?.addEventListener("input", (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      handleSearch(target.value);
-    });
+    inputHandler = (event) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement) {
+        handleSearch(target.value);
+      }
+    };
+
+    document.addEventListener("keydown", keydownHandler);
+
+    if (input) {
+      input.addEventListener("input", inputHandler);
+    }
+
+    isSearchInitialized = true;
   }
 
-  function updateKeyboardHint(): void {
+  function updateKeyboardHint() {
     const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
     const macHints = document.querySelectorAll(".search-kbd-mac");
     const otherHints = document.querySelectorAll(".search-kbd-other");
@@ -394,13 +468,25 @@ const { class: className = "" } = Astro.props;
     }
   }
 
+  function initializeSearch() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        initSearch();
+        updateKeyboardHint();
+      });
+    } else {
+      initSearch();
+      updateKeyboardHint();
+    }
+  }
+
   document.addEventListener("astro:page-load", () => {
     initSearch();
     updateKeyboardHint();
   });
-  initSearch();
-  updateKeyboardHint();
+  initializeSearch();
 </script>
+)}
 
 <style>
   .search-container {

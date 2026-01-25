@@ -1,6 +1,6 @@
 ---
 title: Session Commands
-description: Reference for Ralph session management commands.
+description: Reference for Ralph session management commands including run, resume, stop, status, archive, and clear. Control session execution, background mode, and state persistence.
 sidebar:
   order: 4
   label: session
@@ -172,5 +172,5 @@ ralph run -b
 
 ## Next Steps
 
-- [Guardrails Commands](/ralph/docs/cli-reference/guardrails-commands/) — Project guardrails
-- [GitHub Commands](/ralph/docs/cli-reference/github-commands/) — GitHub integration
+- [Guardrails Commands](/docs/cli-reference/guardrails-commands/) — Project guardrails
+- [GitHub Commands](/docs/cli-reference/github-commands/) — GitHub integration

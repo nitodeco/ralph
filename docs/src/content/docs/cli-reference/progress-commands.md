@@ -1,6 +1,6 @@
 ---
 title: Progress Commands
-description: Reference for Ralph progress tracking commands.
+description: Reference for Ralph progress tracking commands. Learn how to view, add, and clear progress notes that provide context for AI agents and track development history.
 sidebar:
   order: 3
   label: progress
@@ -153,5 +153,5 @@ ralph progress --json
 
 ## Next Steps
 
-- [Session Commands](/ralph/docs/cli-reference/session-commands/) — Managing session state
-- [Guardrails Commands](/ralph/docs/cli-reference/guardrails-commands/) — Setting project guardrails
+- [Session Commands](/docs/cli-reference/session-commands/) — Managing session state
+- [Guardrails Commands](/docs/cli-reference/guardrails-commands/) — Setting project guardrails

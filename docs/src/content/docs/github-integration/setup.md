@@ -1,6 +1,6 @@
 ---
 title: GitHub Integration Setup
-description: Set up Ralph's GitHub integration for authentication and PR creation.
+description: Set up Ralph's GitHub integration for authentication and automatic PR creation. Configure OAuth device flow or personal access tokens with step-by-step setup instructions.
 sidebar:
   order: 1
   label: Setup
@@ -144,5 +144,5 @@ This clears stored credentials. You can reconnect at any time with `ralph auth l
 
 ## Next Steps
 
-- [Auth Methods](/ralph/docs/github-integration/auth-methods/) — Detailed authentication options
-- [PR Creation](/ralph/docs/github-integration/pr-creation/) — Configure automatic PR creation
+- [Auth Methods](/docs/github-integration/auth-methods/) — Detailed authentication options
+- [PR Creation](/docs/github-integration/pr-creation/) — Configure automatic PR creation

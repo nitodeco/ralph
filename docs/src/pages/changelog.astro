@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Header from "@/components/Header.astro";
+import MobileNav from "@/components/MobileNav.astro";
 import Footer from "@/components/Footer.astro";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,11 +20,13 @@ const renderedContent = await marked.parse(rawContent, {
 });
 ---
 
-<BaseLayout title="Changelog" description="Release history and changes for Ralph">
+<BaseLayout title="Changelog" description="Complete release history and version changes for Ralph CLI. Track new features, bug fixes, improvements, and breaking changes across all releases.">
   <Header currentPath={currentPath} />
+  <MobileNav currentPath={currentPath} />
 
-  <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-    <main id="main-content" class="py-8 lg:py-12">
+  <div class="changelog-wrapper relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+    <div class="changelog-grid" aria-hidden="true"></div>
+    <main id="main-content" class="py-8 lg:py-12 relative z-10">
       <header class="mb-8">
         <h1 class="text-3xl font-bold text-text">Changelog</h1>
         <p class="mt-2 text-text-muted">
@@ -39,6 +42,25 @@ const renderedContent = await marked.parse(rawContent, {
 </BaseLayout>
 
 <style>
+  @reference "../styles/global.css";
+
+  .changelog-wrapper {
+    min-height: calc(100vh - 3.5rem);
+  }
+
+  .changelog-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      linear-gradient(to right, rgba(34, 211, 238, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(34, 211, 238, 0.02) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+  }
+
   .changelog-content :global(h2) {
     @apply border-b border-border pb-2 mt-12 mb-4 text-2xl font-semibold text-text;
   }

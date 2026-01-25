@@ -18,14 +18,20 @@ interface Heading {
   text: string;
 }
 
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 interface Props {
   title: string;
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   headings?: Heading[];
+  faq?: FaqItem[];
 }
 
-const { title, description, breadcrumbs = [], headings = [] } = Astro.props;
+const { title, description, breadcrumbs = [], headings = [], faq } = Astro.props;
 const currentPath = Astro.url.pathname;
 
 const breadcrumbJsonLd =
@@ -38,6 +44,22 @@ const breadcrumbJsonLd =
           position: index + 1,
           name: item.label,
           ...(item.href && { item: new URL(item.href, Astro.site).toString() }),
+        })),
+      }
+    : null;
+
+const faqJsonLd =
+  faq && faq.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faq.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.answer,
+          },
         })),
       }
     : null;
@@ -58,7 +80,7 @@ const breadcrumbJsonLd =
           </div>
         </aside>
 
-        <main id="main-content" class="min-w-0 flex-1 py-8 lg:py-12">
+        <main id="main-content" class="min-w-0 flex-1 py-8 lg:py-12" tabindex="-1">
           {breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
           <article class="docs-article prose prose-invert prose-cyan max-w-none" data-pagefind-body>
             <slot />
@@ -67,7 +89,7 @@ const breadcrumbJsonLd =
 
         {headings.length > 0 && (
           <aside class="hidden xl:block xl:w-56 xl:flex-shrink-0" aria-label="Table of contents">
-            <div class="sticky top-20 py-8">
+            <div class="toc-scroll-container sticky top-20 py-8 overflow-y-auto max-h-[calc(100vh-5rem)]">
               <OnThisPage headings={headings} />
             </div>
           </aside>
@@ -79,15 +101,96 @@ const breadcrumbJsonLd =
   <Footer />
 
   {breadcrumbJsonLd && (
-    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
   )}
+  {faqJsonLd && (
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  )}
+  <script is:inline>
+    const buildHeadingLinkIcon = () => `
+      <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 511.999">
+        <path fill="currentColor" d="M476.335 35.664v.001c47.554 47.552 47.552 125.365.002 172.918l-101.729 101.73c-60.027 60.025-162.073 42.413-194.762-32.45 35.888-31.191 53.387-21.102 87.58-6.638 20.128 8.512 43.74 3.955 60.08-12.387l99.375-99.371c21.49-21.493 21.492-56.662 0-78.155-21.489-21.488-56.677-21.472-78.151 0l-71.278 71.28c-23.583-11.337-50.118-14.697-75.453-10.07a121.476 121.476 0 0118.767-24.207l82.651-82.65c47.554-47.551 125.365-47.555 172.918-.001zM35.664 476.334l.001.001c47.554 47.552 125.365 47.552 172.917 0l85.682-85.682a121.496 121.496 0 0019.325-25.157c-27.876 6.951-57.764 4.015-83.932-8.805l-70.192 70.19c-21.472 21.471-56.658 21.492-78.149 0-21.492-21.491-21.493-56.658 0-78.149l99.375-99.376c20.363-20.363 61.002-26.435 91.717 1.688 29.729-3.133 41.275-8.812 59.742-26.493-39.398-69.476-137.607-80.013-194.757-22.863L35.664 303.417c-47.552 47.553-47.552 125.364 0 172.917z"/>
+      </svg>
+    `;
+
+    const copyToClipboard = async (textToCopy) => {
+      await navigator.clipboard.writeText(textToCopy);
+    };
+
+    const setCopiedState = (headingLinkButton) => {
+      headingLinkButton.dataset.copyState = "copied";
+      headingLinkButton.dataset.copyStatus = "Copied";
+      const existingTimeoutId = headingLinkButton.dataset.copyTimeoutId;
+      if (existingTimeoutId) {
+        window.clearTimeout(Number(existingTimeoutId));
+      }
+      const timeoutId = window.setTimeout(() => {
+        delete headingLinkButton.dataset.copyState;
+        delete headingLinkButton.dataset.copyStatus;
+        delete headingLinkButton.dataset.copyTimeoutId;
+      }, 1400);
+      headingLinkButton.dataset.copyTimeoutId = String(timeoutId);
+    };
+
+    const initializeHeadingLinks = () => {
+      const articleElement = document.querySelector("article.docs-article");
+      if (!articleElement) {
+        return;
+      }
+
+      const headingElements = articleElement.querySelectorAll(
+        "h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]"
+      );
+
+      for (const headingElement of headingElements) {
+        if (headingElement.querySelector(".heading-link")) {
+          continue;
+        }
+
+        const headingId = headingElement.getAttribute("id");
+        if (!headingId) {
+          continue;
+        }
+
+        const headingLinkButton = document.createElement("button");
+        headingLinkButton.type = "button";
+        headingLinkButton.className = "heading-link";
+        headingLinkButton.setAttribute("aria-label", "Copy link to this section");
+        headingLinkButton.setAttribute("title", "Copy link to this section");
+        headingLinkButton.innerHTML = buildHeadingLinkIcon();
+
+        headingLinkButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const sectionUrl = new URL(window.location.href);
+          sectionUrl.hash = headingId;
+          const sectionUrlText = sectionUrl.toString();
+          try {
+            await copyToClipboard(sectionUrlText);
+            setCopiedState(headingLinkButton);
+          } catch {
+            setCopiedState(headingLinkButton);
+          }
+        });
+
+        headingElement.appendChild(headingLinkButton);
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initializeHeadingLinks);
+    } else {
+      initializeHeadingLinks();
+    }
+    document.addEventListener("astro:page-load", initializeHeadingLinks);
+  </script>
 </BaseLayout>
 
 <style>
   .docs-wrapper {
     min-height: calc(100vh - 3.5rem);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .docs-grid {
@@ -95,19 +198,14 @@ const breadcrumbJsonLd =
     top: 0;
     left: 0;
     right: 0;
-    height: 800px;
+    bottom: 0;
+    min-height: 100vh;
     background-image:
       linear-gradient(to right, rgba(34, 211, 238, 0.02) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(34, 211, 238, 0.02) 1px, transparent 1px);
     background-size: 48px 48px;
-    mask-image:
-      linear-gradient(to bottom, black 0%, transparent 100%),
-      linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
-    -webkit-mask-image:
-      linear-gradient(to bottom, black 0%, transparent 100%),
-      linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
-    mask-composite: intersect;
-    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
     pointer-events: none;
   }
 
@@ -130,6 +228,16 @@ const breadcrumbJsonLd =
   .docs-article {
     opacity: 0;
     animation: fadeInUp 0.4s ease-out forwards;
+  }
+
+  .toc-scroll-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .toc-scroll-container::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 
   @keyframes fadeInUp {

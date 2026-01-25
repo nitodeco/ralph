@@ -1,6 +1,6 @@
 ---
 title: Guardrails Commands
-description: Reference for Ralph guardrails management commands.
+description: Reference for Ralph guardrails management commands. Add, remove, toggle, and auto-generate guardrails that constrain AI agent behavior and enforce coding standards.
 sidebar:
   order: 5
   label: guardrails
@@ -174,5 +174,5 @@ Too many guardrails slow down the agent and can cause conflicts. Focus on import
 
 ## Next Steps
 
-- [GitHub Commands](/ralph/docs/cli-reference/github-commands/) — GitHub integration
-- [Configuration](/ralph/docs/configuration/overview/) — Full configuration reference
+- [GitHub Commands](/docs/cli-reference/github-commands/) — GitHub integration
+- [Configuration](/docs/configuration/overview/) — Full configuration reference

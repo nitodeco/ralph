@@ -3,17 +3,17 @@
   "short_name": "Ralph",
   "icons": [
     {
-      "src": "/ralph/favicon/android-chrome-192x192.png",
+      "src": "/favicon/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/ralph/favicon/android-chrome-512x512.png",
+      "src": "/favicon/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ],
-  "theme_color": "#22D3EE",
+  "theme_color": "#576ddc",
   "background_color": "#0F1419",
   "display": "standalone"
 }

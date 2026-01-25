@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Header from "@/components/Header.astro";
+import MobileNav from "@/components/MobileNav.astro";
 import Footer from "@/components/Footer.astro";
 import Button from "@/components/Button.astro";
 
@@ -9,6 +10,7 @@ const currentPath = Astro.url.pathname;
 
 <BaseLayout title="Page Not Found" description="The page you're looking for doesn't exist.">
   <Header currentPath={currentPath} />
+  <MobileNav currentPath={currentPath} />
 
   <main id="main-content" class="flex flex-1 flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-16">
     <div class="text-center max-w-md">
@@ -18,8 +20,8 @@ const currentPath = Astro.url.pathname;
         The page you're looking for doesn't exist or has been moved.
       </p>
       <div class="flex flex-wrap justify-center gap-4">
-        <Button href="/ralph/">Go home</Button>
-        <Button variant="secondary" href="/ralph/docs/">Browse docs</Button>
+        <Button href="/">Go home</Button>
+        <Button variant="secondary" href="/docs">Browse docs</Button>
       </div>
     </div>
   </main>

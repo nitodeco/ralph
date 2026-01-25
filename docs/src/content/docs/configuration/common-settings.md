@@ -1,6 +1,6 @@
 ---
 title: Common Settings
-description: Detailed explanations of commonly used Ralph configuration options.
+description: Detailed explanations of commonly used Ralph configuration options including agent selection, timeout tuning, retry behavior, notification methods, and memory management settings.
 sidebar:
   order: 2
   label: Common Settings
@@ -241,5 +241,5 @@ Stricter limits for automated environments.
 
 ## Next Steps
 
-- [GitHub Integration](/ralph/docs/github-integration/setup/) — Configure GitHub features
-- [Troubleshooting](/ralph/docs/troubleshooting/common-issues/) — Common configuration issues
+- [GitHub Integration](/docs/github-integration/setup/) — Configure GitHub features
+- [Troubleshooting](/docs/troubleshooting/common-issues/) — Common configuration issues

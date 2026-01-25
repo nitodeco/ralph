@@ -1,6 +1,6 @@
 ---
 title: Releases
-description: How Ralph releases work using Changesets.
+description: How Ralph releases work using Changesets for version management. Learn to add changesets, follow commit conventions, and understand the automated release process.
 sidebar:
   order: 2
   label: Releases
@@ -159,5 +159,5 @@ If you selected the wrong change type, edit the changeset file directly:
 
 ## Next Steps
 
-- [Local Development](/ralph/docs/contributing/local-development/) — Set up development environment
-- [FAQ](/ralph/docs/faq/) — Frequently asked questions
+- [Local Development](/docs/contributing/local-development/) — Set up development environment
+- [FAQ](/docs/faq/) — Frequently asked questions

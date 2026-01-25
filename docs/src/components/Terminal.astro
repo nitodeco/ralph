@@ -1,0 +1,94 @@
+---
+interface Props {
+  lines: string[];
+  animated?: boolean;
+}
+
+const { lines, animated = true } = Astro.props;
+---
+
+<div class="terminal w-full" data-animated={animated}>
+  <div class="terminal-inner rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+    <div class="terminal-header flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle">
+      <div class="flex gap-1.5">
+        <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]/80"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]/80"></div>
+        <div class="w-2.5 h-2.5 rounded-full bg-[#27c93f]/80"></div>
+      </div>
+    </div>
+
+    <div class="terminal-body px-4 py-4 font-mono text-sm leading-relaxed">
+      {lines.map((line, index) => (
+        <div
+          class="terminal-line"
+          data-line-index={index}
+          style={animated ? `opacity: 0; animation-delay: ${index * 0.4}s` : undefined}
+        >
+          <span class="terminal-text" set:html={line} />
+        </div>
+      ))}
+      <div class="terminal-cursor" aria-hidden="true">▌</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .terminal-line {
+    min-height: 1.5rem;
+  }
+
+  [data-animated="true"] .terminal-line {
+    animation: typeIn 0.3s ease-out forwards;
+  }
+
+  .terminal-cursor {
+    display: inline-block;
+    color: var(--color-brand);
+    animation: blink 1s step-end infinite;
+    margin-top: 0.25rem;
+    opacity: 0.8;
+  }
+
+  [data-animated="true"] .terminal-cursor {
+    opacity: 0;
+    animation: showCursor 0s 2s forwards, blink 1s 2s step-end infinite;
+  }
+
+  @keyframes typeIn {
+    from {
+      opacity: 0;
+      transform: translateX(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes blink {
+    0%, 100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes showCursor {
+    to {
+      opacity: 0.8;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-line {
+      opacity: 1 !important;
+      animation: none !important;
+    }
+
+    .terminal-cursor {
+      opacity: 0.8 !important;
+      animation: none !important;
+    }
+  }
+</style>

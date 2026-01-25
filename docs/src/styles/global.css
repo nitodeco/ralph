@@ -1,43 +1,47 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  color-scheme: dark;
+@theme {
+  --font-sans: "Geist Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --color-brand: #22D3EE;
-  --color-brand-hover: #06B6D4;
-  --color-brand-subtle: #0891B2;
+  --color-brand: #6b80e6;
+  --color-brand-hover: #7b8ff0;
+  --color-brand-subtle: #2f3a6b;
+  --color-brand-muted: #1e2344;
 
   --color-bg: #0a0a0a;
   --color-bg-elevated: #141414;
   --color-bg-subtle: #1a1a1a;
 
-  --color-text: #fafafa;
-  --color-text-muted: #a1a1a1;
-  --color-text-subtle: #737373;
+  --color-text: #d4d4d4;
+  --color-text-heading: #f5f5f5;
+  --color-text-muted: #b3b3b3;
+  --color-text-subtle: #8c8c8c;
 
   --color-border: #262626;
   --color-border-subtle: #1f1f1f;
 
-  --glow-brand: 0 0 20px rgba(34, 211, 238, 0.15);
-  --glow-brand-strong: 0 0 30px rgba(34, 211, 238, 0.25);
-  --glow-brand-subtle: 0 0 12px rgba(34, 211, 238, 0.1);
-
-  --gradient-brand: linear-gradient(135deg, #22D3EE 0%, #0891B2 100%);
-  --gradient-brand-text: linear-gradient(135deg, #22D3EE 0%, #67E8F9 50%, #22D3EE 100%);
-  --gradient-subtle: linear-gradient(180deg, rgba(34, 211, 238, 0.05) 0%, transparent 100%);
-  --gradient-card: linear-gradient(180deg, rgba(34, 211, 238, 0.03) 0%, transparent 50%);
-  --gradient-border: linear-gradient(180deg, var(--color-brand) 0%, transparent 100%);
-  --gradient-header: linear-gradient(90deg, transparent 0%, var(--color-border) 20%, var(--color-brand-subtle) 50%, var(--color-border) 80%, transparent 100%);
-
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 40px rgba(34, 211, 238, 0.1);
+}
 
-  --grid-color: rgba(34, 211, 238, 0.03);
-  --grid-color-strong: rgba(34, 211, 238, 0.06);
-  --grid-size: 64px;
-  --grid-size-sm: 32px;
+@font-face {
+  font-family: "Geist Sans";
+  src: url("/fonts/geist.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/jetbrainsmono.woff2") format("woff2");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
 }
 
 @layer base {
@@ -48,7 +52,8 @@
   }
 
   body {
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "Geist Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -84,7 +89,7 @@
     font-size: 2.25rem;
     font-weight: 700;
     margin-bottom: 1rem;
-    color: var(--color-text);
+    color: var(--color-text-heading);
     letter-spacing: -0.025em;
   }
 
@@ -93,10 +98,11 @@
     font-weight: 600;
     margin-top: 2.5rem;
     margin-bottom: 0.75rem;
-    color: var(--color-text);
+    color: var(--color-text-heading);
     border-bottom: 1px solid var(--color-border-subtle);
     padding-bottom: 0.5rem;
     letter-spacing: -0.02em;
+    scroll-margin-top: 6rem;
   }
 
   .prose h3 {
@@ -104,8 +110,9 @@
     font-weight: 600;
     margin-top: 1.75rem;
     margin-bottom: 0.5rem;
-    color: var(--color-text);
+    color: var(--color-text-heading);
     letter-spacing: -0.015em;
+    scroll-margin-top: 6rem;
   }
 
   .prose h4 {
@@ -113,7 +120,59 @@
     font-weight: 600;
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
-    color: var(--color-text);
+    color: var(--color-text-heading);
+  }
+
+  .prose :is(h1, h2, h3, h4, h5, h6) {
+    position: relative;
+  }
+
+  .prose :is(h1, h2, h3, h4, h5, h6) .heading-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.5rem;
+    padding: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--color-text-subtle);
+    background: transparent;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  }
+
+  .prose :is(h1, h2, h3, h4, h5, h6):hover .heading-link,
+  .prose :is(h1, h2, h3, h4, h5, h6) .heading-link:focus-visible,
+  .prose :is(h1, h2, h3, h4, h5, h6) .heading-link[data-copy-state="copied"] {
+    opacity: 1;
+    transform: translateY(0);
+    color: var(--color-text-muted);
+  }
+
+  .prose :is(h1, h2, h3, h4, h5, h6) .heading-link svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .prose :is(h1, h2, h3, h4, h5, h6) .heading-link[data-copy-state="copied"]::after {
+    content: attr(data-copy-status);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 0.25rem;
+    white-space: nowrap;
   }
 
   .prose p {
@@ -124,7 +183,7 @@
     color: var(--color-brand);
     text-decoration: underline;
     text-underline-offset: 3px;
-    text-decoration-color: rgba(34, 211, 238, 0.4);
+    text-decoration-color: rgba(87, 109, 220, 0.4);
     transition: text-decoration-color 0.2s ease;
   }
 
@@ -139,7 +198,7 @@
   }
 
   .prose code {
-    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
     font-size: 0.875em;
     background-color: var(--color-bg-elevated);
     padding: 0.15rem 0.4rem;
@@ -222,160 +281,6 @@
     max-width: 100%;
     height: auto;
     border-radius: 0.5rem;
-  }
-
-  .gradient-text {
-    background: var(--gradient-brand-text);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .gradient-border {
-    position: relative;
-  }
-
-  .gradient-border::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    padding: 1px;
-    background: var(--gradient-brand);
-    border-radius: inherit;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: xor;
-    -webkit-mask-composite: xor;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  .gradient-border:hover::before {
-    opacity: 1;
-  }
-
-  .glow-brand {
-    box-shadow: var(--glow-brand);
-  }
-
-  .glow-brand-hover {
-    transition: box-shadow 0.2s ease;
-  }
-
-  .glow-brand-hover:hover {
-    box-shadow: var(--glow-brand);
-  }
-
-  .bg-grid {
-    background-image:
-      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-    background-size: var(--grid-size) var(--grid-size);
-  }
-
-  .bg-grid-sm {
-    background-image:
-      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-    background-size: var(--grid-size-sm) var(--grid-size-sm);
-  }
-
-  .bg-grid-strong {
-    background-image:
-      linear-gradient(to right, var(--grid-color-strong) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color-strong) 1px, transparent 1px);
-    background-size: var(--grid-size) var(--grid-size);
-  }
-
-  .bg-grid-dot {
-    background-image: radial-gradient(circle, var(--grid-color-strong) 1px, transparent 1px);
-    background-size: var(--grid-size-sm) var(--grid-size-sm);
-  }
-
-  .mask-radial-faded {
-    mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 70%);
-  }
-
-  .mask-radial-top {
-    mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 0%, transparent 70%);
-  }
-
-  .mask-fade-bottom {
-    mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 60%, transparent 100%);
-  }
-
-  .mask-fade-edges {
-    mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
-  }
-}
-
-@layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
-  }
-
-  .animate-fade-in-up {
-    animation: fadeInUp 0.5s ease-out forwards;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.2s ease-out forwards;
-  }
-
-  .animate-glow-pulse {
-    animation: glowPulse 2s ease-in-out infinite;
-  }
-
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
-  .stagger-6 { animation-delay: 0.6s; }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes glowPulse {
-  0%, 100% {
-    box-shadow: var(--glow-brand-subtle);
-  }
-  50% {
-    box-shadow: var(--glow-brand);
   }
 }
 

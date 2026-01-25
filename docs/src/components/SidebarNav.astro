@@ -31,7 +31,7 @@ const buildNavigation = (entries: typeof docs): NavSection[] => {
 
     const pathParts = entry.id.split("/");
     const section = pathParts.at(0)!;
-    const href = `/ralph/docs/${entry.id}/`;
+    const href = `/docs/${entry.id}`;
 
     const item: NavItem = {
       title: entry.data.title,
@@ -171,5 +171,11 @@ const navigation = buildNavigation(docs);
 
   .sidebar-link:not(.sidebar-link-active):hover::before {
     height: 12px;
+  }
+
+  .sidebar-link:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    background: var(--color-bg-elevated);
   }
 </style>

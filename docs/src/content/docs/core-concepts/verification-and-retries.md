@@ -1,6 +1,6 @@
 ---
 title: Verification & Retries
-description: How Ralph verifies task completion and handles failures through automatic retries with context.
+description: How Ralph verifies task completion and handles failures through automatic retries with context injection. Configure retry limits, delays, stuck detection, and session memory for reliable execution.
 sidebar:
   order: 4
   label: Verification & Retries
@@ -134,5 +134,5 @@ Regularly run `ralph analyze` to identify recurring issues. Often, failure patte
 
 ## Next Steps
 
-- [Configuration](/ralph/docs/configuration/overview/) — Full configuration reference
-- [Troubleshooting](/ralph/docs/troubleshooting/common-issues/) — Common issues and solutions
+- [Configuration](/docs/configuration/overview/) — Full configuration reference
+- [Troubleshooting](/docs/troubleshooting/common-issues/) — Common issues and solutions

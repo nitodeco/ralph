@@ -16,22 +16,22 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
 {filteredHeadings.length > 0 && (
   <nav class="on-this-page" aria-label="On this page">
-    <h4 class="text-xs font-semibold uppercase tracking-wider text-text-subtle mb-4 flex items-center gap-2">
-      <span class="toc-accent"></span>
+    <h2 class="toc-header text-xs font-semibold uppercase tracking-[0.2em] text-text-subtle mb-4">
       On this page
-    </h4>
-    <div class="toc-container relative">
-      <div class="toc-progress-track"></div>
-      <div class="toc-progress-fill" id="toc-progress"></div>
-      <ul class="toc-list space-y-1 text-sm pl-3">
-        {filteredHeadings.map((heading, index) => (
-          <li class:list={["toc-item relative", heading.depth === 3 && "ml-3"]}>
-            <span class="toc-dot" data-index={index}></span>
+    </h2>
+    <div class="toc-wrapper">
+      <div class="toc-track">
+        <div class="toc-progress" id="toc-progress"></div>
+        <div class="toc-viewport" id="toc-viewport"></div>
+      </div>
+      <ul class="toc-list space-y-1 text-sm">
+        {filteredHeadings.map((heading, headingIndex) => (
+          <li class:list={["toc-item", heading.depth === 3 && "toc-item-nested"]}>
             <a
               href={`#${heading.slug}`}
-              class="toc-link block text-text-muted hover:text-text transition-all duration-150 py-1"
+              class="toc-link block text-text-muted transition-all duration-200 py-2"
               data-heading-slug={heading.slug}
-              data-index={index}
+              data-index={headingIndex}
             >
               {heading.text}
             </a>
@@ -43,147 +43,324 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 )}
 
 <script>
-  const updateActiveLink = () => {
-    const headings = document.querySelectorAll("h2[id], h3[id]");
-    const tocLinks = document.querySelectorAll(".toc-link");
-    const tocDots = document.querySelectorAll(".toc-dot");
-    const progressFill = document.getElementById("toc-progress");
+  const initializeToc = () => {
+    const headings = Array.from(document.querySelectorAll("h2[id], h3[id]"));
+    const tocLinks = Array.from(document.querySelectorAll(".toc-link"));
+    const tocProgress = document.getElementById("toc-progress");
+    const tocViewport = document.getElementById("toc-viewport");
+    const tocList = document.querySelector(".toc-list");
 
-    if (headings.length === 0 || tocLinks.length === 0) return;
-
-    const scrollY = window.scrollY;
-    const windowHeight = window.innerHeight;
-    const docHeight = document.documentElement.scrollHeight;
-
-    const isNearBottom = scrollY + windowHeight >= docHeight - 100;
-
-    let activeIndex = 0;
-
-    if (isNearBottom) {
-      activeIndex = headings.length - 1;
-    } else {
-      const offset = 100;
-
-      for (let i = 0; i < headings.length; i++) {
-        const heading = headings[i] as HTMLElement;
-        const headingTop = heading.offsetTop;
-
-        if (scrollY >= headingTop - offset) {
-          activeIndex = i;
-        } else {
-          break;
-        }
-      }
+    if (headings.length === 0 || tocLinks.length === 0 || !tocList) {
+      return;
     }
 
-    tocLinks.forEach((link, i) => {
-      const dot = tocDots[i];
-      if (i === activeIndex) {
-        link.classList.remove("text-text-muted");
-        link.classList.add("text-brand", "font-medium");
-        dot?.classList.add("active");
-      } else if (i < activeIndex) {
-        link.classList.remove("text-brand", "font-medium");
-        link.classList.add("text-text-muted");
-        dot?.classList.remove("active");
-        dot?.classList.add("passed");
-      } else {
-        link.classList.remove("text-brand", "font-medium");
-        link.classList.add("text-text-muted");
-        dot?.classList.remove("active", "passed");
+    let activeHeadingIndex = 0;
+    let headingOffsets = headings.map((heading) => (heading as HTMLElement).offsetTop);
+    let isUserNavigating = false;
+    let navigationTimeoutId: number | undefined;
+
+    const findScrollContainer = (element: HTMLElement) => {
+      let currentElement = element.parentElement;
+
+      while (currentElement) {
+        const computedStyle = window.getComputedStyle(currentElement);
+        const overflowY = computedStyle.overflowY;
+
+        if (overflowY === "auto" || overflowY === "scroll") {
+          return currentElement;
+        }
+
+        currentElement = currentElement.parentElement;
       }
+
+      return null;
+    };
+
+    const scrollContainer = findScrollContainer(tocList as HTMLElement);
+
+    const updateMeasurements = () => {
+      headingOffsets = headings.map((heading) => (heading as HTMLElement).offsetTop);
+    };
+
+    const beginUserNavigation = (targetIndex: number) => {
+      isUserNavigating = true;
+      if (navigationTimeoutId) {
+        window.clearTimeout(navigationTimeoutId);
+      }
+
+      activeHeadingIndex = targetIndex;
+      updateLinkStates();
+      updateViewportIndicator();
+
+      navigationTimeoutId = window.setTimeout(() => {
+        isUserNavigating = false;
+        navigationTimeoutId = undefined;
+      }, 800);
+    };
+
+    const updateProgress = () => {
+      if (!tocProgress) {
+        return;
+      }
+
+      const documentHeight = document.documentElement.scrollHeight;
+      const windowHeight = window.innerHeight;
+      const scrollableHeight = Math.max(documentHeight - windowHeight, 1);
+      const scrollProgress = Math.min(window.scrollY / scrollableHeight, 1);
+
+      tocProgress.style.height = `${scrollProgress * 100}%`;
+    };
+
+    const updateViewportIndicator = () => {
+      if (!tocViewport) {
+        return;
+      }
+
+      const activeLink = tocLinks[activeHeadingIndex] as HTMLElement | undefined;
+      if (!activeLink) {
+        return;
+      }
+
+      const listRect = tocList.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      const offsetTop = linkRect.top - listRect.top;
+
+      tocViewport.style.top = `${offsetTop}px`;
+      tocViewport.style.height = `${linkRect.height}px`;
+
+      if (!scrollContainer || scrollContainer.scrollHeight <= scrollContainer.clientHeight) {
+        return;
+      }
+
+      if (isUserNavigating) {
+        return;
+      }
+
+      const scrollContainerRect = scrollContainer.getBoundingClientRect();
+      const scrollTop = scrollContainer.scrollTop;
+      const linkCenter = linkRect.top - scrollContainerRect.top + scrollTop + linkRect.height / 2;
+      const targetCenter = scrollTop + scrollContainer.clientHeight * 0.5;
+      const offsetDelta = linkCenter - targetCenter;
+
+      if (Math.abs(offsetDelta) < 1) {
+        return;
+      }
+
+      const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+      const nextScrollTop = Math.min(maxScrollTop, Math.max(0, scrollTop + offsetDelta));
+
+      scrollContainer.scrollTo({
+        top: nextScrollTop,
+        behavior: "smooth",
+      });
+    };
+
+    const updateLinkStates = () => {
+      tocLinks.forEach((link, linkIndex) => {
+        link.classList.remove("is-active", "is-passed");
+
+        if (linkIndex === activeHeadingIndex) {
+          link.classList.add("is-active");
+        } else if (linkIndex < activeHeadingIndex) {
+          link.classList.add("is-passed");
+        }
+      });
+    };
+
+    const setActiveHeadingIndex = (nextIndex: number) => {
+      if (isUserNavigating || nextIndex === activeHeadingIndex) {
+        return;
+      }
+
+      activeHeadingIndex = nextIndex;
+      updateLinkStates();
+      updateViewportIndicator();
+    };
+
+    const fallbackActiveHeading = () => {
+      const offset = 100;
+      const currentScroll = window.scrollY;
+      const documentHeight = document.documentElement.scrollHeight;
+      const windowHeight = window.innerHeight;
+      const isNearBottom = currentScroll + windowHeight >= documentHeight - 80;
+
+      if (isNearBottom) {
+        setActiveHeadingIndex(headings.length - 1);
+        return;
+      }
+
+      let nextIndex = 0;
+      headingOffsets.forEach((headingOffset, headingIndex) => {
+        if (currentScroll >= headingOffset - offset) {
+          nextIndex = headingIndex;
+        }
+      });
+
+      setActiveHeadingIndex(nextIndex);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((firstEntry, secondEntry) => firstEntry.boundingClientRect.top - secondEntry.boundingClientRect.top);
+
+        if (visibleEntries.length === 0) {
+          fallbackActiveHeading();
+          return;
+        }
+
+        const targetHeading = visibleEntries[0]?.target as HTMLElement | undefined;
+        if (!targetHeading) {
+          return;
+        }
+
+        const nextIndex = headings.findIndex((heading) => heading === targetHeading);
+        if (nextIndex >= 0) {
+          setActiveHeadingIndex(nextIndex);
+        }
+      },
+      {
+        rootMargin: "-20% 0px -65% 0px",
+        threshold: [0, 0.5, 1],
+      }
+    );
+
+    headings.forEach((heading) => observer.observe(heading));
+
+    tocLinks.forEach((link, linkIndex) => {
+      link.addEventListener("click", () => {
+        beginUserNavigation(linkIndex);
+      });
     });
 
-    if (progressFill && tocLinks.length > 0) {
-      const progressPercent = ((activeIndex + 1) / tocLinks.length) * 100;
-      progressFill.style.height = `${progressPercent}%`;
-    }
+    updateMeasurements();
+    updateProgress();
+    updateLinkStates();
+    updateViewportIndicator();
+
+    let isTicking = false;
+    window.addEventListener("scroll", () => {
+      if (isTicking) {
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        updateProgress();
+        fallbackActiveHeading();
+        isTicking = false;
+      });
+
+      isTicking = true;
+    });
+
+    window.addEventListener("resize", () => {
+      updateMeasurements();
+      updateViewportIndicator();
+      updateProgress();
+      fallbackActiveHeading();
+    });
   };
 
-  updateActiveLink();
-
-  let ticking = false;
-  window.addEventListener("scroll", () => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        updateActiveLink();
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
+  initializeToc();
 </script>
 
 <style>
-  .on-this-page {
-    position: sticky;
-    top: 6rem;
-  }
-
-  .toc-accent {
-    width: 2px;
-    height: 12px;
-    background: var(--color-brand);
-    border-radius: 1px;
-    opacity: 0.6;
-  }
-
-  .toc-container {
+  .toc-wrapper {
     position: relative;
+    padding-left: 16px;
   }
 
-  .toc-progress-track {
+  .toc-track {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     width: 2px;
-    background: var(--color-border);
-    border-radius: 1px;
   }
 
-  .toc-progress-fill {
+  .toc-track::before {
+    content: "";
+    position: absolute;
+    left: 0.5px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border);
+    border-radius: 999px;
+  }
+
+  .toc-progress {
+    position: absolute;
+    left: 0.5px;
+    top: 0;
+    width: 1px;
+    height: 0;
+    background: var(--color-brand-muted);
+    border-radius: 999px;
+    transition: height 0.2s ease;
+  }
+
+  .toc-viewport {
     position: absolute;
     left: 0;
     top: 0;
     width: 2px;
-    height: 0;
+    height: 16px;
     background: var(--color-brand);
-    border-radius: 1px;
-    transition: height 0.15s ease;
+    border-radius: 999px;
     box-shadow: var(--glow-brand-subtle);
+    transition: top 0.2s ease, height 0.2s ease;
   }
 
-  .toc-dot {
-    position: absolute;
-    left: -11px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-border);
-    border: 2px solid var(--color-bg);
-    transition: all 0.15s ease;
-    z-index: 1;
+  .toc-list {
+    position: relative;
   }
 
-  .toc-dot.active {
-    background: var(--color-brand);
-    box-shadow: var(--glow-brand);
-    transform: translateY(-50%) scale(1.2);
-  }
-
-  .toc-dot.passed {
-    background: var(--color-brand);
-    opacity: 0.5;
+  .toc-item-nested .toc-link {
+    padding-left: 18px;
+    font-size: 0.875rem;
   }
 
   .toc-link {
     position: relative;
+    padding-left: 12px;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease, transform 0.2s ease;
   }
 
-  .toc-link.text-brand {
-    text-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+  .toc-link::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 0;
+    background: var(--color-brand);
+    border-radius: 999px;
+    opacity: 0;
+    transition: height 0.2s ease, opacity 0.2s ease;
+  }
+
+  .toc-link:hover {
+    color: var(--color-text);
+    transform: translateX(1px);
+  }
+
+  .toc-link.is-active {
+    color: var(--color-brand);
+    font-weight: 500;
+    text-shadow: 0 0 20px rgba(87, 109, 220, 0.35);
+  }
+
+  .toc-link.is-active::before {
+    height: 14px;
+    opacity: 1;
+    box-shadow: var(--glow-brand-subtle);
+  }
+
+  .toc-link.is-passed {
+    color: var(--color-text-subtle);
   }
 </style>

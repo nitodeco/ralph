@@ -1,6 +1,6 @@
 ---
 title: Local Development
-description: Set up a local development environment for contributing to Ralph.
+description: Set up a local development environment for contributing to Ralph. Clone the repo, install dependencies with Bun, run quality checks, and understand the project structure.
 sidebar:
   order: 1
   label: Local Development
@@ -182,5 +182,5 @@ The Ink UI shows current state. Use `ralph status` to debug session state.
 
 ## Next Steps
 
-- [Releases](/ralph/docs/contributing/releases/) — How releases work
-- [CLI Reference](/ralph/docs/cli-reference/overview/) — Understand the CLI structure
+- [Releases](/docs/contributing/releases/) — How releases work
+- [CLI Reference](/docs/cli-reference/overview/) — Understand the CLI structure

@@ -13,6 +13,14 @@ const docs = defineCollection({
 		tags: z.array(z.string()).optional(),
 		keywords: z.array(z.string()).optional(),
 		canonical: z.string().optional(),
+		faq: z
+			.array(
+				z.object({
+					question: z.string(),
+					answer: z.string(),
+				}),
+			)
+			.optional(),
 	}),
 });
 

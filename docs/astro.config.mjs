@@ -1,12 +1,12 @@
 import { defineConfig } from "astro/config";
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
 import compress from "astro-compress";
 
 export default defineConfig({
   site: "https://nitodeco.github.io",
-  base: "/ralph",
-  trailingSlash: "always",
+  base: "",
+  trailingSlash: "ignore",
   output: "static",
   compressHTML: true,
   prefetch: {
@@ -14,9 +14,6 @@ export default defineConfig({
     defaultStrategy: "viewport",
   },
   integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
     sitemap(),
     compress({
       CSS: true,
@@ -43,6 +40,7 @@ export default defineConfig({
     inlineStylesheets: "auto",
   },
   vite: {
+    plugins: [tailwindcss()],
     build: {
       cssMinify: true,
       minify: "terser",
@@ -51,9 +49,6 @@ export default defineConfig({
           drop_console: true,
           drop_debugger: true,
         },
-      },
-      rollupOptions: {
-        external: ["/ralph/pagefind/pagefind.js"],
       },
     },
   },

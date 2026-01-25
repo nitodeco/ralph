@@ -1,6 +1,6 @@
 ---
 title: GitHub Commands
-description: Reference for Ralph GitHub integration and authentication commands.
+description: Reference for Ralph GitHub integration and authentication commands. Set up OAuth device flow or personal access tokens for PR creation and repository management.
 sidebar:
   order: 6
   label: github & auth
@@ -139,7 +139,7 @@ When using `ralph auth login`, you'll see exactly what permissions are requested
 
 When authenticated, Ralph can create pull requests from completed work. This happens automatically at the end of a session when configured.
 
-See [GitHub Integration: PR Creation](/ralph/docs/github-integration/pr-creation/) for configuration details.
+See [GitHub Integration: PR Creation](/docs/github-integration/pr-creation/) for configuration details.
 
 ## Troubleshooting
 
@@ -176,5 +176,5 @@ git remote -v
 
 ## Next Steps
 
-- [GitHub Integration: Setup](/ralph/docs/github-integration/setup/) — Full setup guide
-- [GitHub Integration: Auth Methods](/ralph/docs/github-integration/auth-methods/) — Detailed auth options
+- [GitHub Integration: Setup](/docs/github-integration/setup/) — Full setup guide
+- [GitHub Integration: Auth Methods](/docs/github-integration/auth-methods/) — Detailed auth options

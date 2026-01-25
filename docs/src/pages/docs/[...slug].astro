@@ -40,7 +40,7 @@ const { doc } = Astro.props;
 const { Content, headings } = await render(doc);
 
 const pathSegments = doc.id.split("/");
-const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: "/ralph/docs/" }];
+const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: "/docs" }];
 
 if (pathSegments.length > 1) {
   const sectionSlug = pathSegments.at(0)!;
@@ -50,8 +50,10 @@ if (pathSegments.length > 1) {
 }
 
 breadcrumbs.push({ label: doc.data.sidebar.label ?? doc.data.title });
+
+const faqItems = doc.data.faq as Array<{ question: string; answer: string }> | undefined;
 ---
 
-<DocsLayout title={doc.data.title} description={doc.data.description} breadcrumbs={breadcrumbs} headings={headings}>
+<DocsLayout title={doc.data.title} description={doc.data.description} breadcrumbs={breadcrumbs} headings={headings} faq={faqItems}>
   <Content />
 </DocsLayout>

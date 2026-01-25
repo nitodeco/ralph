@@ -2,77 +2,82 @@
 interface Props {
   title: string;
   description: string;
-  icon: string;
+  variant?: "default" | "featured";
+  index?: number;
 }
 
-const { title, description, icon } = Astro.props;
+const { title, description, variant = "default", index = 0 } = Astro.props;
+
+const isFeatured = variant === "featured";
+const gridSpan = isFeatured ? "md:col-span-2 md:row-span-2" : "";
+const animationDelayInMs = index * 60;
 ---
 
-<div class="feature-card group relative p-6 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl transition-all duration-200">
-  <div class="feature-card-glow"></div>
-  <div class="feature-card-gradient"></div>
-  <div class="relative">
-    <div class="feature-icon text-3xl mb-4" aria-hidden="true">{icon}</div>
-    <h3 class="text-lg font-semibold mb-2 text-text">{title}</h3>
-    <p class="text-sm text-[var(--color-text-muted)] leading-relaxed">
-      {description}
-    </p>
+<div
+  class:list={[
+    "feature-card group",
+    gridSpan,
+  ]}
+  style={`--animation-delay: ${animationDelayInMs}ms;`}
+>
+  <div class:list={[
+    "card-inner h-full rounded-xl border border-border-subtle bg-bg-elevated transition-colors duration-200",
+    isFeatured ? "p-8" : "p-6",
+  ]}>
+    <div class="flex flex-col h-full">
+      <div class:list={[
+        "feature-icon-wrapper text-brand",
+        isFeatured ? "mb-6" : "mb-4",
+      ]}>
+        <slot name="icon" />
+      </div>
+
+      <h3 class:list={[
+        "font-mono font-medium text-text",
+        isFeatured ? "text-lg mb-3" : "text-base mb-2"
+      ]}>
+        {title}
+      </h3>
+
+      <p class:list={[
+        "text-text-muted leading-relaxed flex-1",
+        isFeatured ? "text-base" : "text-sm"
+      ]}>
+        {description}
+      </p>
+    </div>
   </div>
 </div>
 
 <style>
   .feature-card {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .feature-card:hover {
-    border-color: var(--color-brand-subtle);
-    transform: translateY(-2px);
-    box-shadow: var(--glow-brand-subtle);
-  }
-
-  .feature-card-glow {
-    position: absolute;
-    inset: -1px;
-    background: var(--gradient-brand);
-    border-radius: inherit;
     opacity: 0;
-    transition: opacity 0.2s ease;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: xor;
-    -webkit-mask-composite: xor;
-    padding: 1px;
-    pointer-events: none;
+    transform: translateY(12px);
+    animation: cardEntrance 0.5s ease-out forwards;
+    animation-delay: var(--animation-delay);
   }
 
-  .feature-card:hover .feature-card-glow {
-    opacity: 0.4;
+  @keyframes cardEntrance {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
-  .feature-card-gradient {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    background: var(--gradient-card);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+  .card-inner:hover {
+    border-color: rgba(87, 109, 220, 0.2);
   }
 
-  .feature-card:hover .feature-card-gradient {
-    opacity: 1;
+  .feature-icon-wrapper :global(.feature-icon) {
+    width: 24px;
+    height: 24px;
   }
 
-  .feature-icon {
-    filter: grayscale(0.2);
-    transition: filter 0.2s ease, transform 0.2s ease;
-  }
-
-  .feature-card:hover .feature-icon {
-    filter: grayscale(0);
-    transform: scale(1.1);
+  @media (prefers-reduced-motion: reduce) {
+    .feature-card {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
   }
 </style>

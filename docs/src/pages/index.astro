@@ -1,71 +1,20 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Header from "@/components/Header.astro";
+import MobileNav from "@/components/MobileNav.astro";
 import Footer from "@/components/Footer.astro";
 import Button from "@/components/Button.astro";
-import InstallSnippet from "@/components/InstallSnippet.astro";
+import Terminal from "@/components/Terminal.astro";
 import FeatureCard from "@/components/FeatureCard.astro";
+import FeatureIcon from "@/components/FeatureIcon.astro";
 
 const currentPath = Astro.url.pathname;
 
-const features = [
-  {
-    title: "PRD-Driven Workflow",
-    description:
-      "Define your requirements in a PRD file and let Ralph work through each task systematically, maintaining context across sessions.",
-    icon: "📋",
-  },
-  {
-    title: "Long-Running Sessions",
-    description:
-      "Sessions persist across terminal restarts. Pick up exactly where you left off with full context restoration.",
-    icon: "⏱️",
-  },
-  {
-    title: "Task Decomposition",
-    description:
-      "Complex tasks are automatically broken down into manageable subtasks, ensuring thorough implementation.",
-    icon: "🧩",
-  },
-  {
-    title: "Verification & Retries",
-    description:
-      "Built-in verification loops catch issues early. Failed tasks are automatically retried with learned context.",
-    icon: "✅",
-  },
-  {
-    title: "GitHub Integration",
-    description:
-      "Automatic PR creation with detailed descriptions. Connect your workflow directly to your repository.",
-    icon: "🔗",
-  },
-  {
-    title: "Session Memory",
-    description:
-      "Ralph learns from previous sessions. Guardrails and patterns are remembered and applied to future iterations.",
-    icon: "🧠",
-  },
-];
-
-const steps = [
-  {
-    number: "1",
-    title: "Define your PRD",
-    description:
-      "Write a product requirements document with tasks. Ralph parses it and tracks completion.",
-  },
-  {
-    number: "2",
-    title: "Start a session",
-    description:
-      "Run ralph start and the AI agent begins working through tasks, one at a time.",
-  },
-  {
-    number: "3",
-    title: "Review & ship",
-    description:
-      "Ralph creates commits and PRs. You review and merge when ready.",
-  },
+const terminalLines = [
+  '<span class="text-text-subtle">$</span> ralph start',
+  '<span class="text-brand">▸</span> Starting session on feature/auth...',
+  '<span class="text-brand">▸</span> Task 1/5: Implement login form',
+  '<span class="text-emerald-400">✓</span> Task completed',
 ];
 
 const jsonLd = {
@@ -76,7 +25,7 @@ const jsonLd = {
   "operatingSystem": "macOS, Linux",
   "description":
     "CLI tool for long-running PRD-driven development with AI coding agents. Orchestrates iterative agent runs with retries, verification, progress tracking, and GitHub integration.",
-  "url": "https://nitodeco.github.io/ralph/",
+  "url": "https://nitodeco.github.io/",
   "author": {
     "@type": "Person",
     "name": "nitodeco",
@@ -96,108 +45,190 @@ const jsonLd = {
   description="CLI tool for long-running PRD-driven development with AI coding agents. Orchestrates iterative agent runs with retries, verification, and GitHub integration."
 >
   <Header currentPath={currentPath} />
+  <MobileNav currentPath={currentPath} />
 
   <main id="main-content" class="flex flex-1 flex-col">
-    <section class="hero-section relative flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-16 sm:py-24 overflow-hidden">
-      <div class="hero-grid"></div>
-      <div class="hero-grid-overlay"></div>
-      <div class="hero-bg-gradient"></div>
-      <div class="hero-bg-glow"></div>
+    <section class="hero-section relative flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-20 sm:py-28 overflow-hidden">
+      <div class="hero-gradient" aria-hidden="true"></div>
+      <div class="hero-grid" aria-hidden="true"></div>
 
-      <div class="hero-content relative text-center max-w-3xl mx-auto opacity-0 animate-fade-in-up">
-        <h1 class="hero-title text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
-          <span class="hero-title-text">Ralph</span>
-        </h1>
-        <p class="text-xl sm:text-2xl text-[var(--color-text-muted)] mb-10 leading-relaxed">
-          Long-running PRD-driven development with AI coding agents.
-          <span class="block mt-2 text-lg sm:text-xl text-[var(--color-text-subtle)]">
-            Define tasks. Start a session. Ship code.
-          </span>
-        </p>
-        <div class="flex flex-wrap justify-center gap-4 mb-12">
-          <Button href="/ralph/docs/">Read the docs</Button>
-          <Button variant="secondary" href="https://github.com/nitodeco/ralph">
-            View on GitHub
-          </Button>
-        </div>
+      <h1 class="hero-title mb-6 relative z-10 flex justify-center">
+        <span class="sr-only">Ralph - PRD-Driven Development CLI for AI Coding Agents</span>
+        Stop babysitting agents
+      </h1>
+
+      <p class="hero-tagline text-lg sm:text-xl text-text-muted mb-12 relative z-10 text-center max-w-md">
+        Ralph implements entire projects while you sleep.
+      </p>
+
+      <div class="w-full max-w-2xl mx-auto mb-14 relative z-10">
+        <Terminal lines={terminalLines} animated />
       </div>
 
-      <div class="opacity-0 animate-fade-in-up stagger-2">
-        <InstallSnippet />
+      <div class="flex flex-wrap justify-center gap-3 relative z-10">
+        <Button href="/docs">Documentation</Button>
+        <Button variant="secondary" href="https://github.com/nitodeco/ralph">
+          GitHub
+        </Button>
       </div>
     </section>
 
-    <section class="features-section relative px-4 py-20 sm:py-28 border-t border-[var(--color-border)] overflow-hidden">
-      <div class="features-grid"></div>
-      <div class="max-w-6xl mx-auto relative">
-        <div class="text-center mb-14 opacity-0 animate-fade-in-up">
-          <h2 class="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
-            Features
+    <section class="features-section relative px-4 py-24 sm:py-32 overflow-hidden">
+      <div class="features-grid" aria-hidden="true"></div>
+      <div class="max-w-5xl mx-auto relative z-10">
+        <div class="text-center mb-20">
+          <h2 class="text-2xl sm:text-3xl font-semibold mb-4 tracking-tight">
+            Ship features faster with AI that actually finishes the job
           </h2>
-          <p class="text-[var(--color-text-muted)] max-w-2xl mx-auto">
-            Everything you need to orchestrate AI-driven development at scale.
+          <p class="text-text-muted max-w-lg mx-auto text-base">
+            Ralph orchestrates AI coding agents to complete entire features from your requirements—not just one file at a time.
           </p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <div class:list={["opacity-0 animate-fade-in-up", `stagger-${index + 1}`]}>
-              <FeatureCard
-                title={feature.title}
-                description={feature.description}
-                icon={feature.icon}
-              />
-            </div>
-          ))}
+
+        <div class="bento-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FeatureCard
+            title="PRD-Driven Workflow"
+            description="Write your requirements once. Ralph works through each task systematically while you focus on other work—no babysitting required."
+            variant="featured"
+            index={0}
+          >
+            <FeatureIcon name="document-check" slot="icon" />
+          </FeatureCard>
+
+          <FeatureCard
+            title="Session Memory"
+            description="Ralph learns from each task. If you prefer Zod for validation or Tailwind for styling, it remembers and applies those choices automatically."
+            index={1}
+          >
+            <FeatureIcon name="brain" slot="icon" />
+          </FeatureCard>
+
+          <FeatureCard
+            title="Long-Running Sessions"
+            description="Close your laptop mid-feature. Ralph picks up exactly where it left off—even days later."
+            index={2}
+          >
+            <FeatureIcon name="clock-refresh" slot="icon" />
+          </FeatureCard>
+
+          <FeatureCard
+            title="Task Decomposition"
+            description="Give Ralph a complex feature. It breaks the work into steps and executes them one by one—like a senior developer would."
+            index={3}
+          >
+            <FeatureIcon name="squares-nested" slot="icon" />
+          </FeatureCard>
+
+          <FeatureCard
+            title="Verification & Retries"
+            description="Ralph tests its own work after each task. If tests fail or the build breaks, it fixes the issue and tries again—up to 3 times."
+            index={4}
+          >
+            <FeatureIcon name="check-circle" slot="icon" />
+          </FeatureCard>
+
+          <FeatureCard
+            title="GitHub Integration"
+            description="When a feature is complete, Ralph creates a PR with a detailed description of what changed and why."
+            index={5}
+          >
+            <FeatureIcon name="git-branch" slot="icon" />
+          </FeatureCard>
         </div>
       </div>
     </section>
 
-    <section class="steps-section relative px-4 py-20 sm:py-28 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border)] overflow-hidden">
-      <div class="steps-bg-gradient"></div>
-      <div class="max-w-4xl mx-auto relative">
-        <div class="text-center mb-14 opacity-0 animate-fade-in-up">
-          <h2 class="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
+    <section class="pipeline-section relative px-4 py-24 sm:py-32 border-t border-border overflow-hidden">
+      <div class="pipeline-grid" aria-hidden="true"></div>
+      <div class="max-w-3xl mx-auto relative z-10">
+        <div class="text-center mb-16">
+          <h2 class="text-2xl sm:text-3xl font-semibold mb-4 tracking-tight">
             How it works
           </h2>
-          <p class="text-[var(--color-text-muted)] max-w-2xl mx-auto">
+          <p class="text-text-muted max-w-lg mx-auto text-base">
             Three steps from requirements to shipped code.
           </p>
         </div>
-        <div class="steps-grid grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          <div class="steps-connector hidden md:block"></div>
-          {steps.map((step, index) => (
-            <div class:list={["step-item text-center relative opacity-0 animate-fade-in-up", `stagger-${index + 1}`]}>
-              <div class="step-number-wrapper relative inline-flex mb-6">
-                <div class="step-number w-14 h-14 rounded-full bg-gradient-to-br from-brand to-brand-subtle text-[var(--color-bg)] flex items-center justify-center text-xl font-bold">
-                  {step.number}
+
+        <div class="pipeline-track relative">
+          <div class="pipeline-line" aria-hidden="true"></div>
+
+          <div class="pipeline flex flex-col md:flex-row items-stretch justify-between gap-6 md:gap-4 relative z-10">
+            <div class="pipeline-step flex-1">
+              <div class="pipeline-step-inner h-full p-6 rounded-xl border border-border-subtle bg-bg-elevated">
+                <div class="flex items-center gap-3 mb-4">
+                  <span class="step-number font-mono text-sm text-brand">01</span>
+                  <h3 class="font-mono font-medium text-base">Define</h3>
                 </div>
-                <div class="step-glow"></div>
+                <p class="text-sm text-text-muted leading-relaxed">Write your PRD with tasks and requirements</p>
               </div>
-              <h3 class="text-lg font-semibold mb-2">{step.title}</h3>
-              <p class="text-[var(--color-text-muted)] text-sm leading-relaxed">
-                {step.description}
-              </p>
             </div>
-          ))}
+
+            <div class="pipeline-step flex-1">
+              <div class="pipeline-step-inner h-full p-6 rounded-xl border border-border-subtle bg-bg-elevated">
+                <div class="flex items-center gap-3 mb-4">
+                  <span class="step-number font-mono text-sm text-brand">02</span>
+                  <h3 class="font-mono font-medium text-base">Execute</h3>
+                </div>
+                <p class="text-sm text-text-muted leading-relaxed">Run <code class="text-brand font-mono">ralph start</code> and let it work</p>
+              </div>
+            </div>
+
+            <div class="pipeline-step flex-1">
+              <div class="pipeline-step-inner h-full p-6 rounded-xl border border-border-subtle bg-bg-elevated">
+                <div class="flex items-center gap-3 mb-4">
+                  <span class="step-number font-mono text-sm text-brand">03</span>
+                  <h3 class="font-mono font-medium text-base">Ship</h3>
+                </div>
+                <p class="text-sm text-text-muted leading-relaxed">Review generated PRs and merge</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="cta-section relative px-4 py-20 sm:py-28 border-t border-[var(--color-border)] overflow-hidden">
-      <div class="cta-grid"></div>
-      <div class="cta-bg-gradient"></div>
-      <div class="max-w-2xl mx-auto text-center relative opacity-0 animate-fade-in-up">
-        <h2 class="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
-          Ready to start?
+    <section class="cta-section relative px-4 py-24 sm:py-32 border-t border-border overflow-hidden">
+      <div class="cta-grid" aria-hidden="true"></div>
+      <div class="max-w-2xl mx-auto text-center relative z-10">
+        <h2 class="text-2xl sm:text-3xl font-semibold mb-4 tracking-tight">
+          Get started
         </h2>
-        <p class="text-[var(--color-text-muted)] mb-8">
-          Install Ralph and begin your first PRD-driven session.
+        <p class="text-text-muted mb-10 text-base">
+          Free and open source. Get up and running in under 5 minutes.
         </p>
-        <div class="flex flex-wrap justify-center gap-4">
-          <Button href="/ralph/docs/getting-started/installation/">
+
+        <div class="install-block mb-10 mx-auto">
+          <div class="install-terminal rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+            <div class="install-terminal-header flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle">
+              <div class="flex gap-1.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]/80"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]/80"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-[#27c93f]/80"></div>
+              </div>
+            </div>
+            <div class="install-terminal-body flex items-center gap-3 px-4 py-4 font-mono text-sm">
+              <span class="text-text-subtle">$</span>
+              <code class="text-text flex-1 text-left overflow-x-auto">curl -fsSL https://raw.githubusercontent.com/nitodeco/ralph/main/scripts/install.sh | bash</code>
+              <button
+                id="copy-install"
+                class="copy-btn shrink-0 p-1.5 rounded text-text-subtle hover:text-text transition-colors"
+                aria-label="Copy install command"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-3">
+          <Button href="/docs/getting-started/installation">
             Installation guide
           </Button>
-          <Button variant="secondary" href="/ralph/docs/getting-started/quickstart/">
+          <Button variant="secondary" href="/docs/getting-started/quickstart">
             Quickstart
           </Button>
         </div>
@@ -207,182 +238,248 @@ const jsonLd = {
 
   <Footer />
 
-  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>
 
+<script>
+  function setupCopyButton() {
+    const copyButton = document.getElementById("copy-install");
+
+    if (!copyButton) {
+      return;
+    }
+
+    copyButton.addEventListener("click", async () => {
+      const command = "curl -fsSL https://raw.githubusercontent.com/nitodeco/ralph/main/scripts/install.sh | bash";
+
+      try {
+        await navigator.clipboard.writeText(command);
+        copyButton.innerHTML = `<svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg>`;
+
+        setTimeout(() => {
+          copyButton.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
+        }, 2000);
+      } catch {
+        // Silently fail
+      }
+    });
+  }
+
+  function setupGridHover() {
+    if (!window.matchMedia('(hover: hover)').matches) {
+      return;
+    }
+
+    const gridConfigs = [
+      { sectionSelector: ".hero-section", gridSelector: ".hero-grid", cellSize: 80 },
+      { sectionSelector: ".features-section", gridSelector: ".features-grid", cellSize: 64 },
+      { sectionSelector: ".pipeline-section", gridSelector: ".pipeline-grid", cellSize: 64 },
+      { sectionSelector: ".cta-section", gridSelector: ".cta-grid", cellSize: 64 },
+    ];
+
+    gridConfigs.forEach(({ sectionSelector, gridSelector, cellSize }) => {
+      const sectionElement = document.querySelector(sectionSelector);
+      const gridElement = document.querySelector(gridSelector) as HTMLElement | null;
+      
+      if (!sectionElement || !gridElement) return;
+
+      const fadeDurationMs = 300;
+      const existingOverlays = gridElement.querySelectorAll(".grid-hover-overlay");
+      existingOverlays.forEach((overlayElement) => overlayElement.remove());
+      
+      const existingGlowOverlays = gridElement.querySelectorAll(".grid-glow-overlay");
+      existingGlowOverlays.forEach((glowOverlay) => glowOverlay.remove());
+
+      let activeOverlay = null as HTMLDivElement | null;
+      let activeCellKey = null as string | null;
+      let glowOverlay = null as HTMLDivElement | null;
+
+      const fadeOutOverlay = (overlayElement: HTMLDivElement | null) => {
+        if (!overlayElement) return;
+        overlayElement.classList.remove("visible");
+        window.setTimeout(() => {
+          overlayElement.remove();
+        }, fadeDurationMs);
+      };
+
+      const fadeOutGlowOverlay = () => {
+        if (glowOverlay) {
+          glowOverlay.classList.remove("visible");
+          window.setTimeout(() => {
+            glowOverlay?.remove();
+            glowOverlay = null;
+          }, fadeDurationMs);
+        }
+      };
+
+      const ensureGlowOverlay = () => {
+        if (!glowOverlay) {
+          glowOverlay = document.createElement("div");
+          glowOverlay.className = "grid-glow-overlay";
+          glowOverlay.style.backgroundSize = `${cellSize}px ${cellSize}px`;
+          gridElement.appendChild(glowOverlay);
+        }
+      };
+
+      const handleMouseMove = (event: Event) => {
+        const mouseEvent = event as MouseEvent;
+        const sectionRect = sectionElement.getBoundingClientRect();
+        const gridRect = gridElement.getBoundingClientRect();
+        
+        const relativeX = mouseEvent.clientX - sectionRect.left;
+        const relativeY = mouseEvent.clientY - sectionRect.top;
+        
+        const gridOffsetX = gridRect.left - sectionRect.left;
+        const gridOffsetY = gridRect.top - sectionRect.top;
+        
+        const gridRelativeX = relativeX - gridOffsetX;
+        const gridRelativeY = relativeY - gridOffsetY;
+
+        const cellX = Math.floor(gridRelativeX / cellSize);
+        const cellY = Math.floor(gridRelativeY / cellSize);
+        const nextCellKey = `${cellX}-${cellY}`;
+
+        if (nextCellKey !== activeCellKey) {
+          const overlayX = cellX * cellSize;
+          const overlayY = cellY * cellSize;
+
+          fadeOutOverlay(activeOverlay);
+
+          const nextOverlay = document.createElement("div");
+          nextOverlay.className = "grid-hover-overlay visible";
+          nextOverlay.style.transform = `translate(${overlayX}px, ${overlayY}px)`;
+          gridElement.appendChild(nextOverlay);
+
+          activeOverlay = nextOverlay;
+          activeCellKey = nextCellKey;
+        }
+
+        ensureGlowOverlay();
+
+        if (glowOverlay) {
+          gridElement.style.setProperty("--glow-x", `${gridRelativeX}px`);
+          gridElement.style.setProperty("--glow-y", `${gridRelativeY}px`);
+          glowOverlay.classList.add("visible");
+        }
+      };
+
+      const handleMouseLeave = () => {
+        fadeOutOverlay(activeOverlay);
+        activeOverlay = null;
+        activeCellKey = null;
+        fadeOutGlowOverlay();
+      };
+
+      sectionElement.addEventListener("mousemove", handleMouseMove);
+      sectionElement.addEventListener("mouseleave", handleMouseLeave);
+    });
+  }
+
+  setupCopyButton();
+  setupGridHover();
+  document.addEventListener("astro:page-load", () => {
+    setupCopyButton();
+    setupGridHover();
+  });
+</script>
+
 <style>
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(87, 109, 220, 0.08) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+
   .hero-grid {
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 0%, transparent 70%);
-    pointer-events: none;
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 50%, transparent 80%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 50%, transparent 80%);
   }
 
-  .hero-grid-overlay {
+  :global(.grid-hover-overlay) {
     position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(to right, var(--grid-color-strong) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color-strong) 1px, transparent 1px);
-    background-size: 64px 64px;
-    background-position: 32px 32px;
-    mask-image: radial-gradient(ellipse 50% 40% at 50% 30%, black 0%, transparent 60%);
-    -webkit-mask-image: radial-gradient(ellipse 50% 40% at 50% 30%, black 0%, transparent 60%);
+    width: 80px;
+    height: 80px;
+    background-color: rgba(255, 255, 255, 0.04);
     pointer-events: none;
-    opacity: 0.5;
-  }
-
-  .hero-bg-gradient {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 1400px;
-    height: 100%;
-    background: radial-gradient(
-      ellipse 60% 50% at 50% 0%,
-      rgba(34, 211, 238, 0.08) 0%,
-      transparent 60%
-    );
-    pointer-events: none;
-  }
-
-  .hero-bg-glow {
-    position: absolute;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(
-      circle,
-      rgba(34, 211, 238, 0.1) 0%,
-      transparent 70%
-    );
-    filter: blur(60px);
-    pointer-events: none;
-  }
-
-  .features-grid {
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle, var(--grid-color-strong) 1px, transparent 1px);
-    background-size: 32px 32px;
-    mask-image:
-      linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%),
-      linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-    -webkit-mask-image:
-      linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%),
-      linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-    mask-composite: intersect;
-    -webkit-mask-composite: source-in;
-    pointer-events: none;
-    opacity: 0.7;
-  }
-
-  .hero-title-text {
-    background: linear-gradient(
-      135deg,
-      var(--color-text) 0%,
-      var(--color-text) 40%,
-      var(--color-brand) 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .steps-bg-gradient {
-    position: absolute;
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+    z-index: 1;
     top: 0;
     left: 0;
-    right: 0;
-    height: 200px;
-    background: linear-gradient(
-      180deg,
-      rgba(34, 211, 238, 0.02) 0%,
-      transparent 100%
-    );
-    pointer-events: none;
   }
 
-  .steps-connector {
-    position: absolute;
-    top: 28px;
-    left: calc(16.67% + 28px);
-    right: calc(16.67% + 28px);
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      var(--color-brand) 0%,
-      var(--color-brand-subtle) 50%,
-      var(--color-brand) 100%
-    );
-    opacity: 0.3;
+  :global(.grid-hover-overlay.visible) {
+    opacity: 1;
   }
 
-  .step-glow {
-    position: absolute;
-    inset: -4px;
-    background: var(--color-brand);
-    border-radius: 50%;
-    filter: blur(12px);
-    opacity: 0.2;
-    z-index: -1;
+  :global(.features-grid .grid-hover-overlay),
+  :global(.pipeline-grid .grid-hover-overlay),
+  :global(.cta-grid .grid-hover-overlay) {
+    width: 64px;
+    height: 64px;
+    background-color: rgba(255, 255, 255, 0.03);
   }
 
-  .step-item:hover .step-glow {
-    opacity: 0.4;
-  }
-
-  .step-item:hover .step-number {
-    box-shadow: var(--glow-brand);
-    transform: scale(1.05);
-  }
-
-  .step-number {
-    transition: all 0.2s ease;
-  }
-
-  .cta-grid {
+  :global(.grid-glow-overlay) {
     position: absolute;
     inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+    z-index: 2;
     background-image:
-      linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-    background-size: 64px 64px;
-    mask-image: radial-gradient(ellipse 70% 80% at 50% 100%, black 0%, transparent 60%);
-    -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 100%, black 0%, transparent 60%);
-    pointer-events: none;
+      linear-gradient(to right, rgba(87, 109, 220, 0.12) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(87, 109, 220, 0.12) 1px, transparent 1px);
+    filter: drop-shadow(0 0 4px rgba(87, 109, 220, 0.15));
+    mask-image: radial-gradient(circle 200px at var(--glow-x, 0px) var(--glow-y, 0px), rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 45%, transparent 75%);
+    -webkit-mask-image: radial-gradient(circle 200px at var(--glow-x, 0px) var(--glow-y, 0px), rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 45%, transparent 75%);
   }
 
-  .cta-bg-gradient {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 800px;
-    height: 300px;
-    background: radial-gradient(
-      ellipse 80% 60% at 50% 100%,
-      rgba(34, 211, 238, 0.05) 0%,
-      transparent 70%
-    );
-    pointer-events: none;
+  :global(.grid-glow-overlay.visible) {
+    opacity: 0.85;
   }
 
-  @keyframes fadeInUp {
+  .hero-title {
+    color: var(--color-text);
+    text-shadow: 0 0 80px rgba(87, 109, 220, 0.3);
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  @media (min-width: 640px) {
+    .hero-title {
+      font-size: 3rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-title {
+      font-size: 3.75rem;
+    }
+  }
+
+  .hero-tagline {
+    animation: fadeIn 0.8s ease-out 0.2s both;
+  }
+
+  @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -390,21 +487,64 @@ const jsonLd = {
     }
   }
 
-  .animate-fade-in-up {
-    animation: fadeInUp 0.6s ease-out forwards;
+  .pipeline-step-inner {
+    transition: border-color 0.2s ease, background-color 0.2s ease;
   }
 
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
-  .stagger-6 { animation-delay: 0.6s; }
+  .pipeline-step:hover .pipeline-step-inner {
+    border-color: rgba(87, 109, 220, 0.3);
+    background-color: rgba(20, 20, 20, 0.8);
+  }
+
+  .step-number {
+    opacity: 0.7;
+  }
+
+  .features-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+  }
+
+  .pipeline-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+  }
+
+  .cta-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-fade-in-up {
-      opacity: 1;
+    .hero-tagline {
       animation: none;
+      opacity: 1;
+    }
+
+    :global(.grid-hover-overlay) {
+      transition: opacity 0s;
+    }
+
+    :global(.grid-glow-overlay) {
+      transition: opacity 0s;
     }
   }
 </style>

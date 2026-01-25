@@ -1,6 +1,6 @@
 ---
 title: PR Creation
-description: Configure how Ralph creates pull requests from completed work.
+description: Configure how Ralph creates pull requests from completed work. Learn about automatic PR generation, branch naming conventions, PR content customization, and best practices.
 sidebar:
   order: 3
   label: PR Creation
@@ -109,5 +109,5 @@ ralph auth login
 
 ## Next Steps
 
-- [Configuration](/ralph/docs/configuration/overview/) — Configure Ralph behavior
-- [Troubleshooting](/ralph/docs/troubleshooting/common-issues/) — Common issues and solutions
+- [Configuration](/docs/configuration/overview/) — Configure Ralph behavior
+- [Troubleshooting](/docs/troubleshooting/common-issues/) — Common issues and solutions

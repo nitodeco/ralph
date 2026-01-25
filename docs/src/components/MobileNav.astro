@@ -8,8 +8,8 @@ interface Props {
 const { currentPath = "" } = Astro.props;
 
 const NAV_ITEMS = [
-  { label: "Docs", href: "/ralph/docs/" },
-  { label: "Changelog", href: "/ralph/changelog/" },
+  { label: "Docs", href: "/docs" },
+  { label: "Changelog", href: "/changelog/" },
   { label: "GitHub", href: "https://github.com/nitodeco/ralph", isExternal: true },
 ];
 ---
@@ -32,11 +32,11 @@ const NAV_ITEMS = [
     class="fixed inset-y-0 left-0 w-full max-w-xs bg-bg border-r border-border shadow-lg transition-transform duration-300 -translate-x-full"
   >
     <div class="flex h-14 items-center justify-between border-b border-border px-4">
-      <a href="/ralph/" class="font-semibold text-text">Ralph</a>
+      <a href="/" class="font-semibold text-text">Ralph</a>
       <button
         type="button"
         id="mobile-nav-close"
-        class="flex h-9 w-9 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text"
+        class="flex h-11 w-11 items-center justify-center rounded-md text-text-muted hover:bg-bg-elevated hover:text-text"
         aria-label="Close menu"
       >
         <svg
@@ -86,23 +86,39 @@ const NAV_ITEMS = [
   </div>
 </div>
 
-<script>
+<script is:inline>
+  let isInitialized = false;
+  let openButtonHandler = null;
+  let closeButtonHandler = null;
+  let backdropHandler = null;
+  let escapeHandler = null;
+  let trapFocusHandler = null;
+  let returnFocusElement = null;
+
   function initMobileNav() {
     const mobileNav = document.getElementById("mobile-nav");
     const mobileNavPanel = document.getElementById("mobile-nav-panel");
     const mobileNavBackdrop = document.getElementById("mobile-nav-backdrop");
     const closeButton = document.getElementById("mobile-nav-close");
-    const openButton = document.querySelector("[data-mobile-menu-toggle]");
+    const toggleButton = document.querySelector("[data-mobile-menu-toggle]");
+    if (!mobileNav || !mobileNavPanel || !mobileNavBackdrop) {
+      return;
+    }
 
-    if (!mobileNav || !mobileNavPanel || !mobileNavBackdrop) return;
+    if (isInitialized) {
+      if (openButtonHandler) document.removeEventListener("click", openButtonHandler);
+      if (closeButtonHandler && closeButton) closeButton.removeEventListener("click", closeButtonHandler);
+      if (backdropHandler) mobileNavBackdrop.removeEventListener("click", backdropHandler);
+      if (escapeHandler) document.removeEventListener("keydown", escapeHandler);
+    }
 
-    const getFocusableElements = (): HTMLElement[] => {
+    const getFocusableElements = () => {
       const focusableSelectors = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-      return Array.from(mobileNavPanel?.querySelectorAll(focusableSelectors) ?? []) as HTMLElement[];
+      return Array.from(mobileNavPanel?.querySelectorAll(focusableSelectors) ?? []);
     };
 
-    const trapFocus = (event: KeyboardEvent) => {
+    trapFocusHandler = (event) => {
       if (event.key !== "Tab" || mobileNav?.classList.contains("hidden")) {
         return;
       }
@@ -125,15 +141,25 @@ const NAV_ITEMS = [
     };
 
     const openMenu = () => {
+      if (!mobileNav.classList.contains("hidden")) {
+        return;
+      }
+
+      returnFocusElement = document.activeElement;
       mobileNav.classList.remove("hidden");
       document.body.style.overflow = "hidden";
+      if (toggleButton instanceof HTMLElement) {
+        toggleButton.setAttribute("aria-expanded", "true");
+      }
       requestAnimationFrame(() => {
         mobileNavPanel.classList.remove("-translate-x-full");
         mobileNavBackdrop.classList.remove("opacity-0");
         mobileNavBackdrop.classList.add("opacity-100");
       });
       closeButton?.focus();
-      document.addEventListener("keydown", trapFocus);
+      if (trapFocusHandler) {
+        document.addEventListener("keydown", trapFocusHandler);
+      }
     };
 
     const closeMenu = () => {
@@ -141,24 +167,57 @@ const NAV_ITEMS = [
       mobileNavBackdrop.classList.remove("opacity-100");
       mobileNavBackdrop.classList.add("opacity-0");
       document.body.style.overflow = "";
-      document.removeEventListener("keydown", trapFocus);
+      if (toggleButton instanceof HTMLElement) {
+        toggleButton.setAttribute("aria-expanded", "false");
+      }
+      if (trapFocusHandler) {
+        document.removeEventListener("keydown", trapFocusHandler);
+      }
       setTimeout(() => {
         mobileNav.classList.add("hidden");
       }, 300);
-      (openButton as HTMLElement)?.focus();
+      if (returnFocusElement instanceof HTMLElement) {
+        returnFocusElement.focus();
+      }
     };
 
-    openButton?.addEventListener("click", openMenu);
-    closeButton?.addEventListener("click", closeMenu);
-    mobileNavBackdrop?.addEventListener("click", closeMenu);
+    openButtonHandler = (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
 
-    document.addEventListener("keydown", (event) => {
+      const toggleButton = target.closest("[data-mobile-menu-toggle]");
+      if (!toggleButton) {
+        return;
+      }
+
+      event.preventDefault();
+      openMenu();
+    };
+    closeButtonHandler = closeMenu;
+    backdropHandler = closeMenu;
+    escapeHandler = (event) => {
       if (event.key === "Escape" && !mobileNav.classList.contains("hidden")) {
         closeMenu();
       }
-    });
+    };
+
+    document.addEventListener("click", openButtonHandler);
+    if (closeButton) {
+      closeButton.addEventListener("click", closeButtonHandler);
+    }
+    mobileNavBackdrop.addEventListener("click", backdropHandler);
+    document.addEventListener("keydown", escapeHandler);
+
+    isInitialized = true;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initMobileNav);
+  } else {
+    initMobileNav();
   }
 
   document.addEventListener("astro:page-load", initMobileNav);
-  initMobileNav();
 </script>
