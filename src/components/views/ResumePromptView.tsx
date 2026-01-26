@@ -95,7 +95,7 @@ export function ResumePromptView({
 						<Box marginTop={1}>
 							<Text>
 								Type <Text color="cyan">/resume</Text> to continue or{" "}
-								<Text color="yellow">/start</Text> to start fresh
+								<Text color="yellow">/session start</Text> to start fresh
 							</Text>
 						</Box>
 					</Box>

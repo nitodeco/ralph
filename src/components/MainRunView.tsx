@@ -158,8 +158,9 @@ function ContentSection({
 			{appState === "idle" && (
 				<Box paddingX={1} marginY={1}>
 					<Text dimColor>
-						Type <Text color="cyan">/start</Text>, <Text color="cyan">/start [n]</Text>, or{" "}
-						<Text color="cyan">/start full</Text> to begin iterations
+						Type <Text color="cyan">/session start</Text>,{" "}
+						<Text color="cyan">/session start [n]</Text>, or{" "}
+						<Text color="cyan">/session start full</Text> to begin iterations
 					</Text>
 				</Box>
 			)}
