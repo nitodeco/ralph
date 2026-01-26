@@ -1,5 +1,11 @@
 # ralph
 
+## 0.15.1
+
+### Patch Changes
+
+- 36b6792: Fix incorrect command hints to use `/session start` instead of `/start`
+
 ## 0.15.0
 
 ### Minor Changes
