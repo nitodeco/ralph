@@ -2,11 +2,10 @@ import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
 import compress from "astro-compress";
-import { remarkBasePath } from "./src/plugins/remark-base-path.ts";
 
 export default defineConfig({
-  site: "https://nitodeco.github.io",
-  base: "/ralph/",
+  site: "https://ralph-cli.dev",
+  base: "/",
   trailingSlash: "ignore",
   output: "static",
   compressHTML: true,
@@ -33,7 +32,6 @@ export default defineConfig({
     }),
   ],
   markdown: {
-    remarkPlugins: [remarkBasePath],
     shikiConfig: {
       theme: "github-dark",
     },
