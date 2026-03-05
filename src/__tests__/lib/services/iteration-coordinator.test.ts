@@ -1,43 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { bootstrapTestServices, teardownTestServices } from "@/lib/services/bootstrap.ts";
 import { createIterationCoordinator } from "@/lib/services/iteration-coordinator/implementation.ts";
-import type { Prd } from "@/lib/services/prd/types.ts";
-import type { Session } from "@/lib/services/session/types.ts";
 import type { DecompositionRequest, IterationLogRetryContext } from "@/types.ts";
-
-function createMockSession(overrides: Partial<Session> = {}): Session {
-  return {
-    currentIteration: 0,
-    currentTaskIndex: 0,
-    elapsedTimeSeconds: 0,
-    lastUpdateTime: Date.now(),
-    startTime: Date.now(),
-    statistics: {
-      averageDurationMs: 0,
-      completedIterations: 0,
-      failedIterations: 0,
-      iterationTimings: [],
-      successRate: 0,
-      successfulIterations: 0,
-      totalDurationMs: 0,
-      totalIterations: 10,
-    },
-    status: "running",
-    totalIterations: 10,
-    ...overrides,
-  };
-}
-
-function createMockPrd(overrides: Partial<Prd> = {}): Prd {
-  return {
-    project: "Test Project",
-    tasks: [
-      { description: "First task", done: false, id: "task-1", steps: [], title: "Task 1" },
-      { description: "Second task", done: false, id: "task-2", steps: [], title: "Task 2" },
-    ],
-    ...overrides,
-  };
-}
+import {
+  createServiceTestPrd,
+  createServiceTestPrdOverrides,
+  createServiceTestSession,
+  createServiceTestSessionOverrides,
+} from "./test-infrastructure.ts";
 
 describe("IterationCoordinator", () => {
   let callbacksCalled: {
@@ -60,66 +30,8 @@ describe("IterationCoordinator", () => {
     lastSpecificTask = null;
 
     bootstrapTestServices({
-      prd: {
-        canWorkOnTask: () => ({ canWork: true }),
-        createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
-        deleteTask: (prd) => prd,
-        findFile: () => null,
-        get: () => createMockPrd(),
-        getCurrentTaskIndex: () => 0,
-        getNextTask: () => createMockPrd().tasks[0]?.title ?? null,
-        getNextTaskWithIndex: () => {
-          const task = createMockPrd().tasks[0];
-
-          return task ? { ...task, index: 0, title: task.title ?? "Task" } : null;
-        },
-        getTaskByIndex: () => null,
-        getTaskByTitle: () => null,
-        invalidate: () => {},
-        isComplete: () => false,
-        load: () => createMockPrd(),
-        loadInstructions: () => null,
-        loadWithValidation: () => ({ prd: createMockPrd() }),
-        reload: () => createMockPrd(),
-        reloadWithValidation: () => ({ prd: createMockPrd() }),
-        reorderTask: (prd) => prd,
-        save: () => {},
-        toggleTaskDone: (prd) => prd,
-        updateTask: (prd) => prd,
-      },
-      session: {
-        completeParallelGroup: (session) => session,
-        completeTaskExecution: (session) => session,
-        create: (totalIterations: number, currentTaskIndex: number) =>
-          createMockSession({ currentTaskIndex, totalIterations }),
-        delete: () => {},
-        disableParallelMode: (session) => session,
-        enableParallelMode: (session) => session,
-        exists: () => false,
-        failTaskExecution: (session) => session,
-        getActiveExecutionCount: () => 0,
-        getActiveExecutions: () => [],
-        getCurrentParallelGroup: () => null,
-        getTaskExecution: () => null,
-        isParallelMode: () => false,
-        isResumable: () => false,
-        isTaskExecuting: () => false,
-        load: () => null,
-        recordIterationEnd: (session) => ({ ...session, lastUpdateTime: Date.now() }),
-        recordIterationStart: (session) => ({ ...session, lastUpdateTime: Date.now() }),
-        retryTaskExecution: (session) => session,
-        save: () => {},
-        startParallelGroup: (session) => session,
-        startTaskExecution: (session) => session,
-        updateIteration: (session, currentIteration, currentTaskIndex, elapsedTimeSeconds) => ({
-          ...session,
-          currentIteration,
-          currentTaskIndex,
-          elapsedTimeSeconds,
-          lastUpdateTime: Date.now(),
-        }),
-        updateStatus: (session, status) => ({ ...session, lastUpdateTime: Date.now(), status }),
-      },
+      prd: createServiceTestPrdOverrides(),
+      session: createServiceTestSessionOverrides(),
     });
   });
 
@@ -143,7 +55,7 @@ describe("IterationCoordinator", () => {
         clearManualNextTask: () => {
           lastSpecificTask = null;
         },
-        currentSession: createMockSession(),
+        currentSession: createServiceTestSession(),
         elapsedTime: 0,
         getEffectiveNextTask: () => lastSpecificTask,
         isReviewingTechnicalDebt: false,
@@ -152,7 +64,7 @@ describe("IterationCoordinator", () => {
         lastTechnicalDebtReport: null,
         lastVerificationResult: null,
         manualNextTask: null,
-        prd: createMockPrd(),
+        prd: createServiceTestPrd(),
         setPrd: () => {},
       }),
       getIterationStoreState: () => ({

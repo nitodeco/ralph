@@ -2,19 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { eventBus } from "@/lib/events.ts";
 import { bootstrapTestServices, teardownTestServices } from "@/lib/services/bootstrap.ts";
 import { createHandlerCoordinator } from "@/lib/services/handler-coordinator/implementation.ts";
-import type { Prd } from "@/lib/services/prd/types.ts";
 import type { VerificationResult } from "@/types.ts";
-
-function createMockPrd(overrides: Partial<Prd> = {}): Prd {
-  return {
-    project: "Test Project",
-    tasks: [
-      { description: "First task", done: false, id: "task-1", steps: [], title: "Task 1" },
-      { description: "Second task", done: false, id: "task-2", steps: [], title: "Task 2" },
-    ],
-    ...overrides,
-  };
-}
+import { createServiceTestPrdOverrides } from "./test-infrastructure.ts";
 
 describe("HandlerCoordinator", () => {
   let verificationStateChanges: {
@@ -32,41 +21,7 @@ describe("HandlerCoordinator", () => {
     appStateChanges = [];
 
     bootstrapTestServices({
-      iterationCoordinator: {
-        clearState: () => {},
-        getLastDecomposition: () => null,
-        getLastRetryContexts: () => [],
-        setLastDecomposition: () => {},
-        setLastRetryContexts: () => {},
-        setupIterationCallbacks: () => {},
-      },
-      prd: {
-        canWorkOnTask: () => ({ canWork: true }),
-        createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
-        deleteTask: (prd) => prd,
-        findFile: () => null,
-        get: () => createMockPrd(),
-        getCurrentTaskIndex: () => 0,
-        getNextTask: () => createMockPrd().tasks[0]?.title ?? null,
-        getNextTaskWithIndex: () => {
-          const task = createMockPrd().tasks[0];
-
-          return task ? { ...task, title: task.title ?? "Task", index: 0 } : null;
-        },
-        getTaskByIndex: () => null,
-        getTaskByTitle: () => null,
-        invalidate: () => {},
-        isComplete: () => false,
-        load: () => createMockPrd(),
-        loadInstructions: () => null,
-        loadWithValidation: () => ({ prd: createMockPrd() }),
-        reload: () => createMockPrd(),
-        reloadWithValidation: () => ({ prd: createMockPrd() }),
-        reorderTask: (prd) => prd,
-        save: () => {},
-        toggleTaskDone: (prd) => prd,
-        updateTask: (prd) => prd,
-      },
+      prd: createServiceTestPrdOverrides(),
     });
   });
 

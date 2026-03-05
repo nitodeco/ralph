@@ -1,42 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { bootstrapTestServices, teardownTestServices } from "@/lib/services/bootstrap.ts";
-import type { Prd } from "@/lib/services/prd/types.ts";
 import type { Session } from "@/lib/services/session/types.ts";
 import { createSessionManager } from "@/lib/services/session-manager/implementation.ts";
-
-function createMockSession(overrides: Partial<Session> = {}): Session {
-  return {
-    currentIteration: 0,
-    currentTaskIndex: 0,
-    elapsedTimeSeconds: 0,
-    lastUpdateTime: Date.now(),
-    startTime: Date.now(),
-    statistics: {
-      averageDurationMs: 0,
-      completedIterations: 0,
-      failedIterations: 0,
-      iterationTimings: [],
-      successRate: 0,
-      successfulIterations: 0,
-      totalDurationMs: 0,
-      totalIterations: 10,
-    },
-    status: "running",
-    totalIterations: 10,
-    ...overrides,
-  };
-}
-
-function createMockPrd(overrides: Partial<Prd> = {}): Prd {
-  return {
-    project: "Test Project",
-    tasks: [
-      { description: "First task", done: false, id: "task-1", steps: [], title: "Task 1" },
-      { description: "Second task", done: false, id: "task-2", steps: [], title: "Task 2" },
-    ],
-    ...overrides,
-  };
-}
+import {
+  createServiceTestPrd,
+  createServiceTestPrdOverrides,
+  createServiceTestSession,
+  createServiceTestSessionOverrides,
+} from "./test-infrastructure.ts";
 
 describe("SessionManager", () => {
   let savedSession: Session | null = null;
@@ -45,196 +16,12 @@ describe("SessionManager", () => {
     savedSession = null;
 
     bootstrapTestServices({
-      prd: {
-        canWorkOnTask: () => ({ canWork: true }),
-        createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
-        deleteTask: (prd) => prd,
-        findFile: () => null,
-        get: () => createMockPrd(),
-        getCurrentTaskIndex: () => 0,
-        getNextTask: () => createMockPrd().tasks[0]?.title ?? null,
-        getNextTaskWithIndex: () => {
-          const task = createMockPrd().tasks[0];
-
-          return task ? { ...task, title: task.title ?? "Task", index: 0 } : null;
-        },
-        getTaskByIndex: () => null,
-        getTaskByTitle: () => null,
-        invalidate: () => {},
-        isComplete: () => false,
-        load: () => createMockPrd(),
-        loadInstructions: () => null,
-        loadWithValidation: () => ({ prd: createMockPrd() }),
-        reload: () => createMockPrd(),
-        reloadWithValidation: () => ({ prd: createMockPrd() }),
-        reorderTask: (prd) => prd,
-        save: () => {},
-        toggleTaskDone: (prd) => prd,
-        updateTask: (prd) => prd,
-      },
-      session: {
-        completeParallelGroup: (session) => session,
-        completeTaskExecution: (session) => session,
-        create: (totalIterations: number, currentTaskIndex: number) =>
-          createMockSession({ totalIterations, currentTaskIndex }),
-        delete: () => {},
-        disableParallelMode: (session) => session,
-        enableParallelMode: (session) => session,
-        exists: () => false,
-        failTaskExecution: (session) => session,
-        getActiveExecutionCount: () => 0,
-        getActiveExecutions: () => [],
-        getCurrentParallelGroup: () => null,
-        getTaskExecution: () => null,
-        isParallelMode: () => false,
-        isResumable: () => false,
-        isTaskExecuting: () => false,
-        load: () => null,
-        recordIterationEnd: (session) => ({ ...session, lastUpdateTime: Date.now() }),
-        recordIterationStart: (session) => ({ ...session, lastUpdateTime: Date.now() }),
-        retryTaskExecution: (session) => session,
-        save: (session) => {
+      prd: createServiceTestPrdOverrides(),
+      session: createServiceTestSessionOverrides({
+        onSave: (session) => {
           savedSession = session;
         },
-        startParallelGroup: (session) => session,
-        startTaskExecution: (session) => session,
-        updateIteration: (session, currentIteration, currentTaskIndex, elapsedTimeSeconds) => ({
-          ...session,
-          currentIteration,
-          currentTaskIndex,
-          elapsedTimeSeconds,
-          lastUpdateTime: Date.now(),
-        }),
-        updateStatus: (session, status) => ({ ...session, status, lastUpdateTime: Date.now() }),
-      },
-      sessionMemory: {
-        addFailedApproach: () => {},
-        addLesson: () => {},
-        addSuccessPattern: () => {},
-        addTaskNote: () => {},
-        clear: () => {},
-        exists: () => false,
-        exportAsMarkdown: () => "",
-        formatForPrompt: () => "",
-        formatForTask: () => "",
-        get: () => ({
-          projectName: "Test Project",
-          lessonsLearned: [],
-          successfulPatterns: [],
-          failedApproaches: [],
-          taskNotes: {},
-          lastUpdated: new Date().toISOString(),
-        }),
-        getStats: () => ({
-          lessonsCount: 0,
-          patternsCount: 0,
-          failedApproachesCount: 0,
-          taskNotesCount: 0,
-          lastUpdated: null,
-        }),
-        getTaskNote: () => null,
-        initialize: () => ({
-          projectName: "Test Project",
-          lessonsLearned: [],
-          successfulPatterns: [],
-          failedApproaches: [],
-          taskNotes: {},
-          lastUpdated: new Date().toISOString(),
-        }),
-        invalidate: () => {},
-        load: () => ({
-          projectName: "Test Project",
-          lessonsLearned: [],
-          successfulPatterns: [],
-          failedApproaches: [],
-          taskNotes: {},
-          lastUpdated: new Date().toISOString(),
-        }),
-        save: () => {},
-      },
-      usageStatistics: {
-        exists: () => false,
-        formatForDisplay: () => "",
-        get: () => ({
-          version: 1,
-          projectName: "Test Project",
-          createdAt: new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-          lifetime: {
-            totalSessions: 0,
-            totalIterations: 0,
-            totalTasksCompleted: 0,
-            totalTasksAttempted: 0,
-            totalDurationMs: 0,
-            successfulIterations: 0,
-            failedIterations: 0,
-            averageIterationsPerSession: 0,
-            averageTasksPerSession: 0,
-            averageSessionDurationMs: 0,
-            overallSuccessRate: 0,
-          },
-          recentSessions: [],
-          dailyUsage: [],
-        }),
-        getDailyUsage: () => [],
-        getRecentSessions: () => [],
-        getSummary: () => ({
-          totalSessions: 0,
-          totalIterations: 0,
-          totalTasksCompleted: 0,
-          totalDurationMs: 0,
-          overallSuccessRate: 0,
-          averageSessionDurationMs: 0,
-          averageIterationsPerSession: 0,
-          lastSessionAt: null,
-          streakDays: 0,
-        }),
-        initialize: () => ({
-          version: 1,
-          projectName: "Test Project",
-          createdAt: new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-          lifetime: {
-            totalSessions: 0,
-            totalIterations: 0,
-            totalTasksCompleted: 0,
-            totalTasksAttempted: 0,
-            totalDurationMs: 0,
-            successfulIterations: 0,
-            failedIterations: 0,
-            averageIterationsPerSession: 0,
-            averageTasksPerSession: 0,
-            averageSessionDurationMs: 0,
-            overallSuccessRate: 0,
-          },
-          recentSessions: [],
-          dailyUsage: [],
-        }),
-        invalidate: () => {},
-        load: () => ({
-          version: 1,
-          projectName: "Test Project",
-          createdAt: new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-          lifetime: {
-            totalSessions: 0,
-            totalIterations: 0,
-            totalTasksCompleted: 0,
-            totalTasksAttempted: 0,
-            totalDurationMs: 0,
-            successfulIterations: 0,
-            failedIterations: 0,
-            averageIterationsPerSession: 0,
-            averageTasksPerSession: 0,
-            averageSessionDurationMs: 0,
-            overallSuccessRate: 0,
-          },
-          recentSessions: [],
-          dailyUsage: [],
-        }),
-        recordSession: () => {},
-        save: () => {},
-      },
+      }),
     });
   });
 
@@ -249,7 +36,7 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const prd = createMockPrd();
+      const prd = createServiceTestPrd();
       const result = sessionManager.startSession(prd, 10);
 
       expect(result.session).toBeDefined();
@@ -263,7 +50,7 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const prd = createMockPrd();
+      const prd = createServiceTestPrd();
 
       sessionManager.startSession(prd, 5);
 
@@ -291,13 +78,13 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const pendingSession = createMockSession({
+      const pendingSession = createServiceTestSession({
         currentIteration: 3,
         status: "paused",
         totalIterations: 10,
       });
 
-      const result = sessionManager.resumeSession(pendingSession, createMockPrd());
+      const result = sessionManager.resumeSession(pendingSession, createServiceTestPrd());
 
       expect(result.session.status).toBe("running");
       expect(result.remainingIterations).toBe(7);
@@ -309,13 +96,13 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const pendingSession = createMockSession({
+      const pendingSession = createServiceTestSession({
         currentIteration: 10,
         status: "paused",
         totalIterations: 10,
       });
 
-      const result = sessionManager.resumeSession(pendingSession, createMockPrd());
+      const result = sessionManager.resumeSession(pendingSession, createServiceTestPrd());
 
       expect(result.remainingIterations).toBe(1);
     });
@@ -326,9 +113,9 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const pendingSession = createMockSession({ status: "paused" });
+      const pendingSession = createServiceTestSession({ status: "paused" });
 
-      sessionManager.resumeSession(pendingSession, createMockPrd());
+      sessionManager.resumeSession(pendingSession, createServiceTestPrd());
 
       expect(savedSession).not.toBeNull();
       expect(savedSession?.status).toBe("running");
@@ -342,8 +129,12 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 5 }),
       });
 
-      const currentSession = createMockSession();
-      const result = sessionManager.handleFatalError("Test error", createMockPrd(), currentSession);
+      const currentSession = createServiceTestSession();
+      const result = sessionManager.handleFatalError(
+        "Test error",
+        createServiceTestPrd(),
+        currentSession,
+      );
 
       expect(result.session?.status).toBe("stopped");
       expect(result.wasHandled).toBe(true);
@@ -355,7 +146,7 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const result = sessionManager.handleFatalError("Test error", createMockPrd(), null);
+      const result = sessionManager.handleFatalError("Test error", createServiceTestPrd(), null);
 
       expect(result.session).toBeNull();
       expect(result.wasHandled).toBe(true);
@@ -367,9 +158,9 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const currentSession = createMockSession();
+      const currentSession = createServiceTestSession();
 
-      sessionManager.handleFatalError("Test error", createMockPrd(), currentSession);
+      sessionManager.handleFatalError("Test error", createServiceTestPrd(), currentSession);
 
       expect(savedSession).not.toBeNull();
       expect(savedSession?.status).toBe("stopped");
@@ -385,7 +176,7 @@ describe("SessionManager", () => {
 
       sessionManager.setConfig({ agent: "cursor" });
 
-      const result = sessionManager.startSession(createMockPrd(), 5);
+      const result = sessionManager.startSession(createServiceTestPrd(), 5);
 
       expect(result.session).toBeDefined();
     });
@@ -452,7 +243,7 @@ describe("SessionManager", () => {
         getIterationStoreState: () => ({ current: 0 }),
       });
 
-      const session = createMockSession({
+      const session = createServiceTestSession({
         statistics: {
           averageDurationMs: 6000,
           completedIterations: 8,
@@ -465,7 +256,7 @@ describe("SessionManager", () => {
         },
       });
 
-      const prd = createMockPrd({
+      const prd = createServiceTestPrd({
         tasks: [
           { description: "", done: true, id: "task-1", steps: [], title: "Task 1" },
           { description: "", done: false, id: "task-2", steps: [], title: "Task 2" },
