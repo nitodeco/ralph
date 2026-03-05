@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
@@ -142,17 +142,31 @@ export function spawnDaemonProcess(options: DaemonOptions): number | null {
         : join(homedir(), ".ralph", "ralph.log");
 
     const logFile = logFilePath ?? defaultLogFile;
-    const outFd = openSync(logFile, "a");
-    const errFd = openSync(logFile, "a");
+    let outputLogFileDescriptor: number | null = null;
+    let errorLogFileDescriptor: number | null = null;
+    let childProcess: ChildProcess;
 
-    const childProcess: ChildProcess = spawn(execPath, spawnArgs, {
-      detached: true,
-      env: {
-        ...process.env,
-        RALPH_DAEMON: "true",
-      },
-      stdio: ["ignore", outFd, errFd],
-    });
+    try {
+      outputLogFileDescriptor = openSync(logFile, "a");
+      errorLogFileDescriptor = openSync(logFile, "a");
+
+      childProcess = spawn(execPath, spawnArgs, {
+        detached: true,
+        env: {
+          ...process.env,
+          RALPH_DAEMON: "true",
+        },
+        stdio: ["ignore", outputLogFileDescriptor, errorLogFileDescriptor],
+      });
+    } finally {
+      if (outputLogFileDescriptor !== null) {
+        closeSync(outputLogFileDescriptor);
+      }
+
+      if (errorLogFileDescriptor !== null && errorLogFileDescriptor !== outputLogFileDescriptor) {
+        closeSync(errorLogFileDescriptor);
+      }
+    }
 
     const { pid } = childProcess;
 

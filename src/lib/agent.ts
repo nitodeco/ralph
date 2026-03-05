@@ -43,12 +43,20 @@ export function runAgentWithPrompt({
 }: RunAgentWithPromptOptions): RunAgentWithPromptResult {
   const baseCommand = getAgentCommand(agentType, model);
   let isAborted = false;
+  let forceKillTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const agentProcess = Bun.spawn([...baseCommand, prompt], {
-    stderr: "pipe",
+    stderr: "ignore",
     stdin: null,
     stdout: "pipe",
   });
+
+  const clearForceKillTimeout = () => {
+    if (forceKillTimeout !== null) {
+      clearTimeout(forceKillTimeout);
+      forceKillTimeout = null;
+    }
+  };
 
   const abort = () => {
     isAborted = true;
@@ -59,12 +67,15 @@ export function runAgentWithPrompt({
       // Process may have already exited
     }
 
-    setTimeout(() => {
+    clearForceKillTimeout();
+    forceKillTimeout = setTimeout(() => {
       try {
         agentProcess.kill("SIGKILL");
       } catch {
         // Process may have already exited
       }
+
+      forceKillTimeout = null;
     }, 1000);
   };
 
@@ -74,23 +85,37 @@ export function runAgentWithPrompt({
     const decoder = new TextDecoder();
     let lineBuffer = "";
 
-    while (!isAborted) {
-      const { done, value } = await stdoutReader.read();
+    try {
+      while (!isAborted) {
+        const { done, value } = await stdoutReader.read();
 
-      if (done) {
-        break;
+        if (done) {
+          break;
+        }
+
+        const text = decoder.decode(value);
+
+        lineBuffer += text;
+
+        const lines = lineBuffer.split("\n");
+
+        lineBuffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const parsedText = parseStreamJsonLine(line);
+
+          if (parsedText) {
+            parsedOutputChunks.push(parsedText);
+
+            if (onOutput) {
+              onOutput(parsedText);
+            }
+          }
+        }
       }
 
-      const text = decoder.decode(value);
-
-      lineBuffer += text;
-
-      const lines = lineBuffer.split("\n");
-
-      lineBuffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const parsedText = parseStreamJsonLine(line);
+      if (lineBuffer && !isAborted) {
+        const parsedText = parseStreamJsonLine(lineBuffer);
 
         if (parsedText) {
           parsedOutputChunks.push(parsedText);
@@ -100,24 +125,26 @@ export function runAgentWithPrompt({
           }
         }
       }
-    }
 
-    if (lineBuffer && !isAborted) {
-      const parsedText = parseStreamJsonLine(lineBuffer);
+      await agentProcess.exited;
 
-      if (parsedText) {
-        parsedOutputChunks.push(parsedText);
-
-        if (onOutput) {
-          onOutput(parsedText);
-        }
+      if (isAborted) {
+        throw new Error("Agent generation was cancelled");
       }
-    }
+    } finally {
+      clearForceKillTimeout();
 
-    await agentProcess.exited;
+      try {
+        await stdoutReader.cancel();
+      } catch {
+        // Stream may already be closed
+      }
 
-    if (isAborted) {
-      throw new Error("Agent generation was cancelled");
+      try {
+        stdoutReader.releaseLock();
+      } catch {
+        // Reader lock may already be released
+      }
     }
 
     return parsedOutputChunks.join("");
