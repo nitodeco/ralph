@@ -6,201 +6,201 @@ import { MainRunView } from "./MainRunView.tsx";
 import { ViewRouter } from "./ViewRouter.tsx";
 
 interface RunAppProps {
-	version: string;
-	iterations: number;
-	autoResume?: boolean;
-	autoStart?: boolean;
-	dryRun?: boolean;
-	initialTask?: string;
-	maxRuntimeMs?: number;
-	skipVerification?: boolean;
+  version: string;
+  iterations: number;
+  autoResume?: boolean;
+  autoStart?: boolean;
+  dryRun?: boolean;
+  initialTask?: string;
+  maxRuntimeMs?: number;
+  skipVerification?: boolean;
 }
 
 export function RunApp({
-	version,
-	iterations,
-	autoResume = false,
-	autoStart = false,
-	dryRun = false,
-	initialTask,
-	maxRuntimeMs,
-	skipVerification = false,
+  version,
+  iterations,
+  autoResume = false,
+  autoStart = false,
+  dryRun = false,
+  initialTask,
+  maxRuntimeMs,
+  skipVerification = false,
 }: RunAppProps): React.ReactElement {
-	const appState = useAppStore((state) => state.appState);
-	const activeView = useAppStore((state) => state.activeView);
-	const validationWarning = useAppStore((state) => state.validationWarning);
-	const config = useAppStore((state) => state.config);
-	const prd = useAppStore((state) => state.prd);
-	const pendingSession = useAppStore((state) => state.pendingSession);
-	const lastTechnicalDebtReport = useAppStore((state) => state.lastTechnicalDebtReport);
+  const appState = useAppStore((state) => state.appState);
+  const activeView = useAppStore((state) => state.activeView);
+  const validationWarning = useAppStore((state) => state.validationWarning);
+  const config = useAppStore((state) => state.config);
+  const prd = useAppStore((state) => state.prd);
+  const pendingSession = useAppStore((state) => state.pendingSession);
+  const lastTechnicalDebtReport = useAppStore((state) => state.lastTechnicalDebtReport);
 
-	const setActiveView = useAppStore((state) => state.setActiveView);
-	const loadInitialState = useAppStore((state) => state.loadInitialState);
-	const startIterations = useAppStore((state) => state.startIterations);
-	const resumeSession = useAppStore((state) => state.resumeSession);
-	const stopAgent = useAppStore((state) => state.stopAgent);
-	const revalidateAndGoIdle = useAppStore((state) => state.revalidateAndGoIdle);
-	const handleFatalError = useAppStore((state) => state.handleFatalError);
-	const setIterations = useAppStore((state) => state.setIterations);
-	const setManualNextTask = useAppStore((state) => state.setManualNextTask);
-	const updateAvailable = useAppStore((state) => state.updateAvailable);
-	const latestVersion = useAppStore((state) => state.latestVersion);
-	const updateBannerDismissed = useAppStore((state) => state.updateBannerDismissed);
-	const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
-	const refreshState = useAppStore((state) => state.refreshState);
-	const clearSession = useAppStore((state) => state.clearSession);
+  const setActiveView = useAppStore((state) => state.setActiveView);
+  const loadInitialState = useAppStore((state) => state.loadInitialState);
+  const startIterations = useAppStore((state) => state.startIterations);
+  const resumeSession = useAppStore((state) => state.resumeSession);
+  const stopAgent = useAppStore((state) => state.stopAgent);
+  const revalidateAndGoIdle = useAppStore((state) => state.revalidateAndGoIdle);
+  const handleFatalError = useAppStore((state) => state.handleFatalError);
+  const setIterations = useAppStore((state) => state.setIterations);
+  const setManualNextTask = useAppStore((state) => state.setManualNextTask);
+  const updateAvailable = useAppStore((state) => state.updateAvailable);
+  const latestVersion = useAppStore((state) => state.latestVersion);
+  const updateBannerDismissed = useAppStore((state) => state.updateBannerDismissed);
+  const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
+  const refreshState = useAppStore((state) => state.refreshState);
+  const clearSession = useAppStore((state) => state.clearSession);
 
-	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
-	const agentError = useAgentStore((state) => state.error);
-	const agentStop = useAgentStore((state) => state.stop);
+  const agentIsStreaming = useAgentStore((state) => state.isStreaming);
+  const agentError = useAgentStore((state) => state.error);
+  const agentStop = useAgentStore((state) => state.stop);
 
-	const iterationCurrent = useIterationStore((state) => state.current);
-	const iterationTotal = useIterationStore((state) => state.total);
-	const iterationIsPaused = useIterationStore((state) => state.isPaused);
-	const iterationPause = useIterationStore((state) => state.pause);
-	const iterationResume = useIterationStore((state) => state.resume);
+  const iterationCurrent = useIterationStore((state) => state.current);
+  const iterationTotal = useIterationStore((state) => state.total);
+  const iterationIsPaused = useIterationStore((state) => state.isPaused);
+  const iterationPause = useIterationStore((state) => state.pause);
+  const iterationResume = useIterationStore((state) => state.resume);
 
-	const [initialTaskMessage, setInitialTaskMessage] = useState<{
-		type: "success" | "error";
-		text: string;
-	} | null>(null);
+  const [initialTaskMessage, setInitialTaskMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-	const dryRunState = useDryRun(dryRun, config, iterations);
+  const dryRunState = useDryRun(dryRun, config, iterations);
 
-	const getCurrentTaskTitle = useCallback(() => {
-		if (!prd) {
-			return null;
-		}
+  const getCurrentTaskTitle = useCallback(() => {
+    if (!prd) {
+      return null;
+    }
 
-		const currentTask = prd.tasks.find((task) => !task.done);
+    const currentTask = prd.tasks.find((task) => !task.done);
 
-		return currentTask?.title ?? null;
-	}, [prd]);
+    return currentTask?.title ?? null;
+  }, [prd]);
 
-	const {
-		handleSlashCommand,
-		handleClearConfirm,
-		handleClearCancel,
-		dismissHelp,
-		nextTaskMessage,
-		guardrailMessage,
-		memoryMessage,
-		refreshMessage,
-		clearMessage,
-		taskMessage,
-		helpVisible,
-	} = useSlashCommands({
-		startIterations,
-		resumeSession,
-		stopAgent,
-		setManualNextTask,
-		agentStop,
-		iterationPause,
-		setActiveView,
-		getCurrentTaskTitle,
-		dismissUpdateBanner,
-		refreshState,
-		clearSession,
-	});
+  const {
+    handleSlashCommand,
+    handleClearConfirm,
+    handleClearCancel,
+    dismissHelp,
+    nextTaskMessage,
+    guardrailMessage,
+    memoryMessage,
+    refreshMessage,
+    clearMessage,
+    taskMessage,
+    helpVisible,
+  } = useSlashCommands({
+    agentStop,
+    clearSession,
+    dismissUpdateBanner,
+    getCurrentTaskTitle,
+    iterationPause,
+    refreshState,
+    resumeSession,
+    setActiveView,
+    setManualNextTask,
+    startIterations,
+    stopAgent,
+  });
 
-	useSessionLifecycle(
-		{
-			iterations,
-			autoResume,
-			autoStart,
-			dryRun,
-			initialTask,
-			maxRuntimeMs,
-			skipVerification,
-			version,
-		},
-		{
-			loadInitialState,
-			setIterations,
-			startIterations,
-			resumeSession,
-			setManualNextTask,
-			handleFatalError,
-			appState,
-			pendingSession,
-			agentError,
-			activeView,
-			onTaskSet: (result, taskIdentifier) => {
-				if (result.success) {
-					setInitialTaskMessage({ type: "success", text: `Task set: ${result.taskTitle}` });
-				} else {
-					setInitialTaskMessage({
-						type: "error",
-						text: result.error ?? `Failed to set task: ${taskIdentifier}`,
-					});
-				}
-			},
-		},
-	);
+  useSessionLifecycle(
+    {
+      autoResume,
+      autoStart,
+      dryRun,
+      initialTask,
+      iterations,
+      maxRuntimeMs,
+      skipVerification,
+      version,
+    },
+    {
+      activeView,
+      agentError,
+      appState,
+      handleFatalError,
+      loadInitialState,
+      onTaskSet: (result, taskIdentifier) => {
+        if (result.success) {
+          setInitialTaskMessage({ text: `Task set: ${result.taskTitle}`, type: "success" });
+        } else {
+          setInitialTaskMessage({
+            text: result.error ?? `Failed to set task: ${taskIdentifier}`,
+            type: "error",
+          });
+        }
+      },
+      pendingSession,
+      resumeSession,
+      setIterations,
+      setManualNextTask,
+      startIterations,
+    },
+  );
 
-	const handleViewComplete = useCallback(() => {
-		setActiveView("run");
-		revalidateAndGoIdle();
-	}, [revalidateAndGoIdle, setActiveView]);
+  const handleViewComplete = useCallback(() => {
+    setActiveView("run");
+    revalidateAndGoIdle();
+  }, [revalidateAndGoIdle, setActiveView]);
 
-	const handleHelpClose = useCallback(() => {
-		setActiveView("run");
+  const handleHelpClose = useCallback(() => {
+    setActiveView("run");
 
-		if (appState === "running" && iterationIsPaused) {
-			iterationResume();
-		}
-	}, [appState, iterationIsPaused, iterationResume, setActiveView]);
+    if (appState === "running" && iterationIsPaused) {
+      iterationResume();
+    }
+  }, [appState, iterationIsPaused, iterationResume, setActiveView]);
 
-	useInput(
-		(_input, key) => {
-			if (key.escape && agentIsStreaming && activeView === "run") {
-				stopAgent();
-			}
-		},
-		{ isActive: activeView === "run" },
-	);
+  useInput(
+    (_input, key) => {
+      if (key.escape && agentIsStreaming && activeView === "run") {
+        stopAgent();
+      }
+    },
+    { isActive: activeView === "run" },
+  );
 
-	const displayedMessage = nextTaskMessage ?? initialTaskMessage;
+  const displayedMessage = nextTaskMessage ?? initialTaskMessage;
 
-	return (
-		<ViewRouter
-			activeView={activeView}
-			version={version}
-			appState={appState}
-			config={config}
-			projectName={prd?.project}
-			pendingSession={pendingSession}
-			validationWarning={validationWarning}
-			dryRun={dryRun}
-			dryRunState={dryRunState}
-			onViewComplete={handleViewComplete}
-			onHelpClose={handleHelpClose}
-			onCommand={handleSlashCommand}
-			onClearConfirm={handleClearConfirm}
-			onClearCancel={handleClearCancel}
-		>
-			<MainRunView
-				version={version}
-				config={config}
-				prd={prd}
-				appState={appState}
-				iterationCurrent={iterationCurrent}
-				iterationTotal={iterationTotal}
-				agentIsStreaming={agentIsStreaming}
-				nextTaskMessage={displayedMessage}
-				guardrailMessage={guardrailMessage}
-				memoryMessage={memoryMessage}
-				refreshMessage={refreshMessage}
-				clearMessage={clearMessage}
-				taskMessage={taskMessage}
-				onCommand={handleSlashCommand}
-				updateAvailable={updateAvailable}
-				latestVersion={latestVersion}
-				updateBannerDismissed={updateBannerDismissed}
-				helpVisible={helpVisible}
-				onDismissHelp={dismissHelp}
-				lastTechnicalDebtReport={lastTechnicalDebtReport}
-			/>
-		</ViewRouter>
-	);
+  return (
+    <ViewRouter
+      activeView={activeView}
+      version={version}
+      appState={appState}
+      config={config}
+      projectName={prd?.project}
+      pendingSession={pendingSession}
+      validationWarning={validationWarning}
+      dryRun={dryRun}
+      dryRunState={dryRunState}
+      onViewComplete={handleViewComplete}
+      onHelpClose={handleHelpClose}
+      onCommand={handleSlashCommand}
+      onClearConfirm={handleClearConfirm}
+      onClearCancel={handleClearCancel}
+    >
+      <MainRunView
+        version={version}
+        config={config}
+        prd={prd}
+        appState={appState}
+        iterationCurrent={iterationCurrent}
+        iterationTotal={iterationTotal}
+        agentIsStreaming={agentIsStreaming}
+        nextTaskMessage={displayedMessage}
+        guardrailMessage={guardrailMessage}
+        memoryMessage={memoryMessage}
+        refreshMessage={refreshMessage}
+        clearMessage={clearMessage}
+        taskMessage={taskMessage}
+        onCommand={handleSlashCommand}
+        updateAvailable={updateAvailable}
+        latestVersion={latestVersion}
+        updateBannerDismissed={updateBannerDismissed}
+        helpVisible={helpVisible}
+        onDismissHelp={dismissHelp}
+        lastTechnicalDebtReport={lastTechnicalDebtReport}
+      />
+    </ViewRouter>
+  );
 }

@@ -10,13 +10,13 @@ import { marked } from "marked";
 const currentPath = Astro.url.pathname;
 
 const changelogPath = join(process.cwd(), "..", "CHANGELOG.md");
-const changelogContent = readFileSync(changelogPath, "utf-8");
+const changelogContent = readFileSync(changelogPath, "utf8");
 
 const rawContent = changelogContent.replace(/^# ralph\n+/, "");
 
 const renderedContent = await marked.parse(rawContent, {
-  gfm: true,
   breaks: false,
+  gfm: true,
 });
 ---
 

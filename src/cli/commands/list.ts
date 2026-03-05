@@ -1,112 +1,110 @@
 import { TASK_LIST_SEPARATOR_WIDTH } from "@/lib/constants/ui.ts";
-import { createError, ErrorCode, formatError } from "@/lib/errors.ts";
+import { ErrorCode, createError, formatError } from "@/lib/errors.ts";
 import { getPrdService } from "@/lib/services/index.ts";
 import type { TaskListOutput } from "@/types.ts";
 
 export function printList(version: string, jsonOutput: boolean, verbose = false): void {
-	const prd = getPrdService().get();
+  const prd = getPrdService().get();
 
-	if (!prd) {
-		if (jsonOutput) {
-			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found");
+  if (!prd) {
+    if (jsonOutput) {
+      const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found");
 
-			console.log(
-				JSON.stringify({
-					error: error.message,
-					code: error.code,
-					suggestion: error.suggestion,
-				}),
-			);
-		} else {
-			const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found in .ralph/prd.json");
+      console.log(
+        JSON.stringify({
+          code: error.code,
+          error: error.message,
+          suggestion: error.suggestion,
+        }),
+      );
+    } else {
+      const error = createError(ErrorCode.PRD_NOT_FOUND, "No PRD found in .ralph/prd.json");
 
-			console.error(formatError(error, verbose));
-		}
+      console.error(formatError(error, verbose));
+    }
 
-		return;
-	}
+    return;
+  }
 
-	const completedTasks = prd.tasks.filter((task) => task.done).length;
-	const pendingTasks = prd.tasks.length - completedTasks;
-	const percentComplete =
-		prd.tasks.length > 0 ? Math.round((completedTasks / prd.tasks.length) * 100) : 0;
+  const completedTasks = prd.tasks.filter((task) => task.done).length;
+  const pendingTasks = prd.tasks.length - completedTasks;
+  const percentComplete =
+    prd.tasks.length > 0 ? Math.round((completedTasks / prd.tasks.length) * 100) : 0;
 
-	if (jsonOutput) {
-		const output: TaskListOutput = {
-			project: prd.project,
-			tasks: prd.tasks.map((task, taskIndex) => {
-				return {
-					index: taskIndex + 1,
-					title: task.title,
-					description: task.description,
-					status: task.done ? "done" : "pending",
-					steps: task.steps,
-				};
-			}),
-			summary: {
-				total: prd.tasks.length,
-				completed: completedTasks,
-				pending: pendingTasks,
-				percentComplete,
-			},
-		};
+  if (jsonOutput) {
+    const output: TaskListOutput = {
+      project: prd.project,
+      summary: {
+        completed: completedTasks,
+        pending: pendingTasks,
+        percentComplete,
+        total: prd.tasks.length,
+      },
+      tasks: prd.tasks.map((task, taskIndex) => ({
+        index: taskIndex + 1,
+        title: task.title,
+        description: task.description,
+        status: task.done ? "done" : "pending",
+        steps: task.steps,
+      })),
+    };
 
-		console.log(JSON.stringify(output, null, 2));
+    console.log(JSON.stringify(output, null, 2));
 
-		return;
-	}
+    return;
+  }
 
-	console.log(`◆ ralph v${version} - Task List\n`);
-	console.log(`Project: ${prd.project}`);
-	console.log(`Progress: ${completedTasks}/${prd.tasks.length} tasks (${percentComplete}%)\n`);
+  console.log(`◆ ralph v${version} - Task List\n`);
+  console.log(`Project: ${prd.project}`);
+  console.log(`Progress: ${completedTasks}/${prd.tasks.length} tasks (${percentComplete}%)\n`);
 
-	if (prd.tasks.length === 0) {
-		console.log("No tasks defined.");
-		console.log("\nRun 'ralph init' to add tasks or use '/add' in the UI.");
+  if (prd.tasks.length === 0) {
+    console.log("No tasks defined.");
+    console.log("\nRun 'ralph init' to add tasks or use '/add' in the UI.");
 
-		return;
-	}
+    return;
+  }
 
-	console.log("Tasks:");
-	console.log("─".repeat(TASK_LIST_SEPARATOR_WIDTH));
+  console.log("Tasks:");
+  console.log("─".repeat(TASK_LIST_SEPARATOR_WIDTH));
 
-	for (const [taskIndex, task] of prd.tasks.entries()) {
-		let statusIcon: string;
-		let statusLabel: string;
-		let dimStyle = "";
-		const resetStyle = "\x1b[0m";
+  for (const [taskIndex, task] of prd.tasks.entries()) {
+    let statusIcon: string;
+    let statusLabel: string;
+    let dimStyle = "";
+    const resetStyle = "\x1b[0m";
 
-		if (task.done) {
-			statusIcon = "✓";
-			statusLabel = "done";
-			dimStyle = "\x1b[2m";
-		} else {
-			statusIcon = "○";
-			statusLabel = "pending";
-		}
+    if (task.done) {
+      statusIcon = "✓";
+      statusLabel = "done";
+      dimStyle = "\x1b[2m";
+    } else {
+      statusIcon = "○";
+      statusLabel = "pending";
+    }
 
-		console.log(
-			`${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}`,
-		);
-	}
+    console.log(
+      `${dimStyle}${statusIcon} [${taskIndex + 1}] ${task.title} (${statusLabel})${resetStyle}`,
+    );
+  }
 
-	console.log("─".repeat(TASK_LIST_SEPARATOR_WIDTH));
+  console.log("─".repeat(TASK_LIST_SEPARATOR_WIDTH));
 
-	const summaryParts = [`${completedTasks} completed`];
+  const summaryParts = [`${completedTasks} completed`];
 
-	if (pendingTasks > 0) {
-		summaryParts.push(`${pendingTasks} pending`);
-	}
+  if (pendingTasks > 0) {
+    summaryParts.push(`${pendingTasks} pending`);
+  }
 
-	console.log(`\nSummary: ${summaryParts.join(", ")}`);
+  console.log(`\nSummary: ${summaryParts.join(", ")}`);
 
-	if (pendingTasks > 0) {
-		const nextTask = prd.tasks.find((task) => !task.done);
+  if (pendingTasks > 0) {
+    const nextTask = prd.tasks.find((task) => !task.done);
 
-		if (nextTask) {
-			console.log(`\nNext task: ${nextTask.title}`);
-		}
-	} else if (completedTasks === prd.tasks.length) {
-		console.log("\nAll tasks complete!");
-	}
+    if (nextTask) {
+      console.log(`\nNext task: ${nextTask.title}`);
+    }
+  } else if (completedTasks === prd.tasks.length) {
+    console.log("\nAll tasks complete!");
+  }
 }

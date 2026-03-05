@@ -89,12 +89,12 @@ A PRD file looks like this:
 
 Each task has these properties:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | string | Unique task identifier |
-| `title` | string | What needs to be done |
-| `status` | `"pending"` \| `"done"` | Completion status |
-| `completedAt` | string | ISO timestamp when completed (optional) |
+| Property      | Type                    | Description                             |
+| ------------- | ----------------------- | --------------------------------------- |
+| `id`          | string                  | Unique task identifier                  |
+| `title`       | string                  | What needs to be done                   |
+| `status`      | `"pending"` \| `"done"` | Completion status                       |
+| `completedAt` | string                  | ISO timestamp when completed (optional) |
 
 ## Writing Effective Tasks
 
@@ -121,11 +121,13 @@ Implement JWT-based authentication with login and signup endpoints
 Each task should be completable in a single iteration (typically 5-30 minutes of AI agent work).
 
 **Bad:**
+
 ```
 Build the entire user management system
 ```
 
 **Good:**
+
 ```
 1. Create user database schema with Prisma
 2. Implement POST /api/auth/signup endpoint
@@ -140,6 +142,7 @@ Build the entire user management system
 ### 3. Include Technical Context
 
 **Bad:**
+
 ```
 Add database
 ```
@@ -164,6 +167,7 @@ Each task should be completable without depending on future tasks.
 ```
 
 **Good:**
+
 ```
 1. Create API endpoint with input validation and error handling
 ```
@@ -182,6 +186,7 @@ Start tasks with clear action verbs:
 - **Refactor** — For code improvements
 
 **Examples:**
+
 ```
 Create user model with Prisma schema
 Implement password reset flow with email verification
@@ -284,6 +289,7 @@ ralph task undone 3
 ```
 
 Use cases:
+
 - Task wasn't completed correctly
 - You want to retry with different context
 - Changing execution order
@@ -317,11 +323,13 @@ ralph task remove 3
 ### Start with 5-15 Tasks
 
 Too few tasks:
+
 - Tasks become too large and complex
 - Higher chance of failure
 - Harder to track progress
 
 Too many tasks:
+
 - Overhead of managing many small tasks
 - Session takes longer to complete
 

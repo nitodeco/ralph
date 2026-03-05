@@ -6,10 +6,7 @@ export { Message } from "./Message.tsx";
 export type { PhaseIndicatorStyle } from "./PhaseIndicator.tsx";
 export { PhaseIndicator } from "./PhaseIndicator.tsx";
 export { ProgressBar } from "./ProgressBar.tsx";
-export type {
-	ResponsiveContextValue,
-	TerminalBreakpoint,
-} from "./ResponsiveLayout.tsx";
+export type { ResponsiveContextValue, TerminalBreakpoint } from "./ResponsiveLayout.tsx";
 export { ResponsiveLayout, useResponsive } from "./ResponsiveLayout.tsx";
 export { ScrollableContent } from "./ScrollableContent.tsx";
 export { Select } from "./Select.tsx";

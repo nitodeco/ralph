@@ -63,15 +63,15 @@ You can provide project-specific instructions to the agent by creating an `instr
 
 Ralph uses a layered configuration system with global (`~/.ralph/config.json`) and project-level (`~/.ralph/projects/<project>/config.json`) settings. Project settings override global settings.
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `agent` | `"cursor"` \| `"claude"` \| `"codex"` | `"cursor"` | AI coding agent to use |
-| `maxRetries` | number | `3` | Maximum retry attempts per iteration |
-| `retryDelayMs` | number | `5000` | Delay between retries (ms) |
-| `agentTimeoutMs` | number | `1800000` | Agent timeout per iteration (30 min) |
-| `stuckThresholdMs` | number | `300000` | Time without output before considering agent stuck (5 min) |
-| `maxRuntimeMs` | number | `0` | Maximum total session runtime (0 = unlimited) |
-| `logFilePath` | string | `".ralph/ralph.log"` | Path to log file |
+| Option             | Type                                  | Default              | Description                                                |
+| ------------------ | ------------------------------------- | -------------------- | ---------------------------------------------------------- |
+| `agent`            | `"cursor"` \| `"claude"` \| `"codex"` | `"cursor"`           | AI coding agent to use                                     |
+| `maxRetries`       | number                                | `3`                  | Maximum retry attempts per iteration                       |
+| `retryDelayMs`     | number                                | `5000`               | Delay between retries (ms)                                 |
+| `agentTimeoutMs`   | number                                | `1800000`            | Agent timeout per iteration (30 min)                       |
+| `stuckThresholdMs` | number                                | `300000`             | Time without output before considering agent stuck (5 min) |
+| `maxRuntimeMs`     | number                                | `0`                  | Maximum total session runtime (0 = unlimited)              |
+| `logFilePath`      | string                                | `".ralph/ralph.log"` | Path to log file                                           |
 
 #### Notification Settings
 
@@ -85,11 +85,11 @@ Ralph uses a layered configuration system with global (`~/.ralph/config.json`) a
 }
 ```
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `systemNotification` | boolean | Enable OS notifications on completion |
-| `webhookUrl` | string | Webhook URL for completion notifications |
-| `markerFilePath` | string | File to create when session completes |
+| Option               | Type    | Description                              |
+| -------------------- | ------- | ---------------------------------------- |
+| `systemNotification` | boolean | Enable OS notifications on completion    |
+| `webhookUrl`         | string  | Webhook URL for completion notifications |
+| `markerFilePath`     | string  | File to create when session completes    |
 
 #### Memory Settings
 
@@ -103,11 +103,11 @@ Ralph uses a layered configuration system with global (`~/.ralph/config.json`) a
 }
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `maxOutputBufferBytes` | number | `5242880` | Max agent output buffer size (5 MB) |
-| `memoryWarningThresholdMb` | number | `500` | Memory warning threshold |
-| `enableGarbageCollectionHints` | boolean | `true` | Enable GC hints for memory management |
+| Option                         | Type    | Default   | Description                           |
+| ------------------------------ | ------- | --------- | ------------------------------------- |
+| `maxOutputBufferBytes`         | number  | `5242880` | Max agent output buffer size (5 MB)   |
+| `memoryWarningThresholdMb`     | number  | `500`     | Memory warning threshold              |
+| `enableGarbageCollectionHints` | boolean | `true`    | Enable GC hints for memory management |
 
 ### Example Configuration
 

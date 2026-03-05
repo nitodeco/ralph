@@ -1,5 +1,5 @@
 export function printHelp(version: string): void {
-	console.log(`
+  console.log(`
 ◆ ralph v${version}
 
 A CLI tool for long-running PRD-driven development with AI coding agents
@@ -127,5 +127,5 @@ Slash Commands (in-app):
 }
 
 export function printVersion(version: string): void {
-	console.log(`ralph v${version}`);
+  console.log(`ralph v${version}`);
 }

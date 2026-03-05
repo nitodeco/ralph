@@ -4,7 +4,7 @@ import { createBranchModeManager } from "./branch-mode-manager/implementation.ts
 import type { BranchModeManager } from "./branch-mode-manager/types.ts";
 import { createConfigService } from "./config/implementation.ts";
 import type { ConfigService } from "./config/types.ts";
-import { initializeServices, resetServices, type ServiceContainer } from "./container.ts";
+import { type ServiceContainer, initializeServices, resetServices } from "./container.ts";
 import { createGitBranchService } from "./git-branch/implementation.ts";
 import type { GitBranchService } from "./git-branch/types.ts";
 import { createGitHubProvider } from "./git-provider/github-provider.ts";
@@ -16,7 +16,7 @@ import { createHandlerCoordinator } from "./handler-coordinator/implementation.t
 import type { HandlerCoordinator } from "./handler-coordinator/types.ts";
 import { createIterationCoordinator } from "./iteration-coordinator/implementation.ts";
 import type { IterationCoordinator } from "./iteration-coordinator/types.ts";
-import { createMemoryMonitorService, type MemoryMonitorService } from "./MemoryMonitorService.ts";
+import { type MemoryMonitorService, createMemoryMonitorService } from "./MemoryMonitorService.ts";
 import { createOrchestrator } from "./orchestrator/implementation.ts";
 import type { Orchestrator } from "./orchestrator/types.ts";
 import { createParallelExecutionManager } from "./parallel-execution-manager/implementation.ts";
@@ -25,13 +25,13 @@ import { createPrdService } from "./prd/implementation.ts";
 import type { PrdService } from "./prd/types.ts";
 import { createProjectRegistryService } from "./project-registry/implementation.ts";
 import type {
-	ProjectIdentifier,
-	ProjectRegistry,
-	ProjectRegistryService,
+  ProjectIdentifier,
+  ProjectRegistry,
+  ProjectRegistryService,
 } from "./project-registry/types.ts";
 import {
-	createSleepPreventionService,
-	type SleepPreventionService,
+  type SleepPreventionService,
+  createSleepPreventionService,
 } from "./SleepPreventionService.ts";
 import { createSessionService } from "./session/implementation.ts";
 import type { SessionService } from "./session/types.ts";
@@ -43,86 +43,86 @@ import { createUsageStatisticsService } from "./usage-statistics/implementation.
 import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
 export interface SessionManagerStoreDependencies {
-	getAgentStoreState: () => {
-		exitCode: number | null;
-		retryCount: number;
-		output: string;
-	};
-	getIterationStoreState: () => {
-		current: number;
-	};
+  getAgentStoreState: () => {
+    exitCode: number | null;
+    retryCount: number;
+    output: string;
+  };
+  getIterationStoreState: () => {
+    current: number;
+  };
 }
 
 export interface IterationCoordinatorStoreDependencies {
-	getAppStoreState: () => {
-		prd: import("./prd/types.ts").Prd | null;
-		currentSession: import("./session/types.ts").Session | null;
-		elapsedTime: number;
-		manualNextTask: string | null;
-		isVerifying: boolean;
-		isReviewingTechnicalDebt: boolean;
-		lastVerificationResult: import("@/types.ts").VerificationResult | null;
-		lastTechnicalDebtReport:
-			| import("@/lib/handlers/TechnicalDebtHandler.ts").TechnicalDebtReport
-			| null;
-		lastDecomposition: import("@/types.ts").DecompositionRequest | null;
-		getEffectiveNextTask: () => string | null;
-		clearManualNextTask: () => void;
-		setPrd: (prd: import("./prd/types.ts").Prd) => void;
-	};
-	setAppStoreState: (
-		state: Partial<{
-			prd: import("./prd/types.ts").Prd | null;
-			currentSession: import("./session/types.ts").Session | null;
-			isVerifying: boolean;
-			isReviewingTechnicalDebt: boolean;
-			lastVerificationResult: import("@/types.ts").VerificationResult | null;
-			lastTechnicalDebtReport:
-				| import("@/lib/handlers/TechnicalDebtHandler.ts").TechnicalDebtReport
-				| null;
-			lastDecomposition: import("@/types.ts").DecompositionRequest | null;
-			appState: import("@/types.ts").AppState;
-		}>,
-	) => void;
-	getAgentStoreState: () => {
-		isComplete: boolean;
-		error: string | null;
-		output: string;
-		exitCode: number | null;
-		retryCount: number;
-		reset: () => void;
-	};
-	getIterationStoreState: () => {
-		current: number;
-		total: number;
-		setCallbacks: (callbacks: {
-			onIterationStart?: (iteration: number) => void;
-			onIterationComplete?: (iteration: number) => void;
-			onAllComplete?: () => void;
-			onMaxIterations?: () => void;
-			onMaxRuntime?: () => void;
-		}) => void;
-		restartCurrentIteration: () => void;
-	};
-	startAgent: (specificTask?: string | null) => void;
-	stopAgent: () => void;
-	resetAgent: () => void;
-	createTaskBranch: (taskTitle: string, taskIndex: number) => { success: boolean; error?: string };
-	completeTaskBranch: (
-		prd: import("./prd/types.ts").Prd | null,
-	) => Promise<{ success: boolean; error?: string; prUrl?: string }>;
+  getAppStoreState: () => {
+    prd: import("./prd/types.ts").Prd | null;
+    currentSession: import("./session/types.ts").Session | null;
+    elapsedTime: number;
+    manualNextTask: string | null;
+    isVerifying: boolean;
+    isReviewingTechnicalDebt: boolean;
+    lastVerificationResult: import("@/types.ts").VerificationResult | null;
+    lastTechnicalDebtReport:
+      | import("@/lib/handlers/TechnicalDebtHandler.ts").TechnicalDebtReport
+      | null;
+    lastDecomposition: import("@/types.ts").DecompositionRequest | null;
+    getEffectiveNextTask: () => string | null;
+    clearManualNextTask: () => void;
+    setPrd: (prd: import("./prd/types.ts").Prd) => void;
+  };
+  setAppStoreState: (
+    state: Partial<{
+      prd: import("./prd/types.ts").Prd | null;
+      currentSession: import("./session/types.ts").Session | null;
+      isVerifying: boolean;
+      isReviewingTechnicalDebt: boolean;
+      lastVerificationResult: import("@/types.ts").VerificationResult | null;
+      lastTechnicalDebtReport:
+        | import("@/lib/handlers/TechnicalDebtHandler.ts").TechnicalDebtReport
+        | null;
+      lastDecomposition: import("@/types.ts").DecompositionRequest | null;
+      appState: import("@/types.ts").AppState;
+    }>,
+  ) => void;
+  getAgentStoreState: () => {
+    isComplete: boolean;
+    error: string | null;
+    output: string;
+    exitCode: number | null;
+    retryCount: number;
+    reset: () => void;
+  };
+  getIterationStoreState: () => {
+    current: number;
+    total: number;
+    setCallbacks: (callbacks: {
+      onIterationStart?: (iteration: number) => void;
+      onIterationComplete?: (iteration: number) => void;
+      onAllComplete?: () => void;
+      onMaxIterations?: () => void;
+      onMaxRuntime?: () => void;
+    }) => void;
+    restartCurrentIteration: () => void;
+  };
+  startAgent: (specificTask?: string | null) => void;
+  stopAgent: () => void;
+  resetAgent: () => void;
+  createTaskBranch: (taskTitle: string, taskIndex: number) => { success: boolean; error?: string };
+  completeTaskBranch: (
+    prd: import("./prd/types.ts").Prd | null,
+  ) => Promise<{ success: boolean; error?: string; prUrl?: string }>;
 }
 
 export interface ParallelExecutionManagerStoreDependencies {
-	getAppStoreState: () => {
-		prd: import("./prd/types.ts").Prd | null;
-		currentSession: import("./session/types.ts").Session | null;
-	};
-	setAppStoreState: (
-		state: Partial<{
-			currentSession: import("./session/types.ts").Session | null;
-		}>,
-	) => void;
+  getAppStoreState: () => {
+    prd: import("./prd/types.ts").Prd | null;
+    currentSession: import("./session/types.ts").Session | null;
+  };
+  setAppStoreState: (
+    state: Partial<{
+      currentSession: import("./session/types.ts").Session | null;
+    }>,
+  ) => void;
 }
 
 let sessionManagerDependencies: SessionManagerStoreDependencies | null = null;
@@ -130,817 +130,817 @@ let iterationCoordinatorDependencies: IterationCoordinatorStoreDependencies | nu
 let parallelExecutionManagerDependencies: ParallelExecutionManagerStoreDependencies | null = null;
 
 export function setSessionManagerDependencies(dependencies: SessionManagerStoreDependencies): void {
-	sessionManagerDependencies = dependencies;
+  sessionManagerDependencies = dependencies;
 }
 
 export function setIterationCoordinatorDependencies(
-	dependencies: IterationCoordinatorStoreDependencies,
+  dependencies: IterationCoordinatorStoreDependencies,
 ): void {
-	iterationCoordinatorDependencies = dependencies;
+  iterationCoordinatorDependencies = dependencies;
 }
 
 export function setParallelExecutionManagerDependencies(
-	dependencies: ParallelExecutionManagerStoreDependencies,
+  dependencies: ParallelExecutionManagerStoreDependencies,
 ): void {
-	parallelExecutionManagerDependencies = dependencies;
+  parallelExecutionManagerDependencies = dependencies;
 }
 
 export function bootstrapServices(): void {
-	registerProvider("github", createGitHubProvider);
+  registerProvider("github", createGitHubProvider);
 
-	const sessionManagerDeps: SessionManagerStoreDependencies = {
-		getAgentStoreState: () => {
-			if (!sessionManagerDependencies) {
-				return { exitCode: null, retryCount: 0, output: "" };
-			}
+  const sessionManagerDeps: SessionManagerStoreDependencies = {
+    getAgentStoreState: () => {
+      if (!sessionManagerDependencies) {
+        return { exitCode: null, output: "", retryCount: 0 };
+      }
 
-			return sessionManagerDependencies.getAgentStoreState();
-		},
-		getIterationStoreState: () => {
-			if (!sessionManagerDependencies) {
-				return { current: 0 };
-			}
+      return sessionManagerDependencies.getAgentStoreState();
+    },
+    getIterationStoreState: () => {
+      if (!sessionManagerDependencies) {
+        return { current: 0 };
+      }
 
-			return sessionManagerDependencies.getIterationStoreState();
-		},
-	};
+      return sessionManagerDependencies.getIterationStoreState();
+    },
+  };
 
-	const iterationCoordinatorDeps: IterationCoordinatorStoreDependencies = {
-		getAppStoreState: () => {
-			if (!iterationCoordinatorDependencies) {
-				return {
-					prd: null,
-					currentSession: null,
-					elapsedTime: 0,
-					manualNextTask: null,
-					isVerifying: false,
-					isReviewingTechnicalDebt: false,
-					lastVerificationResult: null,
-					lastTechnicalDebtReport: null,
-					lastDecomposition: null,
-					getEffectiveNextTask: () => null,
-					clearManualNextTask: () => {},
-					setPrd: () => {},
-				};
-			}
+  const iterationCoordinatorDeps: IterationCoordinatorStoreDependencies = {
+    completeTaskBranch: async (prd) => {
+      if (!iterationCoordinatorDependencies) {
+        return { success: true };
+      }
 
-			return iterationCoordinatorDependencies.getAppStoreState();
-		},
-		setAppStoreState: (state) => {
-			if (iterationCoordinatorDependencies) {
-				iterationCoordinatorDependencies.setAppStoreState(state);
-			}
-		},
-		getAgentStoreState: () => {
-			if (!iterationCoordinatorDependencies) {
-				return {
-					isComplete: false,
-					error: null,
-					output: "",
-					exitCode: null,
-					retryCount: 0,
-					reset: () => {},
-				};
-			}
+      return iterationCoordinatorDependencies.completeTaskBranch(prd);
+    },
+    createTaskBranch: (taskTitle, taskIndex) => {
+      if (!iterationCoordinatorDependencies) {
+        return { success: true };
+      }
 
-			return iterationCoordinatorDependencies.getAgentStoreState();
-		},
-		getIterationStoreState: () => {
-			if (!iterationCoordinatorDependencies) {
-				return {
-					current: 0,
-					total: 0,
-					setCallbacks: () => {},
-					restartCurrentIteration: () => {},
-				};
-			}
+      return iterationCoordinatorDependencies.createTaskBranch(taskTitle, taskIndex);
+    },
+    getAgentStoreState: () => {
+      if (!iterationCoordinatorDependencies) {
+        return {
+          error: null,
+          exitCode: null,
+          isComplete: false,
+          output: "",
+          reset: () => {},
+          retryCount: 0,
+        };
+      }
 
-			return iterationCoordinatorDependencies.getIterationStoreState();
-		},
-		startAgent: (specificTask) => {
-			if (iterationCoordinatorDependencies) {
-				iterationCoordinatorDependencies.startAgent(specificTask);
-			}
-		},
-		stopAgent: () => {
-			if (iterationCoordinatorDependencies) {
-				iterationCoordinatorDependencies.stopAgent();
-			}
-		},
-		resetAgent: () => {
-			if (iterationCoordinatorDependencies) {
-				iterationCoordinatorDependencies.resetAgent();
-			}
-		},
-		createTaskBranch: (taskTitle, taskIndex) => {
-			if (!iterationCoordinatorDependencies) {
-				return { success: true };
-			}
+      return iterationCoordinatorDependencies.getAgentStoreState();
+    },
+    getAppStoreState: () => {
+      if (!iterationCoordinatorDependencies) {
+        return {
+          clearManualNextTask: () => {},
+          currentSession: null,
+          elapsedTime: 0,
+          getEffectiveNextTask: () => null,
+          isReviewingTechnicalDebt: false,
+          isVerifying: false,
+          lastDecomposition: null,
+          lastTechnicalDebtReport: null,
+          lastVerificationResult: null,
+          manualNextTask: null,
+          prd: null,
+          setPrd: () => {},
+        };
+      }
 
-			return iterationCoordinatorDependencies.createTaskBranch(taskTitle, taskIndex);
-		},
-		completeTaskBranch: async (prd) => {
-			if (!iterationCoordinatorDependencies) {
-				return { success: true };
-			}
+      return iterationCoordinatorDependencies.getAppStoreState();
+    },
+    getIterationStoreState: () => {
+      if (!iterationCoordinatorDependencies) {
+        return {
+          current: 0,
+          restartCurrentIteration: () => {},
+          setCallbacks: () => {},
+          total: 0,
+        };
+      }
 
-			return iterationCoordinatorDependencies.completeTaskBranch(prd);
-		},
-	};
+      return iterationCoordinatorDependencies.getIterationStoreState();
+    },
+    resetAgent: () => {
+      if (iterationCoordinatorDependencies) {
+        iterationCoordinatorDependencies.resetAgent();
+      }
+    },
+    setAppStoreState: (state) => {
+      if (iterationCoordinatorDependencies) {
+        iterationCoordinatorDependencies.setAppStoreState(state);
+      }
+    },
+    startAgent: (specificTask) => {
+      if (iterationCoordinatorDependencies) {
+        iterationCoordinatorDependencies.startAgent(specificTask);
+      }
+    },
+    stopAgent: () => {
+      if (iterationCoordinatorDependencies) {
+        iterationCoordinatorDependencies.stopAgent();
+      }
+    },
+  };
 
-	const parallelExecutionManagerDeps: ParallelExecutionManagerStoreDependencies = {
-		getAppStoreState: () => {
-			if (!parallelExecutionManagerDependencies) {
-				return {
-					prd: null,
-					currentSession: null,
-				};
-			}
+  const parallelExecutionManagerDeps: ParallelExecutionManagerStoreDependencies = {
+    getAppStoreState: () => {
+      if (!parallelExecutionManagerDependencies) {
+        return {
+          currentSession: null,
+          prd: null,
+        };
+      }
 
-			return parallelExecutionManagerDependencies.getAppStoreState();
-		},
-		setAppStoreState: (state) => {
-			if (parallelExecutionManagerDependencies) {
-				parallelExecutionManagerDependencies.setAppStoreState(state);
-			}
-		},
-	};
+      return parallelExecutionManagerDependencies.getAppStoreState();
+    },
+    setAppStoreState: (state) => {
+      if (parallelExecutionManagerDependencies) {
+        parallelExecutionManagerDependencies.setAppStoreState(state);
+      }
+    },
+  };
 
-	initializeServices({
-		projectRegistry: createProjectRegistryService(),
-		config: createConfigService(),
-		guardrails: createGuardrailsService(),
-		prd: createPrdService(),
-		sessionMemory: createSessionMemoryService(),
-		session: createSessionService(),
-		sessionManager: createSessionManager(sessionManagerDeps),
-		iterationCoordinator: createIterationCoordinator(iterationCoordinatorDeps),
-		parallelExecutionManager: createParallelExecutionManager(parallelExecutionManagerDeps),
-		branchModeManager: createBranchModeManager(),
-		handlerCoordinator: createHandlerCoordinator(),
-		orchestrator: createOrchestrator(),
-		sleepPrevention: createSleepPreventionService(),
-		memoryMonitor: createMemoryMonitorService(),
-		usageStatistics: createUsageStatisticsService(),
-		gitBranch: createGitBranchService(),
-		gitProvider: createGitProviderService(),
-	});
+  initializeServices({
+    branchModeManager: createBranchModeManager(),
+    config: createConfigService(),
+    gitBranch: createGitBranchService(),
+    gitProvider: createGitProviderService(),
+    guardrails: createGuardrailsService(),
+    handlerCoordinator: createHandlerCoordinator(),
+    iterationCoordinator: createIterationCoordinator(iterationCoordinatorDeps),
+    memoryMonitor: createMemoryMonitorService(),
+    orchestrator: createOrchestrator(),
+    parallelExecutionManager: createParallelExecutionManager(parallelExecutionManagerDeps),
+    prd: createPrdService(),
+    projectRegistry: createProjectRegistryService(),
+    session: createSessionService(),
+    sessionManager: createSessionManager(sessionManagerDeps),
+    sessionMemory: createSessionMemoryService(),
+    sleepPrevention: createSleepPreventionService(),
+    usageStatistics: createUsageStatisticsService(),
+  });
 }
 
 export interface TestServiceOverrides {
-	projectRegistry?: Partial<ProjectRegistryService>;
-	config?: Partial<ConfigService>;
-	guardrails?: Partial<GuardrailsService>;
-	prd?: Partial<PrdService>;
-	sessionMemory?: Partial<SessionMemoryService>;
-	session?: Partial<SessionService>;
-	sessionManager?: Partial<SessionManager>;
-	iterationCoordinator?: Partial<IterationCoordinator>;
-	parallelExecutionManager?: Partial<ParallelExecutionManager>;
-	branchModeManager?: Partial<BranchModeManager>;
-	handlerCoordinator?: Partial<HandlerCoordinator>;
-	orchestrator?: Partial<Orchestrator>;
-	sleepPrevention?: Partial<SleepPreventionService>;
-	memoryMonitor?: Partial<MemoryMonitorService>;
-	usageStatistics?: Partial<UsageStatisticsService>;
-	gitBranch?: Partial<GitBranchService>;
-	gitProvider?: Partial<GitProviderService>;
+  projectRegistry?: Partial<ProjectRegistryService>;
+  config?: Partial<ConfigService>;
+  guardrails?: Partial<GuardrailsService>;
+  prd?: Partial<PrdService>;
+  sessionMemory?: Partial<SessionMemoryService>;
+  session?: Partial<SessionService>;
+  sessionManager?: Partial<SessionManager>;
+  iterationCoordinator?: Partial<IterationCoordinator>;
+  parallelExecutionManager?: Partial<ParallelExecutionManager>;
+  branchModeManager?: Partial<BranchModeManager>;
+  handlerCoordinator?: Partial<HandlerCoordinator>;
+  orchestrator?: Partial<Orchestrator>;
+  sleepPrevention?: Partial<SleepPreventionService>;
+  memoryMonitor?: Partial<MemoryMonitorService>;
+  usageStatistics?: Partial<UsageStatisticsService>;
+  gitBranch?: Partial<GitBranchService>;
+  gitProvider?: Partial<GitProviderService>;
 }
 
 function createMockProjectRegistryService(
-	overrides: Partial<ProjectRegistryService> = {},
+  overrides: Partial<ProjectRegistryService> = {},
 ): ProjectRegistryService {
-	const testIdentifier: ProjectIdentifier = {
-		type: "path",
-		value: "/tmp/test-project",
-		folderName: "path--test-project",
-	};
+  const testIdentifier: ProjectIdentifier = {
+    folderName: "path--test-project",
+    type: "path",
+    value: "/tmp/test-project",
+  };
 
-	const emptyRegistry: ProjectRegistry = {
-		version: 1,
-		projects: {},
-		pathCache: {},
-	};
+  const emptyRegistry: ProjectRegistry = {
+    pathCache: {},
+    projects: {},
+    version: 1,
+  };
 
-	const currentWorkingDir = process.cwd();
-	const isInTempDir =
-		currentWorkingDir.startsWith(tmpdir()) || currentWorkingDir.startsWith("/tmp");
-	const projectStorageDir = isInTempDir
-		? join(currentWorkingDir, ".ralph")
-		: join(tmpdir(), "ralph-mock");
-	const baseMockDir = isInTempDir ? currentWorkingDir : join(tmpdir(), "ralph-mock");
+  const currentWorkingDir = process.cwd();
+  const isInTempDir =
+    currentWorkingDir.startsWith(tmpdir()) || currentWorkingDir.startsWith("/tmp");
+  const projectStorageDir = isInTempDir
+    ? join(currentWorkingDir, ".ralph")
+    : join(tmpdir(), "ralph-mock");
+  const baseMockDir = isInTempDir ? currentWorkingDir : join(tmpdir(), "ralph-mock");
 
-	return {
-		loadRegistry: () => emptyRegistry,
-		saveRegistry: () => {},
-		ensureProjectsDir: () => {},
-		resolveCurrentProject: () => testIdentifier,
-		registerProject: () => testIdentifier,
-		getProjectDir: () => projectStorageDir,
-		getProjectFilePath: (relativePath: string) => `${projectStorageDir}/${relativePath}`,
-		listProjects: () => [],
-		getProjectMetadata: () => null,
-		updateLastAccessed: () => {},
-		isProjectInitialized: () => true,
-		removeProject: () => true,
-		getRegistryPath: () => join(baseMockDir, "registry.json"),
-		getProjectsDir: () => join(baseMockDir, "projects"),
-		...overrides,
-	};
+  return {
+    ensureProjectsDir: () => {},
+    getProjectDir: () => projectStorageDir,
+    getProjectFilePath: (relativePath: string) => `${projectStorageDir}/${relativePath}`,
+    getProjectMetadata: () => null,
+    getProjectsDir: () => join(baseMockDir, "projects"),
+    getRegistryPath: () => join(baseMockDir, "registry.json"),
+    isProjectInitialized: () => true,
+    listProjects: () => [],
+    loadRegistry: () => emptyRegistry,
+    registerProject: () => testIdentifier,
+    removeProject: () => true,
+    resolveCurrentProject: () => testIdentifier,
+    saveRegistry: () => {},
+    updateLastAccessed: () => {},
+    ...overrides,
+  };
 }
 
 function createMockConfigService(overrides: Partial<ConfigService> = {}): ConfigService {
-	const defaultConfig = {
-		agent: "cursor" as const,
-		maxRetries: 3,
-		retryDelayMs: 1000,
-		agentTimeoutMs: 300000,
-		stuckThresholdMs: 60000,
-		maxOutputHistoryBytes: 1048576,
-		retryWithContext: true,
-		maxDecompositionsPerTask: 3,
-		learningEnabled: true,
-		verification: {
-			enabled: false,
-			failOnWarning: false,
-		},
-	};
+  const defaultConfig = {
+    agent: "cursor" as const,
+    agentTimeoutMs: 300_000,
+    learningEnabled: true,
+    maxDecompositionsPerTask: 3,
+    maxOutputHistoryBytes: 1_048_576,
+    maxRetries: 3,
+    retryDelayMs: 1000,
+    retryWithContext: true,
+    stuckThresholdMs: 60_000,
+    verification: {
+      enabled: false,
+      failOnWarning: false,
+    },
+  };
 
-	return {
-		get: () => defaultConfig,
-		load: () => defaultConfig,
-		loadGlobal: () => defaultConfig,
-		loadGlobalRaw: () => null,
-		loadProjectRaw: () => null,
-		getWithValidation: (validateFn) => ({
-			config: defaultConfig,
-			validation: validateFn(defaultConfig),
-		}),
-		saveGlobal: () => {},
-		saveProject: () => {},
-		invalidate: () => {},
-		invalidateGlobal: () => {},
-		invalidateAll: () => {},
-		globalConfigExists: () => true,
-		getEffective: () => ({
-			global: null,
-			project: null,
-			effective: defaultConfig,
-		}),
-		hasAcknowledgedWarning: () => true,
-		acknowledgeWarning: () => {},
-		...overrides,
-	};
+  return {
+    acknowledgeWarning: () => {},
+    get: () => defaultConfig,
+    getEffective: () => ({
+      effective: defaultConfig,
+      global: null,
+      project: null,
+    }),
+    getWithValidation: (validateFn) => ({
+      config: defaultConfig,
+      validation: validateFn(defaultConfig),
+    }),
+    globalConfigExists: () => true,
+    hasAcknowledgedWarning: () => true,
+    invalidate: () => {},
+    invalidateAll: () => {},
+    invalidateGlobal: () => {},
+    load: () => defaultConfig,
+    loadGlobal: () => defaultConfig,
+    loadGlobalRaw: () => null,
+    loadProjectRaw: () => null,
+    saveGlobal: () => {},
+    saveProject: () => {},
+    ...overrides,
+  };
 }
 
 function createMockPrdService(overrides: Partial<PrdService> = {}): PrdService {
-	return {
-		get: () => null,
-		load: () => null,
-		loadWithValidation: () => ({ prd: null }),
-		reload: () => null,
-		reloadWithValidation: () => ({ prd: null }),
-		save: () => {},
-		invalidate: () => {},
-		findFile: () => null,
-		isComplete: () => false,
-		getNextTask: () => null,
-		getNextTaskWithIndex: () => null,
-		getTaskByTitle: () => null,
-		getTaskByIndex: () => null,
-		getCurrentTaskIndex: () => -1,
-		canWorkOnTask: () => ({ canWork: true }),
-		createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
-		loadInstructions: () => null,
-		toggleTaskDone: (prd) => prd,
-		deleteTask: (prd) => prd,
-		reorderTask: (prd) => prd,
-		updateTask: (prd) => prd,
-		...overrides,
-	};
+  return {
+    canWorkOnTask: () => ({ canWork: true }),
+    createEmpty: (projectName) => ({ project: projectName, tasks: [] }),
+    deleteTask: (prd) => prd,
+    findFile: () => null,
+    get: () => null,
+    getCurrentTaskIndex: () => -1,
+    getNextTask: () => null,
+    getNextTaskWithIndex: () => null,
+    getTaskByIndex: () => null,
+    getTaskByTitle: () => null,
+    invalidate: () => {},
+    isComplete: () => false,
+    load: () => null,
+    loadInstructions: () => null,
+    loadWithValidation: () => ({ prd: null }),
+    reload: () => null,
+    reloadWithValidation: () => ({ prd: null }),
+    reorderTask: (prd) => prd,
+    save: () => {},
+    toggleTaskDone: (prd) => prd,
+    updateTask: (prd) => prd,
+    ...overrides,
+  };
 }
 
 function createMockSessionMemoryService(
-	overrides: Partial<SessionMemoryService> = {},
+  overrides: Partial<SessionMemoryService> = {},
 ): SessionMemoryService {
-	const emptyMemory = {
-		projectName: "Test Project",
-		lessonsLearned: [],
-		successfulPatterns: [],
-		failedApproaches: [],
-		taskNotes: {},
-		lastUpdated: new Date().toISOString(),
-	};
+  const emptyMemory = {
+    failedApproaches: [],
+    lastUpdated: new Date().toISOString(),
+    lessonsLearned: [],
+    projectName: "Test Project",
+    successfulPatterns: [],
+    taskNotes: {},
+  };
 
-	return {
-		get: () => emptyMemory,
-		load: () => emptyMemory,
-		save: () => {},
-		exists: () => false,
-		initialize: () => emptyMemory,
-		invalidate: () => {},
-		addLesson: () => {},
-		addSuccessPattern: () => {},
-		addFailedApproach: () => {},
-		addTaskNote: () => {},
-		getTaskNote: () => null,
-		clear: () => {},
-		getStats: () => ({
-			lessonsCount: 0,
-			patternsCount: 0,
-			failedApproachesCount: 0,
-			taskNotesCount: 0,
-			lastUpdated: null,
-		}),
-		formatForPrompt: () => "",
-		formatForTask: () => "",
-		exportAsMarkdown: () => "",
-		...overrides,
-	};
+  return {
+    addFailedApproach: () => {},
+    addLesson: () => {},
+    addSuccessPattern: () => {},
+    addTaskNote: () => {},
+    clear: () => {},
+    exists: () => false,
+    exportAsMarkdown: () => "",
+    formatForPrompt: () => "",
+    formatForTask: () => "",
+    get: () => emptyMemory,
+    getStats: () => ({
+      failedApproachesCount: 0,
+      lastUpdated: null,
+      lessonsCount: 0,
+      patternsCount: 0,
+      taskNotesCount: 0,
+    }),
+    getTaskNote: () => null,
+    initialize: () => emptyMemory,
+    invalidate: () => {},
+    load: () => emptyMemory,
+    save: () => {},
+    ...overrides,
+  };
 }
 
 function createMockSessionService(overrides: Partial<SessionService> = {}): SessionService {
-	const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
-		startTime: Date.now(),
-		lastUpdateTime: Date.now(),
-		currentIteration: 0,
-		totalIterations,
-		currentTaskIndex,
-		status: "running" as const,
-		elapsedTimeSeconds: 0,
-		statistics: {
-			totalIterations,
-			completedIterations: 0,
-			failedIterations: 0,
-			successfulIterations: 0,
-			totalDurationMs: 0,
-			averageDurationMs: 0,
-			successRate: 0,
-			iterationTimings: [],
-		},
-	});
+  const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
+    currentIteration: 0,
+    currentTaskIndex,
+    elapsedTimeSeconds: 0,
+    lastUpdateTime: Date.now(),
+    startTime: Date.now(),
+    statistics: {
+      averageDurationMs: 0,
+      completedIterations: 0,
+      failedIterations: 0,
+      iterationTimings: [],
+      successRate: 0,
+      successfulIterations: 0,
+      totalDurationMs: 0,
+      totalIterations,
+    },
+    status: "running" as const,
+    totalIterations,
+  });
 
-	return {
-		load: () => null,
-		save: () => {},
-		delete: () => {},
-		exists: () => false,
-		create: createMockSession,
-		recordIterationStart: (session) => ({ ...session, lastUpdateTime: Date.now() }),
-		recordIterationEnd: (session) => ({ ...session, lastUpdateTime: Date.now() }),
-		updateIteration: (session, currentIteration, currentTaskIndex, elapsedTimeSeconds) => ({
-			...session,
-			currentIteration,
-			currentTaskIndex,
-			elapsedTimeSeconds,
-			lastUpdateTime: Date.now(),
-		}),
-		updateStatus: (session, status) => ({ ...session, status, lastUpdateTime: Date.now() }),
-		isResumable: () => false,
-		enableParallelMode: (session, maxConcurrentTasks) => ({
-			...session,
-			lastUpdateTime: Date.now(),
-			parallelState: {
-				isParallelMode: true,
-				currentGroupIndex: -1,
-				executionGroups: [],
-				activeExecutions: [],
-				maxConcurrentTasks,
-			},
-		}),
-		disableParallelMode: (session) => {
-			const { parallelState: _, ...rest } = session;
+  return {
+    completeParallelGroup: (session) => session,
+    completeTaskExecution: (session) => session,
+    create: createMockSession,
+    delete: () => {},
+    disableParallelMode: (session) => {
+      const { parallelState: _, ...rest } = session;
 
-			return { ...rest, lastUpdateTime: Date.now() };
-		},
-		isParallelMode: (session) => session.parallelState?.isParallelMode ?? false,
-		startParallelGroup: (session) => session,
-		completeParallelGroup: (session) => session,
-		getCurrentParallelGroup: () => null,
-		startTaskExecution: (session) => session,
-		completeTaskExecution: (session) => session,
-		failTaskExecution: (session) => session,
-		retryTaskExecution: (session) => session,
-		getActiveExecutions: () => [],
-		getTaskExecution: () => null,
-		isTaskExecuting: () => false,
-		getActiveExecutionCount: () => 0,
-		...overrides,
-	};
+      return { ...rest, lastUpdateTime: Date.now() };
+    },
+    enableParallelMode: (session, maxConcurrentTasks) => ({
+      ...session,
+      lastUpdateTime: Date.now(),
+      parallelState: {
+        activeExecutions: [],
+        currentGroupIndex: -1,
+        executionGroups: [],
+        isParallelMode: true,
+        maxConcurrentTasks,
+      },
+    }),
+    exists: () => false,
+    failTaskExecution: (session) => session,
+    getActiveExecutionCount: () => 0,
+    getActiveExecutions: () => [],
+    getCurrentParallelGroup: () => null,
+    getTaskExecution: () => null,
+    isParallelMode: (session) => session.parallelState?.isParallelMode ?? false,
+    isResumable: () => false,
+    isTaskExecuting: () => false,
+    load: () => null,
+    recordIterationEnd: (session) => ({ ...session, lastUpdateTime: Date.now() }),
+    recordIterationStart: (session) => ({ ...session, lastUpdateTime: Date.now() }),
+    retryTaskExecution: (session) => session,
+    save: () => {},
+    startParallelGroup: (session) => session,
+    startTaskExecution: (session) => session,
+    updateIteration: (session, currentIteration, currentTaskIndex, elapsedTimeSeconds) => ({
+      ...session,
+      currentIteration,
+      currentTaskIndex,
+      elapsedTimeSeconds,
+      lastUpdateTime: Date.now(),
+    }),
+    updateStatus: (session, status) => ({ ...session, lastUpdateTime: Date.now(), status }),
+    ...overrides,
+  };
 }
 
 function createMockGuardrailsService(
-	overrides: Partial<GuardrailsService> = {},
+  overrides: Partial<GuardrailsService> = {},
 ): GuardrailsService {
-	const defaultGuardrails = [
-		{
-			id: "verify-before-commit",
-			instruction: "Verify changes work before committing",
-			trigger: "always" as const,
-			category: "quality" as const,
-			enabled: true,
-			addedAt: new Date().toISOString(),
-		},
-	];
+  const defaultGuardrails = [
+    {
+      addedAt: new Date().toISOString(),
+      category: "quality" as const,
+      enabled: true,
+      id: "verify-before-commit",
+      instruction: "Verify changes work before committing",
+      trigger: "always" as const,
+    },
+  ];
 
-	return {
-		get: () => defaultGuardrails,
-		load: () => defaultGuardrails,
-		save: () => {},
-		exists: () => false,
-		initialize: () => {},
-		invalidate: () => {},
-		add: (options) => ({
-			id: `guardrail-${Date.now()}`,
-			instruction: options.instruction,
-			trigger: options.trigger ?? "always",
-			category: options.category ?? "quality",
-			enabled: options.enabled ?? true,
-			addedAt: new Date().toISOString(),
-			addedAfterFailure: options.addedAfterFailure,
-		}),
-		remove: () => true,
-		toggle: () => null,
-		getById: () => null,
-		getActive: () => defaultGuardrails,
-		formatForPrompt: () => "",
-		...overrides,
-	};
+  return {
+    add: (options) => ({
+      addedAfterFailure: options.addedAfterFailure,
+      addedAt: new Date().toISOString(),
+      category: options.category ?? "quality",
+      enabled: options.enabled ?? true,
+      id: `guardrail-${Date.now()}`,
+      instruction: options.instruction,
+      trigger: options.trigger ?? "always",
+    }),
+    exists: () => false,
+    formatForPrompt: () => "",
+    get: () => defaultGuardrails,
+    getActive: () => defaultGuardrails,
+    getById: () => null,
+    initialize: () => {},
+    invalidate: () => {},
+    load: () => defaultGuardrails,
+    remove: () => true,
+    save: () => {},
+    toggle: () => null,
+    ...overrides,
+  };
 }
 
 function createMockSleepPreventionService(
-	overrides: Partial<SleepPreventionService> = {},
+  overrides: Partial<SleepPreventionService> = {},
 ): SleepPreventionService {
-	return {
-		start: () => {},
-		stop: () => {},
-		isActive: () => false,
-		...overrides,
-	};
+  return {
+    isActive: () => false,
+    start: () => {},
+    stop: () => {},
+    ...overrides,
+  };
 }
 
 function createMockMemoryMonitorService(
-	overrides: Partial<MemoryMonitorService> = {},
+  overrides: Partial<MemoryMonitorService> = {},
 ): MemoryMonitorService {
-	return {
-		start: () => {},
-		stop: () => {},
-		isActive: () => false,
-		getMemoryUsageMb: () => 100,
-		setThresholdMb: () => {},
-		getThresholdMb: () => 1024,
-		...overrides,
-	};
+  return {
+    getMemoryUsageMb: () => 100,
+    getThresholdMb: () => 1024,
+    isActive: () => false,
+    setThresholdMb: () => {},
+    start: () => {},
+    stop: () => {},
+    ...overrides,
+  };
 }
 
 function createMockUsageStatisticsService(
-	overrides: Partial<UsageStatisticsService> = {},
+  overrides: Partial<UsageStatisticsService> = {},
 ): UsageStatisticsService {
-	const emptyStatistics = {
-		version: 1,
-		projectName: "Test Project",
-		createdAt: new Date().toISOString(),
-		lastUpdatedAt: new Date().toISOString(),
-		lifetime: {
-			totalSessions: 0,
-			totalIterations: 0,
-			totalTasksCompleted: 0,
-			totalTasksAttempted: 0,
-			totalDurationMs: 0,
-			successfulIterations: 0,
-			failedIterations: 0,
-			averageIterationsPerSession: 0,
-			averageTasksPerSession: 0,
-			averageSessionDurationMs: 0,
-			overallSuccessRate: 0,
-		},
-		recentSessions: [],
-		dailyUsage: [],
-	};
+  const emptyStatistics = {
+    createdAt: new Date().toISOString(),
+    dailyUsage: [],
+    lastUpdatedAt: new Date().toISOString(),
+    lifetime: {
+      averageIterationsPerSession: 0,
+      averageSessionDurationMs: 0,
+      averageTasksPerSession: 0,
+      failedIterations: 0,
+      overallSuccessRate: 0,
+      successfulIterations: 0,
+      totalDurationMs: 0,
+      totalIterations: 0,
+      totalSessions: 0,
+      totalTasksAttempted: 0,
+      totalTasksCompleted: 0,
+    },
+    projectName: "Test Project",
+    recentSessions: [],
+    version: 1,
+  };
 
-	return {
-		get: () => emptyStatistics,
-		load: () => emptyStatistics,
-		save: () => {},
-		exists: () => false,
-		initialize: () => emptyStatistics,
-		invalidate: () => {},
-		recordSession: () => {},
-		getSummary: () => ({
-			totalSessions: 0,
-			totalIterations: 0,
-			totalTasksCompleted: 0,
-			totalDurationMs: 0,
-			overallSuccessRate: 0,
-			averageSessionDurationMs: 0,
-			averageIterationsPerSession: 0,
-			lastSessionAt: null,
-			streakDays: 0,
-		}),
-		getRecentSessions: () => [],
-		getDailyUsage: () => [],
-		formatForDisplay: () => "",
-		...overrides,
-	};
+  return {
+    exists: () => false,
+    formatForDisplay: () => "",
+    get: () => emptyStatistics,
+    getDailyUsage: () => [],
+    getRecentSessions: () => [],
+    getSummary: () => ({
+      averageIterationsPerSession: 0,
+      averageSessionDurationMs: 0,
+      lastSessionAt: null,
+      overallSuccessRate: 0,
+      streakDays: 0,
+      totalDurationMs: 0,
+      totalIterations: 0,
+      totalSessions: 0,
+      totalTasksCompleted: 0,
+    }),
+    initialize: () => emptyStatistics,
+    invalidate: () => {},
+    load: () => emptyStatistics,
+    recordSession: () => {},
+    save: () => {},
+    ...overrides,
+  };
 }
 
 function createMockGitBranchService(overrides: Partial<GitBranchService> = {}): GitBranchService {
-	return {
-		getCurrentBranch: () => "main",
-		getBaseBranch: () => "main",
-		hasRemote: () => true,
-		getRemoteName: () => "origin",
-		getRemoteUrl: () => "git@github.com:test-org/test-repo.git",
-		getWorkingDirectoryStatus: () => ({
-			isClean: true,
-			hasUncommittedChanges: false,
-			hasUntrackedFiles: false,
-			modifiedFiles: [],
-			untrackedFiles: [],
-		}),
-		isWorkingDirectoryClean: () => true,
-		createBranch: (branchName) => ({
-			status: "success",
-			message: `Created branch: ${branchName}`,
-			branchName,
-		}),
-		checkoutBranch: (branchName) => ({
-			status: "success",
-			message: `Checked out branch: ${branchName}`,
-			branchName,
-		}),
-		deleteBranch: (branchName) => ({
-			status: "success",
-			message: `Deleted branch: ${branchName}`,
-			branchName,
-		}),
-		createAndCheckoutTaskBranch: (taskTitle, taskIndex) => {
-			const branchName = `ralph/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`;
+  return {
+    checkoutBranch: (branchName) => ({
+      branchName,
+      message: `Checked out branch: ${branchName}`,
+      status: "success",
+    }),
+    commitChanges: () => ({
+      message: "Changes committed successfully",
+      status: "success",
+    }),
+    createAndCheckoutTaskBranch: (taskTitle, taskIndex) => {
+      const branchName = `ralph/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`;
 
-			return {
-				status: "success",
-				message: `Created and checked out branch: ${branchName}`,
-				branchName,
-			};
-		},
-		commitChanges: () => ({
-			status: "success",
-			message: "Changes committed successfully",
-		}),
-		pushBranch: (branchName) => ({
-			status: "success",
-			message: `Pushed branch: ${branchName}`,
-			branchName,
-		}),
-		returnToBaseBranch: (baseBranch) => ({
-			status: "success",
-			message: `Returned to branch: ${baseBranch}`,
-			branchName: baseBranch,
-		}),
-		generateBranchName: (taskTitle, taskIndex, prefix = "ralph") =>
-			`${prefix}/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`,
-		getBranchInfo: () => ({
-			currentBranch: "main",
-			baseBranch: "main",
-			hasRemote: true,
-			remoteName: "origin",
-		}),
-		stashChanges: () => ({
-			status: "success",
-			message: "Changes stashed successfully",
-		}),
-		popStash: () => ({
-			status: "success",
-			message: "Stash popped successfully",
-		}),
-		...overrides,
-	};
+      return {
+        branchName,
+        message: `Created and checked out branch: ${branchName}`,
+        status: "success",
+      };
+    },
+    createBranch: (branchName) => ({
+      branchName,
+      message: `Created branch: ${branchName}`,
+      status: "success",
+    }),
+    deleteBranch: (branchName) => ({
+      branchName,
+      message: `Deleted branch: ${branchName}`,
+      status: "success",
+    }),
+    generateBranchName: (taskTitle, taskIndex, prefix = "ralph") =>
+      `${prefix}/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`,
+    getBaseBranch: () => "main",
+    getBranchInfo: () => ({
+      baseBranch: "main",
+      currentBranch: "main",
+      hasRemote: true,
+      remoteName: "origin",
+    }),
+    getCurrentBranch: () => "main",
+    getRemoteName: () => "origin",
+    getRemoteUrl: () => "git@github.com:test-org/test-repo.git",
+    getWorkingDirectoryStatus: () => ({
+      hasUncommittedChanges: false,
+      hasUntrackedFiles: false,
+      isClean: true,
+      modifiedFiles: [],
+      untrackedFiles: [],
+    }),
+    hasRemote: () => true,
+    isWorkingDirectoryClean: () => true,
+    popStash: () => ({
+      message: "Stash popped successfully",
+      status: "success",
+    }),
+    pushBranch: (branchName) => ({
+      branchName,
+      message: `Pushed branch: ${branchName}`,
+      status: "success",
+    }),
+    returnToBaseBranch: (baseBranch) => ({
+      branchName: baseBranch,
+      message: `Returned to branch: ${baseBranch}`,
+      status: "success",
+    }),
+    stashChanges: () => ({
+      message: "Changes stashed successfully",
+      status: "success",
+    }),
+    ...overrides,
+  };
 }
 
 function createMockGitProviderService(
-	overrides: Partial<GitProviderService> = {},
+  overrides: Partial<GitProviderService> = {},
 ): GitProviderService {
-	return {
-		detectProvider: (remoteUrl) => ({
-			provider: remoteUrl.includes("github.com") ? "github" : "none",
-			owner: "test-owner",
-			repo: "test-repo",
-			hostname: "github.com",
-		}),
-		getProvider: () => null,
-		getProviderForRemote: () => null,
-		isProviderConfigured: () => false,
-		getSupportedProviders: () => [],
-		...overrides,
-	};
+  return {
+    detectProvider: (remoteUrl) => ({
+      hostname: "github.com",
+      owner: "test-owner",
+      provider: remoteUrl.includes("github.com") ? "github" : "none",
+      repo: "test-repo",
+    }),
+    getProvider: () => null,
+    getProviderForRemote: () => null,
+    getSupportedProviders: () => [],
+    isProviderConfigured: () => false,
+    ...overrides,
+  };
 }
 
 function createMockSessionManager(overrides: Partial<SessionManager> = {}): SessionManager {
-	const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
-		startTime: Date.now(),
-		lastUpdateTime: Date.now(),
-		currentIteration: 0,
-		totalIterations,
-		currentTaskIndex,
-		status: "running" as const,
-		elapsedTimeSeconds: 0,
-		statistics: {
-			totalIterations,
-			completedIterations: 0,
-			failedIterations: 0,
-			successfulIterations: 0,
-			totalDurationMs: 0,
-			averageDurationMs: 0,
-			successRate: 0,
-			iterationTimings: [],
-		},
-	});
+  const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
+    currentIteration: 0,
+    currentTaskIndex,
+    elapsedTimeSeconds: 0,
+    lastUpdateTime: Date.now(),
+    startTime: Date.now(),
+    statistics: {
+      averageDurationMs: 0,
+      completedIterations: 0,
+      failedIterations: 0,
+      iterationTimings: [],
+      successRate: 0,
+      successfulIterations: 0,
+      totalDurationMs: 0,
+      totalIterations,
+    },
+    status: "running" as const,
+    totalIterations,
+  });
 
-	return {
-		setConfig: () => {},
-		startSession: (_prd, totalIterations) => ({
-			session: createMockSession(totalIterations, 0),
-			taskIndex: 0,
-		}),
-		resumeSession: (pendingSession) => ({
-			session: { ...pendingSession, status: "running" as const },
-			remainingIterations: pendingSession.totalIterations - pendingSession.currentIteration,
-		}),
-		handleFatalError: (_error, _prd, currentSession) => ({
-			session: currentSession ? { ...currentSession, status: "stopped" as const } : null,
-			wasHandled: true,
-		}),
-		recordUsageStatistics: () => {},
-		...overrides,
-	};
+  return {
+    handleFatalError: (_error, _prd, currentSession) => ({
+      session: currentSession ? { ...currentSession, status: "stopped" as const } : null,
+      wasHandled: true,
+    }),
+    recordUsageStatistics: () => {},
+    resumeSession: (pendingSession) => ({
+      remainingIterations: pendingSession.totalIterations - pendingSession.currentIteration,
+      session: { ...pendingSession, status: "running" as const },
+    }),
+    setConfig: () => {},
+    startSession: (_prd, totalIterations) => ({
+      session: createMockSession(totalIterations, 0),
+      taskIndex: 0,
+    }),
+    ...overrides,
+  };
 }
 
 function createMockIterationCoordinator(
-	overrides: Partial<IterationCoordinator> = {},
+  overrides: Partial<IterationCoordinator> = {},
 ): IterationCoordinator {
-	return {
-		setupIterationCallbacks: () => {},
-		getLastRetryContexts: () => [],
-		getLastDecomposition: () => null,
-		setLastRetryContexts: () => {},
-		setLastDecomposition: () => {},
-		clearState: () => {},
-		...overrides,
-	};
+  return {
+    clearState: () => {},
+    getLastDecomposition: () => null,
+    getLastRetryContexts: () => [],
+    setLastDecomposition: () => {},
+    setLastRetryContexts: () => {},
+    setupIterationCallbacks: () => {},
+    ...overrides,
+  };
 }
 
 function createMockParallelExecutionManager(
-	overrides: Partial<ParallelExecutionManager> = {},
+  overrides: Partial<ParallelExecutionManager> = {},
 ): ParallelExecutionManager {
-	return {
-		isEnabled: () => false,
-		getConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
-		getCurrentGroup: () => null,
-		getExecutionGroups: () => [],
-		setRalphConfig: () => {},
-		initialize: () => ({ isValid: true }),
-		startNextGroup: () => ({ started: false, groupIndex: -1, tasks: [] }),
-		recordTaskStart: () => {},
-		recordTaskComplete: () => ({ groupComplete: true, allSucceeded: true }),
-		getReadyTasks: () => [],
-		hasMoreGroups: () => false,
-		getSummary: () => ({
-			totalGroups: 0,
-			completedGroups: 0,
-			currentGroupIndex: 0,
-			isActive: false,
-		}),
-		disable: () => {},
-		reset: () => {},
-		...overrides,
-	};
+  return {
+    disable: () => {},
+    getConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
+    getCurrentGroup: () => null,
+    getExecutionGroups: () => [],
+    getReadyTasks: () => [],
+    getSummary: () => ({
+      completedGroups: 0,
+      currentGroupIndex: 0,
+      isActive: false,
+      totalGroups: 0,
+    }),
+    hasMoreGroups: () => false,
+    initialize: () => ({ isValid: true }),
+    isEnabled: () => false,
+    recordTaskComplete: () => ({ allSucceeded: true, groupComplete: true }),
+    recordTaskStart: () => {},
+    reset: () => {},
+    setRalphConfig: () => {},
+    startNextGroup: () => ({ groupIndex: -1, started: false, tasks: [] }),
+    ...overrides,
+  };
 }
 
 function createMockBranchModeManager(
-	overrides: Partial<BranchModeManager> = {},
+  overrides: Partial<BranchModeManager> = {},
 ): BranchModeManager {
-	return {
-		isEnabled: () => false,
-		getConfig: () => null,
-		getBaseBranch: () => null,
-		getCurrentTaskBranch: () => null,
-		setEnabled: () => {},
-		setConfig: () => {},
-		setRalphConfig: () => {},
-		initialize: () => ({ isValid: true }),
-		createTaskBranch: () => ({ success: true }),
-		completeTaskBranch: async () => ({ success: true }),
-		createPullRequestForBranch: async () => ({ success: true }),
-		reset: () => {},
-		...overrides,
-	};
+  return {
+    completeTaskBranch: async () => ({ success: true }),
+    createPullRequestForBranch: async () => ({ success: true }),
+    createTaskBranch: () => ({ success: true }),
+    getBaseBranch: () => null,
+    getConfig: () => null,
+    getCurrentTaskBranch: () => null,
+    initialize: () => ({ isValid: true }),
+    isEnabled: () => false,
+    reset: () => {},
+    setConfig: () => {},
+    setEnabled: () => {},
+    setRalphConfig: () => {},
+    ...overrides,
+  };
 }
 
 function createMockHandlerCoordinator(
-	overrides: Partial<HandlerCoordinator> = {},
+  overrides: Partial<HandlerCoordinator> = {},
 ): HandlerCoordinator {
-	return {
-		initialize: () => {},
-		getIsVerifying: () => false,
-		cleanup: () => {},
-		...overrides,
-	};
+  return {
+    cleanup: () => {},
+    getIsVerifying: () => false,
+    initialize: () => {},
+    ...overrides,
+  };
 }
 
 function createMockOrchestrator(overrides: Partial<Orchestrator> = {}): Orchestrator {
-	const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
-		startTime: Date.now(),
-		lastUpdateTime: Date.now(),
-		currentIteration: 0,
-		totalIterations,
-		currentTaskIndex,
-		status: "running" as const,
-		elapsedTimeSeconds: 0,
-		statistics: {
-			totalIterations,
-			completedIterations: 0,
-			failedIterations: 0,
-			successfulIterations: 0,
-			totalDurationMs: 0,
-			averageDurationMs: 0,
-			successRate: 0,
-			iterationTimings: [],
-		},
-	});
+  const createMockSession = (totalIterations: number, currentTaskIndex: number) => ({
+    currentIteration: 0,
+    currentTaskIndex,
+    elapsedTimeSeconds: 0,
+    lastUpdateTime: Date.now(),
+    startTime: Date.now(),
+    statistics: {
+      averageDurationMs: 0,
+      completedIterations: 0,
+      failedIterations: 0,
+      iterationTimings: [],
+      successRate: 0,
+      successfulIterations: 0,
+      totalDurationMs: 0,
+      totalIterations,
+    },
+    status: "running" as const,
+    totalIterations,
+  });
 
-	return {
-		initialize: () => {},
-		setupIterationCallbacks: () => {},
-		getConfig: () => null,
-		getIsVerifying: () => false,
-		isBranchModeEnabled: () => false,
-		getBranchModeConfig: () => null,
-		getCurrentTaskBranch: () => null,
-		getBaseBranch: () => null,
-		initializeBranchMode: () => ({ isValid: true }),
-		createTaskBranch: () => ({ success: true }),
-		completeTaskBranch: async () => ({ success: true }),
-		createPullRequestForBranch: async () => ({ success: true }),
-		isParallelModeEnabled: () => false,
-		getParallelConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
-		getCurrentParallelGroup: () => null,
-		getParallelExecutionGroups: () => [],
-		initializeParallelExecution: () => ({ isValid: true }),
-		startNextParallelGroup: () => ({ started: false, groupIndex: -1, tasks: [] }),
-		recordParallelTaskStart: () => {},
-		recordParallelTaskComplete: () => ({ groupComplete: true, allSucceeded: true }),
-		getReadyTasksForParallelExecution: () => [],
-		hasMoreParallelGroups: () => false,
-		getParallelExecutionSummary: () => ({
-			totalGroups: 0,
-			completedGroups: 0,
-			currentGroupIndex: 0,
-			isActive: false,
-		}),
-		disableParallelExecution: () => {},
-		startSession: (_prd, totalIterations) => ({
-			session: createMockSession(totalIterations, 0),
-			taskIndex: 0,
-		}),
-		resumeSession: (pendingSession) => ({
-			session: { ...pendingSession, status: "running" as const },
-			remainingIterations: pendingSession.totalIterations - pendingSession.currentIteration,
-		}),
-		handleFatalError: (_error, _prd, currentSession) =>
-			currentSession ? { ...currentSession, status: "stopped" as const } : null,
-		cleanup: () => {},
-		...overrides,
-	};
+  return {
+    cleanup: () => {},
+    completeTaskBranch: async () => ({ success: true }),
+    createPullRequestForBranch: async () => ({ success: true }),
+    createTaskBranch: () => ({ success: true }),
+    disableParallelExecution: () => {},
+    getBaseBranch: () => null,
+    getBranchModeConfig: () => null,
+    getConfig: () => null,
+    getCurrentParallelGroup: () => null,
+    getCurrentTaskBranch: () => null,
+    getIsVerifying: () => false,
+    getParallelConfig: () => ({ enabled: false, maxConcurrentTasks: 1 }),
+    getParallelExecutionGroups: () => [],
+    getParallelExecutionSummary: () => ({
+      completedGroups: 0,
+      currentGroupIndex: 0,
+      isActive: false,
+      totalGroups: 0,
+    }),
+    getReadyTasksForParallelExecution: () => [],
+    handleFatalError: (_error, _prd, currentSession) =>
+      currentSession ? { ...currentSession, status: "stopped" as const } : null,
+    hasMoreParallelGroups: () => false,
+    initialize: () => {},
+    initializeBranchMode: () => ({ isValid: true }),
+    initializeParallelExecution: () => ({ isValid: true }),
+    isBranchModeEnabled: () => false,
+    isParallelModeEnabled: () => false,
+    recordParallelTaskComplete: () => ({ allSucceeded: true, groupComplete: true }),
+    recordParallelTaskStart: () => {},
+    resumeSession: (pendingSession) => ({
+      remainingIterations: pendingSession.totalIterations - pendingSession.currentIteration,
+      session: { ...pendingSession, status: "running" as const },
+    }),
+    setupIterationCallbacks: () => {},
+    startNextParallelGroup: () => ({ groupIndex: -1, started: false, tasks: [] }),
+    startSession: (_prd, totalIterations) => ({
+      session: createMockSession(totalIterations, 0),
+      taskIndex: 0,
+    }),
+    ...overrides,
+  };
 }
 
 export function bootstrapTestServices(overrides: TestServiceOverrides = {}): void {
-	resetServices();
+  resetServices();
 
-	const testContainer: ServiceContainer = {
-		projectRegistry: createMockProjectRegistryService(overrides.projectRegistry),
-		config: createMockConfigService(overrides.config),
-		guardrails: createMockGuardrailsService(overrides.guardrails),
-		prd: createMockPrdService(overrides.prd),
-		sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
-		session: createMockSessionService(overrides.session),
-		sessionManager: createMockSessionManager(overrides.sessionManager),
-		iterationCoordinator: createMockIterationCoordinator(overrides.iterationCoordinator),
-		parallelExecutionManager: createMockParallelExecutionManager(
-			overrides.parallelExecutionManager,
-		),
-		branchModeManager: createMockBranchModeManager(overrides.branchModeManager),
-		handlerCoordinator: createMockHandlerCoordinator(overrides.handlerCoordinator),
-		orchestrator: createMockOrchestrator(overrides.orchestrator),
-		sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
-		memoryMonitor: createMockMemoryMonitorService(overrides.memoryMonitor),
-		usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
-		gitBranch: createMockGitBranchService(overrides.gitBranch),
-		gitProvider: createMockGitProviderService(overrides.gitProvider),
-	};
+  const testContainer: ServiceContainer = {
+    branchModeManager: createMockBranchModeManager(overrides.branchModeManager),
+    config: createMockConfigService(overrides.config),
+    gitBranch: createMockGitBranchService(overrides.gitBranch),
+    gitProvider: createMockGitProviderService(overrides.gitProvider),
+    guardrails: createMockGuardrailsService(overrides.guardrails),
+    handlerCoordinator: createMockHandlerCoordinator(overrides.handlerCoordinator),
+    iterationCoordinator: createMockIterationCoordinator(overrides.iterationCoordinator),
+    memoryMonitor: createMockMemoryMonitorService(overrides.memoryMonitor),
+    orchestrator: createMockOrchestrator(overrides.orchestrator),
+    parallelExecutionManager: createMockParallelExecutionManager(
+      overrides.parallelExecutionManager,
+    ),
+    prd: createMockPrdService(overrides.prd),
+    projectRegistry: createMockProjectRegistryService(overrides.projectRegistry),
+    session: createMockSessionService(overrides.session),
+    sessionManager: createMockSessionManager(overrides.sessionManager),
+    sessionMemory: createMockSessionMemoryService(overrides.sessionMemory),
+    sleepPrevention: createMockSleepPreventionService(overrides.sleepPrevention),
+    usageStatistics: createMockUsageStatisticsService(overrides.usageStatistics),
+  };
 
-	initializeServices(testContainer);
+  initializeServices(testContainer);
 }
 
 export function teardownTestServices(): void {
-	resetServices();
+  resetServices();
 }

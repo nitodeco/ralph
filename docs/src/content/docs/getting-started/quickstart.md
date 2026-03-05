@@ -177,10 +177,10 @@ Session Status:
   State: Running
   Iteration: 3 / 10
   Started: 2 minutes ago
-  
+
 Current Task:
   [3] Create user authentication schema
-  
+
 Recent Progress:
   ✓ Set up project structure and dependencies
   ✓ Configure PostgreSQL database connection
@@ -323,6 +323,7 @@ cat ~/.ralph/projects/your-project/logs/latest.log
 ```
 
 Common causes:
+
 - Git not initialized in the project
 - No write permissions in the project directory
 - Agent configuration issues

@@ -13,52 +13,52 @@ export const PLAN_OUTPUT_START = "<plan_output>";
 export const PLAN_OUTPUT_END = "</plan_output>";
 
 export interface BuildPromptOptions {
-	instructions?: string | null;
-	specificTask?: string | null;
-	includeGuardrails?: boolean;
-	includeMemory?: boolean;
-	isGitRepository?: boolean;
+  instructions?: string | null;
+  specificTask?: string | null;
+  includeGuardrails?: boolean;
+  includeMemory?: boolean;
+  isGitRepository?: boolean;
 }
 
 export function buildPrompt(options: BuildPromptOptions = {}): string {
-	const {
-		instructions,
-		specificTask,
-		includeGuardrails = true,
-		includeMemory = true,
-		isGitRepository = true,
-	} = options;
+  const {
+    instructions,
+    specificTask,
+    includeGuardrails = true,
+    includeMemory = true,
+    isGitRepository = true,
+  } = options;
 
-	const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
+  const instructionsSection = instructions ? `\n## Project Instructions\n${instructions}\n` : "";
 
-	const guardrailsService = getGuardrailsService();
-	const guardrailsSection = includeGuardrails
-		? guardrailsService.formatForPrompt(guardrailsService.getActive())
-		: "";
+  const guardrailsService = getGuardrailsService();
+  const guardrailsSection = includeGuardrails
+    ? guardrailsService.formatForPrompt(guardrailsService.getActive())
+    : "";
 
-	let memorySection = "";
+  let memorySection = "";
 
-	if (includeMemory) {
-		const sessionMemoryService = getSessionMemoryService();
-		const generalMemory = sessionMemoryService.formatForPrompt();
-		const taskMemory = specificTask ? sessionMemoryService.formatForTask(specificTask) : "";
+  if (includeMemory) {
+    const sessionMemoryService = getSessionMemoryService();
+    const generalMemory = sessionMemoryService.formatForPrompt();
+    const taskMemory = specificTask ? sessionMemoryService.formatForTask(specificTask) : "";
 
-		if (generalMemory || taskMemory) {
-			memorySection = `${generalMemory}${taskMemory}`;
-		}
-	}
+    if (generalMemory || taskMemory) {
+      memorySection = `${generalMemory}${taskMemory}`;
+    }
+  }
 
-	const taskSelectionInstruction = specificTask
-		? `2. Work on the SPECIFIED task: "${specificTask}"`
-		: "2. Run 'ralph task current' to see the next task to work on";
+  const taskSelectionInstruction = specificTask
+    ? `2. Work on the SPECIFIED task: "${specificTask}"`
+    : "2. Run 'ralph task current' to see the next task to work on";
 
-	const commitStep = isGitRepository
-		? "7. Stage and commit your changes with a meaningful commit message"
-		: "7. Verify all changes are complete (note: this is not a git repository, so no commit is needed)";
+  const commitStep = isGitRepository
+    ? "7. Stage and commit your changes with a meaningful commit message"
+    : "7. Verify all changes are complete (note: this is not a git repository, so no commit is needed)";
 
-	const commitRule = isGitRepository ? "- If the build fails, fix it before committing" : "";
+  const commitRule = isGitRepository ? "- If the build fails, fix it before committing" : "";
 
-	const decompositionInstructions = `
+  const decompositionInstructions = `
 ## Task Decomposition
 If a task is too large or complex to complete in one iteration, you may request decomposition:
 1. Output the marker: ${DECOMPOSITION_MARKER}
@@ -80,7 +80,7 @@ ${DECOMPOSITION_OUTPUT_START}
 }
 ${DECOMPOSITION_OUTPUT_END}`;
 
-	return `You are a coding agent working on a long running project.
+  return `You are a coding agent working on a long running project.
 Your workflow is as follows:
 1. Get oriented by running 'ralph progress' and 'ralph task list'
 ${taskSelectionInstruction}
@@ -107,7 +107,7 @@ IMPORTANT:
 }
 
 export function buildPrdGenerationPrompt(description: string): string {
-	const formatExample = `{
+  const formatExample = `{
   "project": "Project Name",
   "tasks": [
     {
@@ -125,7 +125,7 @@ export function buildPrdGenerationPrompt(description: string): string {
   ]
 }`;
 
-	return `You are a project planning assistant. Based on the user's description, generate a complete PRD (Product Requirements Document) in JSON format.
+  return `You are a project planning assistant. Based on the user's description, generate a complete PRD (Product Requirements Document) in JSON format.
 
 ## User's Project Description:
 ${description}
@@ -148,18 +148,18 @@ Generate the PRD now:`;
 }
 
 export function buildAddTaskPrompt(description: string, existingPrd: Prd): string {
-	const formatExample = `{
+  const formatExample = `{
   "title": "Task Title",
   "description": "Detailed description of what this task accomplishes",
   "steps": ["Step 1", "Step 2"],
   "done": false
 }`;
 
-	const existingTasksList = existingPrd.tasks
-		.map((task, taskIndex) => `${taskIndex + 1}. ${task.title}${task.done ? " (done)" : ""}`)
-		.join("\n");
+  const existingTasksList = existingPrd.tasks
+    .map((task, taskIndex) => `${taskIndex + 1}. ${task.title}${task.done ? " (done)" : ""}`)
+    .join("\n");
 
-	return `You are a project planning assistant. Based on the user's description, generate a single new task to add to an existing PRD.
+  return `You are a project planning assistant. Based on the user's description, generate a single new task to add to an existing PRD.
 
 ## Project: ${existingPrd.project}
 
@@ -186,17 +186,17 @@ Generate the task now:`;
 }
 
 export function buildPlanPrompt(specification: string, existingPrd: Prd | null): string {
-	const existingTasksSection = existingPrd
-		? `## Existing Tasks (Project: ${existingPrd.project})
+  const existingTasksSection = existingPrd
+    ? `## Existing Tasks (Project: ${existingPrd.project})
 
 ${existingPrd.tasks
-	.map(
-		(task, idx) => `### Task ${idx + 1}: ${task.title}${task.done ? " [DONE]" : ""}
+  .map(
+    (task, idx) => `### Task ${idx + 1}: ${task.title}${task.done ? " [DONE]" : ""}
 Description: ${task.description}
 Steps:
 ${task.steps.map((step, stepIdx) => `  ${stepIdx + 1}. ${step}`).join("\n")}`,
-	)
-	.join("\n\n")}
+  )
+  .join("\n\n")}
 
 ## Available Commands
 
@@ -219,7 +219,7 @@ ralph task remove <n>
 - Preserve the done status of tasks (edit does not change done status)
 - Run 'ralph task list' after making changes to verify
 `
-		: `## No existing PRD
+    : `## No existing PRD
 
 Create tasks using:
 ralph task add --stdin <<EOF
@@ -227,7 +227,7 @@ ralph task add --stdin <<EOF
 EOF
 `;
 
-	return `You are a project planning assistant. Based on the user's specification, create or modify tasks in the PRD.
+  return `You are a project planning assistant. Based on the user's specification, create or modify tasks in the PRD.
 
 ## User's Specification:
 ${specification}

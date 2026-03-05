@@ -17,12 +17,12 @@ Open `http://localhost:4321/`.
 
 ## Commands
 
-| Command | Description |
-| --- | --- |
-| `bun run dev` | Start dev server |
-| `bun run build` | Production build (includes search indexing) |
-| `bun run preview` | Preview production build |
-| `bun run check` | Astro checks |
+| Command           | Description                                 |
+| ----------------- | ------------------------------------------- |
+| `bun run dev`     | Start dev server                            |
+| `bun run build`   | Production build (includes search indexing) |
+| `bun run preview` | Preview production build                    |
+| `bun run check`   | Astro checks                                |
 
 ## Editing docs
 

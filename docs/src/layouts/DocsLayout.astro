@@ -41,8 +41,8 @@ const breadcrumbJsonLd =
         "@type": "BreadcrumbList",
         itemListElement: breadcrumbs.map((item, index) => ({
           "@type": "ListItem",
-          position: index + 1,
           name: item.label,
+          position: index + 1,
           ...(item.href && { item: new URL(item.href, Astro.site).toString() }),
         })),
       }
@@ -55,11 +55,11 @@ const faqJsonLd =
         "@type": "FAQPage",
         mainEntity: faq.map((item) => ({
           "@type": "Question",
-          name: item.question,
           acceptedAnswer: {
             "@type": "Answer",
             text: item.answer,
           },
+          name: item.question,
         })),
       }
     : null;

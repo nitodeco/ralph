@@ -5,104 +5,104 @@ import type { IterationLogRetryContext } from "@/types.ts";
 import type { Handler } from "./types.ts";
 
 export interface LearningHandlerOptions {
-	enabled: boolean;
-	logFilePath?: string;
+  enabled: boolean;
+  logFilePath?: string;
 }
 
 export interface IterationOutcomeParams {
-	iteration: number;
-	wasSuccessful: boolean;
-	agentError: string | null;
-	output: string;
-	exitCode: number | null;
-	taskTitle: string;
-	retryCount: number;
-	retryContexts: IterationLogRetryContext[];
-	verificationFailed: boolean;
-	failedChecks: string[];
+  iteration: number;
+  wasSuccessful: boolean;
+  agentError: string | null;
+  output: string;
+  exitCode: number | null;
+  taskTitle: string;
+  retryCount: number;
+  retryContexts: IterationLogRetryContext[];
+  verificationFailed: boolean;
+  failedChecks: string[];
 }
 
 export class LearningHandler implements Handler {
-	private enabled: boolean;
-	private isRunning = false;
-	private logFilePath: string | undefined;
+  private enabled: boolean;
+  private isRunning = false;
+  private logFilePath: string | undefined;
 
-	constructor(options: LearningHandlerOptions) {
-		this.enabled = options.enabled;
-		this.logFilePath = options.logFilePath;
-	}
+  constructor(options: LearningHandlerOptions) {
+    this.enabled = options.enabled;
+    this.logFilePath = options.logFilePath;
+  }
 
-	reset(): void {
-		this.isRunning = false;
-	}
+  reset(): void {
+    this.isRunning = false;
+  }
 
-	getIsRunning(): boolean {
-		return this.isRunning;
-	}
+  getIsRunning(): boolean {
+    return this.isRunning;
+  }
 
-	recordIterationOutcome(params: IterationOutcomeParams): void {
-		if (!this.enabled) {
-			return;
-		}
+  recordIterationOutcome(params: IterationOutcomeParams): void {
+    if (!this.enabled) {
+      return;
+    }
 
-		this.isRunning = true;
+    this.isRunning = true;
 
-		try {
-			const logger = getLogger({ logFilePath: this.logFilePath });
-			const shouldRecordFailure = Boolean(params.agentError) || params.verificationFailed;
+    try {
+      const logger = getLogger({ logFilePath: this.logFilePath });
+      const shouldRecordFailure = Boolean(params.agentError) || params.verificationFailed;
 
-			if (shouldRecordFailure) {
-				const errorMessage = params.agentError ?? "Verification failed";
+      if (shouldRecordFailure) {
+        const errorMessage = params.agentError ?? "Verification failed";
 
-				recordFailure({
-					error: errorMessage,
-					output: params.output,
-					taskTitle: params.taskTitle,
-					exitCode: params.exitCode,
-					iteration: params.iteration,
-				});
+        recordFailure({
+          error: errorMessage,
+          exitCode: params.exitCode,
+          iteration: params.iteration,
+          output: params.output,
+          taskTitle: params.taskTitle,
+        });
 
-				const patterns = analyzePatterns();
-				const significantPatterns = patterns.filter((pattern) => pattern.occurrences >= 3);
+        const patterns = analyzePatterns();
+        const significantPatterns = patterns.filter((pattern) => pattern.occurrences >= 3);
 
-				if (significantPatterns.length > 0) {
-					logger.info("Recurring failure patterns detected", {
-						patternCount: significantPatterns.length,
-						topPattern: significantPatterns.at(0)?.category,
-					});
-				}
+        if (significantPatterns.length > 0) {
+          logger.info("Recurring failure patterns detected", {
+            patternCount: significantPatterns.length,
+            topPattern: significantPatterns.at(0)?.category,
+          });
+        }
 
-				if (params.verificationFailed && params.failedChecks.length > 0) {
-					const sessionMemoryService = getSessionMemoryService();
+        if (params.verificationFailed && params.failedChecks.length > 0) {
+          const sessionMemoryService = getSessionMemoryService();
 
-					sessionMemoryService.addFailedApproach(
-						`Verification failed: ${params.failedChecks.join(", ")}`,
-					);
-				}
-			}
+          sessionMemoryService.addFailedApproach(
+            `Verification failed: ${params.failedChecks.join(", ")}`,
+          );
+        }
+      }
 
-			if (params.wasSuccessful && params.retryCount > 0 && params.retryContexts.length > 0) {
-				const lastContext = params.retryContexts[params.retryContexts.length - 1];
+      if (params.wasSuccessful && params.retryCount > 0 && params.retryContexts.length > 0) {
+        const lastContext = params.retryContexts[params.retryContexts.length - 1];
 
-				if (lastContext) {
-					const sessionMemoryService = getSessionMemoryService();
+        if (lastContext) {
+          const sessionMemoryService = getSessionMemoryService();
 
-					sessionMemoryService.addLesson(
-						`Task "${params.taskTitle}" succeeded after retry: ${lastContext.rootCause} was resolved`,
-					);
-					sessionMemoryService.addSuccessPattern(
-						`Recovered from ${lastContext.failureCategory} by addressing: ${lastContext.rootCause}`,
-					);
-				}
-			}
+          sessionMemoryService.addLesson(
+            `Task "${params.taskTitle}" succeeded after retry: ${lastContext.rootCause} was resolved`,
+          );
+          sessionMemoryService.addSuccessPattern(
+            `Recovered from ${lastContext.failureCategory} by addressing: ${lastContext.rootCause}`,
+          );
+        }
+      }
 
-			if (params.wasSuccessful) {
-				const sessionMemoryService = getSessionMemoryService();
+      if (params.wasSuccessful) {
+        const sessionMemoryService = getSessionMemoryService();
 
-				sessionMemoryService.addSuccessPattern(`Completed task: ${params.taskTitle}`);
-			}
-		} finally {
-			this.isRunning = false;
-		}
-	}
+        sessionMemoryService.addSuccessPattern(`Completed task: ${params.taskTitle}`);
+      }
+    } finally {
+      this.isRunning = false;
+    }
+  }
 }

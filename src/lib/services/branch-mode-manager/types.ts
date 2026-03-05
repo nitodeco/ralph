@@ -3,41 +3,41 @@ import type { BranchModeConfig } from "../config/types.ts";
 import type { Prd } from "../prd/types.ts";
 
 export interface InitializeBranchModeResult {
-	isValid: boolean;
-	error?: string;
+  isValid: boolean;
+  error?: string;
 }
 
 export interface CreateTaskBranchResult {
-	success: boolean;
-	error?: string;
+  success: boolean;
+  error?: string;
 }
 
 export interface CompleteTaskBranchResult {
-	success: boolean;
-	error?: string;
-	prUrl?: string;
+  success: boolean;
+  error?: string;
+  prUrl?: string;
 }
 
 export interface CreatePullRequestResult {
-	success: boolean;
-	prUrl?: string;
-	error?: string;
+  success: boolean;
+  prUrl?: string;
+  error?: string;
 }
 
 export interface BranchModeManager {
-	isEnabled(): boolean;
-	getConfig(): BranchModeConfig | null;
-	getBaseBranch(): string | null;
-	getCurrentTaskBranch(): string | null;
+  isEnabled(): boolean;
+  getConfig(): BranchModeConfig | null;
+  getBaseBranch(): string | null;
+  getCurrentTaskBranch(): string | null;
 
-	setEnabled(enabled: boolean): void;
-	setConfig(config: BranchModeConfig | null): void;
-	setRalphConfig(config: RalphConfig): void;
+  setEnabled(enabled: boolean): void;
+  setConfig(config: BranchModeConfig | null): void;
+  setRalphConfig(config: RalphConfig): void;
 
-	initialize(): InitializeBranchModeResult;
-	createTaskBranch(taskTitle: string, taskIndex: number): CreateTaskBranchResult;
-	completeTaskBranch(prd: Prd | null): Promise<CompleteTaskBranchResult>;
-	createPullRequestForBranch(branchName: string, prd: Prd | null): Promise<CreatePullRequestResult>;
+  initialize(): InitializeBranchModeResult;
+  createTaskBranch(taskTitle: string, taskIndex: number): CreateTaskBranchResult;
+  completeTaskBranch(prd: Prd | null): Promise<CompleteTaskBranchResult>;
+  createPullRequestForBranch(branchName: string, prd: Prd | null): Promise<CreatePullRequestResult>;
 
-	reset(): void;
+  reset(): void;
 }

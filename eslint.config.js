@@ -1,22 +1,22 @@
 import tseslint from "typescript-eslint";
 
 export default [
-	{
-		ignores: ["node_modules/**", "dist/**"],
-	},
-	tseslint.configs.base,
-	{
-		files: ["**/*.ts", "**/*.tsx"],
-		rules: {
-			"padding-line-between-statements": [
-				"error",
-				{ blankLine: "always", prev: "*", next: "return" },
-				{ blankLine: "always", prev: ["const", "let", "var"], next: "*" },
-				{ blankLine: "any", prev: ["const", "let", "var"], next: ["const", "let", "var"] },
-				{ blankLine: "always", prev: "directive", next: "*" },
-				{ blankLine: "always", prev: "block-like", next: "*" },
-				{ blankLine: "always", prev: "*", next: "block-like" },
-			],
-		},
-	},
+  {
+    ignores: ["node_modules/**", "dist/**"],
+  },
+  tseslint.configs.base,
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
+      "padding-line-between-statements": [
+        "error",
+        { blankLine: "always", next: "return", prev: "*" },
+        { blankLine: "always", next: "*", prev: ["const", "let", "var"] },
+        { blankLine: "any", next: ["const", "let", "var"], prev: ["const", "let", "var"] },
+        { blankLine: "always", next: "*", prev: "directive" },
+        { blankLine: "always", next: "*", prev: "block-like" },
+        { blankLine: "always", next: "block-like", prev: "*" },
+      ],
+    },
+  },
 ];

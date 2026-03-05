@@ -107,10 +107,10 @@ GitHub Integration:
 
 Ralph requests these GitHub permissions:
 
-| Permission | Purpose |
-|------------|---------|
-| `repo` | Read/write access to repositories |
-| `read:user` | Read your user profile |
+| Permission  | Purpose                           |
+| ----------- | --------------------------------- |
+| `repo`      | Read/write access to repositories |
+| `read:user` | Read your user profile            |
 
 These permissions allow Ralph to:
 

@@ -4,94 +4,94 @@ import packageJson from "../package.json";
 import { type BuildTarget, config } from "./build.config";
 
 async function cleanupTempFiles(): Promise<void> {
-	const tempFiles = readdirSync(".").filter((file) => file.endsWith(".bun-build"));
+  const tempFiles = readdirSync(".").filter((file) => file.endsWith(".bun-build"));
 
-	for (const tempFile of tempFiles) {
-		await unlink(tempFile);
-	}
+  for (const tempFile of tempFiles) {
+    await unlink(tempFile);
+  }
 }
 
 async function compileTarget(buildTarget: BuildTarget): Promise<boolean> {
-	const outputPath = `${config.outDir}/${buildTarget.outputName}`;
+  const outputPath = `${config.outDir}/${buildTarget.outputName}`;
 
-	const bunProcess = Bun.spawn(
-		[
-			"bun",
-			"build",
-			config.entryPoint,
-			"--compile",
-			`--target=${buildTarget.target}`,
-			`--outfile=${outputPath}`,
-			`--define=RALPH_VERSION="${packageJson.version}"`,
-		],
-		{
-			stdout: "inherit",
-			stderr: "inherit",
-		},
-	);
+  const bunProcess = Bun.spawn(
+    [
+      "bun",
+      "build",
+      config.entryPoint,
+      "--compile",
+      `--target=${buildTarget.target}`,
+      `--outfile=${outputPath}`,
+      `--define=RALPH_VERSION="${packageJson.version}"`,
+    ],
+    {
+      stderr: "inherit",
+      stdout: "inherit",
+    },
+  );
 
-	const exitCode = await bunProcess.exited;
+  const exitCode = await bunProcess.exited;
 
-	if (exitCode !== 0) {
-		console.error(`Failed to build for ${buildTarget.name}`);
+  if (exitCode !== 0) {
+    console.error(`Failed to build for ${buildTarget.name}`);
 
-		return false;
-	}
+    return false;
+  }
 
-	console.log(`  -> ${outputPath}\n`);
+  console.log(`  -> ${outputPath}\n`);
 
-	return true;
+  return true;
 }
 
 async function typecheck(): Promise<boolean> {
-	console.log("Running TypeScript type check...\n");
+  console.log("Running TypeScript type check...\n");
 
-	const typecheckProcess = Bun.spawn(["bun", "run", "tsc", "--noEmit"], {
-		stdout: "inherit",
-		stderr: "inherit",
-	});
+  const typecheckProcess = Bun.spawn(["bun", "run", "tsc", "--noEmit"], {
+    stderr: "inherit",
+    stdout: "inherit",
+  });
 
-	const exitCode = await typecheckProcess.exited;
+  const exitCode = await typecheckProcess.exited;
 
-	if (exitCode !== 0) {
-		console.error("\nTypeScript type check failed. Fix errors before building.\n");
+  if (exitCode !== 0) {
+    console.error("\nTypeScript type check failed. Fix errors before building.\n");
 
-		return false;
-	}
+    return false;
+  }
 
-	console.log("Type check passed!\n");
+  console.log("Type check passed!\n");
 
-	return true;
+  return true;
 }
 
 async function build(): Promise<void> {
-	console.log("Building Ralph CLI...\n");
+  console.log("Building Ralph CLI...\n");
 
-	const typecheckPassed = await typecheck();
+  const typecheckPassed = await typecheck();
 
-	if (!typecheckPassed) {
-		process.exit(1);
-	}
+  if (!typecheckPassed) {
+    process.exit(1);
+  }
 
-	if (existsSync(config.outDir)) {
-		await rm(config.outDir, { recursive: true });
-	}
+  if (existsSync(config.outDir)) {
+    await rm(config.outDir, { recursive: true });
+  }
 
-	await mkdir(config.outDir);
+  await mkdir(config.outDir);
 
-	for (const buildTarget of config.targets) {
-		console.log(`Building for ${buildTarget.name}...`);
-		const success = await compileTarget(buildTarget);
+  for (const buildTarget of config.targets) {
+    console.log(`Building for ${buildTarget.name}...`);
+    const success = await compileTarget(buildTarget);
 
-		if (!success) {
-			process.exit(1);
-		}
-	}
+    if (!success) {
+      process.exit(1);
+    }
+  }
 
-	await cleanupTempFiles();
+  await cleanupTempFiles();
 
-	console.log("Build complete!");
-	console.log(`\nBinaries are in the '${config.outDir}' directory.`);
+  console.log("Build complete!");
+  console.log(`\nBinaries are in the '${config.outDir}' directory.`);
 }
 
 build();

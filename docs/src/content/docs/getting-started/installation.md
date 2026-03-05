@@ -160,6 +160,7 @@ source ~/.zshrc
 The script needs write access to the installation directory. Either:
 
 1. Run with sudo (installs to `/usr/local/bin`):
+
    ```bash
    curl -fsSL https://raw.githubusercontent.com/nitodeco/ralph/main/scripts/install.sh | sudo bash
    ```

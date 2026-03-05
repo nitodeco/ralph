@@ -7,46 +7,46 @@ const TEST_DIR = "/tmp/ralph-test-verification-handler";
 const RALPH_DIR = `${TEST_DIR}/.ralph`;
 
 describe("VerificationHandler", () => {
-	beforeEach(() => {
-		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
-		}
+  beforeEach(() => {
+    if (existsSync(TEST_DIR)) {
+      rmSync(TEST_DIR, { recursive: true });
+    }
 
-		mkdirSync(RALPH_DIR, { recursive: true });
-		process.chdir(TEST_DIR);
-	});
+    mkdirSync(RALPH_DIR, { recursive: true });
+    process.chdir(TEST_DIR);
+  });
 
-	afterEach(() => {
-		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
-		}
-	});
+  afterEach(() => {
+    if (existsSync(TEST_DIR)) {
+      rmSync(TEST_DIR, { recursive: true });
+    }
+  });
 
-	test("tracks verification state and result", async () => {
-		const stateChanges: Array<{
-			isVerifying: boolean;
-			result: VerificationResult | null;
-		}> = [];
+  test("tracks verification state and result", async () => {
+    const stateChanges: {
+      isVerifying: boolean;
+      result: VerificationResult | null;
+    }[] = [];
 
-		const handler = new VerificationHandler({
-			onStateChange: (isVerifying, result) => {
-				stateChanges.push({ isVerifying, result });
-			},
-		});
+    const handler = new VerificationHandler({
+      onStateChange: (isVerifying, result) => {
+        stateChanges.push({ isVerifying, result });
+      },
+    });
 
-		const config: VerificationConfig = {
-			enabled: false,
-			failOnWarning: false,
-		};
+    const config: VerificationConfig = {
+      enabled: false,
+      failOnWarning: false,
+    };
 
-		const result = await handler.run(config);
+    const result = await handler.run(config);
 
-		expect(result.passed).toBe(true);
-		expect(handler.getLastResult()?.passed).toBe(true);
-		expect(handler.getIsRunning()).toBe(false);
-		expect(stateChanges.length).toBe(2);
-		expect(stateChanges.at(0)).toEqual({ isVerifying: true, result: null });
-		expect(stateChanges.at(1)?.isVerifying).toBe(false);
-		expect(stateChanges.at(1)?.result?.passed).toBe(true);
-	});
+    expect(result.passed).toBe(true);
+    expect(handler.getLastResult()?.passed).toBe(true);
+    expect(handler.getIsRunning()).toBe(false);
+    expect(stateChanges.length).toBe(2);
+    expect(stateChanges.at(0)).toEqual({ isVerifying: true, result: null });
+    expect(stateChanges.at(1)?.isVerifying).toBe(false);
+    expect(stateChanges.at(1)?.result?.passed).toBe(true);
+  });
 });

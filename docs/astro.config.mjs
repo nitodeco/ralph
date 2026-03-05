@@ -4,15 +4,11 @@ import sitemap from "@astrojs/sitemap";
 import compress from "astro-compress";
 
 export default defineConfig({
-  site: "https://ralph-cli.dev",
   base: "/",
-  trailingSlash: "ignore",
-  output: "static",
-  compressHTML: true,
-  prefetch: {
-    prefetchAll: true,
-    defaultStrategy: "viewport",
+  build: {
+    inlineStylesheets: "auto",
   },
+  compressHTML: true,
   integrations: [
     sitemap(),
     compress({
@@ -36,9 +32,13 @@ export default defineConfig({
       theme: "github-dark",
     },
   },
-  build: {
-    inlineStylesheets: "auto",
+  output: "static",
+  prefetch: {
+    prefetchAll: true,
+    defaultStrategy: "viewport",
   },
+  site: "https://ralph-cli.dev",
+  trailingSlash: "ignore",
   vite: {
     plugins: [tailwindcss()],
     build: {

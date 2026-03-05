@@ -85,8 +85,8 @@ ralph github set-token <token>
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
+| Argument  | Description                  |
+| --------- | ---------------------------- |
 | `<token>` | GitHub personal access token |
 
 **Note:** Using `ralph auth login` with OAuth is preferred over personal access tokens.
@@ -128,10 +128,10 @@ ralph github set-token ghp_xxxxx
 
 Ralph requires these GitHub permissions:
 
-| Permission | Purpose |
-|------------|---------|
-| `repo` | Access to repositories |
-| `read:user` | Read user profile |
+| Permission  | Purpose                |
+| ----------- | ---------------------- |
+| `repo`      | Access to repositories |
+| `read:user` | Read user profile      |
 
 When using `ralph auth login`, you'll see exactly what permissions are requested.
 

@@ -146,8 +146,8 @@ ralph dependency show 3
 **Arguments:**
 
 | Argument | Description |
-|----------|-------------|
-| `<id>` | Task number |
+| -------- | ----------- |
+| `<id>`   | Task number |
 
 **Output:**
 
@@ -171,9 +171,9 @@ ralph dependency set 3 1 2
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `<id>` | Task number to modify |
+| Argument    | Description                            |
+| ----------- | -------------------------------------- |
+| `<id>`      | Task number to modify                  |
 | `[deps...]` | Task numbers that this task depends on |
 
 This replaces any existing dependencies.
@@ -196,10 +196,10 @@ ralph dependency add 3 2
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `<id>` | Task number to modify |
-| `<dep>` | Task number to add as dependency |
+| Argument | Description                      |
+| -------- | -------------------------------- |
+| `<id>`   | Task number to modify            |
+| `<dep>`  | Task number to add as dependency |
 
 Adds to existing dependencies without removing them.
 
@@ -213,10 +213,10 @@ ralph dependency remove 3 1
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `<id>` | Task number to modify |
-| `<dep>` | Task number to remove as dependency |
+| Argument | Description                         |
+| -------- | ----------------------------------- |
+| `<id>`   | Task number to modify               |
+| `<dep>`  | Task number to remove as dependency |
 
 ## How Dependencies Work
 

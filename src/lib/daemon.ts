@@ -3,377 +3,377 @@ import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "n
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
-	DEFAULT_DAEMON_STOP_TIMEOUT_MS,
-	FORCE_KILL_TIMEOUT_MS,
-	PROCESS_POLL_INTERVAL_MS,
+  DEFAULT_DAEMON_STOP_TIMEOUT_MS,
+  FORCE_KILL_TIMEOUT_MS,
+  PROCESS_POLL_INTERVAL_MS,
 } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureProjectDirExists } from "./paths.ts";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 import {
-	getMemoryMonitorService,
-	getSessionService,
-	getSleepPreventionService,
+  getMemoryMonitorService,
+  getSessionService,
+  getSleepPreventionService,
 } from "./services/index.ts";
 
 export type ShutdownSignal = "SIGTERM" | "SIGINT" | "SIGHUP";
 export type ShutdownReason = ShutdownSignal | "memory_threshold";
 
 interface ShutdownHandler {
-	onShutdown: () => void;
+  onShutdown: () => void;
 }
 
 let shutdownHandlerRef: ShutdownHandler | null = null;
 let shutdownInProgress = false;
 
 function getGlobalFallbackPidPath(): string {
-	return join(homedir(), ".ralph", "ralph.pid");
+  return join(homedir(), ".ralph", "ralph.pid");
 }
 
 export function getPidFilePath(): string {
-	if (!isInitialized()) {
-		return getGlobalFallbackPidPath();
-	}
+  if (!isInitialized()) {
+    return getGlobalFallbackPidPath();
+  }
 
-	const projectRegistryService = getProjectRegistryService();
-	let maybeProjectDir = projectRegistryService.getProjectDir();
+  const projectRegistryService = getProjectRegistryService();
+  let maybeProjectDir = projectRegistryService.getProjectDir();
 
-	if (maybeProjectDir === null) {
-		projectRegistryService.registerProject();
-		maybeProjectDir = projectRegistryService.getProjectDir();
-	}
+  if (maybeProjectDir === null) {
+    projectRegistryService.registerProject();
+    maybeProjectDir = projectRegistryService.getProjectDir();
+  }
 
-	if (maybeProjectDir === null) {
-		return getGlobalFallbackPidPath();
-	}
+  if (maybeProjectDir === null) {
+    return getGlobalFallbackPidPath();
+  }
 
-	return join(maybeProjectDir, "ralph.pid");
+  return join(maybeProjectDir, "ralph.pid");
 }
 
 export function writePidFile(pid: number): void {
-	ensureProjectDirExists();
-	writeFileSync(getPidFilePath(), pid.toString());
+  ensureProjectDirExists();
+  writeFileSync(getPidFilePath(), pid.toString());
 }
 
 export function readPidFile(): number | null {
-	const pidFilePath = getPidFilePath();
+  const pidFilePath = getPidFilePath();
 
-	if (!existsSync(pidFilePath)) {
-		return null;
-	}
+  if (!existsSync(pidFilePath)) {
+    return null;
+  }
 
-	try {
-		const content = readFileSync(pidFilePath, "utf-8").trim();
-		const pid = Number.parseInt(content, 10);
+  try {
+    const content = readFileSync(pidFilePath, "utf8").trim();
+    const pid = Number.parseInt(content, 10);
 
-		return Number.isNaN(pid) ? null : pid;
-	} catch {
-		return null;
-	}
+    return Number.isNaN(pid) ? null : pid;
+  } catch {
+    return null;
+  }
 }
 
 export function deletePidFile(): void {
-	const pidFilePath = getPidFilePath();
+  const pidFilePath = getPidFilePath();
 
-	if (existsSync(pidFilePath)) {
-		try {
-			unlinkSync(pidFilePath);
-		} catch (error) {
-			console.error(`Failed to delete PID file: ${getErrorMessage(error)}`);
-		}
-	}
+  if (existsSync(pidFilePath)) {
+    try {
+      unlinkSync(pidFilePath);
+    } catch (error) {
+      console.error(`Failed to delete PID file: ${getErrorMessage(error)}`);
+    }
+  }
 }
 
 export function isProcessRunning(pid: number): boolean {
-	try {
-		process.kill(pid, 0);
+  try {
+    process.kill(pid, 0);
 
-		return true;
-	} catch {
-		return false;
-	}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function isBackgroundProcessRunning(): { running: boolean; pid: number | null } {
-	const pid = readPidFile();
+  const pid = readPidFile();
 
-	if (pid === null) {
-		return { running: false, pid: null };
-	}
+  if (pid === null) {
+    return { pid: null, running: false };
+  }
 
-	const running = isProcessRunning(pid);
+  const running = isProcessRunning(pid);
 
-	if (!running) {
-		deletePidFile();
-	}
+  if (!running) {
+    deletePidFile();
+  }
 
-	return { running, pid: running ? pid : null };
+  return { pid: running ? pid : null, running };
 }
 
 export interface DaemonOptions {
-	args: string[];
-	logFilePath?: string;
+  args: string[];
+  logFilePath?: string;
 }
 
 export function spawnDaemonProcess(options: DaemonOptions): number | null {
-	const { args, logFilePath } = options;
-	const logger = getLogger({ logFilePath });
+  const { args, logFilePath } = options;
+  const logger = getLogger({ logFilePath });
 
-	const execPath = process.execPath;
-	const scriptPath = process.argv.at(1);
+  const { execPath } = process;
+  const scriptPath = process.argv.at(1);
 
-	if (!scriptPath) {
-		return null;
-	}
+  if (!scriptPath) {
+    return null;
+  }
 
-	const argsWithoutBackground = args.filter((arg) => arg !== "--background" && arg !== "-b");
+  const argsWithoutBackground = args.filter((arg) => arg !== "--background" && arg !== "-b");
 
-	const spawnArgs: string[] = [scriptPath, ...argsWithoutBackground, "--daemon-child"];
+  const spawnArgs: string[] = [scriptPath, ...argsWithoutBackground, "--daemon-child"];
 
-	try {
-		ensureProjectDirExists();
+  try {
+    ensureProjectDirExists();
 
-		const projectRegistryService = getProjectRegistryService();
-		const maybeProjectDir = projectRegistryService.getProjectDir();
-		const defaultLogFile =
-			maybeProjectDir !== null
-				? join(maybeProjectDir, "ralph.log")
-				: join(homedir(), ".ralph", "ralph.log");
+    const projectRegistryService = getProjectRegistryService();
+    const maybeProjectDir = projectRegistryService.getProjectDir();
+    const defaultLogFile =
+      maybeProjectDir !== null
+        ? join(maybeProjectDir, "ralph.log")
+        : join(homedir(), ".ralph", "ralph.log");
 
-		const logFile = logFilePath ?? defaultLogFile;
-		const outFd = openSync(logFile, "a");
-		const errFd = openSync(logFile, "a");
+    const logFile = logFilePath ?? defaultLogFile;
+    const outFd = openSync(logFile, "a");
+    const errFd = openSync(logFile, "a");
 
-		const childProcess: ChildProcess = spawn(execPath, spawnArgs, {
-			detached: true,
-			stdio: ["ignore", outFd, errFd],
-			env: {
-				...process.env,
-				RALPH_DAEMON: "true",
-			},
-		});
+    const childProcess: ChildProcess = spawn(execPath, spawnArgs, {
+      detached: true,
+      env: {
+        ...process.env,
+        RALPH_DAEMON: "true",
+      },
+      stdio: ["ignore", outFd, errFd],
+    });
 
-		const pid = childProcess.pid;
+    const { pid } = childProcess;
 
-		if (pid === undefined) {
-			logger.error("Failed to spawn daemon process: no PID returned");
+    if (pid === undefined) {
+      logger.error("Failed to spawn daemon process: no PID returned");
 
-			return null;
-		}
+      return null;
+    }
 
-		childProcess.unref();
+    childProcess.unref();
 
-		writePidFile(pid);
-		logger.info("Daemon process started", { pid, logFile });
+    writePidFile(pid);
+    logger.info("Daemon process started", { logFile, pid });
 
-		return pid;
-	} catch (error) {
-		const errorMessage = getErrorMessage(error);
+    return pid;
+  } catch (error) {
+    const errorMessage = getErrorMessage(error);
 
-		logger.error("Failed to spawn daemon process", { error: errorMessage });
+    logger.error("Failed to spawn daemon process", { error: errorMessage });
 
-		return null;
-	}
+    return null;
+  }
 }
 
 export function isDaemonProcess(): boolean {
-	return process.env.RALPH_DAEMON === "true" || process.argv.includes("--daemon-child");
+  return process.env.RALPH_DAEMON === "true" || process.argv.includes("--daemon-child");
 }
 
 export function cleanupDaemon(): void {
-	deletePidFile();
+  deletePidFile();
 }
 
 export interface StopResult {
-	success: boolean;
-	pid: number | null;
-	message: string;
-	wasKilled: boolean;
+  success: boolean;
+  pid: number | null;
+  message: string;
+  wasKilled: boolean;
 }
 
 export async function stopDaemonProcess(
-	timeoutMs = DEFAULT_DAEMON_STOP_TIMEOUT_MS,
+  timeoutMs = DEFAULT_DAEMON_STOP_TIMEOUT_MS,
 ): Promise<StopResult> {
-	const { running, pid } = isBackgroundProcessRunning();
+  const { running, pid } = isBackgroundProcessRunning();
 
-	if (!running || pid === null) {
-		return {
-			success: false,
-			pid: null,
-			message: "No Ralph process is currently running",
-			wasKilled: false,
-		};
-	}
+  if (!running || pid === null) {
+    return {
+      message: "No Ralph process is currently running",
+      pid: null,
+      success: false,
+      wasKilled: false,
+    };
+  }
 
-	const logger = getLogger({});
+  const logger = getLogger({});
 
-	try {
-		process.kill(pid, "SIGTERM");
-		logger.info("Sent SIGTERM to daemon process", { pid });
-	} catch (error) {
-		const errorMessage = getErrorMessage(error);
+  try {
+    process.kill(pid, "SIGTERM");
+    logger.info("Sent SIGTERM to daemon process", { pid });
+  } catch (error) {
+    const errorMessage = getErrorMessage(error);
 
-		logger.error("Failed to send SIGTERM", { pid, error: errorMessage });
-		deletePidFile();
+    logger.error("Failed to send SIGTERM", { error: errorMessage, pid });
+    deletePidFile();
 
-		return {
-			success: false,
-			pid,
-			message: `Failed to send stop signal: ${errorMessage}`,
-			wasKilled: false,
-		};
-	}
+    return {
+      message: `Failed to send stop signal: ${errorMessage}`,
+      pid,
+      success: false,
+      wasKilled: false,
+    };
+  }
 
-	const maxAttempts = Math.ceil(timeoutMs / PROCESS_POLL_INTERVAL_MS);
-	let attempts = 0;
+  const maxAttempts = Math.ceil(timeoutMs / PROCESS_POLL_INTERVAL_MS);
+  let attempts = 0;
 
-	while (attempts < maxAttempts) {
-		await new Promise((resolve) => setTimeout(resolve, PROCESS_POLL_INTERVAL_MS));
-		attempts++;
+  while (attempts < maxAttempts) {
+    await new Promise((resolve) => setTimeout(resolve, PROCESS_POLL_INTERVAL_MS));
+    attempts++;
 
-		if (!isProcessRunning(pid)) {
-			logger.info("Daemon process stopped gracefully", { pid });
-			deletePidFile();
+    if (!isProcessRunning(pid)) {
+      logger.info("Daemon process stopped gracefully", { pid });
+      deletePidFile();
 
-			return {
-				success: true,
-				pid,
-				message: `Ralph process (PID: ${pid}) stopped gracefully`,
-				wasKilled: false,
-			};
-		}
-	}
+      return {
+        message: `Ralph process (PID: ${pid}) stopped gracefully`,
+        pid,
+        success: true,
+        wasKilled: false,
+      };
+    }
+  }
 
-	logger.warn("Process did not exit after SIGTERM, sending SIGKILL", { pid, timeoutMs });
+  logger.warn("Process did not exit after SIGTERM, sending SIGKILL", { pid, timeoutMs });
 
-	try {
-		process.kill(pid, "SIGKILL");
-		logger.info("Sent SIGKILL to daemon process", { pid });
-	} catch (error) {
-		const errorMessage = getErrorMessage(error);
+  try {
+    process.kill(pid, "SIGKILL");
+    logger.info("Sent SIGKILL to daemon process", { pid });
+  } catch (error) {
+    const errorMessage = getErrorMessage(error);
 
-		logger.error("Failed to send SIGKILL", { pid, error: errorMessage });
-	}
+    logger.error("Failed to send SIGKILL", { error: errorMessage, pid });
+  }
 
-	await new Promise((resolve) => setTimeout(resolve, FORCE_KILL_TIMEOUT_MS));
+  await new Promise((resolve) => setTimeout(resolve, FORCE_KILL_TIMEOUT_MS));
 
-	if (!isProcessRunning(pid)) {
-		deletePidFile();
+  if (!isProcessRunning(pid)) {
+    deletePidFile();
 
-		return {
-			success: true,
-			pid,
-			message: `Ralph process (PID: ${pid}) was forcefully terminated`,
-			wasKilled: true,
-		};
-	}
+    return {
+      message: `Ralph process (PID: ${pid}) was forcefully terminated`,
+      pid,
+      success: true,
+      wasKilled: true,
+    };
+  }
 
-	return {
-		success: false,
-		pid,
-		message: `Failed to stop Ralph process (PID: ${pid})`,
-		wasKilled: false,
-	};
+  return {
+    message: `Failed to stop Ralph process (PID: ${pid})`,
+    pid,
+    success: false,
+    wasKilled: false,
+  };
 }
 
 export function setShutdownHandler(handler: ShutdownHandler): void {
-	shutdownHandlerRef = handler;
+  shutdownHandlerRef = handler;
 }
 
 export function clearShutdownHandler(): void {
-	shutdownHandlerRef = null;
+  shutdownHandlerRef = null;
 }
 
 export function handleShutdown(reason: ShutdownReason): void {
-	if (shutdownInProgress) {
-		return;
-	}
+  if (shutdownInProgress) {
+    return;
+  }
 
-	shutdownInProgress = true;
+  shutdownInProgress = true;
 
-	const logger = getLogger({});
+  const logger = getLogger({});
 
-	logger.info("Shutdown initiated", { reason });
+  logger.info("Shutdown initiated", { reason });
 
-	const sessionService = getSessionService();
-	const session = sessionService.load();
+  const sessionService = getSessionService();
+  const session = sessionService.load();
 
-	if (session && (session.status === "running" || session.status === "paused")) {
-		const updatedSession = sessionService.updateStatus(session, "stopped");
+  if (session && (session.status === "running" || session.status === "paused")) {
+    const updatedSession = sessionService.updateStatus(session, "stopped");
 
-		sessionService.save(updatedSession);
-		logger.info("Session state saved as stopped", { reason });
-	}
+    sessionService.save(updatedSession);
+    logger.info("Session state saved as stopped", { reason });
+  }
 
-	if (shutdownHandlerRef) {
-		try {
-			shutdownHandlerRef.onShutdown();
-			logger.info("Agent process terminated", { reason });
-		} catch (error) {
-			const errorMessage = getErrorMessage(error);
+  if (shutdownHandlerRef) {
+    try {
+      shutdownHandlerRef.onShutdown();
+      logger.info("Agent process terminated", { reason });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
 
-			logger.error("Error during shutdown handler", { reason, error: errorMessage });
-		}
-	}
+      logger.error("Error during shutdown handler", { error: errorMessage, reason });
+    }
+  }
 
-	getSleepPreventionService().stop();
-	getMemoryMonitorService().stop();
-	deletePidFile();
-	logger.info("Shutdown complete", { reason });
+  getSleepPreventionService().stop();
+  getMemoryMonitorService().stop();
+  deletePidFile();
+  logger.info("Shutdown complete", { reason });
 
-	if (process.stdout.isTTY) {
-		process.stdout.write("\x1b[?25h\x1b[2J\x1b[3J\x1b[H");
-	}
+  if (process.stdout.isTTY) {
+    process.stdout.write("\x1b[?25h\x1b[2J\x1b[3J\x1b[H");
+  }
 
-	process.exit(reason === "memory_threshold" ? 137 : 0);
+  process.exit(reason === "memory_threshold" ? 137 : 0);
 }
 
 export function handleShutdownSignal(signal: ShutdownSignal): void {
-	handleShutdown(signal);
+  handleShutdown(signal);
 }
 
 export function handleMemoryThresholdExceeded(): void {
-	const logger = getLogger({});
-	const memoryMonitor = getMemoryMonitorService();
-	const currentUsageMb = memoryMonitor.getMemoryUsageMb();
+  const logger = getLogger({});
+  const memoryMonitor = getMemoryMonitorService();
+  const currentUsageMb = memoryMonitor.getMemoryUsageMb();
 
-	logger.warn("Memory threshold exceeded, initiating shutdown", {
-		memoryUsageMb: currentUsageMb,
-	});
+  logger.warn("Memory threshold exceeded, initiating shutdown", {
+    memoryUsageMb: currentUsageMb,
+  });
 
-	handleShutdown("memory_threshold");
+  handleShutdown("memory_threshold");
 }
 
 export function setupSignalHandlers(): void {
-	const signals: ShutdownSignal[] = ["SIGTERM", "SIGINT", "SIGHUP"];
+  const signals: ShutdownSignal[] = ["SIGTERM", "SIGINT", "SIGHUP"];
 
-	for (const signal of signals) {
-		process.on(signal, () => handleShutdownSignal(signal));
-	}
+  for (const signal of signals) {
+    process.on(signal, () => handleShutdownSignal(signal));
+  }
 
-	process.on("exit", () => {
-		if (!shutdownInProgress) {
-			const logger = getLogger({});
+  process.on("exit", () => {
+    if (!shutdownInProgress) {
+      const logger = getLogger({});
 
-			logger.info("Process exiting");
-			deletePidFile();
-		}
-	});
+      logger.info("Process exiting");
+      deletePidFile();
+    }
+  });
 }
 
 export function startMemoryMonitor(thresholdMb?: number): void {
-	const memoryMonitor = getMemoryMonitorService();
+  const memoryMonitor = getMemoryMonitorService();
 
-	if (thresholdMb !== undefined) {
-		memoryMonitor.setThresholdMb(thresholdMb);
-	}
+  if (thresholdMb !== undefined) {
+    memoryMonitor.setThresholdMb(thresholdMb);
+  }
 
-	memoryMonitor.start(handleMemoryThresholdExceeded);
+  memoryMonitor.start(handleMemoryThresholdExceeded);
 }
 
 export function stopMemoryMonitor(): void {
-	const memoryMonitor = getMemoryMonitorService();
+  const memoryMonitor = getMemoryMonitorService();
 
-	memoryMonitor.stop();
+  memoryMonitor.stop();
 }

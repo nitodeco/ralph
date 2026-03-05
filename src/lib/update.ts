@@ -3,12 +3,12 @@ import { existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { match } from "ts-pattern";
 import {
-	getDefaultInstallDir,
-	isDirectoryWritable,
-	LOCAL_BIN_DIR,
-	needsMigration,
-	prependToShellConfig,
-	SYSTEM_BIN_DIR,
+  LOCAL_BIN_DIR,
+  SYSTEM_BIN_DIR,
+  getDefaultInstallDir,
+  isDirectoryWritable,
+  needsMigration,
+  prependToShellConfig,
 } from "./paths.ts";
 import { getConfigService } from "./services/index.ts";
 
@@ -17,280 +17,280 @@ const GITHUB_API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
 const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 interface GitHubRelease {
-	tag_name: string;
+  tag_name: string;
 }
 
 export interface MigrationResult {
-	migrated: boolean;
-	oldPath: string | null;
-	newPath: string;
-	shellConfigPath: string | null;
+  migrated: boolean;
+  oldPath: string | null;
+  newPath: string;
+  shellConfigPath: string | null;
 }
 
 export function getArchitecture(): string {
-	const arch = process.arch;
+  const { arch } = process;
 
-	return match(arch)
-		.with("x64", () => "x64")
-		.with("arm64", () => "arm64")
-		.otherwise(() => {
-			throw new Error(`Unsupported architecture: ${arch}`);
-		});
+  return match(arch)
+    .with("x64", () => "x64")
+    .with("arm64", () => "arm64")
+    .otherwise(() => {
+      throw new Error(`Unsupported architecture: ${arch}`);
+    });
 }
 
 export function getOperatingSystem(): string {
-	const platform = process.platform;
+  const { platform } = process;
 
-	return match(platform)
-		.with("darwin", () => "darwin")
-		.with("linux", () => "linux")
-		.otherwise(() => {
-			throw new Error(`Unsupported OS: ${platform}. Ralph currently supports macOS and Linux.`);
-		});
+  return match(platform)
+    .with("darwin", () => "darwin")
+    .with("linux", () => "linux")
+    .otherwise(() => {
+      throw new Error(`Unsupported OS: ${platform}. Ralph currently supports macOS and Linux.`);
+    });
 }
 
 export async function fetchLatestVersion(): Promise<string> {
-	const response = await fetch(GITHUB_API_URL);
+  const response = await fetch(GITHUB_API_URL);
 
-	if (!response.ok) {
-		throw new Error(`Failed to fetch latest version: ${response.statusText}`);
-	}
+  if (!response.ok) {
+    throw new Error(`Failed to fetch latest version: ${response.statusText}`);
+  }
 
-	const releaseInfo = (await response.json()) as GitHubRelease;
+  const releaseInfo = (await response.json()) as GitHubRelease;
 
-	return releaseInfo.tag_name;
+  return releaseInfo.tag_name;
 }
 
 export function compareVersions(current: string, latest: string): number {
-	const normalizedCurrent = current.replace(/^v/, "");
-	const normalizedLatest = latest.replace(/^v/, "");
+  const normalizedCurrent = current.replace(/^v/, "");
+  const normalizedLatest = latest.replace(/^v/, "");
 
-	const currentParts = normalizedCurrent.split(".").map(Number);
-	const latestParts = normalizedLatest.split(".").map(Number);
+  const currentParts = normalizedCurrent.split(".").map(Number);
+  const latestParts = normalizedLatest.split(".").map(Number);
 
-	for (
-		let versionPartIndex = 0;
-		versionPartIndex < Math.max(currentParts.length, latestParts.length);
-		versionPartIndex++
-	) {
-		const currentPart = currentParts.at(versionPartIndex) ?? 0;
-		const latestPart = latestParts.at(versionPartIndex) ?? 0;
+  for (
+    let versionPartIndex = 0;
+    versionPartIndex < Math.max(currentParts.length, latestParts.length);
+    versionPartIndex++
+  ) {
+    const currentPart = currentParts.at(versionPartIndex) ?? 0;
+    const latestPart = latestParts.at(versionPartIndex) ?? 0;
 
-		if (latestPart > currentPart) {
-			return 1;
-		}
+    if (latestPart > currentPart) {
+      return 1;
+    }
 
-		if (latestPart < currentPart) {
-			return -1;
-		}
-	}
+    if (latestPart < currentPart) {
+      return -1;
+    }
+  }
 
-	return 0;
+  return 0;
 }
 
 export function getBinaryPath(): string {
-	const binaryPath = process.execPath;
+  const binaryPath = process.execPath;
 
-	if (binaryPath.includes("bun")) {
-		const installDir = getDefaultInstallDir();
+  if (binaryPath.includes("bun")) {
+    const installDir = getDefaultInstallDir();
 
-		return `${installDir}/ralph`;
-	}
+    return `${installDir}/ralph`;
+  }
 
-	return binaryPath;
+  return binaryPath;
 }
 
 export function getTargetInstallPath(): {
-	targetPath: string;
-	requiresMigration: boolean;
-	currentPath: string;
+  targetPath: string;
+  requiresMigration: boolean;
+  currentPath: string;
 } {
-	const currentPath = getBinaryPath();
-	const requiresMigration = needsMigration(currentPath);
+  const currentPath = getBinaryPath();
+  const requiresMigration = needsMigration(currentPath);
 
-	if (requiresMigration) {
-		return {
-			targetPath: join(LOCAL_BIN_DIR, "ralph"),
-			requiresMigration: true,
-			currentPath,
-		};
-	}
+  if (requiresMigration) {
+    return {
+      currentPath,
+      requiresMigration: true,
+      targetPath: join(LOCAL_BIN_DIR, "ralph"),
+    };
+  }
 
-	return {
-		targetPath: currentPath,
-		requiresMigration: false,
-		currentPath,
-	};
+  return {
+    currentPath,
+    requiresMigration: false,
+    targetPath: currentPath,
+  };
 }
 
 export async function downloadBinary(
-	version: string,
-	operatingSystem: string,
-	architecture: string,
-	onProgress?: (downloaded: number, total: number) => void,
+  version: string,
+  operatingSystem: string,
+  architecture: string,
+  onProgress?: (downloaded: number, total: number) => void,
 ): Promise<ArrayBuffer> {
-	const downloadUrl = `https://github.com/${REPO}/releases/download/${version}/ralph-${operatingSystem}-${architecture}`;
+  const downloadUrl = `https://github.com/${REPO}/releases/download/${version}/ralph-${operatingSystem}-${architecture}`;
 
-	const response = await fetch(downloadUrl);
+  const response = await fetch(downloadUrl);
 
-	if (!response.ok) {
-		throw new Error(`Failed to download binary: ${response.statusText}`);
-	}
+  if (!response.ok) {
+    throw new Error(`Failed to download binary: ${response.statusText}`);
+  }
 
-	const contentLength = response.headers.get("Content-Length");
-	const totalBytes = contentLength ? Number.parseInt(contentLength, 10) : 0;
+  const contentLength = response.headers.get("Content-Length");
+  const totalBytes = contentLength ? Number.parseInt(contentLength, 10) : 0;
 
-	if (!response.body || !totalBytes || !onProgress) {
-		return response.arrayBuffer();
-	}
+  if (!response.body || !totalBytes || !onProgress) {
+    return response.arrayBuffer();
+  }
 
-	const reader = response.body.getReader();
-	const chunks: Uint8Array[] = [];
-	let downloadedBytes = 0;
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let downloadedBytes = 0;
 
-	while (true) {
-		const { done, value } = await reader.read();
+  while (true) {
+    const { done, value } = await reader.read();
 
-		if (done) {
-			break;
-		}
+    if (done) {
+      break;
+    }
 
-		chunks.push(value);
-		downloadedBytes += value.length;
-		onProgress(downloadedBytes, totalBytes);
-	}
+    chunks.push(value);
+    downloadedBytes += value.length;
+    onProgress(downloadedBytes, totalBytes);
+  }
 
-	const binaryBuffer = new Uint8Array(downloadedBytes);
-	let offset = 0;
+  const binaryBuffer = new Uint8Array(downloadedBytes);
+  let offset = 0;
 
-	for (const chunk of chunks) {
-		binaryBuffer.set(chunk, offset);
-		offset += chunk.length;
-	}
+  for (const chunk of chunks) {
+    binaryBuffer.set(chunk, offset);
+    offset += chunk.length;
+  }
 
-	return binaryBuffer.buffer;
+  return binaryBuffer.buffer;
 }
 
 export async function installBinary(binaryData: ArrayBuffer, targetPath: string): Promise<void> {
-	const tempPath = `/tmp/ralph-update-${Date.now()}`;
+  const tempPath = `/tmp/ralph-update-${Date.now()}`;
 
-	await Bun.write(tempPath, binaryData);
+  await Bun.write(tempPath, binaryData);
 
-	const chmodProcess = Bun.spawn(["chmod", "+x", tempPath]);
+  const chmodProcess = Bun.spawn(["chmod", "+x", tempPath]);
 
-	await chmodProcess.exited;
+  await chmodProcess.exited;
 
-	const targetDirectory = targetPath.substring(0, targetPath.lastIndexOf("/"));
+  const targetDirectory = targetPath.substring(0, targetPath.lastIndexOf("/"));
 
-	if (!existsSync(targetDirectory)) {
-		mkdirSync(targetDirectory, { recursive: true });
-	}
+  if (!existsSync(targetDirectory)) {
+    mkdirSync(targetDirectory, { recursive: true });
+  }
 
-	if (!isDirectoryWritable(targetDirectory)) {
-		throw new Error(
-			`Cannot write to ${targetDirectory}. Please set RALPH_INSTALL_DIR to a writable directory or ensure ~/.local/bin exists.`,
-		);
-	}
+  if (!isDirectoryWritable(targetDirectory)) {
+    throw new Error(
+      `Cannot write to ${targetDirectory}. Please set RALPH_INSTALL_DIR to a writable directory or ensure ~/.local/bin exists.`,
+    );
+  }
 
-	if (existsSync(targetPath)) {
-		unlinkSync(targetPath);
-	}
+  if (existsSync(targetPath)) {
+    unlinkSync(targetPath);
+  }
 
-	const mvProcess = Bun.spawn(["mv", tempPath, targetPath]);
+  const mvProcess = Bun.spawn(["mv", tempPath, targetPath]);
 
-	await mvProcess.exited;
+  await mvProcess.exited;
 }
 
 export async function installWithMigration(binaryData: ArrayBuffer): Promise<MigrationResult> {
-	const { targetPath, requiresMigration, currentPath } = getTargetInstallPath();
+  const { targetPath, requiresMigration, currentPath } = getTargetInstallPath();
 
-	await installBinary(binaryData, targetPath);
+  await installBinary(binaryData, targetPath);
 
-	let shellConfigPath: string | null = null;
+  let shellConfigPath: string | null = null;
 
-	if (requiresMigration) {
-		shellConfigPath = prependToShellConfig();
-	}
+  if (requiresMigration) {
+    shellConfigPath = prependToShellConfig();
+  }
 
-	return {
-		migrated: requiresMigration,
-		oldPath: requiresMigration ? currentPath : null,
-		newPath: targetPath,
-		shellConfigPath,
-	};
+  return {
+    migrated: requiresMigration,
+    newPath: targetPath,
+    oldPath: requiresMigration ? currentPath : null,
+    shellConfigPath,
+  };
 }
 
 export function getRemoveOldBinaryCommand(oldPath: string): string {
-	if (oldPath.startsWith(SYSTEM_BIN_DIR)) {
-		return `sudo rm ${oldPath}`;
-	}
+  if (oldPath.startsWith(SYSTEM_BIN_DIR)) {
+    return `sudo rm ${oldPath}`;
+  }
 
-	return `rm ${oldPath}`;
+  return `rm ${oldPath}`;
 }
 
 export function shouldCheckForUpdates(): boolean {
-	const config = getConfigService().get();
-	const lastCheck = config.lastUpdateCheck ?? 0;
-	const now = Date.now();
+  const config = getConfigService().get();
+  const lastCheck = config.lastUpdateCheck ?? 0;
+  const now = Date.now();
 
-	return now - lastCheck >= UPDATE_CHECK_INTERVAL_MS;
+  return now - lastCheck >= UPDATE_CHECK_INTERVAL_MS;
 }
 
 export function isVersionSkipped(version: string): boolean {
-	const config = getConfigService().get();
+  const config = getConfigService().get();
 
-	return config.skipVersion === version;
+  return config.skipVersion === version;
 }
 
 export interface UpdateCheckResult {
-	updateAvailable: boolean;
-	latestVersion: string | null;
-	error: string | null;
+  updateAvailable: boolean;
+  latestVersion: string | null;
+  error: string | null;
 }
 
 export async function checkForUpdateOnStartup(currentVersion: string): Promise<UpdateCheckResult> {
-	if (!shouldCheckForUpdates()) {
-		return { updateAvailable: false, latestVersion: null, error: null };
-	}
+  if (!shouldCheckForUpdates()) {
+    return { error: null, latestVersion: null, updateAvailable: false };
+  }
 
-	try {
-		const latestVersion = await fetchLatestVersion();
+  try {
+    const latestVersion = await fetchLatestVersion();
 
-		const configService = getConfigService();
-		const config = configService.get();
+    const configService = getConfigService();
+    const config = configService.get();
 
-		config.lastUpdateCheck = Date.now();
-		configService.saveProject(config);
+    config.lastUpdateCheck = Date.now();
+    configService.saveProject(config);
 
-		if (isVersionSkipped(latestVersion)) {
-			return { updateAvailable: false, latestVersion: null, error: null };
-		}
+    if (isVersionSkipped(latestVersion)) {
+      return { error: null, latestVersion: null, updateAvailable: false };
+    }
 
-		const comparison = compareVersions(currentVersion, latestVersion);
-		const updateAvailable = comparison > 0;
+    const comparison = compareVersions(currentVersion, latestVersion);
+    const updateAvailable = comparison > 0;
 
-		return {
-			updateAvailable,
-			latestVersion: updateAvailable ? latestVersion : null,
-			error: null,
-		};
-	} catch (_error) {
-		return {
-			updateAvailable: false,
-			latestVersion: null,
-			error: null,
-		};
-	}
+    return {
+      error: null,
+      latestVersion: updateAvailable ? latestVersion : null,
+      updateAvailable,
+    };
+  } catch {
+    return {
+      error: null,
+      latestVersion: null,
+      updateAvailable: false,
+    };
+  }
 }
 
 export function restartApplication(newBinaryPath?: string): void {
-	const binaryPath = newBinaryPath || getBinaryPath();
-	const args = process.argv.slice(2).filter((arg) => arg !== "update");
+  const binaryPath = newBinaryPath || getBinaryPath();
+  const args = process.argv.slice(2).filter((arg) => arg !== "update");
 
-	spawn(binaryPath, args, {
-		detached: true,
-		stdio: "inherit",
-	}).unref();
+  spawn(binaryPath, args, {
+    detached: true,
+    stdio: "inherit",
+  }).unref();
 
-	process.exit(0);
+  process.exit(0);
 }

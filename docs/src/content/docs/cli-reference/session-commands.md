@@ -20,9 +20,9 @@ ralph run [iterations]
 
 **Arguments:**
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `iterations` | Number of iterations to run | 10 |
+| Argument     | Description                 | Default |
+| ------------ | --------------------------- | ------- |
+| `iterations` | Number of iterations to run | 10      |
 
 **Examples:**
 
@@ -42,10 +42,10 @@ ralph run --dry-run
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
-| `-b, --background` | Run detached from terminal |
-| `--dry-run` | Simulate without running agents |
+| Option             | Description                     |
+| ------------------ | ------------------------------- |
+| `-b, --background` | Run detached from terminal      |
+| `--dry-run`        | Simulate without running agents |
 
 ## ralph resume
 
@@ -59,8 +59,8 @@ Restores the session state from `~/.ralph/projects/<project>/session.json` and c
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option             | Description               |
+| ------------------ | ------------------------- |
 | `-b, --background` | Resume in background mode |
 
 ## ralph stop
@@ -100,8 +100,8 @@ Recent Logs:
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option   | Description           |
+| -------- | --------------------- |
 | `--json` | Output in JSON format |
 
 ## ralph archive
@@ -150,11 +150,11 @@ Session state is stored in `~/.ralph/projects/<project>/session.json`:
 
 ### State Values
 
-| Status | Description |
-|--------|-------------|
-| `idle` | No session active |
-| `running` | Session in progress |
-| `paused` | Session interrupted |
+| Status      | Description                     |
+| ----------- | ------------------------------- |
+| `idle`      | No session active               |
+| `running`   | Session in progress             |
+| `paused`    | Session interrupted             |
 | `completed` | All tasks done or limit reached |
 
 ## Background Mode

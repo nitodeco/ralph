@@ -6,12 +6,12 @@ Thank you for your interest in contributing to Ralph!
 
 Before submitting a pull request, ensure all checks pass:
 
-| Command | Description |
-|---------|-------------|
-| `bun run check` | Format and lint (auto-fixes issues) |
-| `bun run typecheck` | TypeScript type checking |
-| `bun test` | Run all tests |
-| `bun run build` | Production build |
+| Command             | Description                         |
+| ------------------- | ----------------------------------- |
+| `bun run check`     | Format and lint (auto-fixes issues) |
+| `bun run typecheck` | TypeScript type checking            |
+| `bun test`          | Run all tests                       |
+| `bun run build`     | Production build                    |
 
 CI runs `bun run check:ci` which checks without auto-fixing, so run `bun run check` locally to fix issues before committing.
 

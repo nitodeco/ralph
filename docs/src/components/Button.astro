@@ -11,9 +11,9 @@ const baseStyles =
   "inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-50 disabled:pointer-events-none";
 
 const VARIANT_STYLES_BY_VARIANT = {
+  ghost: "text-text-muted hover:text-text hover:bg-bg-elevated",
   primary: "bg-brand text-bg hover:bg-brand-hover",
   secondary: "bg-bg-elevated text-text border border-border-subtle hover:border-brand/30 hover:bg-bg-subtle",
-  ghost: "text-text-muted hover:text-text hover:bg-bg-elevated",
 };
 
 const styles = `${baseStyles} ${VARIANT_STYLES_BY_VARIANT[variant]} ${className}`;

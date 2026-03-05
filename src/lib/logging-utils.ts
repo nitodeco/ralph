@@ -1,48 +1,48 @@
 import { existsSync, renameSync, statSync } from "node:fs";
 
 export function formatTimestamp(): string {
-	return new Date().toISOString();
+  return new Date().toISOString();
 }
 
 export function rotateFile(filePath: string, maxBackupFiles: number): void {
-	if (!existsSync(filePath)) {
-		return;
-	}
+  if (!existsSync(filePath)) {
+    return;
+  }
 
-	for (let backupIndex = maxBackupFiles - 1; backupIndex >= 0; backupIndex--) {
-		const currentBackup = backupIndex === 0 ? filePath : `${filePath}.${backupIndex}`;
-		const nextBackup = `${filePath}.${backupIndex + 1}`;
+  for (let backupIndex = maxBackupFiles - 1; backupIndex >= 0; backupIndex--) {
+    const currentBackup = backupIndex === 0 ? filePath : `${filePath}.${backupIndex}`;
+    const nextBackup = `${filePath}.${backupIndex + 1}`;
 
-		if (existsSync(currentBackup)) {
-			if (backupIndex === maxBackupFiles - 1) {
-				continue;
-			}
+    if (existsSync(currentBackup)) {
+      if (backupIndex === maxBackupFiles - 1) {
+        continue;
+      }
 
-			try {
-				renameSync(currentBackup, nextBackup);
-			} catch {
-				// File may have been modified by another process, ignore
-			}
-		}
-	}
+      try {
+        renameSync(currentBackup, nextBackup);
+      } catch {
+        // File may have been modified by another process, ignore
+      }
+    }
+  }
 }
 
 export function checkAndRotateFile(
-	filePath: string,
-	maxFileSizeBytes: number,
-	maxBackupFiles: number,
+  filePath: string,
+  maxFileSizeBytes: number,
+  maxBackupFiles: number,
 ): void {
-	if (!existsSync(filePath)) {
-		return;
-	}
+  if (!existsSync(filePath)) {
+    return;
+  }
 
-	try {
-		const stats = statSync(filePath);
+  try {
+    const stats = statSync(filePath);
 
-		if (stats.size >= maxFileSizeBytes) {
-			rotateFile(filePath, maxBackupFiles);
-		}
-	} catch {
-		// File may not exist or be inaccessible, ignore
-	}
+    if (stats.size >= maxFileSizeBytes) {
+      rotateFile(filePath, maxBackupFiles);
+    }
+  } catch {
+    // File may not exist or be inaccessible, ignore
+  }
 }

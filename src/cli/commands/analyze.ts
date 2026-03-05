@@ -1,100 +1,100 @@
 import {
-	clearFailureHistory,
-	formatPatternReport,
-	generatePatternReport,
-	getFailureHistoryStats,
+  clearFailureHistory,
+  formatPatternReport,
+  generatePatternReport,
+  getFailureHistoryStats,
 } from "@/lib/failure-patterns.ts";
 import {
-	formatTechnicalDebtReport,
-	TechnicalDebtHandler,
+  TechnicalDebtHandler,
+  formatTechnicalDebtReport,
 } from "@/lib/handlers/TechnicalDebtHandler.ts";
 import { getAllIterationLogs } from "@/lib/iteration-logs.ts";
 import type { SessionStatistics } from "@/types.ts";
 
 export function printAnalyze(json: boolean): void {
-	const report = generatePatternReport();
+  const report = generatePatternReport();
 
-	if (json) {
-		console.log(JSON.stringify(report, null, 2));
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
 
-		return;
-	}
+    return;
+  }
 
-	console.log(formatPatternReport(report));
+  console.log(formatPatternReport(report));
 }
 
 export function handleAnalyzeExport(): void {
-	const report = generatePatternReport();
+  const report = generatePatternReport();
 
-	console.log(JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
 }
 
 export function handleAnalyzeClear(): void {
-	const stats = getFailureHistoryStats();
+  const stats = getFailureHistoryStats();
 
-	if (stats.totalEntries === 0) {
-		console.log("No failure history to clear.");
+  if (stats.totalEntries === 0) {
+    console.log("No failure history to clear.");
 
-		return;
-	}
+    return;
+  }
 
-	clearFailureHistory();
-	console.log(`Cleared ${stats.totalEntries} failure history entries.`);
+  clearFailureHistory();
+  console.log(`Cleared ${stats.totalEntries} failure history entries.`);
 }
 
 export function handleAnalyzeDebt(json: boolean): void {
-	const logs = getAllIterationLogs();
+  const logs = getAllIterationLogs();
 
-	if (logs.length === 0) {
-		if (json) {
-			console.log(JSON.stringify({ error: "No iteration logs found" }));
-		} else {
-			console.log("No iteration logs found. Run a session first to generate logs.");
-		}
+  if (logs.length === 0) {
+    if (json) {
+      console.log(JSON.stringify({ error: "No iteration logs found" }));
+    } else {
+      console.log("No iteration logs found. Run a session first to generate logs.");
+    }
 
-		return;
-	}
+    return;
+  }
 
-	const completedLogs = logs.filter((log) => log.status === "completed" || log.status === "failed");
-	const successfulIterations = completedLogs.filter(
-		(log) => log.status === "completed" && log.task?.wasCompleted,
-	).length;
-	const failedIterations = completedLogs.filter((log) => log.status === "failed").length;
-	const totalDurationMs = completedLogs.reduce((sum, log) => sum + (log.durationMs ?? 0), 0);
-	const averageDurationMs = completedLogs.length > 0 ? totalDurationMs / completedLogs.length : 0;
-	const successRate =
-		completedLogs.length > 0 ? (successfulIterations / completedLogs.length) * 100 : 0;
+  const completedLogs = logs.filter((log) => log.status === "completed" || log.status === "failed");
+  const successfulIterations = completedLogs.filter(
+    (log) => log.status === "completed" && log.task?.wasCompleted,
+  ).length;
+  const failedIterations = completedLogs.filter((log) => log.status === "failed").length;
+  const totalDurationMs = completedLogs.reduce((sum, log) => sum + (log.durationMs ?? 0), 0);
+  const averageDurationMs = completedLogs.length > 0 ? totalDurationMs / completedLogs.length : 0;
+  const successRate =
+    completedLogs.length > 0 ? (successfulIterations / completedLogs.length) * 100 : 0;
 
-	const statistics: SessionStatistics = {
-		totalIterations: logs.length,
-		completedIterations: completedLogs.length,
-		successfulIterations,
-		failedIterations,
-		totalDurationMs,
-		averageDurationMs,
-		successRate,
-		iterationTimings: completedLogs.map((log) => ({
-			iteration: log.iteration,
-			startTime: new Date(log.startedAt).getTime(),
-			endTime: log.completedAt ? new Date(log.completedAt).getTime() : null,
-			durationMs: log.durationMs,
-		})),
-	};
+  const statistics: SessionStatistics = {
+    averageDurationMs,
+    completedIterations: completedLogs.length,
+    failedIterations,
+    iterationTimings: completedLogs.map((log) => ({
+      durationMs: log.durationMs,
+      endTime: log.completedAt ? new Date(log.completedAt).getTime() : null,
+      iteration: log.iteration,
+      startTime: new Date(log.startedAt).getTime(),
+    })),
+    successRate,
+    successfulIterations,
+    totalDurationMs,
+    totalIterations: logs.length,
+  };
 
-	const handler = new TechnicalDebtHandler();
-	const report = handler.run("cli-analysis", logs, statistics);
+  const handler = new TechnicalDebtHandler();
+  const report = handler.run("cli-analysis", logs, statistics);
 
-	if (json) {
-		console.log(JSON.stringify(report, null, 2));
+  if (json) {
+    console.log(JSON.stringify(report, null, 2));
 
-		return;
-	}
+    return;
+  }
 
-	if (report.totalItems === 0) {
-		console.log("No technical debt detected in the iteration logs.");
+  if (report.totalItems === 0) {
+    console.log("No technical debt detected in the iteration logs.");
 
-		return;
-	}
+    return;
+  }
 
-	console.log(formatTechnicalDebtReport(report));
+  console.log(formatTechnicalDebtReport(report));
 }

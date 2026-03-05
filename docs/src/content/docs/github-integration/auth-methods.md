@@ -119,13 +119,13 @@ GitHub supports newer "fine-grained" tokens with more precise permissions. To us
 
 ## Comparison
 
-| Feature | OAuth | Personal Access Token |
-|---------|-------|----------------------|
-| Setup complexity | Low | Medium |
-| Token management | Automatic | Manual |
-| Permission scope | Minimal | You choose |
-| Expiration | Handled | Manual rotation |
-| Organization support | Usually yes | Depends on policy |
+| Feature              | OAuth       | Personal Access Token |
+| -------------------- | ----------- | --------------------- |
+| Setup complexity     | Low         | Medium                |
+| Token management     | Automatic   | Manual                |
+| Permission scope     | Minimal     | You choose            |
+| Expiration           | Handled     | Manual rotation       |
+| Organization support | Usually yes | Depends on policy     |
 
 ## Troubleshooting
 

@@ -1,68 +1,68 @@
 export interface PrdTask {
-	id?: string;
-	title: string;
-	description: string;
-	steps: string[];
-	done: boolean;
-	dependsOn?: string[];
-	priority?: number;
+  id?: string;
+  title: string;
+  description: string;
+  steps: string[];
+  done: boolean;
+  dependsOn?: string[];
+  priority?: number;
 }
 
 export interface Prd {
-	project: string;
-	tasks: PrdTask[];
+  project: string;
+  tasks: PrdTask[];
 }
 
 export interface LoadPrdResult {
-	prd: Prd | null;
-	validationError?: string;
+  prd: Prd | null;
+  validationError?: string;
 }
 
 export interface DecompositionSubtask {
-	id?: string;
-	title: string;
-	description: string;
-	steps: string[];
-	dependsOn?: string[];
-	priority?: number;
+  id?: string;
+  title: string;
+  description: string;
+  steps: string[];
+  dependsOn?: string[];
+  priority?: number;
 }
 
 export interface DecompositionRequest {
-	originalTaskTitle: string;
-	reason: string;
-	suggestedSubtasks: DecompositionSubtask[];
+  originalTaskTitle: string;
+  reason: string;
+  suggestedSubtasks: DecompositionSubtask[];
 }
 
 export interface TaskWithIndex {
-	title: string;
-	index: number;
+  title: string;
+  index: number;
 }
 
 export interface CanWorkResult {
-	canWork: boolean;
-	reason?: string;
+  canWork: boolean;
+  reason?: string;
 }
 
 export interface PrdService {
-	get(verbose?: boolean): Prd | null;
-	load(verbose?: boolean): Prd | null;
-	loadWithValidation(): LoadPrdResult;
-	reload(verbose?: boolean): Prd | null;
-	reloadWithValidation(): LoadPrdResult;
-	save(prd: Prd): void;
-	invalidate(): void;
-	findFile(): string | null;
-	isComplete(prd: Prd): boolean;
-	getNextTask(prd: Prd): string | null;
-	getNextTaskWithIndex(prd: Prd): TaskWithIndex | null;
-	getTaskByTitle(prd: Prd, title: string): PrdTask | null;
-	getTaskByIndex(prd: Prd, index: number): PrdTask | null;
-	getCurrentTaskIndex(prd: Prd): number;
-	canWorkOnTask(task: PrdTask): CanWorkResult;
-	createEmpty(projectName: string): Prd;
-	loadInstructions(): string | null;
-	toggleTaskDone(prd: Prd, taskIndex: number): Prd;
-	deleteTask(prd: Prd, taskIndex: number): Prd;
-	reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd;
-	updateTask(prd: Prd, taskIndex: number, updatedTask: PrdTask): Prd;
+  get(verbose?: boolean): Prd | null;
+  load(verbose?: boolean): Prd | null;
+  loadWithValidation(): LoadPrdResult;
+  reload(verbose?: boolean): Prd | null;
+  reloadWithValidation(): LoadPrdResult;
+  save(prd: Prd): void;
+  invalidate(): void;
+  findFile(): string | null;
+  isComplete(prd: Prd): boolean;
+  getNextTask(prd: Prd): string | null;
+  getNextTaskWithIndex(prd: Prd): TaskWithIndex | null;
+  getTaskByTitle(prd: Prd, title: string): PrdTask | null;
+  getTaskByIndex(prd: Prd, index: number): PrdTask | null;
+  getCurrentTaskIndex(prd: Prd): number;
+  canWorkOnTask(task: PrdTask): CanWorkResult;
+  createEmpty(projectName: string): Prd;
+  loadInstructions(): string | null;
+  toggleTaskDone(prd: Prd, taskIndex: number): Prd;
+  deleteTask(prd: Prd, taskIndex: number): Prd;
+  reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd;
+  updateTask(prd: Prd, taskIndex: number, updatedTask: PrdTask): Prd;
 }

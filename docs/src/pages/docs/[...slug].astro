@@ -8,14 +8,14 @@ interface BreadcrumbItem {
 }
 
 const SECTION_LABELS_BY_SLUG: Record<string, string> = {
-  "getting-started": "Getting Started",
-  "core-concepts": "Core Concepts",
   "cli-reference": "CLI Reference",
   "configuration": "Configuration",
+  "contributing": "Contributing",
+  "core-concepts": "Core Concepts",
+  "faq": "FAQ",
+  "getting-started": "Getting Started",
   "github-integration": "GitHub Integration",
   "troubleshooting": "Troubleshooting",
-  "contributing": "Contributing",
-  "faq": "FAQ",
 };
 
 const formatSectionLabel = (slug: string): string =>
@@ -40,7 +40,7 @@ const { doc } = Astro.props;
 const { Content, headings } = await render(doc);
 
 const pathSegments = doc.id.split("/");
-const breadcrumbs: BreadcrumbItem[] = [{ label: "Docs", href: `${import.meta.env.BASE_URL}docs` }];
+const breadcrumbs: BreadcrumbItem[] = [{ href: `${import.meta.env.BASE_URL}docs`, label: "Docs" }];
 
 if (pathSegments.length > 1) {
   const sectionSlug = pathSegments.at(0)!;

@@ -15,263 +15,263 @@ export const DEFAULT_ENABLE_GC_HINTS = true;
 const MEMORY_CRITICAL_THRESHOLD_MB = 1024;
 
 interface MemoryUsage {
-	heapUsedMB: number;
-	heapTotalMB: number;
-	rssMB: number;
-	externalMB: number;
+  heapUsedMB: number;
+  heapTotalMB: number;
+  rssMB: number;
+  externalMB: number;
 }
 
 interface MemoryConfig {
-	maxOutputBufferBytes?: number;
-	memoryWarningThresholdMb?: number;
-	enableGarbageCollectionHints?: boolean;
-	logFilePath?: string;
+  maxOutputBufferBytes?: number;
+  memoryWarningThresholdMb?: number;
+  enableGarbageCollectionHints?: boolean;
+  logFilePath?: string;
 }
 
 export function getMemoryUsage(): MemoryUsage {
-	const memUsage = process.memoryUsage();
+  const memUsage = process.memoryUsage();
 
-	return {
-		heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
-		heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
-		rssMB: Math.round(memUsage.rss / 1024 / 1024),
-		externalMB: Math.round(memUsage.external / 1024 / 1024),
-	};
+  return {
+    externalMB: Math.round(memUsage.external / 1024 / 1024),
+    heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+    heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+    rssMB: Math.round(memUsage.rss / 1024 / 1024),
+  };
 }
 
 export function checkMemoryUsage(config?: MemoryConfig): {
-	level: "ok" | "warning" | "critical";
-	usage: MemoryUsage;
+  level: "ok" | "warning" | "critical";
+  usage: MemoryUsage;
 } {
-	const usage = getMemoryUsage();
-	const logger = getLogger({ logFilePath: config?.logFilePath });
-	const warningThreshold = config?.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB;
+  const usage = getMemoryUsage();
+  const logger = getLogger({ logFilePath: config?.logFilePath });
+  const warningThreshold = config?.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB;
 
-	if (usage.heapUsedMB >= MEMORY_CRITICAL_THRESHOLD_MB) {
-		logger.warn("Critical memory usage detected", {
-			heapUsedMB: usage.heapUsedMB,
-			thresholdMB: MEMORY_CRITICAL_THRESHOLD_MB,
-		});
+  if (usage.heapUsedMB >= MEMORY_CRITICAL_THRESHOLD_MB) {
+    logger.warn("Critical memory usage detected", {
+      heapUsedMB: usage.heapUsedMB,
+      thresholdMB: MEMORY_CRITICAL_THRESHOLD_MB,
+    });
 
-		return { level: "critical", usage };
-	}
+    return { level: "critical", usage };
+  }
 
-	if (warningThreshold > 0 && usage.heapUsedMB >= warningThreshold) {
-		logger.warn("High memory usage detected", {
-			heapUsedMB: usage.heapUsedMB,
-			thresholdMB: warningThreshold,
-		});
+  if (warningThreshold > 0 && usage.heapUsedMB >= warningThreshold) {
+    logger.warn("High memory usage detected", {
+      heapUsedMB: usage.heapUsedMB,
+      thresholdMB: warningThreshold,
+    });
 
-		return { level: "warning", usage };
-	}
+    return { level: "warning", usage };
+  }
 
-	return { level: "ok", usage };
+  return { level: "ok", usage };
 }
 
 export function triggerGarbageCollection(config?: MemoryConfig): void {
-	const enableGcHints = config?.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS;
+  const enableGcHints = config?.enableGarbageCollectionHints ?? DEFAULT_ENABLE_GC_HINTS;
 
-	if (!enableGcHints) {
-		return;
-	}
+  if (!enableGcHints) {
+    return;
+  }
 
-	if (typeof Bun !== "undefined" && typeof Bun.gc === "function") {
-		Bun.gc(true);
-	} else if (typeof global !== "undefined" && typeof global.gc === "function") {
-		global.gc();
-	}
+  if (typeof Bun !== "undefined" && typeof Bun.gc === "function") {
+    Bun.gc(true);
+  } else if (typeof global !== "undefined" && typeof global.gc === "function") {
+    global.gc();
+  }
 }
 
 export function isMemoryPressureHigh(config?: MemoryConfig): boolean {
-	const usage = getMemoryUsage();
-	const threshold = config?.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB;
+  const usage = getMemoryUsage();
+  const threshold = config?.memoryWarningThresholdMb ?? DEFAULT_MEMORY_WARNING_THRESHOLD_MB;
 
-	return usage.heapUsedMB >= threshold * 0.8;
+  return usage.heapUsedMB >= threshold * 0.8;
 }
 
 export function performAggressiveCleanup(config?: MemoryConfig): void {
-	triggerGarbageCollection(config);
-	triggerGarbageCollection(config);
+  triggerGarbageCollection(config);
+  triggerGarbageCollection(config);
 }
 
 export function performMemoryCleanup(config?: MemoryConfig): void {
-	triggerGarbageCollection(config);
-	checkMemoryUsage(config);
+  triggerGarbageCollection(config);
+  checkMemoryUsage(config);
 }
 
 export function truncateOutputBuffer(
-	output: string,
-	maxBytes: number = DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
+  output: string,
+  maxBytes: number = DEFAULT_MAX_OUTPUT_BUFFER_BYTES,
 ): string {
-	const encoder = new TextEncoder();
-	const bytes = encoder.encode(output);
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(output);
 
-	if (bytes.length <= maxBytes) {
-		return output;
-	}
+  if (bytes.length <= maxBytes) {
+    return output;
+  }
 
-	const truncationMessage = "\n... [output truncated due to size limit] ...\n";
-	const truncationBytes = encoder.encode(truncationMessage);
-	const availableBytes = maxBytes - truncationBytes.length;
+  const truncationMessage = "\n... [output truncated due to size limit] ...\n";
+  const truncationBytes = encoder.encode(truncationMessage);
+  const availableBytes = maxBytes - truncationBytes.length;
 
-	if (availableBytes <= 0) {
-		return truncationMessage;
-	}
+  if (availableBytes <= 0) {
+    return truncationMessage;
+  }
 
-	const keepFromEndBytes = Math.floor(availableBytes * OUTPUT_BUFFER_END_RATIO);
-	const keepFromStartBytes = availableBytes - keepFromEndBytes;
+  const keepFromEndBytes = Math.floor(availableBytes * OUTPUT_BUFFER_END_RATIO);
+  const keepFromStartBytes = availableBytes - keepFromEndBytes;
 
-	const startPart = bytes.slice(0, keepFromStartBytes);
-	const endPart = bytes.slice(bytes.length - keepFromEndBytes);
+  const startPart = bytes.slice(0, keepFromStartBytes);
+  const endPart = bytes.slice(bytes.length - keepFromEndBytes);
 
-	const decoder = new TextDecoder();
-	const startText = decoder.decode(startPart);
-	const endText = decoder.decode(endPart);
+  const decoder = new TextDecoder();
+  const startText = decoder.decode(startPart);
+  const endText = decoder.decode(endPart);
 
-	return startText + truncationMessage + endText;
+  return startText + truncationMessage + endText;
 }
 
 const TEMP_FILE_PATTERNS = [/^\.tmp/, /\.tmp$/, /^temp_/, /_temp$/];
 
 export function cleanupTempFiles(): number {
-	let cleanedCount = 0;
+  let cleanedCount = 0;
 
-	let maybeProjectDir: string | null = null;
+  let maybeProjectDir: string | null = null;
 
-	if (isInitialized()) {
-		maybeProjectDir = getProjectRegistryService().getProjectDir();
-	} else {
-		maybeProjectDir = join(homedir(), ".ralph", "default");
-	}
+  if (isInitialized()) {
+    maybeProjectDir = getProjectRegistryService().getProjectDir();
+  } else {
+    maybeProjectDir = join(homedir(), ".ralph", "default");
+  }
 
-	if (maybeProjectDir === null) {
-		return cleanedCount;
-	}
+  if (maybeProjectDir === null) {
+    return cleanedCount;
+  }
 
-	if (!existsSync(maybeProjectDir)) {
-		return cleanedCount;
-	}
+  if (!existsSync(maybeProjectDir)) {
+    return cleanedCount;
+  }
 
-	try {
-		const files = readdirSync(maybeProjectDir);
+  try {
+    const files = readdirSync(maybeProjectDir);
 
-		for (const file of files) {
-			const isTempFile = TEMP_FILE_PATTERNS.some((pattern) => pattern.test(file));
+    for (const file of files) {
+      const isTempFile = TEMP_FILE_PATTERNS.some((pattern) => pattern.test(file));
 
-			if (isTempFile) {
-				const filePath = join(maybeProjectDir, file);
+      if (isTempFile) {
+        const filePath = join(maybeProjectDir, file);
 
-				try {
-					const stats = statSync(filePath);
+        try {
+          const stats = statSync(filePath);
 
-					if (stats.isFile()) {
-						unlinkSync(filePath);
-						cleanedCount++;
-					}
-				} catch {
-					// File may have been deleted by another process, ignore
-				}
-			}
-		}
-	} catch {
-		return cleanedCount;
-	}
+          if (stats.isFile()) {
+            unlinkSync(filePath);
+            cleanedCount++;
+          }
+        } catch {
+          // File may have been deleted by another process, ignore
+        }
+      }
+    }
+  } catch {
+    return cleanedCount;
+  }
 
-	return cleanedCount;
+  return cleanedCount;
 }
 
 export function performIterationCleanup(config?: MemoryConfig): {
-	memoryStatus: "ok" | "warning" | "critical";
-	tempFilesRemoved: number;
+  memoryStatus: "ok" | "warning" | "critical";
+  tempFilesRemoved: number;
 } {
-	const tempFilesRemoved = cleanupTempFiles();
+  const tempFilesRemoved = cleanupTempFiles();
 
-	if (isMemoryPressureHigh(config)) {
-		performAggressiveCleanup(config);
-	} else {
-		triggerGarbageCollection(config);
-	}
+  if (isMemoryPressureHigh(config)) {
+    performAggressiveCleanup(config);
+  } else {
+    triggerGarbageCollection(config);
+  }
 
-	const { level: memoryStatus } = checkMemoryUsage(config);
+  const { level: memoryStatus } = checkMemoryUsage(config);
 
-	return {
-		memoryStatus,
-		tempFilesRemoved,
-	};
+  return {
+    memoryStatus,
+    tempFilesRemoved,
+  };
 }
 
 export function getMaxOutputBytes(configValue?: number): number {
-	return configValue ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES;
+  return configValue ?? DEFAULT_MAX_OUTPUT_BUFFER_BYTES;
 }
 
 export interface SessionCleanupResult {
-	eventListenersCleared: boolean;
-	timersCleared: boolean;
-	processManagerReset: boolean;
-	gcTriggered: boolean;
+  eventListenersCleared: boolean;
+  timersCleared: boolean;
+  processManagerReset: boolean;
+  gcTriggered: boolean;
 }
 
 export function performSessionCleanup(config?: MemoryConfig): SessionCleanupResult {
-	const logger = getLogger({ logFilePath: config?.logFilePath });
+  const logger = getLogger({ logFilePath: config?.logFilePath });
 
-	const cleanupResult: SessionCleanupResult = {
-		eventListenersCleared: false,
-		timersCleared: false,
-		processManagerReset: false,
-		gcTriggered: false,
-	};
+  const cleanupResult: SessionCleanupResult = {
+    eventListenersCleared: false,
+    gcTriggered: false,
+    processManagerReset: false,
+    timersCleared: false,
+  };
 
-	try {
-		const listenerCountBefore = eventBus.getListenerCount();
+  try {
+    const listenerCountBefore = eventBus.getListenerCount();
 
-		eventBus.removeAllListeners();
-		cleanupResult.eventListenersCleared = true;
+    eventBus.removeAllListeners();
+    cleanupResult.eventListenersCleared = true;
 
-		if (listenerCountBefore > 0) {
-			logger.debug("Cleared event listeners", { count: listenerCountBefore });
-		}
-	} catch (error) {
-		logger.warn("Failed to clear event listeners", { error: String(error) });
-	}
+    if (listenerCountBefore > 0) {
+      logger.debug("Cleared event listeners", { count: listenerCountBefore });
+    }
+  } catch (error) {
+    logger.warn("Failed to clear event listeners", { error: String(error) });
+  }
 
-	try {
-		IterationTimer.reset();
-		cleanupResult.timersCleared = true;
-	} catch (error) {
-		logger.warn("Failed to reset iteration timer", { error: String(error) });
-	}
+  try {
+    IterationTimer.reset();
+    cleanupResult.timersCleared = true;
+  } catch (error) {
+    logger.warn("Failed to reset iteration timer", { error: String(error) });
+  }
 
-	try {
-		AgentProcessManager.reset();
-		cleanupResult.processManagerReset = true;
-	} catch (error) {
-		logger.warn("Failed to reset agent process manager", { error: String(error) });
-	}
+  try {
+    AgentProcessManager.reset();
+    cleanupResult.processManagerReset = true;
+  } catch (error) {
+    logger.warn("Failed to reset agent process manager", { error: String(error) });
+  }
 
-	try {
-		triggerGarbageCollection(config);
-		cleanupResult.gcTriggered = true;
-	} catch (error) {
-		logger.warn("Failed to trigger garbage collection", { error: String(error) });
-	}
+  try {
+    triggerGarbageCollection(config);
+    cleanupResult.gcTriggered = true;
+  } catch (error) {
+    logger.warn("Failed to trigger garbage collection", { error: String(error) });
+  }
 
-	return cleanupResult;
+  return cleanupResult;
 }
 
 export interface MemoryDiagnostics {
-	memoryUsage: MemoryUsage;
-	eventListenerCount: number;
-	eventListenerStats: Record<string, number>;
-	hasActiveProcess: boolean;
-	hasActiveTimer: boolean;
+  memoryUsage: MemoryUsage;
+  eventListenerCount: number;
+  eventListenerStats: Record<string, number>;
+  hasActiveProcess: boolean;
+  hasActiveTimer: boolean;
 }
 
 export function getMemoryDiagnostics(): MemoryDiagnostics {
-	return {
-		memoryUsage: getMemoryUsage(),
-		eventListenerCount: eventBus.getListenerCount(),
-		eventListenerStats: eventBus.getListenerStats(),
-		hasActiveProcess: AgentProcessManager.isRunning(),
-		hasActiveTimer: IterationTimer.isProjectComplete() === false,
-	};
+  return {
+    eventListenerCount: eventBus.getListenerCount(),
+    eventListenerStats: eventBus.getListenerStats(),
+    hasActiveProcess: AgentProcessManager.isRunning(),
+    hasActiveTimer: IterationTimer.isProjectComplete() === false,
+    memoryUsage: getMemoryUsage(),
+  };
 }

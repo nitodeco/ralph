@@ -34,10 +34,10 @@ const buildNavigation = (entries: typeof docs): NavSection[] => {
     const href = `${import.meta.env.BASE_URL}docs/${entry.id}`;
 
     const item: NavItem = {
-      title: entry.data.title,
       href,
-      order: entry.data.sidebar.order,
       label: entry.data.sidebar.label,
+      order: entry.data.sidebar.order,
+      title: entry.data.title,
     };
 
     if (!sectionItemsBySection[section]) {
@@ -60,11 +60,11 @@ const buildNavigation = (entries: typeof docs): NavSection[] => {
 
   return Object.entries(sectionItemsBySection)
     .map(([section, items]) => ({
-      section: formatSectionName(section),
       items: items.sort((a, b) => a.order - b.order),
       rawSection: section,
+      section: formatSectionName(section),
     }))
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       const indexA = SECTION_ORDER.indexOf(a.rawSection);
       const indexB = SECTION_ORDER.indexOf(b.rawSection);
       const orderA = indexA === -1 ? 999 : indexA;
@@ -72,7 +72,7 @@ const buildNavigation = (entries: typeof docs): NavSection[] => {
 
       return orderA - orderB;
     })
-    .map(({ section, items }) => ({ section, items }));
+    .map(({ section, items }) => ({ items, section }));
 };
 
 const formatSectionName = (name: string): string => {

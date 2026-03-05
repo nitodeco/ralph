@@ -3,104 +3,104 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { DecompositionHandler } from "@/lib/handlers/DecompositionHandler.ts";
 import { ensureProjectDirExists, getPrdJsonPath } from "@/lib/paths.ts";
 import {
-	bootstrapTestServices,
-	createPrdService,
-	getPrdService,
-	teardownTestServices,
+  bootstrapTestServices,
+  createPrdService,
+  getPrdService,
+  teardownTestServices,
 } from "@/lib/services/index.ts";
 import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-decomposition-handler";
 
 function writePrdFile(prd: Prd): void {
-	ensureProjectDirExists();
-	writeFileSync(getPrdJsonPath(), JSON.stringify(prd, null, 2));
+  ensureProjectDirExists();
+  writeFileSync(getPrdJsonPath(), JSON.stringify(prd, null, 2));
 }
 
 describe("DecompositionHandler", () => {
-	beforeEach(() => {
-		bootstrapTestServices({ prd: createPrdService() });
+  beforeEach(() => {
+    bootstrapTestServices({ prd: createPrdService() });
 
-		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
-		}
+    if (existsSync(TEST_DIR)) {
+      rmSync(TEST_DIR, { recursive: true });
+    }
 
-		mkdirSync(`${TEST_DIR}/.ralph`, { recursive: true });
-		process.chdir(TEST_DIR);
-	});
+    mkdirSync(`${TEST_DIR}/.ralph`, { recursive: true });
+    process.chdir(TEST_DIR);
+  });
 
-	afterEach(() => {
-		teardownTestServices();
+  afterEach(() => {
+    teardownTestServices();
 
-		if (existsSync(TEST_DIR)) {
-			rmSync(TEST_DIR, { recursive: true });
-		}
-	});
+    if (existsSync(TEST_DIR)) {
+      rmSync(TEST_DIR, { recursive: true });
+    }
+  });
 
-	test("applies decomposition and restarts iteration", () => {
-		const prd: Prd = {
-			project: "Test Project",
-			tasks: [
-				{
-					title: "Original Task",
-					description: "Test task",
-					steps: [],
-					done: false,
-				},
-			],
-		};
+  test("applies decomposition and restarts iteration", () => {
+    const prd: Prd = {
+      project: "Test Project",
+      tasks: [
+        {
+          description: "Test task",
+          done: false,
+          steps: [],
+          title: "Original Task",
+        },
+      ],
+    };
 
-		writePrdFile(prd);
+    writePrdFile(prd);
 
-		const config: RalphConfig = {
-			agent: "cursor",
-			maxDecompositionsPerTask: 1,
-		};
+    const config: RalphConfig = {
+      agent: "cursor",
+      maxDecompositionsPerTask: 1,
+    };
 
-		const request: DecompositionRequest = {
-			originalTaskTitle: "Original Task",
-			reason: "Need smaller tasks",
-			suggestedSubtasks: [
-				{
-					title: "Subtask A",
-					description: "First subtask",
-					steps: ["Step 1"],
-				},
-				{
-					title: "Subtask B",
-					description: "Second subtask",
-					steps: ["Step 2"],
-				},
-			],
-		};
+    const request: DecompositionRequest = {
+      originalTaskTitle: "Original Task",
+      reason: "Need smaller tasks",
+      suggestedSubtasks: [
+        {
+          description: "First subtask",
+          steps: ["Step 1"],
+          title: "Subtask A",
+        },
+        {
+          description: "Second subtask",
+          steps: ["Step 2"],
+          title: "Subtask B",
+        },
+      ],
+    };
 
-		let updatedPrd: Prd | null = null;
-		let restartCalled = false;
+    let updatedPrd: Prd | null = null;
+    let restartCalled = false;
 
-		const handler = new DecompositionHandler({
-			config,
-			onPrdUpdate: (nextPrd) => {
-				updatedPrd = nextPrd;
-			},
-			onRestartIteration: () => {
-				restartCalled = true;
-			},
-		});
+    const handler = new DecompositionHandler({
+      config,
+      onPrdUpdate: (nextPrd) => {
+        updatedPrd = nextPrd;
+      },
+      onRestartIteration: () => {
+        restartCalled = true;
+      },
+    });
 
-		const currentPrd = getPrdService().reload();
-		const handled = handler.handle(request, currentPrd);
+    const currentPrd = getPrdService().reload();
+    const handled = handler.handle(request, currentPrd);
 
-		expect(handled).toBe(true);
-		expect(restartCalled).toBe(true);
-		expect(updatedPrd).not.toBeNull();
-		const updatedPrdSnapshot = updatedPrd as unknown as Prd;
+    expect(handled).toBe(true);
+    expect(restartCalled).toBe(true);
+    expect(updatedPrd).not.toBeNull();
+    const updatedPrdSnapshot = updatedPrd as unknown as Prd;
 
-		expect(updatedPrdSnapshot.tasks.length).toBe(2);
-		expect(updatedPrdSnapshot.tasks.at(0)?.title).toBe("Subtask A");
-		expect(updatedPrdSnapshot.tasks.at(1)?.title).toBe("Subtask B");
+    expect(updatedPrdSnapshot.tasks.length).toBe(2);
+    expect(updatedPrdSnapshot.tasks.at(0)?.title).toBe("Subtask A");
+    expect(updatedPrdSnapshot.tasks.at(1)?.title).toBe("Subtask B");
 
-		const secondAttempt = handler.handle(request, currentPrd);
+    const secondAttempt = handler.handle(request, currentPrd);
 
-		expect(secondAttempt).toBe(false);
-	});
+    expect(secondAttempt).toBe(false);
+  });
 });

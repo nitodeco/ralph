@@ -67,7 +67,7 @@ const id = `code-${Math.random().toString(36).slice(2, 9)}`;
     button.addEventListener("click", async () => {
       const codeId = button.getAttribute("data-code-id");
       const codeElement = document.getElementById(codeId!);
-      if (!codeElement) return;
+      if (!codeElement) {return;}
 
       const code = codeElement.textContent ?? "";
 

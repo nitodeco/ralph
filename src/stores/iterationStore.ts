@@ -3,274 +3,274 @@ import { DEFAULTS } from "@/lib/constants/defaults.ts";
 import { IterationTimer } from "@/lib/services/index.ts";
 
 interface IterationState {
-	current: number;
-	total: number;
-	isRunning: boolean;
-	isDelaying: boolean;
-	isPaused: boolean;
-	isFullMode: boolean;
+  current: number;
+  total: number;
+  isRunning: boolean;
+  isDelaying: boolean;
+  isPaused: boolean;
+  isFullMode: boolean;
 }
 
 interface IterationCallbacks {
-	onIterationStart?: (iteration: number) => void;
-	onIterationComplete?: (iteration: number) => void;
-	onAllComplete?: () => void;
-	onMaxIterations?: () => void;
-	onMaxRuntime?: () => void;
+  onIterationStart?: (iteration: number) => void;
+  onIterationComplete?: (iteration: number) => void;
+  onAllComplete?: () => void;
+  onMaxIterations?: () => void;
+  onMaxRuntime?: () => void;
 }
 
 interface IterationActions {
-	start: () => void;
-	startFromIteration: (iteration: number) => void;
-	pause: () => void;
-	resume: () => void;
-	stop: () => void;
-	next: () => void;
-	setTotal: (newTotal: number) => void;
-	setFullMode: (isFullMode: boolean) => void;
-	markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => void;
-	restartCurrentIteration: () => void;
-	setCallbacks: (callbacks: IterationCallbacks) => void;
-	clearCallbacks: () => void;
-	setDelayMs: (delayMs: number) => void;
-	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => void;
-	setStartTime: (startTime: number) => void;
-	getTimeRemaining: () => number | null;
-	isMaxRuntimeReached: () => boolean;
-	reset: () => void;
+  start: () => void;
+  startFromIteration: (iteration: number) => void;
+  pause: () => void;
+  resume: () => void;
+  stop: () => void;
+  next: () => void;
+  setTotal: (newTotal: number) => void;
+  setFullMode: (isFullMode: boolean) => void;
+  markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => void;
+  restartCurrentIteration: () => void;
+  setCallbacks: (callbacks: IterationCallbacks) => void;
+  clearCallbacks: () => void;
+  setDelayMs: (delayMs: number) => void;
+  setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => void;
+  setStartTime: (startTime: number) => void;
+  getTimeRemaining: () => number | null;
+  isMaxRuntimeReached: () => boolean;
+  reset: () => void;
 }
 
 type IterationStore = IterationState &
-	IterationActions & {
-		callbacks: IterationCallbacks;
-		delayMs: number;
-		maxRuntimeMs: number | undefined;
-		startTime: number | null;
-	};
+  IterationActions & {
+    callbacks: IterationCallbacks;
+    delayMs: number;
+    maxRuntimeMs: number | undefined;
+    startTime: number | null;
+  };
 
 const INITIAL_STATE: IterationState = {
-	current: 0,
-	total: 10,
-	isRunning: false,
-	isDelaying: false,
-	isPaused: false,
-	isFullMode: false,
+  current: 0,
+  isDelaying: false,
+  isFullMode: false,
+  isPaused: false,
+  isRunning: false,
+  total: 10,
 };
 
 export const useIterationStore = create<IterationStore>((set, get) => ({
-	...INITIAL_STATE,
-	callbacks: {},
-	delayMs: DEFAULTS.iterationDelayMs,
-	maxRuntimeMs: undefined,
-	startTime: null,
+  ...INITIAL_STATE,
+  callbacks: {},
+  clearCallbacks: () => {
+    set({ callbacks: {} });
+  },
+  delayMs: DEFAULTS.iterationDelayMs,
+  getTimeRemaining: () => {
+    const state = get();
 
-	setCallbacks: (callbacks: IterationCallbacks) => {
-		set({ callbacks });
-	},
+    if (!state.maxRuntimeMs || !state.startTime) {
+      return null;
+    }
 
-	clearCallbacks: () => {
-		set({ callbacks: {} });
-	},
+    const elapsed = Date.now() - state.startTime;
+    const remaining = state.maxRuntimeMs - elapsed;
 
-	setDelayMs: (delayMs: number) => {
-		set({ delayMs });
-	},
+    return remaining > 0 ? remaining : 0;
+  },
 
-	setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => {
-		set({ maxRuntimeMs });
-	},
+  isMaxRuntimeReached: () => {
+    const state = get();
 
-	setStartTime: (startTime: number) => {
-		set({ startTime });
-	},
+    if (!state.maxRuntimeMs || !state.startTime) {
+      return false;
+    }
 
-	getTimeRemaining: () => {
-		const state = get();
+    const elapsed = Date.now() - state.startTime;
 
-		if (!state.maxRuntimeMs || !state.startTime) {
-			return null;
-		}
+    return elapsed >= state.maxRuntimeMs;
+  },
 
-		const elapsed = Date.now() - state.startTime;
-		const remaining = state.maxRuntimeMs - elapsed;
+  markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => {
+    const state = get();
 
-		return remaining > 0 ? remaining : 0;
-	},
+    IterationTimer.setProjectComplete(isProjectComplete);
+    state.callbacks.onIterationComplete?.(state.current);
 
-	isMaxRuntimeReached: () => {
-		const state = get();
+    if (isProjectComplete) {
+      state.callbacks.onAllComplete?.();
 
-		if (!state.maxRuntimeMs || !state.startTime) {
-			return false;
-		}
+      set({
+        isDelaying: false,
+        isRunning: false,
+      });
 
-		const elapsed = Date.now() - state.startTime;
+      return;
+    }
 
-		return elapsed >= state.maxRuntimeMs;
-	},
+    if (state.current >= state.total) {
+      if (state.isFullMode && hasPendingTasks) {
+        set({ isDelaying: true, total: state.total + 1 });
 
-	start: () => {
-		IterationTimer.setProjectComplete(false);
-		const state = get();
-		const startTime = state.startTime ?? Date.now();
+        IterationTimer.scheduleNext(state.delayMs, () => {
+          get().next();
+        });
 
-		set({
-			current: 1,
-			isRunning: true,
-			isDelaying: false,
-			isPaused: false,
-			startTime,
-		});
-		get().callbacks.onIterationStart?.(1);
-	},
+        return;
+      }
 
-	startFromIteration: (iteration: number) => {
-		IterationTimer.setProjectComplete(false);
-		const state = get();
-		const startTime = state.startTime ?? Date.now();
+      state.callbacks.onMaxIterations?.();
+      set({
+        isDelaying: false,
+        isRunning: false,
+      });
 
-		set({
-			current: iteration,
-			isRunning: true,
-			isDelaying: false,
-			isPaused: false,
-			startTime,
-		});
-		get().callbacks.onIterationStart?.(iteration);
-	},
+      return;
+    }
 
-	pause: () => {
-		IterationTimer.cancel();
-		set({
-			isPaused: true,
-			isDelaying: false,
-		});
-	},
+    set({ isDelaying: true });
 
-	resume: () => {
-		set({
-			isPaused: false,
-		});
-	},
+    IterationTimer.scheduleNext(state.delayMs, () => {
+      get().next();
+    });
+  },
 
-	stop: () => {
-		IterationTimer.cancel();
-		set({
-			isRunning: false,
-			isDelaying: false,
-			isPaused: false,
-		});
-	},
+  maxRuntimeMs: undefined,
 
-	setTotal: (newTotal: number) => {
-		set({ total: newTotal });
-	},
+  next: () => {
+    const state = get();
 
-	setFullMode: (isFullMode: boolean) => {
-		set({ isFullMode });
-	},
+    if (state.current >= state.total || IterationTimer.isProjectComplete()) {
+      state.callbacks.onAllComplete?.();
 
-	next: () => {
-		const state = get();
+      set({
+        isDelaying: false,
+        isRunning: false,
+      });
 
-		if (state.current >= state.total || IterationTimer.isProjectComplete()) {
-			state.callbacks.onAllComplete?.();
+      return;
+    }
 
-			set({
-				isRunning: false,
-				isDelaying: false,
-			});
+    if (state.isMaxRuntimeReached()) {
+      state.callbacks.onMaxRuntime?.();
 
-			return;
-		}
+      set({
+        isDelaying: false,
+        isRunning: false,
+      });
 
-		if (state.isMaxRuntimeReached()) {
-			state.callbacks.onMaxRuntime?.();
+      return;
+    }
 
-			set({
-				isRunning: false,
-				isDelaying: false,
-			});
+    const nextIteration = state.current + 1;
 
-			return;
-		}
+    state.callbacks.onIterationStart?.(nextIteration);
 
-		const nextIteration = state.current + 1;
+    set({
+      current: nextIteration,
+      isDelaying: false,
+    });
+  },
 
-		state.callbacks.onIterationStart?.(nextIteration);
+  pause: () => {
+    IterationTimer.cancel();
+    set({
+      isDelaying: false,
+      isPaused: true,
+    });
+  },
 
-		set({
-			current: nextIteration,
-			isDelaying: false,
-		});
-	},
+  reset: () => {
+    IterationTimer.reset();
 
-	markIterationComplete: (isProjectComplete: boolean, hasPendingTasks?: boolean) => {
-		const state = get();
+    set({
+      ...INITIAL_STATE,
+      callbacks: {},
+      delayMs: DEFAULTS.iterationDelayMs,
+      maxRuntimeMs: undefined,
+      startTime: null,
+    });
+  },
 
-		IterationTimer.setProjectComplete(isProjectComplete);
-		state.callbacks.onIterationComplete?.(state.current);
+  restartCurrentIteration: () => {
+    const state = get();
 
-		if (isProjectComplete) {
-			state.callbacks.onAllComplete?.();
+    set({ isDelaying: true });
 
-			set({
-				isRunning: false,
-				isDelaying: false,
-			});
+    IterationTimer.scheduleNext(state.delayMs, () => {
+      const currentState = get();
 
-			return;
-		}
+      currentState.callbacks.onIterationStart?.(currentState.current);
+      set({ isDelaying: false });
+    });
+  },
 
-		if (state.current >= state.total) {
-			if (state.isFullMode && hasPendingTasks) {
-				set({ total: state.total + 1, isDelaying: true });
+  resume: () => {
+    set({
+      isPaused: false,
+    });
+  },
 
-				IterationTimer.scheduleNext(state.delayMs, () => {
-					get().next();
-				});
+  setCallbacks: (callbacks: IterationCallbacks) => {
+    set({ callbacks });
+  },
 
-				return;
-			}
+  setDelayMs: (delayMs: number) => {
+    set({ delayMs });
+  },
 
-			state.callbacks.onMaxIterations?.();
-			set({
-				isRunning: false,
-				isDelaying: false,
-			});
+  setFullMode: (isFullMode: boolean) => {
+    set({ isFullMode });
+  },
 
-			return;
-		}
+  setMaxRuntimeMs: (maxRuntimeMs: number | undefined) => {
+    set({ maxRuntimeMs });
+  },
 
-		set({ isDelaying: true });
+  setStartTime: (startTime: number) => {
+    set({ startTime });
+  },
 
-		IterationTimer.scheduleNext(state.delayMs, () => {
-			get().next();
-		});
-	},
+  setTotal: (newTotal: number) => {
+    set({ total: newTotal });
+  },
 
-	restartCurrentIteration: () => {
-		const state = get();
+  start: () => {
+    IterationTimer.setProjectComplete(false);
+    const state = get();
+    const startTime = state.startTime ?? Date.now();
 
-		set({ isDelaying: true });
+    set({
+      current: 1,
+      isDelaying: false,
+      isPaused: false,
+      isRunning: true,
+      startTime,
+    });
+    get().callbacks.onIterationStart?.(1);
+  },
 
-		IterationTimer.scheduleNext(state.delayMs, () => {
-			const currentState = get();
+  startFromIteration: (iteration: number) => {
+    IterationTimer.setProjectComplete(false);
+    const state = get();
+    const startTime = state.startTime ?? Date.now();
 
-			currentState.callbacks.onIterationStart?.(currentState.current);
-			set({ isDelaying: false });
-		});
-	},
+    set({
+      current: iteration,
+      isDelaying: false,
+      isPaused: false,
+      isRunning: true,
+      startTime,
+    });
+    get().callbacks.onIterationStart?.(iteration);
+  },
 
-	reset: () => {
-		IterationTimer.reset();
+  startTime: null,
 
-		set({
-			...INITIAL_STATE,
-			callbacks: {},
-			delayMs: DEFAULTS.iterationDelayMs,
-			maxRuntimeMs: undefined,
-			startTime: null,
-		});
-	},
+  stop: () => {
+    IterationTimer.cancel();
+    set({
+      isDelaying: false,
+      isPaused: false,
+      isRunning: false,
+    });
+  },
 }));

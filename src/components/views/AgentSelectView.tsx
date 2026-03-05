@@ -8,120 +8,120 @@ import { getConfigService } from "@/lib/services/index.ts";
 import type { AgentType } from "@/types.ts";
 
 interface AgentSelectViewProps {
-	version: string;
-	onClose: () => void;
+  version: string;
+  onClose: () => void;
 }
 
 const AGENT_CHOICES = [
-	{ label: "Cursor", value: "cursor" as const },
-	{ label: "Claude Code", value: "claude" as const },
-	{ label: "Codex", value: "codex" as const },
+  { label: "Cursor", value: "cursor" as const },
+  { label: "Claude Code", value: "claude" as const },
+  { label: "Codex", value: "codex" as const },
 ];
 
 const AGENT_DISPLAY_NAMES: Record<AgentType, string> = {
-	cursor: "Cursor",
-	claude: "Claude Code",
-	codex: "Codex",
+  claude: "Claude Code",
+  codex: "Codex",
+  cursor: "Cursor",
 };
 
 function AgentSelectHeader({ version }: { version: string }): React.ReactElement {
-	return (
-		<Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-			<Text bold color="cyan">
-				◆ ralph v{version} - Select Agent
-			</Text>
-		</Box>
-	);
+  return (
+    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+      <Text bold color="cyan">
+        ◆ ralph v{version} - Select Agent
+      </Text>
+    </Box>
+  );
 }
 
 function AgentSelectFooter(): React.ReactElement {
-	return (
-		<Box paddingX={1}>
-			<Text dimColor>Press Escape or 'q' to cancel</Text>
-		</Box>
-	);
+  return (
+    <Box paddingX={1}>
+      <Text dimColor>Press Escape or 'q' to cancel</Text>
+    </Box>
+  );
 }
 
 export function AgentSelectView({ version, onClose }: AgentSelectViewProps): React.ReactElement {
-	const configService = getConfigService();
-	const effectiveConfig = configService.get();
-	const [message, setMessage] = useState<{
-		type: "success" | "error";
-		text: string;
-	} | null>(null);
+  const configService = getConfigService();
+  const effectiveConfig = configService.get();
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-	useInput((input, key) => {
-		if (key.escape || input === "q") {
-			onClose();
-		}
-	});
+  useInput((input, key) => {
+    if (key.escape || input === "q") {
+      onClose();
+    }
+  });
 
-	const handleAgentSelect = (item: { value: AgentType }) => {
-		const globalConfig = configService.loadGlobal();
-		const projectConfigRaw = configService.loadProjectRaw();
+  const handleAgentSelect = (item: { value: AgentType }) => {
+    const globalConfig = configService.loadGlobal();
+    const projectConfigRaw = configService.loadProjectRaw();
 
-		const updatedGlobalConfig = {
-			...globalConfig,
-			agent: item.value,
-		};
+    const updatedGlobalConfig = {
+      ...globalConfig,
+      agent: item.value,
+    };
 
-		configService.saveGlobal(updatedGlobalConfig);
+    configService.saveGlobal(updatedGlobalConfig);
 
-		if (projectConfigRaw !== null) {
-			const updatedProjectConfig = {
-				...effectiveConfig,
-				agent: item.value,
-			};
+    if (projectConfigRaw !== null) {
+      const updatedProjectConfig = {
+        ...effectiveConfig,
+        agent: item.value,
+      };
 
-			configService.saveProject(updatedProjectConfig);
-		}
+      configService.saveProject(updatedProjectConfig);
+    }
 
-		configService.invalidateAll();
+    configService.invalidateAll();
 
-		setMessage({
-			type: "success",
-			text: `Agent changed to ${AGENT_DISPLAY_NAMES[item.value]}`,
-		});
+    setMessage({
+      text: `Agent changed to ${AGENT_DISPLAY_NAMES[item.value]}`,
+      type: "success",
+    });
 
-		setTimeout(() => {
-			onClose();
-		}, TRANSITION_DELAY_MS);
-	};
+    setTimeout(() => {
+      onClose();
+    }, TRANSITION_DELAY_MS);
+  };
 
-	return (
-		<ResponsiveLayout
-			header={<AgentSelectHeader version={version} />}
-			content={
-				<ScrollableContent>
-					<Box flexDirection="column" paddingX={1} gap={1}>
-						<Box flexDirection="column">
-							<Text bold color="yellow">
-								Which AI agent do you want to use?
-							</Text>
-							<Text dimColor>Current: {AGENT_DISPLAY_NAMES[effectiveConfig.agent]}</Text>
-						</Box>
+  return (
+    <ResponsiveLayout
+      header={<AgentSelectHeader version={version} />}
+      content={
+        <ScrollableContent>
+          <Box flexDirection="column" paddingX={1} gap={1}>
+            <Box flexDirection="column">
+              <Text bold color="yellow">
+                Which AI agent do you want to use?
+              </Text>
+              <Text dimColor>Current: {AGENT_DISPLAY_NAMES[effectiveConfig.agent]}</Text>
+            </Box>
 
-						<Box marginTop={1}>
-							<SelectInput
-								items={AGENT_CHOICES}
-								initialIndex={AGENT_CHOICES.findIndex(
-									(choice) => choice.value === effectiveConfig.agent,
-								)}
-								onSelect={handleAgentSelect}
-							/>
-						</Box>
+            <Box marginTop={1}>
+              <SelectInput
+                items={AGENT_CHOICES}
+                initialIndex={AGENT_CHOICES.findIndex(
+                  (choice) => choice.value === effectiveConfig.agent,
+                )}
+                onSelect={handleAgentSelect}
+              />
+            </Box>
 
-						{message && (
-							<Box marginTop={1}>
-								<Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
-							</Box>
-						)}
-					</Box>
-				</ScrollableContent>
-			}
-			footer={<AgentSelectFooter />}
-			headerHeight={3}
-			footerHeight={2}
-		/>
-	);
+            {message && (
+              <Box marginTop={1}>
+                <Text color={message.type === "success" ? "green" : "red"}>{message.text}</Text>
+              </Box>
+            )}
+          </Box>
+        </ScrollableContent>
+      }
+      footer={<AgentSelectFooter />}
+      headerHeight={3}
+      footerHeight={2}
+    />
+  );
 }

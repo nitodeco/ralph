@@ -2,16 +2,16 @@ import { eventBus } from "@/lib/events.ts";
 import type { RalphConfig } from "@/types.ts";
 import type { BranchModeConfig } from "../config/types.ts";
 import {
-	getBranchModeManager,
-	getHandlerCoordinator,
-	getIterationCoordinator,
-	getParallelExecutionManager,
-	getSessionManager,
+  getBranchModeManager,
+  getHandlerCoordinator,
+  getIterationCoordinator,
+  getParallelExecutionManager,
+  getSessionManager,
 } from "../container.ts";
 import type {
-	ParallelExecutionConfig,
-	ParallelExecutionSummary,
-	ParallelGroupState,
+  ParallelExecutionConfig,
+  ParallelExecutionSummary,
+  ParallelGroupState,
 } from "../parallel-execution-manager/types.ts";
 import type { Prd, PrdTask } from "../prd/types.ts";
 import type { Session } from "../session/types.ts";
@@ -19,254 +19,254 @@ import type { ResumeSessionResult, StartSessionResult } from "../session-manager
 import type { Orchestrator, OrchestratorCallbacks, OrchestratorConfig } from "./types.ts";
 
 export function createOrchestrator(): Orchestrator {
-	let config: RalphConfig | null = null;
-	let iterations = 0;
-	let skipVerification = false;
-	let initialized = false;
-	let parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
+  let config: RalphConfig | null = null;
+  let iterations = 0;
+  let skipVerification = false;
+  let initialized = false;
+  let parallelConfig: ParallelExecutionConfig = { enabled: false, maxConcurrentTasks: 1 };
 
-	function initialize(
-		options: OrchestratorConfig,
-		orchestratorCallbacks: OrchestratorCallbacks,
-	): void {
-		if (initialized) {
-			cleanup();
-		}
+  function initialize(
+    options: OrchestratorConfig,
+    orchestratorCallbacks: OrchestratorCallbacks,
+  ): void {
+    if (initialized) {
+      cleanup();
+    }
 
-		config = options.config;
-		iterations = options.iterations;
-		skipVerification = options.skipVerification ?? false;
-		parallelConfig = options.parallelExecution ?? { enabled: false, maxConcurrentTasks: 1 };
-		initialized = true;
+    ({ config } = options);
+    ({ iterations } = options);
+    skipVerification = options.skipVerification ?? false;
+    parallelConfig = options.parallelExecution ?? { enabled: false, maxConcurrentTasks: 1 };
+    initialized = true;
 
-		const branchModeManager = getBranchModeManager();
-		const branchModeEnabled =
-			options.config.workflowMode === "branches" || (options.config.branchMode?.enabled ?? false);
+    const branchModeManager = getBranchModeManager();
+    const branchModeEnabled =
+      options.config.workflowMode === "branches" || (options.config.branchMode?.enabled ?? false);
 
-		branchModeManager.setEnabled(branchModeEnabled);
-		branchModeManager.setConfig(options.config.branchMode ?? null);
-		branchModeManager.setRalphConfig(options.config);
+    branchModeManager.setEnabled(branchModeEnabled);
+    branchModeManager.setConfig(options.config.branchMode ?? null);
+    branchModeManager.setRalphConfig(options.config);
 
-		const handlerCoordinator = getHandlerCoordinator();
+    const handlerCoordinator = getHandlerCoordinator();
 
-		handlerCoordinator.initialize(
-			{
-				config: options.config,
-				skipVerification,
-			},
-			{
-				onPrdUpdate: orchestratorCallbacks.onPrdUpdate,
-				onRestartIteration: orchestratorCallbacks.onRestartIteration,
-				onVerificationStateChange: orchestratorCallbacks.onVerificationStateChange,
-				onIterationComplete: orchestratorCallbacks.onIterationComplete,
-				onFatalError: orchestratorCallbacks.onFatalError,
-				onAppStateChange: orchestratorCallbacks.onAppStateChange,
-			},
-		);
+    handlerCoordinator.initialize(
+      {
+        config: options.config,
+        skipVerification,
+      },
+      {
+        onAppStateChange: orchestratorCallbacks.onAppStateChange,
+        onFatalError: orchestratorCallbacks.onFatalError,
+        onIterationComplete: orchestratorCallbacks.onIterationComplete,
+        onPrdUpdate: orchestratorCallbacks.onPrdUpdate,
+        onRestartIteration: orchestratorCallbacks.onRestartIteration,
+        onVerificationStateChange: orchestratorCallbacks.onVerificationStateChange,
+      },
+    );
 
-		orchestratorCallbacks.setMaxRuntimeMs(options.maxRuntimeMs);
-	}
+    orchestratorCallbacks.setMaxRuntimeMs(options.maxRuntimeMs);
+  }
 
-	function getIsVerifying(): boolean {
-		return getHandlerCoordinator().getIsVerifying();
-	}
+  function getIsVerifying(): boolean {
+    return getHandlerCoordinator().getIsVerifying();
+  }
 
-	function isBranchModeEnabled(): boolean {
-		return getBranchModeManager().isEnabled();
-	}
+  function isBranchModeEnabled(): boolean {
+    return getBranchModeManager().isEnabled();
+  }
 
-	function getBranchModeConfig(): BranchModeConfig | null {
-		return getBranchModeManager().getConfig();
-	}
+  function getBranchModeConfig(): BranchModeConfig | null {
+    return getBranchModeManager().getConfig();
+  }
 
-	function getCurrentTaskBranch(): string | null {
-		return getBranchModeManager().getCurrentTaskBranch();
-	}
+  function getCurrentTaskBranch(): string | null {
+    return getBranchModeManager().getCurrentTaskBranch();
+  }
 
-	function getBaseBranch(): string | null {
-		return getBranchModeManager().getBaseBranch();
-	}
+  function getBaseBranch(): string | null {
+    return getBranchModeManager().getBaseBranch();
+  }
 
-	function initializeBranchMode(): { isValid: boolean; error?: string } {
-		return getBranchModeManager().initialize();
-	}
+  function initializeBranchMode(): { isValid: boolean; error?: string } {
+    return getBranchModeManager().initialize();
+  }
 
-	function createTaskBranch(
-		taskTitle: string,
-		taskIndex: number,
-	): { success: boolean; error?: string } {
-		return getBranchModeManager().createTaskBranch(taskTitle, taskIndex);
-	}
+  function createTaskBranch(
+    taskTitle: string,
+    taskIndex: number,
+  ): { success: boolean; error?: string } {
+    return getBranchModeManager().createTaskBranch(taskTitle, taskIndex);
+  }
 
-	async function completeTaskBranch(
-		prd: Prd | null,
-	): Promise<{ success: boolean; error?: string; prUrl?: string }> {
-		return getBranchModeManager().completeTaskBranch(prd);
-	}
+  async function completeTaskBranch(
+    prd: Prd | null,
+  ): Promise<{ success: boolean; error?: string; prUrl?: string }> {
+    return getBranchModeManager().completeTaskBranch(prd);
+  }
 
-	async function createPullRequestForBranch(
-		branchName: string,
-		prd: Prd | null,
-	): Promise<{ success: boolean; prUrl?: string; error?: string }> {
-		return getBranchModeManager().createPullRequestForBranch(branchName, prd);
-	}
+  async function createPullRequestForBranch(
+    branchName: string,
+    prd: Prd | null,
+  ): Promise<{ success: boolean; prUrl?: string; error?: string }> {
+    return getBranchModeManager().createPullRequestForBranch(branchName, prd);
+  }
 
-	function isParallelModeEnabled(): boolean {
-		return parallelConfig.enabled;
-	}
+  function isParallelModeEnabled(): boolean {
+    return parallelConfig.enabled;
+  }
 
-	function getParallelConfig(): ParallelExecutionConfig {
-		return { ...parallelConfig };
-	}
+  function getParallelConfig(): ParallelExecutionConfig {
+    return { ...parallelConfig };
+  }
 
-	function getCurrentParallelGroup(): ParallelGroupState | null {
-		return getParallelExecutionManager().getCurrentGroup();
-	}
+  function getCurrentParallelGroup(): ParallelGroupState | null {
+    return getParallelExecutionManager().getCurrentGroup();
+  }
 
-	function getParallelExecutionGroups(): PrdTask[][] {
-		return getParallelExecutionManager().getExecutionGroups();
-	}
+  function getParallelExecutionGroups(): PrdTask[][] {
+    return getParallelExecutionManager().getExecutionGroups();
+  }
 
-	function initializeParallelExecution(prd: Prd): { isValid: boolean; error?: string } {
-		const parallelExecutionManager = getParallelExecutionManager();
+  function initializeParallelExecution(prd: Prd): { isValid: boolean; error?: string } {
+    const parallelExecutionManager = getParallelExecutionManager();
 
-		if (config) {
-			parallelExecutionManager.setRalphConfig(config);
-		}
+    if (config) {
+      parallelExecutionManager.setRalphConfig(config);
+    }
 
-		return parallelExecutionManager.initialize(prd, parallelConfig);
-	}
+    return parallelExecutionManager.initialize(prd, parallelConfig);
+  }
 
-	function startNextParallelGroup(): { started: boolean; groupIndex: number; tasks: PrdTask[] } {
-		return getParallelExecutionManager().startNextGroup();
-	}
+  function startNextParallelGroup(): { started: boolean; groupIndex: number; tasks: PrdTask[] } {
+    return getParallelExecutionManager().startNextGroup();
+  }
 
-	function recordParallelTaskStart(task: PrdTask, processId: string): void {
-		getParallelExecutionManager().recordTaskStart(task, processId);
-	}
+  function recordParallelTaskStart(task: PrdTask, processId: string): void {
+    getParallelExecutionManager().recordTaskStart(task, processId);
+  }
 
-	function recordParallelTaskComplete(
-		taskId: string,
-		taskTitle: string,
-		wasSuccessful: boolean,
-		error?: string,
-	): { groupComplete: boolean; allSucceeded: boolean } {
-		return getParallelExecutionManager().recordTaskComplete(
-			taskId,
-			taskTitle,
-			wasSuccessful,
-			error,
-		);
-	}
+  function recordParallelTaskComplete(
+    taskId: string,
+    taskTitle: string,
+    wasSuccessful: boolean,
+    error?: string,
+  ): { groupComplete: boolean; allSucceeded: boolean } {
+    return getParallelExecutionManager().recordTaskComplete(
+      taskId,
+      taskTitle,
+      wasSuccessful,
+      error,
+    );
+  }
 
-	function getReadyTasksForParallelExecution(): PrdTask[] {
-		return getParallelExecutionManager().getReadyTasks();
-	}
+  function getReadyTasksForParallelExecution(): PrdTask[] {
+    return getParallelExecutionManager().getReadyTasks();
+  }
 
-	function hasMoreParallelGroups(): boolean {
-		return getParallelExecutionManager().hasMoreGroups();
-	}
+  function hasMoreParallelGroups(): boolean {
+    return getParallelExecutionManager().hasMoreGroups();
+  }
 
-	function getParallelExecutionSummary(): ParallelExecutionSummary {
-		return getParallelExecutionManager().getSummary();
-	}
+  function getParallelExecutionSummary(): ParallelExecutionSummary {
+    return getParallelExecutionManager().getSummary();
+  }
 
-	function disableParallelExecution(): void {
-		parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
-		getParallelExecutionManager().disable();
-	}
+  function disableParallelExecution(): void {
+    parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
+    getParallelExecutionManager().disable();
+  }
 
-	function getConfig(): RalphConfig | null {
-		return config;
-	}
+  function getConfig(): RalphConfig | null {
+    return config;
+  }
 
-	function setupIterationCallbacks(): void {
-		if (!config) {
-			throw new Error("Orchestrator must be initialized before setting up iteration callbacks");
-		}
+  function setupIterationCallbacks(): void {
+    if (!config) {
+      throw new Error("Orchestrator must be initialized before setting up iteration callbacks");
+    }
 
-		const branchModeManager = getBranchModeManager();
+    const branchModeManager = getBranchModeManager();
 
-		getIterationCoordinator().setupIterationCallbacks({
-			iterations,
-			config,
-			skipVerification,
-			branchModeEnabled: branchModeManager.isEnabled(),
-			branchModeConfig: branchModeManager.getConfig(),
-		});
-	}
+    getIterationCoordinator().setupIterationCallbacks({
+      branchModeConfig: branchModeManager.getConfig(),
+      branchModeEnabled: branchModeManager.isEnabled(),
+      config,
+      iterations,
+      skipVerification,
+    });
+  }
 
-	function startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
-		const sessionManager = getSessionManager();
+  function startSession(prd: Prd | null, totalIterations: number): StartSessionResult {
+    const sessionManager = getSessionManager();
 
-		if (config) {
-			sessionManager.setConfig(config);
-		}
+    if (config) {
+      sessionManager.setConfig(config);
+    }
 
-		return sessionManager.startSession(prd, totalIterations);
-	}
+    return sessionManager.startSession(prd, totalIterations);
+  }
 
-	function resumeSession(pendingSession: Session, prd: Prd | null): ResumeSessionResult {
-		const sessionManager = getSessionManager();
+  function resumeSession(pendingSession: Session, prd: Prd | null): ResumeSessionResult {
+    const sessionManager = getSessionManager();
 
-		if (config) {
-			sessionManager.setConfig(config);
-		}
+    if (config) {
+      sessionManager.setConfig(config);
+    }
 
-		return sessionManager.resumeSession(pendingSession, prd);
-	}
+    return sessionManager.resumeSession(pendingSession, prd);
+  }
 
-	function handleFatalError(
-		error: string,
-		prd: Prd | null,
-		currentSession: Session | null,
-	): Session | null {
-		const result = getSessionManager().handleFatalError(error, prd, currentSession);
+  function handleFatalError(
+    error: string,
+    prd: Prd | null,
+    currentSession: Session | null,
+  ): Session | null {
+    const result = getSessionManager().handleFatalError(error, prd, currentSession);
 
-		return result.session;
-	}
+    return result.session;
+  }
 
-	function cleanup(): void {
-		initialized = false;
+  function cleanup(): void {
+    initialized = false;
 
-		getHandlerCoordinator().cleanup();
-		getIterationCoordinator().clearState();
-		getParallelExecutionManager().reset();
-		getBranchModeManager().reset();
+    getHandlerCoordinator().cleanup();
+    getIterationCoordinator().clearState();
+    getParallelExecutionManager().reset();
+    getBranchModeManager().reset();
 
-		parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
+    parallelConfig = { enabled: false, maxConcurrentTasks: 1 };
 
-		eventBus.removeAllListeners();
-	}
+    eventBus.removeAllListeners();
+  }
 
-	return {
-		initialize,
-		setupIterationCallbacks,
-		getConfig,
-		getIsVerifying,
-		isBranchModeEnabled,
-		getBranchModeConfig,
-		getCurrentTaskBranch,
-		getBaseBranch,
-		initializeBranchMode,
-		createTaskBranch,
-		completeTaskBranch,
-		createPullRequestForBranch,
-		isParallelModeEnabled,
-		getParallelConfig,
-		getCurrentParallelGroup,
-		getParallelExecutionGroups,
-		initializeParallelExecution,
-		startNextParallelGroup,
-		recordParallelTaskStart,
-		recordParallelTaskComplete,
-		getReadyTasksForParallelExecution,
-		hasMoreParallelGroups,
-		getParallelExecutionSummary,
-		disableParallelExecution,
-		startSession,
-		resumeSession,
-		handleFatalError,
-		cleanup,
-	};
+  return {
+    cleanup,
+    completeTaskBranch,
+    createPullRequestForBranch,
+    createTaskBranch,
+    disableParallelExecution,
+    getBaseBranch,
+    getBranchModeConfig,
+    getConfig,
+    getCurrentParallelGroup,
+    getCurrentTaskBranch,
+    getIsVerifying,
+    getParallelConfig,
+    getParallelExecutionGroups,
+    getParallelExecutionSummary,
+    getReadyTasksForParallelExecution,
+    handleFatalError,
+    hasMoreParallelGroups,
+    initialize,
+    initializeBranchMode,
+    initializeParallelExecution,
+    isBranchModeEnabled,
+    isParallelModeEnabled,
+    recordParallelTaskComplete,
+    recordParallelTaskStart,
+    resumeSession,
+    setupIterationCallbacks,
+    startNextParallelGroup,
+    startSession,
+  };
 }

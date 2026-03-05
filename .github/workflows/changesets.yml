@@ -60,10 +60,10 @@ jobs:
             found { output = output $0 "\n" }
             END { print output }
           ' CHANGELOG.md)
-          
+
           # Trim trailing whitespace
           CHANGELOG=$(echo "$CHANGELOG" | sed -e 's/[[:space:]]*$//')
-          
+
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT

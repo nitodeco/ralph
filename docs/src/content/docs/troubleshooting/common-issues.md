@@ -15,6 +15,7 @@ This page covers frequently encountered issues and their solutions. For each pro
 ### Agent Not Found
 
 **Symptoms:**
+
 ```
 Error: cursor: command not found
 Error: spawn cursor ENOENT
@@ -70,11 +71,13 @@ Check that the `agent` setting matches your installed agent.
 ### Agent Keeps Timing Out
 
 **Symptoms:**
+
 - Iterations consistently hit the 30-minute timeout
 - Ralph retries but times out again
 - Tasks are never completed
 
 **Causes:**
+
 - Tasks are too complex for the timeout window
 - Agent is working on large files or complex operations
 - System is slow or under heavy load
@@ -92,6 +95,7 @@ Edit `~/.ralph/config.json`:
 ```
 
 Common timeout values:
+
 - 1800000 (30 min) — Default, good for most tasks
 - 3600000 (1 hour) — Complex refactors
 - 5400000 (90 min) — Large migrations
@@ -137,11 +141,13 @@ Some agents work better for certain tasks:
 ### Agent Appears Stuck
 
 **Symptoms:**
+
 - Agent runs but produces no output for 5+ minutes
 - Terminal shows no activity
 - Ralph eventually triggers stuck detection
 
 **Causes:**
+
 - Agent is waiting for user input (shouldn't happen but can)
 - Agent is processing large files
 - Network issues (agent can't reach API)
@@ -186,6 +192,7 @@ tail -f ~/.ralph/projects/<project>/logs/latest.log
 ```
 
 Look for:
+
 - Network errors
 - API rate limits
 - Authentication issues
@@ -209,6 +216,7 @@ ralph run
 ### Agent Produces Errors
 
 **Symptoms:**
+
 - Agent exits with error code
 - Error messages in output
 - Iteration fails immediately
@@ -216,6 +224,7 @@ ralph run
 **Common Errors and Solutions:**
 
 **"Permission denied"**
+
 ```bash
 # Fix file permissions
 chmod +x script.sh
@@ -225,6 +234,7 @@ chmod 755 directory/
 ```
 
 **"Module not found"**
+
 ```bash
 # Install dependencies
 npm install
@@ -233,6 +243,7 @@ bun install
 ```
 
 **"Git conflict"**
+
 ```bash
 # Resolve conflicts
 git status
@@ -243,6 +254,7 @@ git commit
 ```
 
 **"Database connection failed"**
+
 ```bash
 # Check database is running
 docker ps
@@ -259,6 +271,7 @@ psql -h localhost -U user -d database
 ### Session Already Running
 
 **Symptoms:**
+
 ```
 Error: A session is already active for this project
 Cannot start new session while another is running
@@ -305,12 +318,14 @@ ralph run
 ### Can't Resume Session
 
 **Symptoms:**
+
 ```
 Error: No session to resume
 Session file not found or corrupted
 ```
 
 **Causes:**
+
 - Session was never started
 - Session was cleared
 - Session file was deleted or corrupted
@@ -347,11 +362,13 @@ ralph run
 ### Session Progress Lost
 
 **Symptoms:**
+
 - Progress notes disappeared
 - Task completion status reset
 - Session appears to start from beginning
 
 **Causes:**
+
 - Session was cleared with `ralph clear`
 - Working in wrong directory
 - Project not properly registered
@@ -396,6 +413,7 @@ Logs contain historical progress that can help reconstruct what was done.
 ### Session Won't Stop
 
 **Symptoms:**
+
 - `ralph stop` hangs
 - `Ctrl+C` doesn't work
 - Session continues running
@@ -435,12 +453,14 @@ ralph clear   # If needed
 ### No Tasks Found
 
 **Symptoms:**
+
 ```
 Error: No tasks defined in PRD
 PRD file is empty or missing
 ```
 
 **Causes:**
+
 - Project not initialized
 - PRD file was deleted
 - Working in wrong directory
@@ -470,11 +490,13 @@ ralph task add --title "Second task"
 ### Tasks Not Completing
 
 **Symptoms:**
+
 - Agent appears to finish work
 - But task status stays pending
 - `ralph task list` shows no progress
 
 **Causes:**
+
 - Agent isn't calling `ralph task done`
 - Ralph command not accessible from agent
 - Agent doesn't have permissions to run commands
@@ -504,15 +526,18 @@ ralph task done 3
 
 Create or edit `~/.ralph/projects/<project>/instructions.md`:
 
-```markdown
+````markdown
 ## Completion Protocol
 
 When you finish a task, you MUST run:
+
 ```bash
 ralph task done <task-number>
 ralph progress add "Description of what was done"
 ```
-```
+````
+
+````
 
 ### Wrong Task Being Worked On
 
@@ -532,7 +557,7 @@ ralph progress add "Description of what was done"
 
 ```bash
 ralph task current
-```
+````
 
 2. **View all task statuses:**
 
@@ -563,11 +588,13 @@ ralph task done 2
 ### Task Keeps Failing
 
 **Symptoms:**
+
 - Same task fails repeatedly
 - All retries exhausted
 - Ralph moves to next task
 
 **Causes:**
+
 - Task is too complex
 - Task description is unclear
 - Agent lacks necessary context
@@ -612,6 +639,7 @@ ralph progress add "Completed manually. Agent struggled with X, used Y approach 
 ### Not Authenticated
 
 **Symptoms:**
+
 ```
 Error: Not authenticated with GitHub
 GitHub operations require authentication
@@ -652,12 +680,14 @@ Should show "Authenticated" status.
 ### Repository Not Found
 
 **Symptoms:**
+
 ```
 Error: Repository not found
 Could not detect GitHub repository
 ```
 
 **Causes:**
+
 - No git remote configured
 - Remote doesn't point to GitHub
 - Wrong directory
@@ -671,6 +701,7 @@ git remote -v
 ```
 
 Should show a GitHub URL:
+
 ```
 origin  git@github.com:user/repo.git (fetch)
 origin  git@github.com:user/repo.git (push)
@@ -698,12 +729,14 @@ ralph github
 ### PR Creation Fails
 
 **Symptoms:**
+
 ```
 Error: Failed to create pull request
 API error: 422 Unprocessable Entity
 ```
 
 **Causes:**
+
 - Branch already exists
 - No changes to commit
 - Insufficient permissions
@@ -746,6 +779,7 @@ If this works, the issue is with Ralph's integration.
 ### Invalid Configuration
 
 **Symptoms:**
+
 ```
 Error: Invalid configuration
 Failed to parse config file
@@ -803,11 +837,13 @@ ralph config
 ### Settings Not Taking Effect
 
 **Symptoms:**
+
 - Changed timeout but still timing out at old value
 - Changed agent but still using old one
 - Configuration appears ignored
 
 **Causes:**
+
 - Editing wrong config file (global vs project)
 - JSON syntax error (silently ignored)
 - Session started before config change
@@ -852,6 +888,7 @@ Environment variables take precedence over config files.
 ### Memory Warning
 
 **Symptoms:**
+
 ```
 Warning: Memory usage exceeds 500 MB
 Consider reducing maxOutputBufferBytes
@@ -893,6 +930,7 @@ ps aux | grep ralph
 ### Out of Memory
 
 **Symptoms:**
+
 ```
 Error: JavaScript heap out of memory
 FATAL ERROR: Reached heap limit
@@ -938,6 +976,7 @@ ralph run
 ### Slow Iterations
 
 **Symptoms:**
+
 - Each iteration takes very long
 - Agent appears slow to respond
 - System feels sluggish
@@ -969,6 +1008,7 @@ Some agents are faster than others for certain tasks.
 ### High CPU Usage
 
 **Symptoms:**
+
 - CPU at 100%
 - System fans running loud
 - Other applications slow

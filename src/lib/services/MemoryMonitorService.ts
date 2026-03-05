@@ -1,92 +1,92 @@
 export interface MemoryMonitorService {
-	start(onThresholdExceeded: () => void): void;
-	stop(): void;
-	isActive(): boolean;
-	getMemoryUsageMb(): number;
-	setThresholdMb(mb: number): void;
-	getThresholdMb(): number;
+  start(onThresholdExceeded: () => void): void;
+  stop(): void;
+  isActive(): boolean;
+  getMemoryUsageMb(): number;
+  setThresholdMb(mb: number): void;
+  getThresholdMb(): number;
 }
 
 export interface MemoryMonitorConfig {
-	thresholdMb: number;
-	checkIntervalMs: number;
+  thresholdMb: number;
+  checkIntervalMs: number;
 }
 
-const DEFAULT_THRESHOLD_MB = 1_024;
+const DEFAULT_THRESHOLD_MB = 1024;
 const DEFAULT_CHECK_INTERVAL_MS = 10_000;
 
 let monitorInterval: ReturnType<typeof setInterval> | null = null;
 let isMonitoring = false;
 let currentConfig: MemoryMonitorConfig = {
-	thresholdMb: DEFAULT_THRESHOLD_MB,
-	checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
+  checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
+  thresholdMb: DEFAULT_THRESHOLD_MB,
 };
 
 function getMemoryUsageMb(): number {
-	const { rss } = process.memoryUsage();
+  const { rss } = process.memoryUsage();
 
-	return Math.round(rss / 1024 / 1024);
+  return Math.round(rss / 1024 / 1024);
 }
 
 function startMonitoring(onThresholdExceeded: () => void): void {
-	if (isMonitoring) {
-		return;
-	}
+  if (isMonitoring) {
+    return;
+  }
 
-	isMonitoring = true;
+  isMonitoring = true;
 
-	monitorInterval = setInterval(() => {
-		const usageMb = getMemoryUsageMb();
+  monitorInterval = setInterval(() => {
+    const usageMb = getMemoryUsageMb();
 
-		if (usageMb >= currentConfig.thresholdMb) {
-			stopMonitoring();
-			onThresholdExceeded();
-		}
-	}, currentConfig.checkIntervalMs);
+    if (usageMb >= currentConfig.thresholdMb) {
+      stopMonitoring();
+      onThresholdExceeded();
+    }
+  }, currentConfig.checkIntervalMs);
 }
 
 function stopMonitoring(): void {
-	if (monitorInterval !== null) {
-		clearInterval(monitorInterval);
-		monitorInterval = null;
-	}
+  if (monitorInterval !== null) {
+    clearInterval(monitorInterval);
+    monitorInterval = null;
+  }
 
-	isMonitoring = false;
+  isMonitoring = false;
 }
 
 function isMonitoringActive(): boolean {
-	return isMonitoring;
+  return isMonitoring;
 }
 
 function setThresholdMb(mb: number): void {
-	currentConfig.thresholdMb = mb;
+  currentConfig.thresholdMb = mb;
 }
 
 function getThresholdMb(): number {
-	return currentConfig.thresholdMb;
+  return currentConfig.thresholdMb;
 }
 
 export function createMemoryMonitorService(
-	config?: Partial<MemoryMonitorConfig>,
+  config?: Partial<MemoryMonitorConfig>,
 ): MemoryMonitorService {
-	if (config) {
-		currentConfig = {
-			thresholdMb: config.thresholdMb ?? DEFAULT_THRESHOLD_MB,
-			checkIntervalMs: config.checkIntervalMs ?? DEFAULT_CHECK_INTERVAL_MS,
-		};
-	}
+  if (config) {
+    currentConfig = {
+      checkIntervalMs: config.checkIntervalMs ?? DEFAULT_CHECK_INTERVAL_MS,
+      thresholdMb: config.thresholdMb ?? DEFAULT_THRESHOLD_MB,
+    };
+  }
 
-	return {
-		start: startMonitoring,
-		stop: stopMonitoring,
-		isActive: isMonitoringActive,
-		getMemoryUsageMb,
-		setThresholdMb,
-		getThresholdMb,
-	};
+  return {
+    getMemoryUsageMb,
+    getThresholdMb,
+    isActive: isMonitoringActive,
+    setThresholdMb,
+    start: startMonitoring,
+    stop: stopMonitoring,
+  };
 }
 
 export const MEMORY_MONITOR_DEFAULTS = {
-	thresholdMb: DEFAULT_THRESHOLD_MB,
-	checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
+  checkIntervalMs: DEFAULT_CHECK_INTERVAL_MS,
+  thresholdMb: DEFAULT_THRESHOLD_MB,
 } as const;

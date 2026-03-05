@@ -7,393 +7,392 @@ import { runAgentWithPrompt } from "@/lib/agent.ts";
 import { AGENT_OUTPUT_PREVIEW_MAX_CHARS } from "@/lib/constants/ui.ts";
 import { getErrorMessage } from "@/lib/errors.ts";
 import { ensureProjectDirExists, getPrdJsonPath, getProgressFilePath } from "@/lib/paths.ts";
-import { buildPrdGenerationPrompt, PRD_OUTPUT_END, PRD_OUTPUT_START } from "@/lib/prompt.ts";
+import { PRD_OUTPUT_END, PRD_OUTPUT_START, buildPrdGenerationPrompt } from "@/lib/prompt.ts";
 import {
-	getConfigService,
-	getPrdService,
-	getProjectRegistryService,
-	isPrd,
+  getConfigService,
+  getPrdService,
+  getProjectRegistryService,
+  isPrd,
 } from "@/lib/services/index.ts";
 import type { AgentType, Prd, RalphConfig } from "@/types.ts";
 import { Message } from "./common/Message.tsx";
 import { Spinner } from "./common/Spinner.tsx";
-import { expandPastedSegments, type PastedTextSegment, TextInput } from "./common/TextInput.tsx";
+import { type PastedTextSegment, TextInput, expandPastedSegments } from "./common/TextInput.tsx";
 import { Header } from "./Header.tsx";
 
 interface InitWizardProps {
-	version: string;
-	onComplete?: () => void;
+  version: string;
+  onComplete?: () => void;
 }
 
 type WizardStep =
-	| "check_existing_prd"
-	| "check_existing_progress"
-	| "agent_type"
-	| "description"
-	| "generating"
-	| "complete"
-	| "error"
-	| "aborted";
+  | "check_existing_prd"
+  | "check_existing_progress"
+  | "agent_type"
+  | "description"
+  | "generating"
+  | "complete"
+  | "error"
+  | "aborted";
 
 interface WizardState {
-	step: WizardStep;
-	agentType: AgentType;
-	description: string;
-	generatedPrd: Prd | null;
-	existingPrdPath: string | null;
-	existingProgressPath: boolean;
-	errorMessage: string | null;
-	agentOutput: string;
+  step: WizardStep;
+  agentType: AgentType;
+  description: string;
+  generatedPrd: Prd | null;
+  existingPrdPath: string | null;
+  existingProgressPath: boolean;
+  errorMessage: string | null;
+  agentOutput: string;
 }
 
 const AGENT_CHOICES = [
-	{ label: "Cursor", value: "cursor" as const },
-	{ label: "Claude Code", value: "claude" as const },
-	{ label: "Codex", value: "codex" as const },
+  { label: "Cursor", value: "cursor" as const },
+  { label: "Claude Code", value: "claude" as const },
+  { label: "Codex", value: "codex" as const },
 ];
 
 const YES_NO_CHOICES = [
-	{ label: "Yes", value: true },
-	{ label: "No", value: false },
+  { label: "Yes", value: true },
+  { label: "No", value: false },
 ];
 
 function parsePrdFromOutput(output: string): Prd | null {
-	const startMarker = PRD_OUTPUT_START;
-	const endMarker = PRD_OUTPUT_END;
+  const startMarker = PRD_OUTPUT_START;
+  const endMarker = PRD_OUTPUT_END;
 
-	const startIndex = output.indexOf(startMarker);
-	const endIndex = output.indexOf(endMarker);
+  const startIndex = output.indexOf(startMarker);
+  const endIndex = output.indexOf(endMarker);
 
-	if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
-		return null;
-	}
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return null;
+  }
 
-	const prdContent = output.slice(startIndex + startMarker.length, endIndex).trim();
+  const prdContent = output.slice(startIndex + startMarker.length, endIndex).trim();
 
-	try {
-		const parsed: unknown = JSON.parse(prdContent);
+  try {
+    const parsed: unknown = JSON.parse(prdContent);
 
-		if (!isPrd(parsed)) {
-			return null;
-		}
+    if (!isPrd(parsed)) {
+      return null;
+    }
 
-		return parsed;
-	} catch {
-		return null;
-	}
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export function InitWizard({ version, onComplete }: InitWizardProps): React.ReactElement {
-	const { exit } = useApp();
+  const { exit } = useApp();
 
-	const handleExit = () => {
-		if (onComplete) {
-			onComplete();
-		} else {
-			exit();
-		}
-	};
+  const handleExit = () => {
+    if (onComplete) {
+      onComplete();
+    } else {
+      exit();
+    }
+  };
 
-	const prdService = getPrdService();
-	const configService = getConfigService();
-	const existingPrd = prdService.findFile();
-	const progressFilePath = getProgressFilePath();
-	const existingProgress = existsSync(progressFilePath);
-	const globalConfig = configService.loadGlobal();
+  const prdService = getPrdService();
+  const configService = getConfigService();
+  const existingPrd = prdService.findFile();
+  const progressFilePath = getProgressFilePath();
+  const existingProgress = existsSync(progressFilePath);
+  const globalConfig = configService.loadGlobal();
 
-	const getInitialStep = (): WizardStep => {
-		if (existingPrd) {
-			return "check_existing_prd";
-		}
+  const getInitialStep = (): WizardStep => {
+    if (existingPrd) {
+      return "check_existing_prd";
+    }
 
-		if (existingProgress) {
-			return "check_existing_progress";
-		}
+    if (existingProgress) {
+      return "check_existing_progress";
+    }
 
-		return "agent_type";
-	};
+    return "agent_type";
+  };
 
-	const [state, setState] = useState<WizardState>({
-		step: getInitialStep(),
-		agentType: globalConfig.agent,
-		description: "",
-		generatedPrd: null,
-		existingPrdPath: existingPrd,
-		existingProgressPath: existingProgress,
-		errorMessage: null,
-		agentOutput: "",
-	});
+  const [state, setState] = useState<WizardState>({
+    agentOutput: "",
+    agentType: globalConfig.agent,
+    description: "",
+    errorMessage: null,
+    existingPrdPath: existingPrd,
+    existingProgressPath: existingProgress,
+    generatedPrd: null,
+    step: getInitialStep(),
+  });
 
-	const [inputValue, setInputValue] = useState("");
-	const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
-	const abortRef = useRef<(() => void) | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [pastedSegments, setPastedSegments] = useState<PastedTextSegment[]>([]);
+  const abortRef = useRef<(() => void) | null>(null);
 
-	const handlePaste = (segment: PastedTextSegment) => {
-		setPastedSegments((prev) => [...prev, segment]);
-	};
+  const handlePaste = (segment: PastedTextSegment) => {
+    setPastedSegments((prev) => [...prev, segment]);
+  };
 
-	const handleGenerationCancel = () => {
-		if (abortRef.current) {
-			abortRef.current();
-		}
-	};
+  const handleGenerationCancel = () => {
+    if (abortRef.current) {
+      abortRef.current();
+    }
+  };
 
-	const handleConfirmOverwritePrd = (item: { value: boolean }) => {
-		if (!item.value) {
-			setState((prev) => ({ ...prev, step: "aborted" }));
+  const handleConfirmOverwritePrd = (item: { value: boolean }) => {
+    if (!item.value) {
+      setState((prev) => ({ ...prev, step: "aborted" }));
 
-			return;
-		}
+      return;
+    }
 
-		if (state.existingProgressPath) {
-			setState((prev) => ({ ...prev, step: "check_existing_progress" }));
-		} else {
-			setState((prev) => ({ ...prev, step: "agent_type" }));
-		}
-	};
+    if (state.existingProgressPath) {
+      setState((prev) => ({ ...prev, step: "check_existing_progress" }));
+    } else {
+      setState((prev) => ({ ...prev, step: "agent_type" }));
+    }
+  };
 
-	const handleConfirmOverwriteProgress = (item: { value: boolean }) => {
-		if (!item.value) {
-			setState((prev) => ({ ...prev, step: "aborted" }));
+  const handleConfirmOverwriteProgress = (item: { value: boolean }) => {
+    if (!item.value) {
+      setState((prev) => ({ ...prev, step: "aborted" }));
 
-			return;
-		}
+      return;
+    }
 
-		setState((prev) => ({ ...prev, step: "agent_type" }));
-	};
+    setState((prev) => ({ ...prev, step: "agent_type" }));
+  };
 
-	const handleAgentSelect = (item: { value: AgentType }) => {
-		setState((prev) => ({ ...prev, agentType: item.value, step: "description" }));
-		setInputValue("");
-	};
+  const handleAgentSelect = (item: { value: AgentType }) => {
+    setState((prev) => ({ ...prev, agentType: item.value, step: "description" }));
+    setInputValue("");
+  };
 
-	const handleDescriptionSubmit = async (value: string) => {
-		const expandedValue = expandPastedSegments(value, pastedSegments);
-		const description = expandedValue.trim();
+  const handleDescriptionSubmit = async (value: string) => {
+    const expandedValue = expandPastedSegments(value, pastedSegments);
+    const description = expandedValue.trim();
 
-		if (!description) {
-			return;
-		}
+    if (!description) {
+      return;
+    }
 
-		setPastedSegments([]);
-		setState((prev) => ({
-			...prev,
-			description,
-			step: "generating",
-			agentOutput: "",
-		}));
+    setPastedSegments([]);
+    setState((prev) => ({
+      ...prev,
+      agentOutput: "",
+      description,
+      step: "generating",
+    }));
 
-		try {
-			const prompt = buildPrdGenerationPrompt(description);
-			const { promise, abort } = runAgentWithPrompt({
-				prompt,
-				agentType: state.agentType,
-				onOutput: (chunk) => {
-					setState((prev) => ({
-						...prev,
-						agentOutput: prev.agentOutput + chunk,
-					}));
-				},
-			});
+    try {
+      const prompt = buildPrdGenerationPrompt(description);
+      const { promise, abort } = runAgentWithPrompt({
+        agentType: state.agentType,
+        onOutput: (chunk) => {
+          setState((prev) => ({
+            ...prev,
+            agentOutput: prev.agentOutput + chunk,
+          }));
+        },
+        prompt,
+      });
 
-			abortRef.current = abort;
+      abortRef.current = abort;
 
-			const output = await promise;
+      const output = await promise;
 
-			abortRef.current = null;
+      abortRef.current = null;
 
-			const prd = parsePrdFromOutput(output);
+      const prd = parsePrdFromOutput(output);
 
-			if (!prd) {
-				setState((prev) => ({
-					...prev,
-					step: "error",
-					errorMessage:
-						"Failed to parse PRD from agent output. The agent may not have followed the expected format.",
-				}));
+      if (!prd) {
+        setState((prev) => ({
+          ...prev,
+          errorMessage:
+            "Failed to parse PRD from agent output. The agent may not have followed the expected format.",
+          step: "error",
+        }));
 
-				return;
-			}
+        return;
+      }
 
-			const projectRegistryService = getProjectRegistryService();
+      const projectRegistryService = getProjectRegistryService();
 
-			projectRegistryService.registerProject(process.cwd(), {
-				displayName: prd.project,
-			});
-			ensureProjectDirExists();
-			prdService.save(prd);
+      projectRegistryService.registerProject(process.cwd(), {
+        displayName: prd.project,
+      });
+      ensureProjectDirExists();
+      prdService.save(prd);
 
-			const registeredProgressFilePath = getProgressFilePath();
+      const registeredProgressFilePath = getProgressFilePath();
 
-			writeFileSync(registeredProgressFilePath, "");
+      writeFileSync(registeredProgressFilePath, "");
 
-			const config: RalphConfig = { agent: state.agentType };
+      const config: RalphConfig = { agent: state.agentType };
 
-			configService.saveProject(config);
+      configService.saveProject(config);
 
-			setState((prev) => ({
-				...prev,
-				generatedPrd: prd,
-				step: "complete",
-			}));
-		} catch (error) {
-			abortRef.current = null;
-			const errorMessage = getErrorMessage(error);
+      setState((prev) => ({
+        ...prev,
+        generatedPrd: prd,
+        step: "complete",
+      }));
+    } catch (error) {
+      abortRef.current = null;
+      const errorMessage = getErrorMessage(error);
 
-			if (errorMessage === "Agent generation was cancelled") {
-				handleExit();
+      if (errorMessage === "Agent generation was cancelled") {
+        handleExit();
 
-				return;
-			}
+        return;
+      }
 
-			setState((prev) => ({
-				...prev,
-				step: "error",
-				errorMessage,
-			}));
-		}
-	};
+      setState((prev) => ({
+        ...prev,
+        errorMessage,
+        step: "error",
+      }));
+    }
+  };
 
-	useInput((input, key) => {
-		if (state.step === "complete" || state.step === "aborted" || state.step === "error") {
-			if (key.return || key.escape) {
-				handleExit();
-			}
-		}
+  useInput((input, key) => {
+    if (state.step === "complete" || state.step === "aborted" || state.step === "error") {
+      if (key.return || key.escape) {
+        handleExit();
+      }
+    }
 
-		if (state.step === "generating") {
-			if (key.escape || input === "q") {
-				handleGenerationCancel();
-			}
-		}
-	});
+    if (state.step === "generating") {
+      if (key.escape || input === "q") {
+        handleGenerationCancel();
+      }
+    }
+  });
 
-	const renderStep = () => {
-		return match(state.step)
-			.with("check_existing_prd", () => (
-				<Box flexDirection="column" gap={1}>
-					<Text color="yellow">
-						A PRD file already exists ({state.existingPrdPath}). Overwrite it?
-					</Text>
-					<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwritePrd} />
-				</Box>
-			))
-			.with("check_existing_progress", () => (
-				<Box flexDirection="column" gap={1}>
-					<Text color="yellow">{progressFilePath} already exists. Overwrite it?</Text>
-					<SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwriteProgress} />
-				</Box>
-			))
-			.with("agent_type", () => (
-				<Box flexDirection="column" gap={1}>
-					<Text color="cyan">Which AI agent do you want to use?</Text>
-					<SelectInput
-						items={AGENT_CHOICES}
-						initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
-						onSelect={handleAgentSelect}
-					/>
-				</Box>
-			))
-			.with("description", () => (
-				<Box flexDirection="column" gap={1}>
-					<Text color="cyan">Describe what you want to build:</Text>
-					<Text dimColor>Be as detailed as possible. The AI will break this down into tasks.</Text>
-					<Box marginTop={1}>
-						<Text color="green">❯ </Text>
-						<TextInput
-							value={inputValue}
-							onChange={setInputValue}
-							onSubmit={handleDescriptionSubmit}
-							placeholder="I want to build a..."
-							collapsePastedText
-							pastedSegments={pastedSegments}
-							onPaste={handlePaste}
-						/>
-					</Box>
-				</Box>
-			))
-			.with("generating", () => (
-				<Box flexDirection="column" gap={1}>
-					<Spinner label="Generating PRD from your description..." />
-					{state.agentOutput && (
-						<Box marginTop={1} flexDirection="column">
-							<Text dimColor>Agent output:</Text>
-							<Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
-								<Text dimColor>{state.agentOutput.slice(-AGENT_OUTPUT_PREVIEW_MAX_CHARS)}</Text>
-							</Box>
-						</Box>
-					)}
-					<Box marginTop={1}>
-						<Text dimColor>q/Esc Cancel</Text>
-					</Box>
-				</Box>
-			))
-			.with("complete", () => {
-				const agentNameMap: Record<AgentType, string> = {
-					cursor: "Cursor",
-					claude: "Claude Code",
-					codex: "Codex",
-				};
-				const agentName = agentNameMap[state.agentType];
-				const registeredPrdPath = getPrdJsonPath();
-				const registeredProgressPath = getProgressFilePath();
+  const renderStep = () =>
+    match(state.step)
+      .with("check_existing_prd", () => (
+        <Box flexDirection="column" gap={1}>
+          <Text color="yellow">
+            A PRD file already exists ({state.existingPrdPath}). Overwrite it?
+          </Text>
+          <SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwritePrd} />
+        </Box>
+      ))
+      .with("check_existing_progress", () => (
+        <Box flexDirection="column" gap={1}>
+          <Text color="yellow">{progressFilePath} already exists. Overwrite it?</Text>
+          <SelectInput items={YES_NO_CHOICES} onSelect={handleConfirmOverwriteProgress} />
+        </Box>
+      ))
+      .with("agent_type", () => (
+        <Box flexDirection="column" gap={1}>
+          <Text color="cyan">Which AI agent do you want to use?</Text>
+          <SelectInput
+            items={AGENT_CHOICES}
+            initialIndex={AGENT_CHOICES.findIndex((choice) => choice.value === state.agentType)}
+            onSelect={handleAgentSelect}
+          />
+        </Box>
+      ))
+      .with("description", () => (
+        <Box flexDirection="column" gap={1}>
+          <Text color="cyan">Describe what you want to build:</Text>
+          <Text dimColor>Be as detailed as possible. The AI will break this down into tasks.</Text>
+          <Box marginTop={1}>
+            <Text color="green">❯ </Text>
+            <TextInput
+              value={inputValue}
+              onChange={setInputValue}
+              onSubmit={handleDescriptionSubmit}
+              placeholder="I want to build a..."
+              collapsePastedText
+              pastedSegments={pastedSegments}
+              onPaste={handlePaste}
+            />
+          </Box>
+        </Box>
+      ))
+      .with("generating", () => (
+        <Box flexDirection="column" gap={1}>
+          <Spinner label="Generating PRD from your description..." />
+          {state.agentOutput && (
+            <Box marginTop={1} flexDirection="column">
+              <Text dimColor>Agent output:</Text>
+              <Box borderStyle="round" borderColor="gray" paddingX={1} marginTop={1}>
+                <Text dimColor>{state.agentOutput.slice(-AGENT_OUTPUT_PREVIEW_MAX_CHARS)}</Text>
+              </Box>
+            </Box>
+          )}
+          <Box marginTop={1}>
+            <Text dimColor>q/Esc Cancel</Text>
+          </Box>
+        </Box>
+      ))
+      .with("complete", () => {
+        const agentNameMap: Record<AgentType, string> = {
+          claude: "Claude Code",
+          codex: "Codex",
+          cursor: "Cursor",
+        };
+        const agentName = agentNameMap[state.agentType];
+        const registeredPrdPath = getPrdJsonPath();
+        const registeredProgressPath = getProgressFilePath();
 
-				return (
-					<Box flexDirection="column" gap={1}>
-						<Message type="success">
-							Created {registeredPrdPath} and {registeredProgressPath}
-						</Message>
-						<Text>
-							<Text dimColor>Project:</Text>{" "}
-							<Text color="yellow">{state.generatedPrd?.project}</Text>
-						</Text>
-						<Text>
-							<Text dimColor>Agent:</Text> <Text color="yellow">{agentName}</Text>
-						</Text>
-						<Text>
-							<Text dimColor>Tasks:</Text> <Text>{state.generatedPrd?.tasks.length ?? 0}</Text>
-						</Text>
-						{state.generatedPrd && state.generatedPrd.tasks.length > 0 && (
-							<Box flexDirection="column" marginTop={1}>
-								<Text dimColor>Generated tasks:</Text>
-								{state.generatedPrd.tasks.map((task, index) => (
-									<Text key={task.title}>
-										<Text dimColor> {index + 1}.</Text> {task.title}
-									</Text>
-								))}
-							</Box>
-						)}
-						<Box marginTop={1}>
-							<Text dimColor>Run 'ralph' to start working on your tasks.</Text>
-						</Box>
-						<Text dimColor>Press Enter to exit</Text>
-					</Box>
-				);
-			})
-			.with("error", () => (
-				<Box flexDirection="column" gap={1}>
-					<Message type="error">Error: {state.errorMessage}</Message>
-					<Text dimColor>Press Enter to exit</Text>
-				</Box>
-			))
-			.with("aborted", () => (
-				<Box flexDirection="column" gap={1}>
-					<Message type="warning">Aborted.</Message>
-					<Text dimColor>Press Enter to exit</Text>
-				</Box>
-			))
-			.exhaustive();
-	};
+        return (
+          <Box flexDirection="column" gap={1}>
+            <Message type="success">
+              Created {registeredPrdPath} and {registeredProgressPath}
+            </Message>
+            <Text>
+              <Text dimColor>Project:</Text>{" "}
+              <Text color="yellow">{state.generatedPrd?.project}</Text>
+            </Text>
+            <Text>
+              <Text dimColor>Agent:</Text> <Text color="yellow">{agentName}</Text>
+            </Text>
+            <Text>
+              <Text dimColor>Tasks:</Text> <Text>{state.generatedPrd?.tasks.length ?? 0}</Text>
+            </Text>
+            {state.generatedPrd && state.generatedPrd.tasks.length > 0 && (
+              <Box flexDirection="column" marginTop={1}>
+                <Text dimColor>Generated tasks:</Text>
+                {state.generatedPrd.tasks.map((task, index) => (
+                  <Text key={task.title}>
+                    <Text dimColor> {index + 1}.</Text> {task.title}
+                  </Text>
+                ))}
+              </Box>
+            )}
+            <Box marginTop={1}>
+              <Text dimColor>Run 'ralph' to start working on your tasks.</Text>
+            </Box>
+            <Text dimColor>Press Enter to exit</Text>
+          </Box>
+        );
+      })
+      .with("error", () => (
+        <Box flexDirection="column" gap={1}>
+          <Message type="error">Error: {state.errorMessage}</Message>
+          <Text dimColor>Press Enter to exit</Text>
+        </Box>
+      ))
+      .with("aborted", () => (
+        <Box flexDirection="column" gap={1}>
+          <Message type="warning">Aborted.</Message>
+          <Text dimColor>Press Enter to exit</Text>
+        </Box>
+      ))
+      .exhaustive();
 
-	return (
-		<Box flexDirection="column" padding={1}>
-			<Header version={version} />
-			<Box flexDirection="column" marginTop={1} paddingX={1}>
-				<Box marginBottom={1}>
-					<Text bold>Initialize new PRD project</Text>
-				</Box>
-				{renderStep()}
-			</Box>
-		</Box>
-	);
+  return (
+    <Box flexDirection="column" padding={1}>
+      <Header version={version} />
+      <Box flexDirection="column" marginTop={1} paddingX={1}>
+        <Box marginBottom={1}>
+          <Text bold>Initialize new PRD project</Text>
+        </Box>
+        {renderStep()}
+      </Box>
+    </Box>
+  );
 }

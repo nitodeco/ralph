@@ -5,200 +5,200 @@ import { match } from "ts-pattern";
 import type { NotificationConfig, NotificationEvent } from "@/types.ts";
 
 interface NotificationPayload {
-	event: NotificationEvent;
-	project?: string;
-	message: string;
-	timestamp: string;
-	details?: Record<string, unknown>;
+  event: NotificationEvent;
+  project?: string;
+  message: string;
+  timestamp: string;
+  details?: Record<string, unknown>;
 }
 
 function getEventTitle(event: NotificationEvent): string {
-	return match(event)
-		.with("complete", () => "Ralph - All Tasks Complete")
-		.with("max_iterations", () => "Ralph - Max Iterations Reached")
-		.with("fatal_error", () => "Ralph - Fatal Error")
-		.with("input_required", () => "Ralph - Input Required")
-		.with("session_paused", () => "Ralph - Session Paused")
-		.with("verification_failed", () => "Ralph - Verification Failed")
-		.exhaustive();
+  return match(event)
+    .with("complete", () => "Ralph - All Tasks Complete")
+    .with("max_iterations", () => "Ralph - Max Iterations Reached")
+    .with("fatal_error", () => "Ralph - Fatal Error")
+    .with("input_required", () => "Ralph - Input Required")
+    .with("session_paused", () => "Ralph - Session Paused")
+    .with("verification_failed", () => "Ralph - Verification Failed")
+    .exhaustive();
 }
 
 function getEventMessage(event: NotificationEvent, projectName?: string): string {
-	const projectPrefix = projectName ? `[${projectName}] ` : "";
+  const projectPrefix = projectName ? `[${projectName}] ` : "";
 
-	return match(event)
-		.with("complete", () => `${projectPrefix}All tasks have been completed successfully!`)
-		.with(
-			"max_iterations",
-			() => `${projectPrefix}Maximum iterations reached. PRD is not yet complete.`,
-		)
-		.with("fatal_error", () => `${projectPrefix}A fatal error occurred. Check logs for details.`)
-		.with("input_required", () => `${projectPrefix}Waiting for your input to continue.`)
-		.with(
-			"session_paused",
-			() => `${projectPrefix}Session has been paused. Use /resume to continue.`,
-		)
-		.with(
-			"verification_failed",
-			() => `${projectPrefix}Verification failed. Review required before continuing.`,
-		)
-		.exhaustive();
+  return match(event)
+    .with("complete", () => `${projectPrefix}All tasks have been completed successfully!`)
+    .with(
+      "max_iterations",
+      () => `${projectPrefix}Maximum iterations reached. PRD is not yet complete.`,
+    )
+    .with("fatal_error", () => `${projectPrefix}A fatal error occurred. Check logs for details.`)
+    .with("input_required", () => `${projectPrefix}Waiting for your input to continue.`)
+    .with(
+      "session_paused",
+      () => `${projectPrefix}Session has been paused. Use /resume to continue.`,
+    )
+    .with(
+      "verification_failed",
+      () => `${projectPrefix}Verification failed. Review required before continuing.`,
+    )
+    .exhaustive();
 }
 
 function getTerminalBundleId(): string {
-	const terminalProgram = process.env.TERM_PROGRAM ?? "Apple_Terminal";
+  const terminalProgram = process.env.TERM_PROGRAM ?? "Apple_Terminal";
 
-	return match(terminalProgram)
-		.with("iTerm.app", () => "com.googlecode.iterm2")
-		.with("Apple_Terminal", () => "com.apple.Terminal")
-		.with("Hyper", () => "co.zeit.hyper")
-		.with("Alacritty", () => "org.alacritty")
-		.with("kitty", () => "net.kovidgoyal.kitty")
-		.with("WezTerm", () => "com.github.wez.wezterm")
-		.with("Ghostty", () => "com.mitchellh.ghostty")
-		.otherwise(() => "com.apple.Terminal");
+  return match(terminalProgram)
+    .with("iTerm.app", () => "com.googlecode.iterm2")
+    .with("Apple_Terminal", () => "com.apple.Terminal")
+    .with("Hyper", () => "co.zeit.hyper")
+    .with("Alacritty", () => "org.alacritty")
+    .with("kitty", () => "net.kovidgoyal.kitty")
+    .with("WezTerm", () => "com.github.wez.wezterm")
+    .with("Ghostty", () => "com.mitchellh.ghostty")
+    .otherwise(() => "com.apple.Terminal");
 }
 
 function isTerminalNotifierAvailable(): boolean {
-	try {
-		execSync("which terminal-notifier", { stdio: "ignore" });
+  try {
+    execSync("which terminal-notifier", { stdio: "ignore" });
 
-		return true;
-	} catch {
-		return false;
-	}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function sendNotificationWithTerminalNotifier(title: string, message: string): boolean {
-	const bundleId = getTerminalBundleId();
-	const escapedTitle = title.replace(/'/g, "'\\''");
-	const escapedMessage = message.replace(/'/g, "'\\''");
+  const bundleId = getTerminalBundleId();
+  const escapedTitle = title.replace(/'/g, String.raw`'\''`);
+  const escapedMessage = message.replace(/'/g, String.raw`'\''`);
 
-	try {
-		execSync(
-			`terminal-notifier -title '${escapedTitle}' -message '${escapedMessage}' -activate '${bundleId}'`,
-			{ stdio: "ignore" },
-		);
+  try {
+    execSync(
+      `terminal-notifier -title '${escapedTitle}' -message '${escapedMessage}' -activate '${bundleId}'`,
+      { stdio: "ignore" },
+    );
 
-		return true;
-	} catch {
-		return false;
-	}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function sendNotificationWithAppleScript(title: string, message: string): boolean {
-	const escapedTitle = title.replace(/"/g, '\\"');
-	const escapedMessage = message.replace(/"/g, '\\"');
-	const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`;
+  const escapedTitle = title.replace(/"/g, String.raw`\"`);
+  const escapedMessage = message.replace(/"/g, String.raw`\"`);
+  const script = `display notification "${escapedMessage}" with title "${escapedTitle}"`;
 
-	try {
-		execSync(`osascript -e '${script}'`, { stdio: "ignore" });
+  try {
+    execSync(`osascript -e '${script}'`, { stdio: "ignore" });
 
-		return true;
-	} catch {
-		return false;
-	}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function sendSystemNotification(
-	event: NotificationEvent,
-	projectName?: string,
+  event: NotificationEvent,
+  projectName?: string,
 ): Promise<boolean> {
-	const currentPlatform = platform();
+  const currentPlatform = platform();
 
-	if (currentPlatform !== "darwin") {
-		return false;
-	}
+  if (currentPlatform !== "darwin") {
+    return false;
+  }
 
-	const title = getEventTitle(event);
-	const message = getEventMessage(event, projectName);
+  const title = getEventTitle(event);
+  const message = getEventMessage(event, projectName);
 
-	if (isTerminalNotifierAvailable()) {
-		return sendNotificationWithTerminalNotifier(title, message);
-	}
+  if (isTerminalNotifierAvailable()) {
+    return sendNotificationWithTerminalNotifier(title, message);
+  }
 
-	return sendNotificationWithAppleScript(title, message);
+  return sendNotificationWithAppleScript(title, message);
 }
 
 export async function sendWebhookNotification(
-	webhookUrl: string,
-	event: NotificationEvent,
-	projectName?: string,
-	details?: Record<string, unknown>,
+  webhookUrl: string,
+  event: NotificationEvent,
+  projectName?: string,
+  details?: Record<string, unknown>,
 ): Promise<boolean> {
-	const payload: NotificationPayload = {
-		event,
-		project: projectName,
-		message: getEventMessage(event, projectName),
-		timestamp: new Date().toISOString(),
-		details,
-	};
+  const payload: NotificationPayload = {
+    details,
+    event,
+    message: getEventMessage(event, projectName),
+    project: projectName,
+    timestamp: new Date().toISOString(),
+  };
 
-	try {
-		const response = await fetch(webhookUrl, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(payload),
-		});
+  try {
+    const response = await fetch(webhookUrl, {
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
 
-		return response.ok;
-	} catch {
-		return false;
-	}
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 export function writeMarkerFile(
-	markerFilePath: string,
-	event: NotificationEvent,
-	projectName?: string,
-	details?: Record<string, unknown>,
+  markerFilePath: string,
+  event: NotificationEvent,
+  projectName?: string,
+  details?: Record<string, unknown>,
 ): boolean {
-	const payload: NotificationPayload = {
-		event,
-		project: projectName,
-		message: getEventMessage(event, projectName),
-		timestamp: new Date().toISOString(),
-		details,
-	};
+  const payload: NotificationPayload = {
+    details,
+    event,
+    message: getEventMessage(event, projectName),
+    project: projectName,
+    timestamp: new Date().toISOString(),
+  };
 
-	try {
-		writeFileSync(markerFilePath, JSON.stringify(payload, null, 2));
+  try {
+    writeFileSync(markerFilePath, JSON.stringify(payload, null, 2));
 
-		return true;
-	} catch {
-		return false;
-	}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function sendNotifications(
-	config: NotificationConfig | undefined,
-	event: NotificationEvent,
-	projectName?: string,
-	details?: Record<string, unknown>,
+  config: NotificationConfig | undefined,
+  event: NotificationEvent,
+  projectName?: string,
+  details?: Record<string, unknown>,
 ): Promise<void> {
-	if (!config) {
-		return;
-	}
+  if (!config) {
+    return;
+  }
 
-	const notificationPromises: Promise<boolean>[] = [];
+  const notificationPromises: Promise<boolean>[] = [];
 
-	if (config.systemNotification) {
-		notificationPromises.push(sendSystemNotification(event, projectName));
-	}
+  if (config.systemNotification) {
+    notificationPromises.push(sendSystemNotification(event, projectName));
+  }
 
-	if (config.webhookUrl) {
-		notificationPromises.push(
-			sendWebhookNotification(config.webhookUrl, event, projectName, details),
-		);
-	}
+  if (config.webhookUrl) {
+    notificationPromises.push(
+      sendWebhookNotification(config.webhookUrl, event, projectName, details),
+    );
+  }
 
-	if (config.markerFilePath) {
-		notificationPromises.push(
-			Promise.resolve(writeMarkerFile(config.markerFilePath, event, projectName, details)),
-		);
-	}
+  if (config.markerFilePath) {
+    notificationPromises.push(
+      Promise.resolve(writeMarkerFile(config.markerFilePath, event, projectName, details)),
+    );
+  }
 
-	await Promise.all(notificationPromises);
+  await Promise.all(notificationPromises);
 }

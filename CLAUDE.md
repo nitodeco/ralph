@@ -14,7 +14,7 @@ bun run dev                    # Run the CLI directly
 bun run src/index.tsx          # Alternative: run entry point
 
 # Quality checks (run after changes)
-bun run check                  # Format + lint + fix (biome + eslint)
+bun run check                  # Format + lint + fix (oxfmt + oxlint + eslint)
 bun run typecheck              # TypeScript type checking
 
 # Testing
@@ -42,12 +42,15 @@ ralph progress show          # Display progress notes
 ## Architecture
 
 ### Entry Point & CLI Flow
+
 - `src/index.tsx` - Main entry, parses args, routes to commands or renders Ink components
 - `src/cli/parser.ts` - Argument parsing for all CLI commands
 - `src/cli/commands/` - Individual command handlers (status, config, guardrails, etc.)
 
 ### Core Orchestration
+
 The orchestrator is now a service composed of several specialized managers:
+
 - `src/lib/services/orchestrator/` - Composition root that coordinates all orchestration services
 - `src/lib/services/session-manager/` - Manages session lifecycle (start, resume, fatal errors)
 - `src/lib/services/iteration-coordinator/` - Sets up iteration callbacks, manages retry contexts
@@ -56,18 +59,22 @@ The orchestrator is now a service composed of several specialized managers:
 - `src/lib/services/branch-mode-manager/` - Manages branch-per-task workflow
 
 ### State Management (Zustand Stores)
+
 - `src/stores/agentStore.ts` - Agent execution state, spawns `AgentRunner`
 - `src/stores/appStore.ts` - Application state (PRD, session, current view)
 - `src/stores/iterationStore.ts` - Tracks iteration progress and timing
 - `src/stores/agentStatusStore.ts` - Agent status display state
 
 ### Agent Execution
+
 - `src/lib/agent.ts` - `AgentRunner` class handles spawning the agent process (Cursor CLI), streaming output, timeout/stuck detection, retry logic with context injection
 - `src/lib/agent-stream.ts` - Parses JSON streaming output from Cursor CLI
 - `src/lib/services/AgentProcessManager.ts` - Singleton managing the active agent subprocess
 
 ### Service Layer (Dependency Injection)
+
 Services are bootstrapped at startup via `src/lib/services/bootstrap.ts` and accessed through `src/lib/services/container.ts`:
+
 - `ProjectRegistryService` - Multi-project support, path resolution, stores data in `~/.ralph/projects/`
 - `ConfigService` - Layered config (global + project-level)
 - `PrdService` - PRD file loading/parsing
@@ -79,11 +86,13 @@ Services are bootstrapped at startup via `src/lib/services/bootstrap.ts` and acc
 - `GitProviderService` - GitHub integration
 
 ### Event Communication
+
 - `src/lib/events.ts` - Minimal event bus with only `agent:complete` and `agent:error` events
 - HandlerCoordinator subscribes to these events for verification, decomposition, learning
 - Most communication uses direct callback patterns rather than events
 
 ### UI Layer (Ink/React)
+
 - `src/components/RunApp.tsx` - Main runtime UI
 - `src/components/ViewRouter.tsx` - Routes between different views
 - `src/components/views/` - Individual view components
@@ -91,12 +100,14 @@ Services are bootstrapped at startup via `src/lib/services/bootstrap.ts` and acc
 ## Key Patterns
 
 ### Path Aliases
+
 ```typescript
-import { something } from "@/lib/something.ts";  // src/lib/something.ts
+import { something } from "@/lib/something.ts"; // src/lib/something.ts
 import { Component } from "@/components/index.ts";
 ```
 
 ### Service Access
+
 ```typescript
 import { getConfigService, getPrdService, getOrchestrator } from "@/lib/services/index.ts";
 const config = getConfigService().get();
@@ -104,6 +115,7 @@ const orchestrator = getOrchestrator();
 ```
 
 ### Testing Services
+
 ```typescript
 import { bootstrapTestServices, teardownTestServices } from "@/lib/services/bootstrap.ts";
 beforeEach(() => bootstrapTestServices({ config: { get: () => mockConfig } }));

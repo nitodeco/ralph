@@ -149,6 +149,7 @@ Services follow a consistent pattern in `src/lib/services/`:
 7. Export from `src/lib/services/index.ts`
 
 Example service structure:
+
 ```
 src/lib/services/my-service/
 ├── types.ts           # MyService interface, config types

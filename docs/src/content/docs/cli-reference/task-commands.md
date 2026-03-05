@@ -37,16 +37,16 @@ Total: 8 | Done: 3 | Pending: 5
 
 ### Status Indicators
 
-| Indicator | Meaning |
-|-----------|---------|
-| `[✓]` | Task completed |
-| `[→]` | Task in progress (current iteration) |
-| `[ ]` | Task pending |
+| Indicator | Meaning                              |
+| --------- | ------------------------------------ |
+| `[✓]`     | Task completed                       |
+| `[→]`     | Task in progress (current iteration) |
+| `[ ]`     | Task pending                         |
 
 ### Options
 
-| Option | Description | Example |
-|--------|-------------|---------|
+| Option   | Description           | Example                  |
+| -------- | --------------------- | ------------------------ |
 | `--json` | Output in JSON format | `ralph task list --json` |
 
 ### JSON Output
@@ -95,16 +95,19 @@ ralph task list --json
 ### Use Cases
 
 **Check overall progress:**
+
 ```bash
 ralph task list
 ```
 
 **Programmatic access:**
+
 ```bash
 ralph task list --json | jq '.done'
 ```
 
 **Count pending tasks:**
+
 ```bash
 ralph task list --json | jq '.pending'
 ```
@@ -135,8 +138,8 @@ All tasks complete! 🎉
 
 ### Options
 
-| Option | Description | Example |
-|--------|-------------|---------|
+| Option   | Description           | Example                     |
+| -------- | --------------------- | --------------------------- |
 | `--json` | Output in JSON format | `ralph task current --json` |
 
 ### JSON Output
@@ -166,11 +169,13 @@ When complete:
 ### Use Cases
 
 **Check what Ralph will work on next:**
+
 ```bash
 ralph task current
 ```
 
 **In scripts:**
+
 ```bash
 CURRENT=$(ralph task current --json | jq -r '.title')
 echo "Working on: $CURRENT"
@@ -195,9 +200,9 @@ ralph task done "Implement user signup endpoint"
 
 ### Arguments
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `<id>` | number \| string | Task number or title substring |
+| Argument | Type             | Description                    |
+| -------- | ---------------- | ------------------------------ |
+| `<id>`   | number \| string | Task number or title substring |
 
 ### Behavior
 
@@ -224,18 +229,20 @@ If multiple matches:
 Multiple tasks match "user":
   [4] Implement user signup endpoint
   [5] Implement user login endpoint
-  
+
 Please be more specific or use task number.
 ```
 
 ### Examples
 
 **Mark task done by number:**
+
 ```bash
 ralph task done 4
 ```
 
 **Mark task done by partial title:**
+
 ```bash
 ralph task done "signup"
 ```
@@ -300,9 +307,9 @@ ralph task undone 4
 
 ### Arguments
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `<id>` | number \| string | Task number or title substring |
+| Argument | Type             | Description                    |
+| -------- | ---------------- | ------------------------------ |
+| `<id>`   | number \| string | Task number or title substring |
 
 ### Behavior
 
@@ -320,11 +327,13 @@ ralph task undone 4
 ### Examples
 
 **Reset a task:**
+
 ```bash
 ralph task undone 4
 ```
 
 **Reset multiple tasks:**
+
 ```bash
 ralph task undone 4
 ralph task undone 5
@@ -389,12 +398,12 @@ ralph task add --title "Task title" --steps "Step 1" --steps "Step 2"
 
 ### Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--title` | string | Task title (required) |
-| `--description` | string | Task description (optional) |
-| `--steps` | string[] | Implementation steps (optional, repeatable) |
-| `--stdin` | boolean | Read task data from stdin (optional) |
+| Option          | Type     | Description                                 |
+| --------------- | -------- | ------------------------------------------- |
+| `--title`       | string   | Task title (required)                       |
+| `--description` | string   | Task description (optional)                 |
+| `--steps`       | string[] | Implementation steps (optional, repeatable) |
+| `--stdin`       | boolean  | Read task data from stdin (optional)        |
 
 ### Output
 
@@ -405,11 +414,13 @@ ralph task add --title "Task title" --steps "Step 1" --steps "Step 2"
 ### Examples
 
 **Simple task:**
+
 ```bash
 ralph task add --title "Add rate limiting middleware"
 ```
 
 **Task with description:**
+
 ```bash
 ralph task add \
   --title "Add rate limiting middleware" \
@@ -417,6 +428,7 @@ ralph task add \
 ```
 
 **Task with steps:**
+
 ```bash
 ralph task add \
   --title "Add rate limiting middleware" \
@@ -426,6 +438,7 @@ ralph task add \
 ```
 
 **From stdin:**
+
 ```bash
 cat << EOF | ralph task add --stdin
 {
@@ -443,11 +456,13 @@ EOF
 ### Use Cases
 
 **Adding forgotten tasks:**
+
 ```bash
 ralph task add --title "Write API documentation"
 ```
 
 **Breaking down complex tasks:**
+
 ```bash
 ralph task remove 5
 ralph task add --title "Create user model"
@@ -456,6 +471,7 @@ ralph task add --title "Add user validation"
 ```
 
 **Adding tasks during development:**
+
 ```bash
 # Discover new requirement
 ralph task add --title "Add email verification"
@@ -475,18 +491,18 @@ ralph task edit <id> --title "New title" --description "New description"
 
 ### Arguments
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `<id>` | number | Task number to edit |
+| Argument | Type   | Description         |
+| -------- | ------ | ------------------- |
+| `<id>`   | number | Task number to edit |
 
 ### Options
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `--title` | string | New task title |
-| `--description` | string | New task description |
-| `--steps` | string[] | New implementation steps |
-| `--stdin` | boolean | Read task data from stdin |
+| Option          | Type     | Description               |
+| --------------- | -------- | ------------------------- |
+| `--title`       | string   | New task title            |
+| `--description` | string   | New task description      |
+| `--steps`       | string[] | New implementation steps  |
+| `--stdin`       | boolean  | Read task data from stdin |
 
 ### Output
 
@@ -497,16 +513,19 @@ ralph task edit <id> --title "New title" --description "New description"
 ### Examples
 
 **Update title:**
+
 ```bash
 ralph task edit 4 --title "Implement user signup endpoint with email verification"
 ```
 
 **Update description:**
+
 ```bash
 ralph task edit 4 --description "Create POST /api/auth/signup with email verification flow"
 ```
 
 **Update both:**
+
 ```bash
 ralph task edit 4 \
   --title "Implement user signup with verification" \
@@ -514,6 +533,7 @@ ralph task edit 4 \
 ```
 
 **Update with steps:**
+
 ```bash
 ralph task edit 4 \
   --title "Implement user signup" \
@@ -526,16 +546,19 @@ ralph task edit 4 \
 ### Use Cases
 
 **Clarify vague tasks:**
+
 ```bash
 ralph task edit 5 --title "Implement JWT-based authentication with refresh tokens"
 ```
 
 **Add more context:**
+
 ```bash
 ralph task edit 5 --description "Use jsonwebtoken library, 15min access tokens, 7day refresh tokens"
 ```
 
 **Fix typos:**
+
 ```bash
 ralph task edit 3 --title "Create user authentication schema"
 ```
@@ -552,9 +575,9 @@ ralph task show <id>
 
 ### Arguments
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `<id>` | number | Task number to show |
+| Argument | Type   | Description         |
+| -------- | ------ | ------------------- |
+| `<id>`   | number | Task number to show |
 
 ### Output
 
@@ -593,11 +616,13 @@ Create Prisma schema for user authentication with email and password.
 ### Examples
 
 **View task details:**
+
 ```bash
 ralph task show 4
 ```
 
 **View with JSON:**
+
 ```bash
 ralph task show 4 --json
 ```
@@ -623,17 +648,20 @@ ralph task show 4 --json
 ### Use Cases
 
 **Review task before starting:**
+
 ```bash
 ralph task current
 ralph task show 4
 ```
 
 **Check task details:**
+
 ```bash
 ralph task show 4
 ```
 
 **Export task data:**
+
 ```bash
 ralph task show 4 --json > task-4.json
 ```
@@ -650,9 +678,9 @@ ralph task remove <id>
 
 ### Arguments
 
-| Argument | Type | Description |
-|----------|------|-------------|
-| `<id>` | number | Task number to remove |
+| Argument | Type   | Description           |
+| -------- | ------ | --------------------- |
+| `<id>`   | number | Task number to remove |
 
 ### Output
 
@@ -670,11 +698,13 @@ After confirmation:
 ### Examples
 
 **Remove a task:**
+
 ```bash
 ralph task remove 5
 ```
 
 **Force remove without confirmation:**
+
 ```bash
 ralph task remove 5 --force
 ```
@@ -682,11 +712,13 @@ ralph task remove 5 --force
 ### Use Cases
 
 **Remove duplicate tasks:**
+
 ```bash
 ralph task remove 6
 ```
 
 **Remove obsolete tasks:**
+
 ```bash
 ralph task remove 8
 ralph progress add "Removed task 8 - no longer needed"
@@ -751,16 +783,18 @@ ralph task done "user"
 ```
 
 Output:
+
 ```
 Multiple tasks match "user":
   [4] Implement user signup endpoint
   [5] Implement user login endpoint
   [6] Create user profile endpoint
-  
+
 Please be more specific or use task number.
 ```
 
 Solution:
+
 ```bash
 ralph task done "user signup"  # More specific
 # or
@@ -774,6 +808,7 @@ All task commands support `--json` for programmatic access.
 ### Examples
 
 **List tasks:**
+
 ```bash
 ralph task list --json
 ```
@@ -809,6 +844,7 @@ ralph task list --json
 ```
 
 **Current task:**
+
 ```bash
 ralph task current --json
 ```
@@ -823,6 +859,7 @@ ralph task current --json
 ```
 
 **Task details:**
+
 ```bash
 ralph task show 3 --json
 ```
@@ -835,29 +872,28 @@ ralph task show 3 --json
   "status": "pending",
   "createdAt": "2024-01-20T10:00:00Z",
   "description": "Create POST /api/auth/signup...",
-  "steps": [
-    "Create signup route handler",
-    "Add input validation",
-    "Hash password with bcrypt"
-  ]
+  "steps": ["Create signup route handler", "Add input validation", "Hash password with bcrypt"]
 }
 ```
 
 ### Use in Scripts
 
 **Count pending tasks:**
+
 ```bash
 PENDING=$(ralph task list --json | jq '.pending')
 echo "Tasks remaining: $PENDING"
 ```
 
 **Get current task title:**
+
 ```bash
 TASK=$(ralph task current --json | jq -r '.title')
 echo "Working on: $TASK"
 ```
 
 **Check if all done:**
+
 ```bash
 DONE=$(ralph task list --json | jq '.done')
 TOTAL=$(ralph task list --json | jq '.total')
@@ -868,6 +904,7 @@ fi
 ```
 
 **Export tasks to file:**
+
 ```bash
 ralph task list --json > tasks.json
 ```
@@ -876,12 +913,13 @@ ralph task list --json > tasks.json
 
 Some commands have shorter aliases:
 
-| Full Command | Alias |
-|--------------|-------|
-| `ralph task list` | `ralph tasks` |
+| Full Command         | Alias           |
+| -------------------- | --------------- |
+| `ralph task list`    | `ralph tasks`   |
 | `ralph task current` | `ralph current` |
 
 Examples:
+
 ```bash
 ralph tasks        # Same as ralph task list
 ralph current      # Same as ralph task current

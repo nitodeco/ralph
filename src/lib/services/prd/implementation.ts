@@ -1,256 +1,256 @@
 import { existsSync, readFileSync } from "node:fs";
-import { createError, ErrorCode, formatError } from "../../errors.ts";
+import { ErrorCode, createError, formatError } from "../../errors.ts";
 import { writeFileIdempotent } from "../../idempotency.ts";
 import { getInstructionsFilePath, getPrdJsonPath } from "../../paths.ts";
 import type {
-	CanWorkResult,
-	LoadPrdResult,
-	Prd,
-	PrdService,
-	PrdTask,
-	TaskWithIndex,
+  CanWorkResult,
+  LoadPrdResult,
+  Prd,
+  PrdService,
+  PrdTask,
+  TaskWithIndex,
 } from "./types.ts";
 import { isPrd } from "./validation.ts";
 
 function findPrdFile(): string | null {
-	const prdJsonPath = getPrdJsonPath();
+  const prdJsonPath = getPrdJsonPath();
 
-	if (existsSync(prdJsonPath)) {
-		return prdJsonPath;
-	}
+  if (existsSync(prdJsonPath)) {
+    return prdJsonPath;
+  }
 
-	return null;
+  return null;
 }
 
 function loadPrdFromDisk(): LoadPrdResult {
-	const prdPath = findPrdFile();
+  const prdPath = findPrdFile();
 
-	if (!prdPath) {
-		return { prd: null };
-	}
+  if (!prdPath) {
+    return { prd: null };
+  }
 
-	try {
-		const content = readFileSync(prdPath, "utf-8");
-		const parsed: unknown = JSON.parse(content);
+  try {
+    const content = readFileSync(prdPath, "utf8");
+    const parsed: unknown = JSON.parse(content);
 
-		if (!isPrd(parsed)) {
-			return {
-				prd: null,
-				validationError: "PRD is missing required fields or has invalid structure",
-			};
-		}
+    if (!isPrd(parsed)) {
+      return {
+        prd: null,
+        validationError: "PRD is missing required fields or has invalid structure",
+      };
+    }
 
-		return { prd: parsed };
-	} catch (parseError) {
-		const errorMessage = parseError instanceof Error ? parseError.message : "Unknown parsing error";
+    return { prd: parsed };
+  } catch (parseError) {
+    const errorMessage = parseError instanceof Error ? parseError.message : "Unknown parsing error";
 
-		return {
-			prd: null,
-			validationError: `Failed to parse PRD file: ${errorMessage}`,
-		};
-	}
+    return {
+      prd: null,
+      validationError: `Failed to parse PRD file: ${errorMessage}`,
+    };
+  }
 }
 
 export function createPrdService(): PrdService {
-	let cachedPrd: Prd | null = null;
-	let cachedLoadResult: LoadPrdResult | null = null;
+  let cachedPrd: Prd | null = null;
+  let cachedLoadResult: LoadPrdResult | null = null;
 
-	function load(verbose = false): Prd | null {
-		const result = loadWithValidation();
+  function load(verbose = false): Prd | null {
+    const result = loadWithValidation();
 
-		if (result.validationError) {
-			const error = createError(ErrorCode.PRD_INVALID_FORMAT, result.validationError, {
-				path: findPrdFile(),
-			});
+    if (result.validationError) {
+      const error = createError(ErrorCode.PRD_INVALID_FORMAT, result.validationError, {
+        path: findPrdFile(),
+      });
 
-			console.error(formatError(error, verbose));
-		}
+      console.error(formatError(error, verbose));
+    }
 
-		cachedPrd = result.prd;
+    cachedPrd = result.prd;
 
-		return result.prd;
-	}
+    return result.prd;
+  }
 
-	function loadWithValidation(): LoadPrdResult {
-		if (cachedLoadResult !== null) {
-			return cachedLoadResult;
-		}
+  function loadWithValidation(): LoadPrdResult {
+    if (cachedLoadResult !== null) {
+      return cachedLoadResult;
+    }
 
-		cachedLoadResult = loadPrdFromDisk();
-		cachedPrd = cachedLoadResult.prd;
+    cachedLoadResult = loadPrdFromDisk();
+    cachedPrd = cachedLoadResult.prd;
 
-		return cachedLoadResult;
-	}
+    return cachedLoadResult;
+  }
 
-	return {
-		get(verbose = false): Prd | null {
-			if (cachedPrd !== null) {
-				return cachedPrd;
-			}
+  return {
+    canWorkOnTask(task: PrdTask): CanWorkResult {
+      if (task.done) {
+        return { canWork: false, reason: "Task is already completed" };
+      }
 
-			return load(verbose);
-		},
+      return { canWork: true };
+    },
 
-		load,
+    createEmpty(projectName: string): Prd {
+      return {
+        project: projectName,
+        tasks: [],
+      };
+    },
 
-		loadWithValidation,
+    deleteTask(prd: Prd, taskIndex: number): Prd {
+      if (taskIndex < 0 || taskIndex >= prd.tasks.length) {
+        return prd;
+      }
 
-		reload(verbose = false): Prd | null {
-			this.invalidate();
+      const updatedTasks = prd.tasks.filter((_, index) => index !== taskIndex);
 
-			return load(verbose);
-		},
+      return { ...prd, tasks: updatedTasks };
+    },
 
-		reloadWithValidation(): LoadPrdResult {
-			this.invalidate();
+    findFile(): string | null {
+      return findPrdFile();
+    },
 
-			return loadWithValidation();
-		},
+    get(verbose = false): Prd | null {
+      if (cachedPrd !== null) {
+        return cachedPrd;
+      }
 
-		save(prd: Prd): void {
-			const prdPath = findPrdFile();
-			const targetPath = prdPath ?? getPrdJsonPath();
+      return load(verbose);
+    },
 
-			writeFileIdempotent(targetPath, JSON.stringify(prd, null, "\t"));
+    getCurrentTaskIndex(prd: Prd): number {
+      return prd.tasks.findIndex((task) => !task.done);
+    },
 
-			this.invalidate();
-		},
+    getNextTask(prd: Prd): string | null {
+      const nextTask = prd.tasks.find((task) => !task.done);
 
-		invalidate(): void {
-			cachedPrd = null;
-			cachedLoadResult = null;
-		},
+      return nextTask ? nextTask.title : null;
+    },
 
-		findFile(): string | null {
-			return findPrdFile();
-		},
+    getNextTaskWithIndex(prd: Prd): TaskWithIndex | null {
+      for (let taskIndex = 0; taskIndex < prd.tasks.length; taskIndex++) {
+        const task = prd.tasks.at(taskIndex);
 
-		isComplete(prd: Prd): boolean {
-			return prd.tasks.every((task) => task.done);
-		},
+        if (task && !task.done) {
+          return { index: taskIndex, title: task.title };
+        }
+      }
 
-		getNextTask(prd: Prd): string | null {
-			const nextTask = prd.tasks.find((task) => !task.done);
+      return null;
+    },
 
-			return nextTask ? nextTask.title : null;
-		},
+    getTaskByIndex(prd: Prd, index: number): PrdTask | null {
+      if (index < 0 || index >= prd.tasks.length) {
+        return null;
+      }
 
-		getNextTaskWithIndex(prd: Prd): TaskWithIndex | null {
-			for (let taskIndex = 0; taskIndex < prd.tasks.length; taskIndex++) {
-				const task = prd.tasks.at(taskIndex);
+      return prd.tasks.at(index) ?? null;
+    },
 
-				if (task && !task.done) {
-					return { title: task.title, index: taskIndex };
-				}
-			}
+    getTaskByTitle(prd: Prd, title: string): PrdTask | null {
+      const normalizedTitle = title.toLowerCase();
 
-			return null;
-		},
+      return prd.tasks.find((task) => task.title.toLowerCase() === normalizedTitle) ?? null;
+    },
 
-		getTaskByTitle(prd: Prd, title: string): PrdTask | null {
-			const normalizedTitle = title.toLowerCase();
+    invalidate(): void {
+      cachedPrd = null;
+      cachedLoadResult = null;
+    },
 
-			return prd.tasks.find((task) => task.title.toLowerCase() === normalizedTitle) ?? null;
-		},
+    isComplete(prd: Prd): boolean {
+      return prd.tasks.every((task) => task.done);
+    },
 
-		getTaskByIndex(prd: Prd, index: number): PrdTask | null {
-			if (index < 0 || index >= prd.tasks.length) {
-				return null;
-			}
+    load,
 
-			return prd.tasks.at(index) ?? null;
-		},
+    loadInstructions(): string | null {
+      const instructionsFilePath = getInstructionsFilePath();
 
-		getCurrentTaskIndex(prd: Prd): number {
-			return prd.tasks.findIndex((task) => !task.done);
-		},
+      if (!existsSync(instructionsFilePath)) {
+        return null;
+      }
 
-		canWorkOnTask(task: PrdTask): CanWorkResult {
-			if (task.done) {
-				return { canWork: false, reason: "Task is already completed" };
-			}
+      return readFileSync(instructionsFilePath, "utf8");
+    },
 
-			return { canWork: true };
-		},
+    loadWithValidation,
 
-		createEmpty(projectName: string): Prd {
-			return {
-				project: projectName,
-				tasks: [],
-			};
-		},
+    reload(verbose = false): Prd | null {
+      this.invalidate();
 
-		loadInstructions(): string | null {
-			const instructionsFilePath = getInstructionsFilePath();
+      return load(verbose);
+    },
 
-			if (!existsSync(instructionsFilePath)) {
-				return null;
-			}
+    reloadWithValidation(): LoadPrdResult {
+      this.invalidate();
 
-			return readFileSync(instructionsFilePath, "utf-8");
-		},
+      return loadWithValidation();
+    },
 
-		toggleTaskDone(prd: Prd, taskIndex: number): Prd {
-			const task = prd.tasks.at(taskIndex);
+    reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd {
+      const tasksLength = prd.tasks.length;
 
-			if (!task) {
-				return prd;
-			}
+      if (fromIndex < 0 || fromIndex >= tasksLength || toIndex < 0 || toIndex >= tasksLength) {
+        return prd;
+      }
 
-			const updatedTasks = prd.tasks.map((currentTask, index) =>
-				index === taskIndex ? { ...currentTask, done: !currentTask.done } : currentTask,
-			);
+      if (fromIndex === toIndex) {
+        return prd;
+      }
 
-			return { ...prd, tasks: updatedTasks };
-		},
+      const taskToMove = prd.tasks.at(fromIndex);
 
-		deleteTask(prd: Prd, taskIndex: number): Prd {
-			if (taskIndex < 0 || taskIndex >= prd.tasks.length) {
-				return prd;
-			}
+      if (!taskToMove) {
+        return prd;
+      }
 
-			const updatedTasks = prd.tasks.filter((_, index) => index !== taskIndex);
+      const tasksWithoutMoved = prd.tasks.filter((_, index) => index !== fromIndex);
+      const updatedTasks = [
+        ...tasksWithoutMoved.slice(0, toIndex),
+        taskToMove,
+        ...tasksWithoutMoved.slice(toIndex),
+      ];
 
-			return { ...prd, tasks: updatedTasks };
-		},
+      return { ...prd, tasks: updatedTasks };
+    },
 
-		reorderTask(prd: Prd, fromIndex: number, toIndex: number): Prd {
-			const tasksLength = prd.tasks.length;
+    save(prd: Prd): void {
+      const prdPath = findPrdFile();
+      const targetPath = prdPath ?? getPrdJsonPath();
 
-			if (fromIndex < 0 || fromIndex >= tasksLength || toIndex < 0 || toIndex >= tasksLength) {
-				return prd;
-			}
+      writeFileIdempotent(targetPath, JSON.stringify(prd, null, "\t"));
 
-			if (fromIndex === toIndex) {
-				return prd;
-			}
+      this.invalidate();
+    },
 
-			const taskToMove = prd.tasks.at(fromIndex);
+    toggleTaskDone(prd: Prd, taskIndex: number): Prd {
+      const task = prd.tasks.at(taskIndex);
 
-			if (!taskToMove) {
-				return prd;
-			}
+      if (!task) {
+        return prd;
+      }
 
-			const tasksWithoutMoved = prd.tasks.filter((_, index) => index !== fromIndex);
-			const updatedTasks = [
-				...tasksWithoutMoved.slice(0, toIndex),
-				taskToMove,
-				...tasksWithoutMoved.slice(toIndex),
-			];
+      const updatedTasks = prd.tasks.map((currentTask, index) =>
+        index === taskIndex ? { ...currentTask, done: !currentTask.done } : currentTask,
+      );
 
-			return { ...prd, tasks: updatedTasks };
-		},
+      return { ...prd, tasks: updatedTasks };
+    },
 
-		updateTask(prd: Prd, taskIndex: number, updatedTask: PrdTask): Prd {
-			if (taskIndex < 0 || taskIndex >= prd.tasks.length) {
-				return prd;
-			}
+    updateTask(prd: Prd, taskIndex: number, updatedTask: PrdTask): Prd {
+      if (taskIndex < 0 || taskIndex >= prd.tasks.length) {
+        return prd;
+      }
 
-			const updatedTasks = prd.tasks.map((currentTask, index) =>
-				index === taskIndex ? updatedTask : currentTask,
-			);
+      const updatedTasks = prd.tasks.map((currentTask, index) =>
+        index === taskIndex ? updatedTask : currentTask,
+      );
 
-			return { ...prd, tasks: updatedTasks };
-		},
-	};
+      return { ...prd, tasks: updatedTasks };
+    },
+  };
 }

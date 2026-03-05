@@ -12,8 +12,8 @@ if (!introDoc) {
 const { Content, headings } = await render(introDoc);
 
 const breadcrumbs = [
-  { label: "Docs", href: `${import.meta.env.BASE_URL}docs` },
-  { label: "Getting Started", href: `${import.meta.env.BASE_URL}docs/getting-started/introduction` },
+  { href: `${import.meta.env.BASE_URL}docs`, label: "Docs" },
+  { href: `${import.meta.env.BASE_URL}docs/getting-started/introduction`, label: "Getting Started" },
   { label: "Introduction" },
 ];
 ---

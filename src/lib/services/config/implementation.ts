@@ -1,240 +1,240 @@
 import { existsSync, readFileSync } from "node:fs";
 import { writeFileIdempotent } from "../../idempotency.ts";
 import {
-	ensureGlobalRalphDirExists,
-	ensureProjectDirExists,
-	GLOBAL_CONFIG_PATH,
-	getProjectConfigPath,
+  GLOBAL_CONFIG_PATH,
+  ensureGlobalRalphDirExists,
+  ensureProjectDirExists,
+  getProjectConfigPath,
 } from "../../paths.ts";
 import { AGENT_COMMANDS, CONFIG_DEFAULTS, DEFAULT_CONFIG } from "./constants.ts";
 import type { AgentType, ConfigService, ConfigValidationResult, RalphConfig } from "./types.ts";
 import { isPartialRalphConfig } from "./validation.ts";
 
 export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
-	const defaults = CONFIG_DEFAULTS;
+  const defaults = CONFIG_DEFAULTS;
 
-	return {
-		agent: config.agent ?? defaults.agent,
-		maxRetries: config.maxRetries ?? defaults.maxRetries,
-		retryDelayMs: config.retryDelayMs ?? defaults.retryDelayMs,
-		logFilePath: config.logFilePath,
-		agentTimeoutMs: config.agentTimeoutMs ?? defaults.agentTimeoutMs,
-		stuckThresholdMs: config.stuckThresholdMs ?? defaults.stuckThresholdMs,
-		lastUpdateCheck: config.lastUpdateCheck,
-		skipVersion: config.skipVersion,
-		notifications: config.notifications
-			? { ...defaults.notifications, ...config.notifications }
-			: defaults.notifications,
-		memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
-		maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
-		maxRuntimeMs: config.maxRuntimeMs,
-		retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
-		verification: config.verification
-			? { ...defaults.verification, ...config.verification }
-			: defaults.verification,
-		technicalDebtReview: config.technicalDebtReview,
-		maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
-		learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
-		workflowMode: config.workflowMode,
-		branchMode: config.branchMode,
-		gitProvider: config.gitProvider,
-		hasAcknowledgedWarning: config.hasAcknowledgedWarning,
-	};
+  return {
+    agent: config.agent ?? defaults.agent,
+    agentTimeoutMs: config.agentTimeoutMs ?? defaults.agentTimeoutMs,
+    branchMode: config.branchMode,
+    gitProvider: config.gitProvider,
+    hasAcknowledgedWarning: config.hasAcknowledgedWarning,
+    lastUpdateCheck: config.lastUpdateCheck,
+    learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
+    logFilePath: config.logFilePath,
+    maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
+    maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
+    maxRetries: config.maxRetries ?? defaults.maxRetries,
+    maxRuntimeMs: config.maxRuntimeMs,
+    memory: config.memory ? { ...defaults.memory, ...config.memory } : defaults.memory,
+    notifications: config.notifications
+      ? { ...defaults.notifications, ...config.notifications }
+      : defaults.notifications,
+    retryDelayMs: config.retryDelayMs ?? defaults.retryDelayMs,
+    retryWithContext: config.retryWithContext ?? defaults.retryWithContext,
+    skipVersion: config.skipVersion,
+    stuckThresholdMs: config.stuckThresholdMs ?? defaults.stuckThresholdMs,
+    technicalDebtReview: config.technicalDebtReview,
+    verification: config.verification
+      ? { ...defaults.verification, ...config.verification }
+      : defaults.verification,
+    workflowMode: config.workflowMode,
+  };
 }
 
 export function getAgentCommand(agentType: AgentType): string[] {
-	return AGENT_COMMANDS[agentType];
+  return AGENT_COMMANDS[agentType];
 }
 
 export function getGlobalConfigPath(): string {
-	return GLOBAL_CONFIG_PATH;
+  return GLOBAL_CONFIG_PATH;
 }
 
 export function createConfigService(): ConfigService {
-	let cachedConfig: RalphConfig | null = null;
-	let cachedGlobalConfig: RalphConfig | null = null;
+  let cachedConfig: RalphConfig | null = null;
+  let cachedGlobalConfig: RalphConfig | null = null;
 
-	function loadGlobalConfig(): RalphConfig {
-		if (cachedGlobalConfig !== null) {
-			return cachedGlobalConfig;
-		}
+  function loadGlobalConfig(): RalphConfig {
+    if (cachedGlobalConfig !== null) {
+      return cachedGlobalConfig;
+    }
 
-		if (!existsSync(GLOBAL_CONFIG_PATH)) {
-			cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
+    if (!existsSync(GLOBAL_CONFIG_PATH)) {
+      cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
 
-			return cachedGlobalConfig;
-		}
+      return cachedGlobalConfig;
+    }
 
-		try {
-			const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
-			const parsed: unknown = JSON.parse(content);
+    try {
+      const content = readFileSync(GLOBAL_CONFIG_PATH, "utf8");
+      const parsed: unknown = JSON.parse(content);
 
-			if (!isPartialRalphConfig(parsed)) {
-				cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
+      if (!isPartialRalphConfig(parsed)) {
+        cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
 
-				return cachedGlobalConfig;
-			}
+        return cachedGlobalConfig;
+      }
 
-			cachedGlobalConfig = applyDefaults({ ...DEFAULT_CONFIG, ...parsed });
+      cachedGlobalConfig = applyDefaults({ ...DEFAULT_CONFIG, ...parsed });
 
-			return cachedGlobalConfig;
-		} catch {
-			cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
+      return cachedGlobalConfig;
+    } catch {
+      cachedGlobalConfig = applyDefaults(DEFAULT_CONFIG);
 
-			return cachedGlobalConfig;
-		}
-	}
+      return cachedGlobalConfig;
+    }
+  }
 
-	function loadConfig(): RalphConfig {
-		const globalConfig = loadGlobalConfig();
-		const projectConfigPath = getProjectConfigPath();
+  function loadConfig(): RalphConfig {
+    const globalConfig = loadGlobalConfig();
+    const projectConfigPath = getProjectConfigPath();
 
-		if (!existsSync(projectConfigPath)) {
-			cachedConfig = globalConfig;
+    if (!existsSync(projectConfigPath)) {
+      cachedConfig = globalConfig;
 
-			return globalConfig;
-		}
+      return globalConfig;
+    }
 
-		try {
-			const projectContent = readFileSync(projectConfigPath, "utf-8");
-			const parsed: unknown = JSON.parse(projectContent);
+    try {
+      const projectContent = readFileSync(projectConfigPath, "utf8");
+      const parsed: unknown = JSON.parse(projectContent);
 
-			if (!isPartialRalphConfig(parsed)) {
-				cachedConfig = globalConfig;
+      if (!isPartialRalphConfig(parsed)) {
+        cachedConfig = globalConfig;
 
-				return globalConfig;
-			}
+        return globalConfig;
+      }
 
-			cachedConfig = applyDefaults({ ...globalConfig, ...parsed });
+      cachedConfig = applyDefaults({ ...globalConfig, ...parsed });
 
-			return cachedConfig;
-		} catch {
-			cachedConfig = globalConfig;
+      return cachedConfig;
+    } catch {
+      cachedConfig = globalConfig;
 
-			return globalConfig;
-		}
-	}
+      return globalConfig;
+    }
+  }
 
-	return {
-		get(): RalphConfig {
-			if (cachedConfig !== null) {
-				return cachedConfig;
-			}
+  return {
+    acknowledgeWarning(): void {
+      const config = this.loadGlobal();
 
-			return loadConfig();
-		},
+      this.saveGlobal({ ...config, hasAcknowledgedWarning: true });
+    },
 
-		load(): RalphConfig {
-			return loadConfig();
-		},
+    get(): RalphConfig {
+      if (cachedConfig !== null) {
+        return cachedConfig;
+      }
 
-		loadGlobal(): RalphConfig {
-			return loadGlobalConfig();
-		},
+      return loadConfig();
+    },
 
-		loadGlobalRaw(): Partial<RalphConfig> | null {
-			if (!existsSync(GLOBAL_CONFIG_PATH)) {
-				return null;
-			}
+    getEffective(): {
+      global: Partial<RalphConfig> | null;
+      project: Partial<RalphConfig> | null;
+      effective: RalphConfig;
+    } {
+      return {
+        effective: this.get(),
+        global: this.loadGlobalRaw(),
+        project: this.loadProjectRaw(),
+      };
+    },
 
-			try {
-				const content = readFileSync(GLOBAL_CONFIG_PATH, "utf-8");
-				const parsed: unknown = JSON.parse(content);
+    getWithValidation(validateFn: (config: unknown) => ConfigValidationResult): {
+      config: RalphConfig;
+      validation: ConfigValidationResult;
+    } {
+      const config = this.get();
+      const validation = validateFn(config);
 
-				if (!isPartialRalphConfig(parsed)) {
-					return null;
-				}
+      return { config, validation };
+    },
 
-				return parsed;
-			} catch {
-				return null;
-			}
-		},
+    globalConfigExists(): boolean {
+      return existsSync(GLOBAL_CONFIG_PATH);
+    },
 
-		loadProjectRaw(): Partial<RalphConfig> | null {
-			const projectConfigPath = getProjectConfigPath();
+    hasAcknowledgedWarning(): boolean {
+      const rawConfig = this.loadGlobalRaw();
 
-			if (!existsSync(projectConfigPath)) {
-				return null;
-			}
+      return rawConfig?.hasAcknowledgedWarning === true;
+    },
 
-			try {
-				const content = readFileSync(projectConfigPath, "utf-8");
-				const parsed: unknown = JSON.parse(content);
+    invalidate(): void {
+      cachedConfig = null;
+    },
 
-				if (!isPartialRalphConfig(parsed)) {
-					return null;
-				}
+    invalidateAll(): void {
+      cachedConfig = null;
+      cachedGlobalConfig = null;
+    },
 
-				return parsed;
-			} catch {
-				return null;
-			}
-		},
+    invalidateGlobal(): void {
+      cachedGlobalConfig = null;
+      cachedConfig = null;
+    },
 
-		getWithValidation(validateFn: (config: unknown) => ConfigValidationResult): {
-			config: RalphConfig;
-			validation: ConfigValidationResult;
-		} {
-			const config = this.get();
-			const validation = validateFn(config);
+    load(): RalphConfig {
+      return loadConfig();
+    },
 
-			return { config, validation };
-		},
+    loadGlobal(): RalphConfig {
+      return loadGlobalConfig();
+    },
 
-		saveGlobal(config: RalphConfig): void {
-			ensureGlobalRalphDirExists();
-			writeFileIdempotent(GLOBAL_CONFIG_PATH, JSON.stringify(config, null, 2));
-			cachedGlobalConfig = null;
-			cachedConfig = null;
-		},
+    loadGlobalRaw(): Partial<RalphConfig> | null {
+      if (!existsSync(GLOBAL_CONFIG_PATH)) {
+        return null;
+      }
 
-		saveProject(config: RalphConfig): void {
-			ensureProjectDirExists();
-			writeFileIdempotent(getProjectConfigPath(), JSON.stringify(config, null, 2));
-			cachedConfig = null;
-		},
+      try {
+        const content = readFileSync(GLOBAL_CONFIG_PATH, "utf8");
+        const parsed: unknown = JSON.parse(content);
 
-		invalidate(): void {
-			cachedConfig = null;
-		},
+        if (!isPartialRalphConfig(parsed)) {
+          return null;
+        }
 
-		invalidateGlobal(): void {
-			cachedGlobalConfig = null;
-			cachedConfig = null;
-		},
+        return parsed;
+      } catch {
+        return null;
+      }
+    },
 
-		invalidateAll(): void {
-			cachedConfig = null;
-			cachedGlobalConfig = null;
-		},
+    loadProjectRaw(): Partial<RalphConfig> | null {
+      const projectConfigPath = getProjectConfigPath();
 
-		globalConfigExists(): boolean {
-			return existsSync(GLOBAL_CONFIG_PATH);
-		},
+      if (!existsSync(projectConfigPath)) {
+        return null;
+      }
 
-		getEffective(): {
-			global: Partial<RalphConfig> | null;
-			project: Partial<RalphConfig> | null;
-			effective: RalphConfig;
-		} {
-			return {
-				global: this.loadGlobalRaw(),
-				project: this.loadProjectRaw(),
-				effective: this.get(),
-			};
-		},
+      try {
+        const content = readFileSync(projectConfigPath, "utf8");
+        const parsed: unknown = JSON.parse(content);
 
-		hasAcknowledgedWarning(): boolean {
-			const rawConfig = this.loadGlobalRaw();
+        if (!isPartialRalphConfig(parsed)) {
+          return null;
+        }
 
-			return rawConfig?.hasAcknowledgedWarning === true;
-		},
+        return parsed;
+      } catch {
+        return null;
+      }
+    },
 
-		acknowledgeWarning(): void {
-			const config = this.loadGlobal();
+    saveGlobal(config: RalphConfig): void {
+      ensureGlobalRalphDirExists();
+      writeFileIdempotent(GLOBAL_CONFIG_PATH, JSON.stringify(config, null, 2));
+      cachedGlobalConfig = null;
+      cachedConfig = null;
+    },
 
-			this.saveGlobal({ ...config, hasAcknowledgedWarning: true });
-		},
-	};
+    saveProject(config: RalphConfig): void {
+      ensureProjectDirExists();
+      writeFileIdempotent(getProjectConfigPath(), JSON.stringify(config, null, 2));
+      cachedConfig = null;
+    },
+  };
 }

@@ -4,153 +4,153 @@ import { ensureProjectDirExists, getGuardrailsFilePath } from "@/lib/paths.ts";
 import { createDefaultGuardrails } from "./defaults.ts";
 import { formatGuardrailsForPrompt } from "./formatters.ts";
 import type {
-	AddGuardrailOptions,
-	GuardrailsFile,
-	GuardrailsService,
-	GuardrailTrigger,
-	PromptGuardrail,
+  AddGuardrailOptions,
+  GuardrailTrigger,
+  GuardrailsFile,
+  GuardrailsService,
+  PromptGuardrail,
 } from "./types.ts";
 import { isGuardrailsFile } from "./validation.ts";
 
 function generateGuardrailId(): string {
-	return `guardrail-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+  return `guardrail-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }
 
 export function createGuardrailsService(): GuardrailsService {
-	let cachedGuardrails: PromptGuardrail[] | null = null;
+  let cachedGuardrails: PromptGuardrail[] | null = null;
 
-	function load(): PromptGuardrail[] {
-		const guardrailsFilePath = getGuardrailsFilePath();
+  function load(): PromptGuardrail[] {
+    const guardrailsFilePath = getGuardrailsFilePath();
 
-		if (!existsSync(guardrailsFilePath)) {
-			return createDefaultGuardrails();
-		}
+    if (!existsSync(guardrailsFilePath)) {
+      return createDefaultGuardrails();
+    }
 
-		try {
-			const content = readFileSync(guardrailsFilePath, "utf-8");
-			const parsed: unknown = JSON.parse(content);
+    try {
+      const content = readFileSync(guardrailsFilePath, "utf8");
+      const parsed: unknown = JSON.parse(content);
 
-			if (!isGuardrailsFile(parsed)) {
-				return createDefaultGuardrails();
-			}
+      if (!isGuardrailsFile(parsed)) {
+        return createDefaultGuardrails();
+      }
 
-			return parsed.guardrails ?? createDefaultGuardrails();
-		} catch {
-			return createDefaultGuardrails();
-		}
-	}
+      return parsed.guardrails ?? createDefaultGuardrails();
+    } catch {
+      return createDefaultGuardrails();
+    }
+  }
 
-	function get(): PromptGuardrail[] {
-		if (cachedGuardrails === null) {
-			cachedGuardrails = load();
-		}
+  function get(): PromptGuardrail[] {
+    if (cachedGuardrails === null) {
+      cachedGuardrails = load();
+    }
 
-		return cachedGuardrails;
-	}
+    return cachedGuardrails;
+  }
 
-	function save(guardrails: PromptGuardrail[]): void {
-		ensureProjectDirExists();
-		const guardrailsFile: GuardrailsFile = { guardrails };
+  function save(guardrails: PromptGuardrail[]): void {
+    ensureProjectDirExists();
+    const guardrailsFile: GuardrailsFile = { guardrails };
 
-		writeFileIdempotent(getGuardrailsFilePath(), JSON.stringify(guardrailsFile, null, "\t"));
-		cachedGuardrails = guardrails;
-	}
+    writeFileIdempotent(getGuardrailsFilePath(), JSON.stringify(guardrailsFile, null, "\t"));
+    cachedGuardrails = guardrails;
+  }
 
-	function exists(): boolean {
-		return existsSync(getGuardrailsFilePath());
-	}
+  function exists(): boolean {
+    return existsSync(getGuardrailsFilePath());
+  }
 
-	function initialize(): void {
-		if (!exists()) {
-			save(createDefaultGuardrails());
-		}
-	}
+  function initialize(): void {
+    if (!exists()) {
+      save(createDefaultGuardrails());
+    }
+  }
 
-	function invalidate(): void {
-		cachedGuardrails = null;
-	}
+  function invalidate(): void {
+    cachedGuardrails = null;
+  }
 
-	function add(options: AddGuardrailOptions): PromptGuardrail {
-		const guardrails = get();
+  function add(options: AddGuardrailOptions): PromptGuardrail {
+    const guardrails = get();
 
-		const newGuardrail: PromptGuardrail = {
-			id: generateGuardrailId(),
-			instruction: options.instruction,
-			trigger: options.trigger ?? "always",
-			category: options.category ?? "quality",
-			enabled: options.enabled ?? true,
-			addedAt: new Date().toISOString(),
-			addedAfterFailure: options.addedAfterFailure,
-		};
+    const newGuardrail: PromptGuardrail = {
+      addedAfterFailure: options.addedAfterFailure,
+      addedAt: new Date().toISOString(),
+      category: options.category ?? "quality",
+      enabled: options.enabled ?? true,
+      id: generateGuardrailId(),
+      instruction: options.instruction,
+      trigger: options.trigger ?? "always",
+    };
 
-		guardrails.push(newGuardrail);
-		save(guardrails);
+    guardrails.push(newGuardrail);
+    save(guardrails);
 
-		return newGuardrail;
-	}
+    return newGuardrail;
+  }
 
-	function remove(guardrailId: string): boolean {
-		const guardrails = get();
-		const initialLength = guardrails.length;
-		const filtered = guardrails.filter((guardrail) => guardrail.id !== guardrailId);
+  function remove(guardrailId: string): boolean {
+    const guardrails = get();
+    const initialLength = guardrails.length;
+    const filtered = guardrails.filter((guardrail) => guardrail.id !== guardrailId);
 
-		if (filtered.length === initialLength) {
-			return false;
-		}
+    if (filtered.length === initialLength) {
+      return false;
+    }
 
-		save(filtered);
+    save(filtered);
 
-		return true;
-	}
+    return true;
+  }
 
-	function toggle(guardrailId: string): PromptGuardrail | null {
-		const guardrails = get();
-		const guardrail = guardrails.find((guardrail) => guardrail.id === guardrailId);
+  function toggle(guardrailId: string): PromptGuardrail | null {
+    const guardrails = get();
+    const guardrail = guardrails.find((guardrail) => guardrail.id === guardrailId);
 
-		if (!guardrail) {
-			return null;
-		}
+    if (!guardrail) {
+      return null;
+    }
 
-		guardrail.enabled = !guardrail.enabled;
-		save(guardrails);
+    guardrail.enabled = !guardrail.enabled;
+    save(guardrails);
 
-		return guardrail;
-	}
+    return guardrail;
+  }
 
-	function getById(guardrailId: string): PromptGuardrail | null {
-		const guardrails = get();
+  function getById(guardrailId: string): PromptGuardrail | null {
+    const guardrails = get();
 
-		return guardrails.find((guardrail) => guardrail.id === guardrailId) ?? null;
-	}
+    return guardrails.find((guardrail) => guardrail.id === guardrailId) ?? null;
+  }
 
-	function getActive(trigger?: GuardrailTrigger): PromptGuardrail[] {
-		const guardrails = get();
+  function getActive(trigger?: GuardrailTrigger): PromptGuardrail[] {
+    const guardrails = get();
 
-		return guardrails.filter((guardrail) => {
-			if (!guardrail.enabled) {
-				return false;
-			}
+    return guardrails.filter((guardrail) => {
+      if (!guardrail.enabled) {
+        return false;
+      }
 
-			if (trigger && guardrail.trigger !== trigger && guardrail.trigger !== "always") {
-				return false;
-			}
+      if (trigger && guardrail.trigger !== trigger && guardrail.trigger !== "always") {
+        return false;
+      }
 
-			return true;
-		});
-	}
+      return true;
+    });
+  }
 
-	return {
-		get,
-		load,
-		save,
-		exists,
-		initialize,
-		invalidate,
-		add,
-		remove,
-		toggle,
-		getById,
-		getActive,
-		formatForPrompt: formatGuardrailsForPrompt,
-	};
+  return {
+    add,
+    exists,
+    formatForPrompt: formatGuardrailsForPrompt,
+    get,
+    getActive,
+    getById,
+    initialize,
+    invalidate,
+    load,
+    remove,
+    save,
+    toggle,
+  };
 }

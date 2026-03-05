@@ -44,11 +44,11 @@ Completed (done)
 
 ### Task States
 
-| State | Description | Indicator |
-|-------|-------------|-----------|
-| **Pending** | Not yet started | `[ ]` |
-| **In Progress** | Currently being worked on | `[→]` |
-| **Done** | Completed successfully | `[✓]` |
+| State           | Description               | Indicator |
+| --------------- | ------------------------- | --------- |
+| **Pending**     | Not yet started           | `[ ]`     |
+| **In Progress** | Currently being worked on | `[→]`     |
+| **Done**        | Completed successfully    | `[✓]`     |
 
 ## Task Management Commands
 
@@ -128,6 +128,7 @@ ralph task undone 4
 ```
 
 Use cases:
+
 - Task wasn't completed correctly
 - You want to retry with different approach
 - Reordering task execution
@@ -357,16 +358,19 @@ ralph progress clear
 ### 1. Appropriate Scope
 
 **Too Large:**
+
 ```
 Build complete authentication system
 ```
 
 **Too Small:**
+
 ```
 Import bcrypt library
 ```
 
 **Just Right:**
+
 ```
 Implement user signup endpoint with validation and password hashing
 ```
@@ -374,11 +378,13 @@ Implement user signup endpoint with validation and password hashing
 ### 2. Clear and Specific
 
 **Vague:**
+
 ```
 Add authentication
 ```
 
 **Specific:**
+
 ```
 Implement JWT-based authentication with signup and login endpoints
 ```
@@ -386,11 +392,13 @@ Implement JWT-based authentication with signup and login endpoints
 ### 3. Include Technical Details
 
 **Missing Context:**
+
 ```
 Add database
 ```
 
 **With Context:**
+
 ```
 Set up PostgreSQL database with Prisma ORM and create initial migration
 ```
@@ -411,12 +419,14 @@ Start with action verbs:
 Each task should be independently completable:
 
 **Bad (depends on future work):**
+
 ```
 1. Create API endpoint (will add validation later)
 2. Add validation to endpoint
 ```
 
 **Good (complete in one task):**
+
 ```
 1. Create API endpoint with input validation and error handling
 ```
@@ -499,6 +509,7 @@ ralph dependency ready
 **Problem:** Agent works but doesn't call `ralph task done`
 
 **Solutions:**
+
 1. Check if agent has access to `ralph` command
 2. Verify task is clear enough for agent to understand
 3. Review logs for errors: `~/.ralph/projects/<project>/logs/latest.log`
@@ -508,6 +519,7 @@ ralph dependency ready
 **Problem:** Same task fails repeatedly
 
 **Solutions:**
+
 1. Break task into smaller subtasks
 2. Add more context via guardrails
 3. Manually complete and move on: `ralph task done <n>`

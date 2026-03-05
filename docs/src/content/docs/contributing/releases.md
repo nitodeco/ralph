@@ -153,7 +153,7 @@ If you selected the wrong change type, edit the changeset file directly:
 
 ```markdown
 ---
-"ralph": patch  # change from minor to patch
+"ralph": patch # change from minor to patch
 ---
 ```
 

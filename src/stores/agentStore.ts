@@ -15,186 +15,186 @@ import { buildPrompt } from "@/lib/prompt.ts";
 import { AgentProcessManager, getConfigService, getPrdService } from "@/lib/services/index.ts";
 
 interface AgentStoreDependencies {
-	setPhase: (phase: AgentPhase) => void;
-	setFileChanges: (stats: GitDiffStats) => void;
-	resetStatus: () => void;
+  setPhase: (phase: AgentPhase) => void;
+  setFileChanges: (stats: GitDiffStats) => void;
+  resetStatus: () => void;
 }
 
 let agentStoreDependencies: AgentStoreDependencies | null = null;
 
 export function setAgentStoreDependencies(dependencies: AgentStoreDependencies): void {
-	agentStoreDependencies = dependencies;
+  agentStoreDependencies = dependencies;
 }
 
 function getAgentStoreDependencies(): AgentStoreDependencies {
-	if (!agentStoreDependencies) {
-		throw new Error(
-			"AgentStore dependencies not initialized. Call setAgentStoreDependencies first.",
-		);
-	}
+  if (!agentStoreDependencies) {
+    throw new Error(
+      "AgentStore dependencies not initialized. Call setAgentStoreDependencies first.",
+    );
+  }
 
-	return agentStoreDependencies;
+  return agentStoreDependencies;
 }
 
 interface AgentState {
-	output: string;
-	isStreaming: boolean;
-	isComplete: boolean;
-	exitCode: number | null;
-	error: string | null;
-	retryCount: number;
-	isRetrying: boolean;
+  output: string;
+  isStreaming: boolean;
+  isComplete: boolean;
+  exitCode: number | null;
+  error: string | null;
+  retryCount: number;
+  isRetrying: boolean;
 }
 
 interface AgentActions {
-	start: (specificTask?: string | null) => Promise<void>;
-	stop: () => void;
-	reset: () => void;
-	setOutput: (output: string) => void;
-	clearOutput: () => void;
+  start: (specificTask?: string | null) => Promise<void>;
+  stop: () => void;
+  reset: () => void;
+  setOutput: (output: string) => void;
+  clearOutput: () => void;
 }
 
 type AgentStore = AgentState & AgentActions;
 
 const INITIAL_STATE: AgentState = {
-	output: "",
-	isStreaming: false,
-	isComplete: false,
-	exitCode: null,
-	error: null,
-	retryCount: 0,
-	isRetrying: false,
+  error: null,
+  exitCode: null,
+  isComplete: false,
+  isRetrying: false,
+  isStreaming: false,
+  output: "",
+  retryCount: 0,
 };
 
 export const useAgentStore = create<AgentStore>((set, get) => ({
-	...INITIAL_STATE,
+  ...INITIAL_STATE,
 
-	setOutput: (output: string) => {
-		const config = getConfigService().get();
-		const maxBytes = getMaxOutputBytes(config.maxOutputHistoryBytes);
-		const truncatedOutput = truncateOutputBuffer(output, maxBytes);
+  clearOutput: () => {
+    set({ output: "" });
+  },
 
-		const detectedPhase = detectPhaseFromOutput(output);
+  reset: () => {
+    AgentProcessManager.reset();
+    getAgentStoreDependencies().resetStatus();
+    set(INITIAL_STATE);
+  },
 
-		getAgentStoreDependencies().setPhase(detectedPhase);
+  setOutput: (output: string) => {
+    const config = getConfigService().get();
+    const maxBytes = getMaxOutputBytes(config.maxOutputHistoryBytes);
+    const truncatedOutput = truncateOutputBuffer(output, maxBytes);
 
-		set({ output: truncatedOutput });
-	},
+    const detectedPhase = detectPhaseFromOutput(output);
 
-	start: async (specificTask?: string | null) => {
-		setShutdownHandler({
-			onShutdown: () => {
-				AgentProcessManager.setAborted(true);
-				const currentProcess = AgentProcessManager.getProcess();
+    getAgentStoreDependencies().setPhase(detectedPhase);
 
-				if (currentProcess) {
-					currentProcess.kill();
-					AgentProcessManager.setProcess(null);
-				}
-			},
-		});
+    set({ output: truncatedOutput });
+  },
 
-		set({
-			...INITIAL_STATE,
-			isStreaming: true,
-		});
+  start: async (specificTask?: string | null) => {
+    setShutdownHandler({
+      onShutdown: () => {
+        AgentProcessManager.setAborted(true);
+        const currentProcess = AgentProcessManager.getProcess();
 
-		const dependencies = getAgentStoreDependencies();
+        if (currentProcess) {
+          currentProcess.kill();
+          AgentProcessManager.setProcess(null);
+        }
+      },
+    });
 
-		dependencies.resetStatus();
-		dependencies.setPhase("starting");
+    set({
+      ...INITIAL_STATE,
+      isStreaming: true,
+    });
 
-		const config = getConfigService().get();
-		const logger = getLogger({ logFilePath: config.logFilePath });
-		const instructions = getPrdService().loadInstructions();
-		const isInGitRepo = isGitRepository();
-		const prompt = buildPrompt({ instructions, specificTask, isGitRepository: isInGitRepo });
+    const dependencies = getAgentStoreDependencies();
 
-		const agentRunner = new AgentRunner({
-			agentType: config.agent,
-			timeoutMs: config.agentTimeoutMs ?? DEFAULTS.agentTimeoutMs,
-			stuckThresholdMs: config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs,
-			maxRetries: config.maxRetries ?? DEFAULTS.maxRetries,
-			retryDelayMs: config.retryDelayMs ?? DEFAULTS.retryDelayMs,
-			retryWithContext: config.retryWithContext ?? DEFAULTS.retryWithContext,
-			outputThrottleMs: OUTPUT_THROTTLE_MS,
-			logFilePath: config.logFilePath,
-			onOutput: get().setOutput,
-			onRetry: (count, max, delay) => {
-				logger.logAgentRetry(count, max, delay);
-				set({
-					isRetrying: true,
-					retryCount: count,
-					output: "",
-				});
-				setTimeout(() => {
-					set({ isRetrying: false });
-				}, delay);
-			},
-			emitEvents: true,
-		});
+    dependencies.resetStatus();
+    dependencies.setPhase("starting");
 
-		const gitStatsInterval = setInterval(() => {
-			const stats = getGitStatusStats();
+    const config = getConfigService().get();
+    const logger = getLogger({ logFilePath: config.logFilePath });
+    const instructions = getPrdService().loadInstructions();
+    const isInGitRepo = isGitRepository();
+    const prompt = buildPrompt({ instructions, isGitRepository: isInGitRepo, specificTask });
 
-			getAgentStoreDependencies().setFileChanges(stats);
-		}, GIT_STATS_POLL_INTERVAL_MS);
+    const agentRunner = new AgentRunner({
+      agentType: config.agent,
+      emitEvents: true,
+      logFilePath: config.logFilePath,
+      maxRetries: config.maxRetries ?? DEFAULTS.maxRetries,
+      onOutput: get().setOutput,
+      onRetry: (count, max, delay) => {
+        logger.logAgentRetry(count, max, delay);
+        set({
+          isRetrying: true,
+          retryCount: count,
+          output: "",
+        });
+        setTimeout(() => {
+          set({ isRetrying: false });
+        }, delay);
+      },
+      outputThrottleMs: OUTPUT_THROTTLE_MS,
+      retryDelayMs: config.retryDelayMs ?? DEFAULTS.retryDelayMs,
+      retryWithContext: config.retryWithContext ?? DEFAULTS.retryWithContext,
+      stuckThresholdMs: config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs,
+      timeoutMs: config.agentTimeoutMs ?? DEFAULTS.agentTimeoutMs,
+    });
 
-		try {
-			const agentRunResult = await agentRunner.run(prompt);
+    const gitStatsInterval = setInterval(() => {
+      const stats = getGitStatusStats();
 
-			if (AgentProcessManager.isAborted()) {
-				set({
-					isStreaming: false,
-					isComplete: agentRunResult.isComplete,
-					exitCode: agentRunResult.exitCode,
-					retryCount: agentRunResult.retryCount,
-					isRetrying: false,
-				});
+      getAgentStoreDependencies().setFileChanges(stats);
+    }, GIT_STATS_POLL_INTERVAL_MS);
 
-				return;
-			}
+    try {
+      const agentRunResult = await agentRunner.run(prompt);
 
-			set({
-				isStreaming: false,
-				isComplete: agentRunResult.isComplete,
-				exitCode: agentRunResult.exitCode,
-				retryCount: agentRunResult.retryCount,
-				error: agentRunResult.success ? null : (agentRunResult.error ?? "Unknown error"),
-				isRetrying: false,
-			});
-		} catch (error) {
-			const errorMessage = getErrorMessage(error);
+      if (AgentProcessManager.isAborted()) {
+        set({
+          exitCode: agentRunResult.exitCode,
+          isComplete: agentRunResult.isComplete,
+          isRetrying: false,
+          isStreaming: false,
+          retryCount: agentRunResult.retryCount,
+        });
 
-			logger.error("Unexpected error during agent execution", { error: errorMessage });
-			set({
-				isStreaming: false,
-				error: errorMessage,
-				retryCount: AgentProcessManager.getRetryCount(),
-				isRetrying: false,
-			});
-		} finally {
-			clearInterval(gitStatsInterval);
-			getAgentStoreDependencies().setPhase("idle");
-			AgentProcessManager.setProcess(null);
-			clearShutdownHandler();
-		}
-	},
+        return;
+      }
 
-	stop: () => {
-		AgentProcessManager.kill();
-		set({
-			isStreaming: false,
-		});
-	},
+      set({
+        error: agentRunResult.success ? null : (agentRunResult.error ?? "Unknown error"),
+        exitCode: agentRunResult.exitCode,
+        isComplete: agentRunResult.isComplete,
+        isRetrying: false,
+        isStreaming: false,
+        retryCount: agentRunResult.retryCount,
+      });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
 
-	reset: () => {
-		AgentProcessManager.reset();
-		getAgentStoreDependencies().resetStatus();
-		set(INITIAL_STATE);
-	},
+      logger.error("Unexpected error during agent execution", { error: errorMessage });
+      set({
+        error: errorMessage,
+        isRetrying: false,
+        isStreaming: false,
+        retryCount: AgentProcessManager.getRetryCount(),
+      });
+    } finally {
+      clearInterval(gitStatsInterval);
+      getAgentStoreDependencies().setPhase("idle");
+      AgentProcessManager.setProcess(null);
+      clearShutdownHandler();
+    }
+  },
 
-	clearOutput: () => {
-		set({ output: "" });
-	},
+  stop: () => {
+    AgentProcessManager.kill();
+    set({
+      isStreaming: false,
+    });
+  },
 }));

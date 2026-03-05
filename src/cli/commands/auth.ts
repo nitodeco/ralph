@@ -5,237 +5,237 @@ import { getConfigService } from "@/lib/services/index.ts";
 const SLEEP_BUFFER_MS = 500;
 
 function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function maskToken(token: string): string {
-	if (token.length <= 8) {
-		return "****";
-	}
+  if (token.length <= 8) {
+    return "****";
+  }
 
-	const firstFour = token.slice(0, 4);
-	const lastFour = token.slice(-4);
+  const firstFour = token.slice(0, 4);
+  const lastFour = token.slice(-4);
 
-	return `${firstFour}...${lastFour}`;
+  return `${firstFour}...${lastFour}`;
 }
 
 export function printAuthStatus(version: string, jsonOutput: boolean): void {
-	const configService = getConfigService();
-	const { effective } = configService.getEffective();
-	const gitProvider = effective.gitProvider;
-	const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
-	const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
+  const configService = getConfigService();
+  const { effective } = configService.getEffective();
+  const { gitProvider } = effective;
+  const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
+  const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
 
-	if (jsonOutput) {
-		const output = {
-			authenticated: hasOAuth || hasPat,
-			method: hasOAuth ? "oauth" : hasPat ? "pat" : null,
-			oauth: hasOAuth
-				? {
-						scope: gitProvider?.github?.oauth?.scope,
-						createdAt: gitProvider?.github?.oauth?.createdAt,
-					}
-				: null,
-			pat: hasPat ? { configured: true } : null,
-		};
+  if (jsonOutput) {
+    const output = {
+      authenticated: hasOAuth || hasPat,
+      method: hasOAuth ? "oauth" : hasPat ? "pat" : null,
+      oauth: hasOAuth
+        ? {
+            createdAt: gitProvider?.github?.oauth?.createdAt,
+            scope: gitProvider?.github?.oauth?.scope,
+          }
+        : null,
+      pat: hasPat ? { configured: true } : null,
+    };
 
-		console.log(JSON.stringify(output, null, 2));
+    console.log(JSON.stringify(output, null, 2));
 
-		return;
-	}
+    return;
+  }
 
-	console.log(`◆ ralph v${version} - GitHub Authentication Status\n`);
+  console.log(`◆ ralph v${version} - GitHub Authentication Status\n`);
 
-	if (hasOAuth) {
-		const oauth = gitProvider?.github?.oauth;
-		const expiresAt = oauth?.expiresAt ? new Date(oauth.expiresAt) : null;
-		const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
-		const hasRefreshToken = oauth?.refreshToken !== undefined;
+  if (hasOAuth) {
+    const oauth = gitProvider?.github?.oauth;
+    const expiresAt = oauth?.expiresAt ? new Date(oauth.expiresAt) : null;
+    const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
+    const hasRefreshToken = oauth?.refreshToken !== undefined;
 
-		console.log("\x1b[32m✓\x1b[0m Authenticated via OAuth");
-		console.log(`  Scope: ${oauth?.scope || "(app permissions)"}`);
-		console.log(`  Authenticated: ${oauth?.createdAt ?? "unknown"}`);
+    console.log("\x1b[32m✓\x1b[0m Authenticated via OAuth");
+    console.log(`  Scope: ${oauth?.scope || "(app permissions)"}`);
+    console.log(`  Authenticated: ${oauth?.createdAt ?? "unknown"}`);
 
-		if (expiresAt) {
-			const expiryStatus = isExpired
-				? "\x1b[33m(expired, will refresh on next use)\x1b[0m"
-				: `\x1b[32m(valid)\x1b[0m`;
+    if (expiresAt) {
+      const expiryStatus = isExpired
+        ? "\x1b[33m(expired, will refresh on next use)\x1b[0m"
+        : `\x1b[32m(valid)\x1b[0m`;
 
-			console.log(`  Token expires: ${expiresAt.toLocaleString()} ${expiryStatus}`);
-		}
+      console.log(`  Token expires: ${expiresAt.toLocaleString()} ${expiryStatus}`);
+    }
 
-		if (!hasRefreshToken && expiresAt) {
-			console.log("\x1b[33m  ⚠ No refresh token - re-authenticate when token expires\x1b[0m");
-		}
-	} else if (hasPat) {
-		console.log("\x1b[33m!\x1b[0m Authenticated via Personal Access Token (legacy)");
-		console.log(`  Token: ${maskToken(gitProvider?.github?.token ?? "")}`);
-		console.log("\n  Consider migrating to OAuth with: ralph auth login");
-	} else {
-		console.log("\x1b[31m✗\x1b[0m Not authenticated");
-		console.log("\nAuthenticate with GitHub using: ralph auth login");
-	}
+    if (!hasRefreshToken && expiresAt) {
+      console.log("\x1b[33m  ⚠ No refresh token - re-authenticate when token expires\x1b[0m");
+    }
+  } else if (hasPat) {
+    console.log("\x1b[33m!\x1b[0m Authenticated via Personal Access Token (legacy)");
+    console.log(`  Token: ${maskToken(gitProvider?.github?.token ?? "")}`);
+    console.log("\n  Consider migrating to OAuth with: ralph auth login");
+  } else {
+    console.log("\x1b[31m✗\x1b[0m Not authenticated");
+    console.log("\nAuthenticate with GitHub using: ralph auth login");
+  }
 
-	console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
-	console.log("\nCommands:");
-	console.log("  ralph auth login   Authenticate via OAuth device flow");
-	console.log("  ralph auth logout  Remove authentication");
-	console.log("  ralph auth status  Show authentication status");
+  console.log(`\n${"─".repeat(CLI_SEPARATOR_WIDTH)}`);
+  console.log("\nCommands:");
+  console.log("  ralph auth login   Authenticate via OAuth device flow");
+  console.log("  ralph auth logout  Remove authentication");
+  console.log("  ralph auth status  Show authentication status");
 }
 
 export async function handleAuthLogin(jsonOutput: boolean): Promise<void> {
-	const oauthService = createGitHubOAuthService();
+  const oauthService = createGitHubOAuthService();
 
-	if (!jsonOutput) {
-		console.log("Initiating GitHub OAuth device flow...\n");
-	}
+  if (!jsonOutput) {
+    console.log("Initiating GitHub OAuth device flow...\n");
+  }
 
-	try {
-		const deviceCode = await oauthService.requestDeviceCode();
+  try {
+    const deviceCode = await oauthService.requestDeviceCode();
 
-		if (jsonOutput) {
-			console.log(
-				JSON.stringify({
-					status: "awaiting_authorization",
-					userCode: deviceCode.userCode,
-					verificationUri: deviceCode.verificationUri,
-					expiresInSeconds: deviceCode.expiresInSeconds,
-				}),
-			);
-		} else {
-			console.log("To authenticate, visit:");
-			console.log(`\n  \x1b[36m${deviceCode.verificationUri}\x1b[0m\n`);
-			console.log("And enter code:");
-			console.log(`\n  \x1b[1m${deviceCode.userCode}\x1b[0m\n`);
-			console.log("Waiting for authorization...");
-		}
+    if (jsonOutput) {
+      console.log(
+        JSON.stringify({
+          expiresInSeconds: deviceCode.expiresInSeconds,
+          status: "awaiting_authorization",
+          userCode: deviceCode.userCode,
+          verificationUri: deviceCode.verificationUri,
+        }),
+      );
+    } else {
+      console.log("To authenticate, visit:");
+      console.log(`\n  \x1b[36m${deviceCode.verificationUri}\x1b[0m\n`);
+      console.log("And enter code:");
+      console.log(`\n  \x1b[1m${deviceCode.userCode}\x1b[0m\n`);
+      console.log("Waiting for authorization...");
+    }
 
-		const expiresAt = Date.now() + deviceCode.expiresInSeconds * 1_000;
-		const pollIntervalMs = deviceCode.pollingIntervalSeconds * 1_000 + SLEEP_BUFFER_MS;
+    const expiresAt = Date.now() + deviceCode.expiresInSeconds * 1000;
+    const pollIntervalMs = deviceCode.pollingIntervalSeconds * 1000 + SLEEP_BUFFER_MS;
 
-		while (Date.now() < expiresAt) {
-			await sleep(pollIntervalMs);
+    while (Date.now() < expiresAt) {
+      await sleep(pollIntervalMs);
 
-			const result = await oauthService.pollForAccessToken(
-				deviceCode.deviceCode,
-				deviceCode.pollingIntervalSeconds,
-			);
+      const result = await oauthService.pollForAccessToken(
+        deviceCode.deviceCode,
+        deviceCode.pollingIntervalSeconds,
+      );
 
-			if (result.status === "success") {
-				const configService = getConfigService();
-				const globalConfig = configService.loadGlobal();
-				const updatedConfig = {
-					...globalConfig,
-					gitProvider: {
-						...globalConfig.gitProvider,
-						github: {
-							...globalConfig.gitProvider?.github,
-							token: undefined,
-							oauth: {
-								accessToken: result.token.accessToken,
-								tokenType: result.token.tokenType,
-								scope: result.token.scope,
-								createdAt: new Date().toISOString(),
-								expiresAt: result.token.expiresAt,
-								refreshToken: result.token.refreshToken,
-								refreshTokenExpiresAt: result.token.refreshTokenExpiresAt,
-							},
-						},
-					},
-				};
+      if (result.status === "success") {
+        const configService = getConfigService();
+        const globalConfig = configService.loadGlobal();
+        const updatedConfig = {
+          ...globalConfig,
+          gitProvider: {
+            ...globalConfig.gitProvider,
+            github: {
+              ...globalConfig.gitProvider?.github,
+              oauth: {
+                accessToken: result.token.accessToken,
+                createdAt: new Date().toISOString(),
+                expiresAt: result.token.expiresAt,
+                refreshToken: result.token.refreshToken,
+                refreshTokenExpiresAt: result.token.refreshTokenExpiresAt,
+                scope: result.token.scope,
+                tokenType: result.token.tokenType,
+              },
+              token: undefined,
+            },
+          },
+        };
 
-				configService.saveGlobal(updatedConfig);
-				configService.invalidateAll();
+        configService.saveGlobal(updatedConfig);
+        configService.invalidateAll();
 
-				if (jsonOutput) {
-					console.log(
-						JSON.stringify({
-							success: true,
-							message: "Successfully authenticated with GitHub",
-							scope: result.token.scope,
-						}),
-					);
-				} else {
-					console.log("\n\x1b[32m✓\x1b[0m Successfully authenticated with GitHub!");
-					console.log(`  Scope: ${result.token.scope}`);
-				}
+        if (jsonOutput) {
+          console.log(
+            JSON.stringify({
+              message: "Successfully authenticated with GitHub",
+              scope: result.token.scope,
+              success: true,
+            }),
+          );
+        } else {
+          console.log("\n\x1b[32m✓\x1b[0m Successfully authenticated with GitHub!");
+          console.log(`  Scope: ${result.token.scope}`);
+        }
 
-				return;
-			}
+        return;
+      }
 
-			if (result.status === "error") {
-				if (jsonOutput) {
-					console.log(JSON.stringify({ success: false, error: result.error }));
-				} else {
-					console.error(`\n\x1b[31m✗\x1b[0m Authentication failed: ${result.error}`);
-				}
+      if (result.status === "error") {
+        if (jsonOutput) {
+          console.log(JSON.stringify({ error: result.error, success: false }));
+        } else {
+          console.error(`\n\x1b[31m✗\x1b[0m Authentication failed: ${result.error}`);
+        }
 
-				process.exit(1);
-			}
-		}
+        process.exit(1);
+      }
+    }
 
-		if (jsonOutput) {
-			console.log(JSON.stringify({ success: false, error: "Authorization timed out" }));
-		} else {
-			console.error("\n\x1b[31m✗\x1b[0m Authorization timed out. Please try again.");
-		}
+    if (jsonOutput) {
+      console.log(JSON.stringify({ error: "Authorization timed out", success: false }));
+    } else {
+      console.error("\n\x1b[31m✗\x1b[0m Authorization timed out. Please try again.");
+    }
 
-		process.exit(1);
-	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    process.exit(1);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-		if (jsonOutput) {
-			console.log(JSON.stringify({ success: false, error: errorMessage }));
-		} else {
-			console.error(`\n\x1b[31m✗\x1b[0m Error: ${errorMessage}`);
-		}
+    if (jsonOutput) {
+      console.log(JSON.stringify({ error: errorMessage, success: false }));
+    } else {
+      console.error(`\n\x1b[31m✗\x1b[0m Error: ${errorMessage}`);
+    }
 
-		process.exit(1);
-	}
+    process.exit(1);
+  }
 }
 
 export async function handleAuthLogout(jsonOutput: boolean): Promise<void> {
-	const configService = getConfigService();
-	const { effective } = configService.getEffective();
-	const gitProvider = effective.gitProvider;
-	const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
-	const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
+  const configService = getConfigService();
+  const { effective } = configService.getEffective();
+  const { gitProvider } = effective;
+  const hasOAuth = gitProvider?.github?.oauth?.accessToken !== undefined;
+  const hasPat = gitProvider?.github?.token !== undefined && gitProvider.github.token.length > 0;
 
-	if (!hasOAuth && !hasPat) {
-		if (jsonOutput) {
-			console.log(JSON.stringify({ success: false, error: "Not authenticated" }));
-		} else {
-			console.log("Not currently authenticated with GitHub.");
-		}
+  if (!hasOAuth && !hasPat) {
+    if (jsonOutput) {
+      console.log(JSON.stringify({ error: "Not authenticated", success: false }));
+    } else {
+      console.log("Not currently authenticated with GitHub.");
+    }
 
-		return;
-	}
+    return;
+  }
 
-	if (hasOAuth) {
-		const oauthService = createGitHubOAuthService();
+  if (hasOAuth) {
+    const oauthService = createGitHubOAuthService();
 
-		await oauthService.revokeToken(gitProvider?.github?.oauth?.accessToken ?? "");
-	}
+    await oauthService.revokeToken(gitProvider?.github?.oauth?.accessToken ?? "");
+  }
 
-	const globalConfig = configService.loadGlobal();
-	const updatedConfig = {
-		...globalConfig,
-		gitProvider: {
-			...globalConfig.gitProvider,
-			github: {
-				...globalConfig.gitProvider?.github,
-				token: undefined,
-				oauth: undefined,
-			},
-		},
-	};
+  const globalConfig = configService.loadGlobal();
+  const updatedConfig = {
+    ...globalConfig,
+    gitProvider: {
+      ...globalConfig.gitProvider,
+      github: {
+        ...globalConfig.gitProvider?.github,
+        oauth: undefined,
+        token: undefined,
+      },
+    },
+  };
 
-	configService.saveGlobal(updatedConfig);
-	configService.invalidateAll();
+  configService.saveGlobal(updatedConfig);
+  configService.invalidateAll();
 
-	if (jsonOutput) {
-		console.log(JSON.stringify({ success: true, message: "Logged out successfully" }));
-	} else {
-		console.log("\x1b[32m✓\x1b[0m Logged out from GitHub");
-	}
+  if (jsonOutput) {
+    console.log(JSON.stringify({ message: "Logged out successfully", success: true }));
+  } else {
+    console.log("\x1b[32m✓\x1b[0m Logged out from GitHub");
+  }
 }

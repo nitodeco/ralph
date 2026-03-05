@@ -1,5 +1,5 @@
 export {
-	createIterationCoordinator,
-	type IterationCoordinatorDependencies,
+  createIterationCoordinator,
+  type IterationCoordinatorDependencies,
 } from "./implementation.ts";
 export type { IterationCallbackOptions, IterationCoordinator } from "./types.ts";

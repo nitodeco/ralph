@@ -88,14 +88,14 @@ Successfully used with:
 
 ### How is Ralph different from using an AI agent directly?
 
-| Using Agent Directly | Using Ralph |
-|---------------------|-------------|
-| Manual prompting for each task | Automatic task orchestration |
-| No progress tracking | Persistent progress across sessions |
-| Manual retry on failures | Automatic retries with context |
-| Lose context between sessions | Session memory and learning |
-| Manual GitHub operations | Automated PR creation |
-| No structured workflow | PRD-driven systematic approach |
+| Using Agent Directly           | Using Ralph                         |
+| ------------------------------ | ----------------------------------- |
+| Manual prompting for each task | Automatic task orchestration        |
+| No progress tracking           | Persistent progress across sessions |
+| Manual retry on failures       | Automatic retries with context      |
+| Lose context between sessions  | Session memory and learning         |
+| Manual GitHub operations       | Automated PR creation               |
+| No structured workflow         | PRD-driven systematic approach      |
 
 Ralph adds structure, automation, and reliability to AI-assisted development.
 
@@ -110,6 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/nitodeco/ralph/main/scripts/install
 ```
 
 This automatically:
+
 - Detects your OS and architecture
 - Downloads the appropriate binary
 - Installs to `~/.local/bin`
@@ -120,11 +121,13 @@ See [Installation Guide](/docs/getting-started/installation/) for manual install
 ### What are the system requirements?
 
 **Required:**
+
 - macOS, Linux, or Windows (via WSL)
 - One of the supported AI agents (Cursor CLI, Claude Code, or Codex)
 - Git for version control
 
 **Optional:**
+
 - GitHub account (for PR creation and integration)
 - Bun or Node.js 18+ (only if building from source)
 
@@ -204,6 +207,7 @@ ralph init
 ```
 
 Ralph will:
+
 1. Ask you to describe what you want to build
 2. Generate a PRD with 5-15 tasks
 3. Let you choose your AI agent (Cursor, Claude, or Codex)
@@ -266,10 +270,10 @@ Session Status:
   State: Running
   Iteration: 5 / 10
   Started: 15 minutes ago
-  
+
 Current Task:
   [4] Implement user signup endpoint
-  
+
 Recent Progress:
   ✓ Set up Express server (3 minutes)
   ✓ Configure PostgreSQL (4 minutes)
@@ -303,17 +307,20 @@ tail -f ~/.ralph/projects/<project>/logs/latest.log
 Yes, Ralph maintains session state:
 
 **Pause:**
+
 ```bash
 ralph stop
 # or press Ctrl+C
 ```
 
 **Resume:**
+
 ```bash
 ralph resume
 ```
 
 Ralph picks up exactly where it left off, including:
+
 - Current task
 - Iteration count
 - Progress notes
@@ -345,6 +352,7 @@ ralph run 100 -b
 You can:
 
 1. **Stop the session:**
+
    ```bash
    ralph stop
    ```
@@ -352,6 +360,7 @@ You can:
 2. **Make your changes manually**
 
 3. **Mark tasks as done if needed:**
+
    ```bash
    ralph task done 5
    ralph progress add "Completed manually"
@@ -377,6 +386,7 @@ ralph run -b
 ```
 
 Each project maintains independent:
+
 - PRD and tasks
 - Session state
 - Configuration
@@ -395,6 +405,7 @@ ralph projects
 A Product Requirements Document (PRD) is a structured list of tasks that defines what you want to build. Ralph uses the PRD to guide the AI agent through your project systematically.
 
 Example PRD:
+
 ```
 1. Set up Express server with TypeScript
 2. Configure PostgreSQL database
@@ -425,16 +436,19 @@ The PRD file is stored at `~/.ralph/projects/<project>/prd.json` if you need to 
 Several ways:
 
 **During initialization:**
+
 ```bash
 ralph init  # Generates tasks based on your description
 ```
 
 **Add individual tasks:**
+
 ```bash
 ralph task add --title "Add rate limiting"
 ```
 
 **Add with details:**
+
 ```bash
 ralph task add \
   --title "Add rate limiting" \
@@ -448,12 +462,14 @@ ralph task add \
 Good tasks are:
 
 **Specific:**
+
 ```
 Bad:  Add authentication
 Good: Implement JWT-based authentication with signup and login endpoints
 ```
 
 **Appropriately scoped:**
+
 ```
 Too large: Build entire authentication system
 Too small: Import bcrypt library
@@ -461,12 +477,14 @@ Just right: Implement user signup endpoint with validation and password hashing
 ```
 
 **Self-contained:**
+
 ```
 Bad:  Create API endpoint (will add validation later)
 Good: Create API endpoint with input validation and error handling
 ```
 
 **Action-oriented:**
+
 ```
 Create user database schema
 Implement password reset flow
@@ -486,6 +504,7 @@ Yes, Ralph supports automatic task decomposition. If the AI agent detects a task
 4. Continues with the first subtask
 
 Example:
+
 ```
 Original:
 [ ] 5. Build authentication system
@@ -503,6 +522,7 @@ Decomposed:
 Tasks are processed in order. To reorder:
 
 1. **Mark completed tasks as undone:**
+
    ```bash
    ralph task undone 5
    ralph task undone 6
@@ -546,16 +566,19 @@ Project settings override global settings.
 ### How do I change the AI agent?
 
 **Interactive setup:**
+
 ```bash
 ralph setup
 ```
 
 **Edit global config:**
+
 ```bash
 echo '{"agent": "claude"}' > ~/.ralph/config.json
 ```
 
 **Edit project config:**
+
 ```bash
 echo '{"agent": "claude"}' > ~/.ralph/projects/<project>/config.json
 ```
@@ -574,6 +597,7 @@ Edit your config file:
 ```
 
 Common timeout values:
+
 - `1800000` (30 min) — Default
 - `3600000` (1 hour) — Complex tasks
 - `5400000` (90 min) — Large refactors
@@ -589,16 +613,19 @@ Yes, create `~/.ralph/projects/<project>/instructions.md`:
 # Project Instructions
 
 ## Technology Stack
+
 - TypeScript with strict mode
 - Bun as runtime
 - Prisma for database
 
 ## Code Standards
+
 - Use functional programming
 - Write descriptive variable names
 - Add JSDoc for public APIs
 
 ## Project Structure
+
 - API routes in src/routes/
 - Business logic in src/services/
 - Database models in src/models/
@@ -621,6 +648,7 @@ Edit your config:
 ```
 
 Options:
+
 - **systemNotification:** OS notification on completion
 - **webhookUrl:** POST to webhook (Slack, Discord, etc.)
 - **markerFilePath:** Create file when done
@@ -630,6 +658,7 @@ Options:
 Yes, project config overrides global config:
 
 **Global (default for all projects):**
+
 ```bash
 cat > ~/.ralph/config.json << EOF
 {
@@ -640,6 +669,7 @@ EOF
 ```
 
 **Project-specific:**
+
 ```bash
 cat > ~/.ralph/projects/my-project/config.json << EOF
 {
@@ -658,6 +688,7 @@ This project uses Claude with 1-hour timeout, while others use global settings.
 No, GitHub integration is completely optional. Ralph works perfectly for local development without any GitHub connection.
 
 Use GitHub integration if you want:
+
 - Automatic PR creation
 - Branch management
 - Commit pushing to remote
@@ -671,6 +702,7 @@ ralph auth login
 ```
 
 Follow the prompts:
+
 1. Ralph displays a code and URL
 2. Open the URL in your browser
 3. Enter the code
@@ -736,6 +768,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
 ### Ralph keeps retrying the same task
 
 **Causes:**
+
 - Task is too complex
 - Task description is unclear
 - Agent lacks necessary context
@@ -744,6 +777,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
 **Solutions:**
 
 1. **Break the task down:**
+
    ```bash
    ralph task remove 5
    ralph task add --title "Subtask 1: Setup"
@@ -751,11 +785,13 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
    ```
 
 2. **Add more context via guardrails:**
+
    ```bash
    ralph guardrails add "For authentication, use the pattern from src/auth/example.ts"
    ```
 
 3. **Check logs for specific errors:**
+
    ```bash
    tail -f ~/.ralph/projects/<project>/logs/latest.log
    ```
@@ -770,6 +806,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
 ### Agent times out frequently
 
 **Causes:**
+
 - Tasks are too complex
 - Default timeout (30 min) is too short
 - System is slow or under load
@@ -777,6 +814,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
 **Solutions:**
 
 1. **Increase timeout:**
+
    ```json
    {
      "agentTimeoutMs": 3600000
@@ -784,6 +822,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
    ```
 
 2. **Break tasks into smaller pieces:**
+
    ```bash
    ralph task edit 5 --title "Smaller, more focused task"
    ```
@@ -797,6 +836,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
 ### Agent appears stuck (no output)
 
 **Causes:**
+
 - Agent is processing large files
 - Network issues
 - Agent crashed but process didn't exit
@@ -804,6 +844,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
 **Solutions:**
 
 1. **Reduce stuck threshold:**
+
    ```json
    {
      "stuckThresholdMs": 180000
@@ -811,6 +852,7 @@ This clears stored credentials. You can reconnect anytime with `ralph auth login
    ```
 
 2. **Check agent process:**
+
    ```bash
    ps aux | grep cursor
    ```
@@ -850,21 +892,25 @@ See [Troubleshooting Guide](/docs/troubleshooting/common-issues/) for more solut
 ### How do I debug issues?
 
 1. **Check logs:**
+
    ```bash
    tail -f ~/.ralph/projects/<project>/logs/latest.log
    ```
 
 2. **Check session status:**
+
    ```bash
    ralph status
    ```
 
 3. **Review failure patterns:**
+
    ```bash
    ralph analyze patterns
    ```
 
 4. **Check configuration:**
+
    ```bash
    ralph config
    ```
@@ -903,7 +949,7 @@ Yes, Ralph can run in CI/CD pipelines:
 - name: Run Ralph
   run: |
     ralph run 20 --json > results.json
-    
+
 - name: Check completion
   run: |
     DONE=$(cat results.json | jq '.done')
@@ -1036,6 +1082,7 @@ docker run -v ~/.ralph:/root/.ralph my-ralph-project
    [github.com/nitodeco/ralph](https://github.com/nitodeco/ralph)
 
 2. **Set up development environment:**
+
    ```bash
    git clone https://github.com/your-username/ralph.git
    cd ralph
@@ -1043,6 +1090,7 @@ docker run -v ~/.ralph:/root/.ralph my-ralph-project
    ```
 
 3. **Make changes and test:**
+
    ```bash
    bun run dev
    bun test

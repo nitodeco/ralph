@@ -32,8 +32,8 @@ Guardrails:
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option   | Description           |
+| -------- | --------------------- |
 | `--json` | Output in JSON format |
 
 ## ralph guardrails add
@@ -46,8 +46,8 @@ ralph guardrails add "Always use async/await instead of .then()"
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
+| Argument | Description               |
+| -------- | ------------------------- |
 | `<text>` | The guardrail instruction |
 
 **Examples:**
@@ -68,9 +68,9 @@ ralph guardrails remove 3
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `<id>` | The guardrail number |
+| Argument | Description          |
+| -------- | -------------------- |
+| `<id>`   | The guardrail number |
 
 ## ralph guardrails toggle
 
@@ -82,9 +82,9 @@ ralph guardrails toggle 3
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `<id>` | The guardrail number |
+| Argument | Description          |
+| -------- | -------------------- |
+| `<id>`   | The guardrail number |
 
 Disabled guardrails are not included in the agent prompt but remain in your configuration for easy re-enabling.
 
@@ -104,8 +104,8 @@ Analyzes your codebase to suggest guardrails based on:
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option    | Description                          |
+| --------- | ------------------------------------ |
 | `--apply` | Immediately add generated guardrails |
 
 **Example:**
@@ -140,8 +140,8 @@ Guardrails are stored in `~/.ralph/projects/<project>/guardrails.json`:
 ```json
 {
   "guardrails": [
-    {"id": 1, "text": "Always use TypeScript strict mode", "enabled": true},
-    {"id": 2, "text": "Never commit .env files", "enabled": true}
+    { "id": 1, "text": "Always use TypeScript strict mode", "enabled": true },
+    { "id": 2, "text": "Never commit .env files", "enabled": true }
   ]
 }
 ```

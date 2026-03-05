@@ -5,448 +5,448 @@ import type { BranchModeConfig } from "@/lib/services/config/types.ts";
 import type { Prd } from "@/lib/services/prd/types.ts";
 
 function createMockPrd(overrides: Partial<Prd> = {}): Prd {
-	return {
-		project: "Test Project",
-		tasks: [
-			{ id: "task-1", title: "Task 1", description: "First task", steps: [], done: false },
-			{ id: "task-2", title: "Task 2", description: "Second task", steps: [], done: true },
-		],
-		...overrides,
-	};
+  return {
+    project: "Test Project",
+    tasks: [
+      { description: "First task", done: false, id: "task-1", steps: [], title: "Task 1" },
+      { description: "Second task", done: true, id: "task-2", steps: [], title: "Task 2" },
+    ],
+    ...overrides,
+  };
 }
 
 describe("BranchModeManager", () => {
-	let lastCreatedBranch: string | null;
-	let lastPushedBranch: string | null;
-	let currentBranch: string;
-	let isWorkingDirClean: boolean;
-
-	beforeEach(() => {
-		lastCreatedBranch = null;
-		lastPushedBranch = null;
-		currentBranch = "main";
-		isWorkingDirClean = true;
-
-		bootstrapTestServices({
-			gitBranch: {
-				getCurrentBranch: () => currentBranch,
-				getBaseBranch: () => "main",
-				hasRemote: () => true,
-				getRemoteName: () => "origin",
-				getRemoteUrl: () => "git@github.com:test-org/test-repo.git",
-				getWorkingDirectoryStatus: () => ({
-					isClean: isWorkingDirClean,
-					hasUncommittedChanges: !isWorkingDirClean,
-					hasUntrackedFiles: false,
-					modifiedFiles: isWorkingDirClean ? [] : ["file.txt"],
-					untrackedFiles: [],
-				}),
-				isWorkingDirectoryClean: () => isWorkingDirClean,
-				createBranch: (branchName) => {
-					lastCreatedBranch = branchName;
-
-					return {
-						status: "success",
-						message: `Created branch: ${branchName}`,
-						branchName,
-					};
-				},
-				checkoutBranch: (branchName) => {
-					currentBranch = branchName;
-
-					return {
-						status: "success",
-						message: `Checked out branch: ${branchName}`,
-						branchName,
-					};
-				},
-				deleteBranch: (branchName) => ({
-					status: "success",
-					message: `Deleted branch: ${branchName}`,
-					branchName,
-				}),
-				createAndCheckoutTaskBranch: (taskTitle, taskIndex) => {
-					const branchName = `ralph/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`;
-
-					lastCreatedBranch = branchName;
-					currentBranch = branchName;
-
-					return {
-						status: "success",
-						message: `Created and checked out branch: ${branchName}`,
-						branchName,
-					};
-				},
-				commitChanges: () => ({
-					status: "success",
-					message: "Changes committed successfully",
-				}),
-				pushBranch: (branchName) => {
-					lastPushedBranch = branchName;
-
-					return {
-						status: "success",
-						message: `Pushed branch: ${branchName}`,
-						branchName,
-					};
-				},
-				returnToBaseBranch: (baseBranch) => {
-					currentBranch = baseBranch;
-
-					return {
-						status: "success",
-						message: `Returned to branch: ${baseBranch}`,
-						branchName: baseBranch,
-					};
-				},
-				generateBranchName: (taskTitle, taskIndex, prefix = "ralph") =>
-					`${prefix}/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`,
-				getBranchInfo: () => ({
-					currentBranch,
-					baseBranch: "main",
-					hasRemote: true,
-					remoteName: "origin",
-				}),
-				stashChanges: () => ({
-					status: "success",
-					message: "Changes stashed successfully",
-				}),
-				popStash: () => ({
-					status: "success",
-					message: "Stash popped successfully",
-				}),
-			},
-			gitProvider: {
-				detectProvider: () => ({
-					provider: "github",
-					owner: "test-owner",
-					repo: "test-repo",
-					hostname: "github.com",
-				}),
-				getProvider: () => null,
-				getProviderForRemote: () => null,
-				isProviderConfigured: () => false,
-				getSupportedProviders: () => [],
-			},
-		});
-	});
+  let lastCreatedBranch: string | null;
+  let lastPushedBranch: string | null;
+  let currentBranch: string;
+  let isWorkingDirClean: boolean;
+
+  beforeEach(() => {
+    lastCreatedBranch = null;
+    lastPushedBranch = null;
+    currentBranch = "main";
+    isWorkingDirClean = true;
+
+    bootstrapTestServices({
+      gitBranch: {
+        checkoutBranch: (branchName) => {
+          currentBranch = branchName;
+
+          return {
+            branchName,
+            message: `Checked out branch: ${branchName}`,
+            status: "success",
+          };
+        },
+        commitChanges: () => ({
+          message: "Changes committed successfully",
+          status: "success",
+        }),
+        createAndCheckoutTaskBranch: (taskTitle, taskIndex) => {
+          const branchName = `ralph/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`;
+
+          lastCreatedBranch = branchName;
+          currentBranch = branchName;
+
+          return {
+            branchName,
+            message: `Created and checked out branch: ${branchName}`,
+            status: "success",
+          };
+        },
+        createBranch: (branchName) => {
+          lastCreatedBranch = branchName;
+
+          return {
+            branchName,
+            message: `Created branch: ${branchName}`,
+            status: "success",
+          };
+        },
+        deleteBranch: (branchName) => ({
+          branchName,
+          message: `Deleted branch: ${branchName}`,
+          status: "success",
+        }),
+        generateBranchName: (taskTitle, taskIndex, prefix = "ralph") =>
+          `${prefix}/task-${taskIndex + 1}-${taskTitle.toLowerCase().replace(/\s+/g, "-")}`,
+        getBaseBranch: () => "main",
+        getBranchInfo: () => ({
+          baseBranch: "main",
+          currentBranch,
+          hasRemote: true,
+          remoteName: "origin",
+        }),
+        getCurrentBranch: () => currentBranch,
+        getRemoteName: () => "origin",
+        getRemoteUrl: () => "git@github.com:test-org/test-repo.git",
+        getWorkingDirectoryStatus: () => ({
+          hasUncommittedChanges: !isWorkingDirClean,
+          hasUntrackedFiles: false,
+          isClean: isWorkingDirClean,
+          modifiedFiles: isWorkingDirClean ? [] : ["file.txt"],
+          untrackedFiles: [],
+        }),
+        hasRemote: () => true,
+        isWorkingDirectoryClean: () => isWorkingDirClean,
+        popStash: () => ({
+          message: "Stash popped successfully",
+          status: "success",
+        }),
+        pushBranch: (branchName) => {
+          lastPushedBranch = branchName;
+
+          return {
+            branchName,
+            message: `Pushed branch: ${branchName}`,
+            status: "success",
+          };
+        },
+        returnToBaseBranch: (baseBranch) => {
+          currentBranch = baseBranch;
+
+          return {
+            branchName: baseBranch,
+            message: `Returned to branch: ${baseBranch}`,
+            status: "success",
+          };
+        },
+        stashChanges: () => ({
+          message: "Changes stashed successfully",
+          status: "success",
+        }),
+      },
+      gitProvider: {
+        detectProvider: () => ({
+          hostname: "github.com",
+          owner: "test-owner",
+          provider: "github",
+          repo: "test-repo",
+        }),
+        getProvider: () => null,
+        getProviderForRemote: () => null,
+        getSupportedProviders: () => [],
+        isProviderConfigured: () => false,
+      },
+    });
+  });
 
-	afterEach(() => {
-		teardownTestServices();
-	});
+  afterEach(() => {
+    teardownTestServices();
+  });
 
-	describe("initial state", () => {
-		test("isEnabled returns false by default", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("initial state", () => {
+    test("isEnabled returns false by default", () => {
+      const branchModeManager = createBranchModeManager();
 
-			expect(branchModeManager.isEnabled()).toBe(false);
-		});
+      expect(branchModeManager.isEnabled()).toBe(false);
+    });
 
-		test("getConfig returns null by default", () => {
-			const branchModeManager = createBranchModeManager();
+    test("getConfig returns null by default", () => {
+      const branchModeManager = createBranchModeManager();
 
-			expect(branchModeManager.getConfig()).toBeNull();
-		});
+      expect(branchModeManager.getConfig()).toBeNull();
+    });
 
-		test("getBaseBranch returns null by default", () => {
-			const branchModeManager = createBranchModeManager();
+    test("getBaseBranch returns null by default", () => {
+      const branchModeManager = createBranchModeManager();
 
-			expect(branchModeManager.getBaseBranch()).toBeNull();
-		});
+      expect(branchModeManager.getBaseBranch()).toBeNull();
+    });
 
-		test("getCurrentTaskBranch returns null by default", () => {
-			const branchModeManager = createBranchModeManager();
+    test("getCurrentTaskBranch returns null by default", () => {
+      const branchModeManager = createBranchModeManager();
 
-			expect(branchModeManager.getCurrentTaskBranch()).toBeNull();
-		});
-	});
+      expect(branchModeManager.getCurrentTaskBranch()).toBeNull();
+    });
+  });
 
-	describe("setEnabled", () => {
-		test("enables branch mode", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("setEnabled", () => {
+    test("enables branch mode", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
+      branchModeManager.setEnabled(true);
 
-			expect(branchModeManager.isEnabled()).toBe(true);
-		});
+      expect(branchModeManager.isEnabled()).toBe(true);
+    });
 
-		test("disables branch mode", () => {
-			const branchModeManager = createBranchModeManager();
+    test("disables branch mode", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setEnabled(false);
+      branchModeManager.setEnabled(true);
+      branchModeManager.setEnabled(false);
 
-			expect(branchModeManager.isEnabled()).toBe(false);
-		});
-	});
+      expect(branchModeManager.isEnabled()).toBe(false);
+    });
+  });
 
-	describe("setConfig", () => {
-		test("stores branch mode config", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("setConfig", () => {
+    test("stores branch mode config", () => {
+      const branchModeManager = createBranchModeManager();
 
-			const config: BranchModeConfig = {
-				enabled: true,
-				branchPrefix: "feature",
-				pushAfterCommit: true,
-				returnToBaseBranch: true,
-			};
+      const config: BranchModeConfig = {
+        branchPrefix: "feature",
+        enabled: true,
+        pushAfterCommit: true,
+        returnToBaseBranch: true,
+      };
 
-			branchModeManager.setConfig(config);
+      branchModeManager.setConfig(config);
 
-			expect(branchModeManager.getConfig()).toEqual(config);
-		});
+      expect(branchModeManager.getConfig()).toEqual(config);
+    });
 
-		test("allows setting config to null", () => {
-			const branchModeManager = createBranchModeManager();
+    test("allows setting config to null", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setConfig({
-				enabled: true,
-				branchPrefix: "feature",
-			});
+      branchModeManager.setConfig({
+        branchPrefix: "feature",
+        enabled: true,
+      });
 
-			branchModeManager.setConfig(null);
+      branchModeManager.setConfig(null);
 
-			expect(branchModeManager.getConfig()).toBeNull();
-		});
-	});
+      expect(branchModeManager.getConfig()).toBeNull();
+    });
+  });
 
-	describe("initialize", () => {
-		test("returns valid when branch mode is disabled", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("initialize", () => {
+    test("returns valid when branch mode is disabled", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(false);
+      branchModeManager.setEnabled(false);
 
-			const result = branchModeManager.initialize();
+      const result = branchModeManager.initialize();
 
-			expect(result.isValid).toBe(true);
-		});
+      expect(result.isValid).toBe(true);
+    });
 
-		test("returns valid when working directory is clean", () => {
-			const branchModeManager = createBranchModeManager();
+    test("returns valid when working directory is clean", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			isWorkingDirClean = true;
+      branchModeManager.setEnabled(true);
+      isWorkingDirClean = true;
 
-			const result = branchModeManager.initialize();
+      const result = branchModeManager.initialize();
 
-			expect(result.isValid).toBe(true);
-			expect(branchModeManager.getBaseBranch()).toBe("main");
-		});
+      expect(result.isValid).toBe(true);
+      expect(branchModeManager.getBaseBranch()).toBe("main");
+    });
 
-		test("returns invalid when working directory has uncommitted changes", () => {
-			const branchModeManager = createBranchModeManager();
+    test("returns invalid when working directory has uncommitted changes", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			isWorkingDirClean = false;
+      branchModeManager.setEnabled(true);
+      isWorkingDirClean = false;
 
-			const result = branchModeManager.initialize();
+      const result = branchModeManager.initialize();
 
-			expect(result.isValid).toBe(false);
-			expect(result.error).toContain("uncommitted changes");
-		});
-	});
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain("uncommitted changes");
+    });
+  });
 
-	describe("createTaskBranch", () => {
-		test("returns success when branch mode is disabled", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("createTaskBranch", () => {
+    test("returns success when branch mode is disabled", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(false);
+      branchModeManager.setEnabled(false);
 
-			const result = branchModeManager.createTaskBranch("Test Task", 0);
+      const result = branchModeManager.createTaskBranch("Test Task", 0);
 
-			expect(result.success).toBe(true);
-			expect(lastCreatedBranch).toBeNull();
-		});
+      expect(result.success).toBe(true);
+      expect(lastCreatedBranch).toBeNull();
+    });
 
-		test("returns success when config is null", () => {
-			const branchModeManager = createBranchModeManager();
+    test("returns success when config is null", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig(null);
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig(null);
 
-			const result = branchModeManager.createTaskBranch("Test Task", 0);
+      const result = branchModeManager.createTaskBranch("Test Task", 0);
 
-			expect(result.success).toBe(true);
-		});
+      expect(result.success).toBe(true);
+    });
 
-		test("creates and checks out task branch when enabled", () => {
-			const branchModeManager = createBranchModeManager();
+    test("creates and checks out task branch when enabled", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig({
-				enabled: true,
-				branchPrefix: "ralph",
-			});
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig({
+        branchPrefix: "ralph",
+        enabled: true,
+      });
 
-			const result = branchModeManager.createTaskBranch("Add feature", 0);
+      const result = branchModeManager.createTaskBranch("Add feature", 0);
 
-			expect(result.success).toBe(true);
-			expect(lastCreatedBranch).toContain("ralph/task-1");
-			expect(branchModeManager.getCurrentTaskBranch()).toBe(lastCreatedBranch);
-		});
-	});
+      expect(result.success).toBe(true);
+      expect(lastCreatedBranch).toContain("ralph/task-1");
+      expect(branchModeManager.getCurrentTaskBranch()).toBe(lastCreatedBranch);
+    });
+  });
 
-	describe("completeTaskBranch", () => {
-		test("returns success when branch mode is disabled", async () => {
-			const branchModeManager = createBranchModeManager();
+  describe("completeTaskBranch", () => {
+    test("returns success when branch mode is disabled", async () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(false);
+      branchModeManager.setEnabled(false);
 
-			const result = await branchModeManager.completeTaskBranch(createMockPrd());
+      const result = await branchModeManager.completeTaskBranch(createMockPrd());
 
-			expect(result.success).toBe(true);
-		});
+      expect(result.success).toBe(true);
+    });
 
-		test("returns success when no current task branch", async () => {
-			const branchModeManager = createBranchModeManager();
+    test("returns success when no current task branch", async () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig({
-				enabled: true,
-			});
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig({
+        enabled: true,
+      });
 
-			const result = await branchModeManager.completeTaskBranch(createMockPrd());
+      const result = await branchModeManager.completeTaskBranch(createMockPrd());
 
-			expect(result.success).toBe(true);
-		});
+      expect(result.success).toBe(true);
+    });
 
-		test("pushes branch and returns to base when configured", async () => {
-			const branchModeManager = createBranchModeManager();
+    test("pushes branch and returns to base when configured", async () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig({
-				enabled: true,
-				pushAfterCommit: true,
-				returnToBaseBranch: true,
-			});
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig({
+        enabled: true,
+        pushAfterCommit: true,
+        returnToBaseBranch: true,
+      });
 
-			branchModeManager.initialize();
-			branchModeManager.createTaskBranch("Test Task", 0);
+      branchModeManager.initialize();
+      branchModeManager.createTaskBranch("Test Task", 0);
 
-			const result = await branchModeManager.completeTaskBranch(createMockPrd());
+      const result = await branchModeManager.completeTaskBranch(createMockPrd());
 
-			expect(result.success).toBe(true);
-			expect(lastPushedBranch).not.toBeNull();
-			expect(currentBranch).toBe("main");
-			expect(branchModeManager.getCurrentTaskBranch()).toBeNull();
-		});
+      expect(result.success).toBe(true);
+      expect(lastPushedBranch).not.toBeNull();
+      expect(currentBranch).toBe("main");
+      expect(branchModeManager.getCurrentTaskBranch()).toBeNull();
+    });
 
-		test("skips push when pushAfterCommit is false", async () => {
-			const branchModeManager = createBranchModeManager();
+    test("skips push when pushAfterCommit is false", async () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig({
-				enabled: true,
-				pushAfterCommit: false,
-				returnToBaseBranch: true,
-			});
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig({
+        enabled: true,
+        pushAfterCommit: false,
+        returnToBaseBranch: true,
+      });
 
-			branchModeManager.initialize();
-			branchModeManager.createTaskBranch("Test Task", 0);
+      branchModeManager.initialize();
+      branchModeManager.createTaskBranch("Test Task", 0);
 
-			await branchModeManager.completeTaskBranch(createMockPrd());
+      await branchModeManager.completeTaskBranch(createMockPrd());
 
-			expect(lastPushedBranch).toBeNull();
-		});
-	});
+      expect(lastPushedBranch).toBeNull();
+    });
+  });
 
-	describe("createPullRequestForBranch", () => {
-		test("returns error when branch mode is disabled", async () => {
-			const branchModeManager = createBranchModeManager();
+  describe("createPullRequestForBranch", () => {
+    test("returns error when branch mode is disabled", async () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(false);
+      branchModeManager.setEnabled(false);
 
-			const result = await branchModeManager.createPullRequestForBranch(
-				"feature-branch",
-				createMockPrd(),
-			);
+      const result = await branchModeManager.createPullRequestForBranch(
+        "feature-branch",
+        createMockPrd(),
+      );
 
-			expect(result.success).toBe(false);
-			expect(result.error).toContain("not enabled");
-		});
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("not enabled");
+    });
 
-		test("returns error when no base branch", async () => {
-			const branchModeManager = createBranchModeManager();
+    test("returns error when no base branch", async () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
+      branchModeManager.setEnabled(true);
 
-			const result = await branchModeManager.createPullRequestForBranch(
-				"feature-branch",
-				createMockPrd(),
-			);
+      const result = await branchModeManager.createPullRequestForBranch(
+        "feature-branch",
+        createMockPrd(),
+      );
 
-			expect(result.success).toBe(false);
-		});
-	});
+      expect(result.success).toBe(false);
+    });
+  });
 
-	describe("reset", () => {
-		test("resets all state", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("reset", () => {
+    test("resets all state", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig({
-				enabled: true,
-				branchPrefix: "feature",
-			});
-			branchModeManager.setRalphConfig({ agent: "cursor" });
-			branchModeManager.initialize();
-			branchModeManager.createTaskBranch("Test Task", 0);
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig({
+        branchPrefix: "feature",
+        enabled: true,
+      });
+      branchModeManager.setRalphConfig({ agent: "cursor" });
+      branchModeManager.initialize();
+      branchModeManager.createTaskBranch("Test Task", 0);
 
-			branchModeManager.reset();
+      branchModeManager.reset();
 
-			expect(branchModeManager.isEnabled()).toBe(false);
-			expect(branchModeManager.getConfig()).toBeNull();
-			expect(branchModeManager.getBaseBranch()).toBeNull();
-			expect(branchModeManager.getCurrentTaskBranch()).toBeNull();
-		});
+      expect(branchModeManager.isEnabled()).toBe(false);
+      expect(branchModeManager.getConfig()).toBeNull();
+      expect(branchModeManager.getBaseBranch()).toBeNull();
+      expect(branchModeManager.getCurrentTaskBranch()).toBeNull();
+    });
 
-		test("can be called multiple times safely", () => {
-			const branchModeManager = createBranchModeManager();
+    test("can be called multiple times safely", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setEnabled(true);
+      branchModeManager.setEnabled(true);
 
-			branchModeManager.reset();
-			branchModeManager.reset();
-			branchModeManager.reset();
+      branchModeManager.reset();
+      branchModeManager.reset();
+      branchModeManager.reset();
 
-			expect(branchModeManager.isEnabled()).toBe(false);
-		});
-	});
+      expect(branchModeManager.isEnabled()).toBe(false);
+    });
+  });
 
-	describe("state isolation", () => {
-		test("multiple managers have independent state", () => {
-			const manager1 = createBranchModeManager();
-			const manager2 = createBranchModeManager();
+  describe("state isolation", () => {
+    test("multiple managers have independent state", () => {
+      const manager1 = createBranchModeManager();
+      const manager2 = createBranchModeManager();
 
-			manager1.setEnabled(true);
-			manager1.setConfig({ enabled: true, branchPrefix: "feature1" });
+      manager1.setEnabled(true);
+      manager1.setConfig({ branchPrefix: "feature1", enabled: true });
 
-			manager2.setEnabled(false);
-			manager2.setConfig({ enabled: false, branchPrefix: "feature2" });
+      manager2.setEnabled(false);
+      manager2.setConfig({ branchPrefix: "feature2", enabled: false });
 
-			expect(manager1.isEnabled()).toBe(true);
-			expect(manager1.getConfig()?.branchPrefix).toBe("feature1");
+      expect(manager1.isEnabled()).toBe(true);
+      expect(manager1.getConfig()?.branchPrefix).toBe("feature1");
 
-			expect(manager2.isEnabled()).toBe(false);
-			expect(manager2.getConfig()?.branchPrefix).toBe("feature2");
-		});
-	});
+      expect(manager2.isEnabled()).toBe(false);
+      expect(manager2.getConfig()?.branchPrefix).toBe("feature2");
+    });
+  });
 
-	describe("setRalphConfig", () => {
-		test("caches ralph config for later use", () => {
-			const branchModeManager = createBranchModeManager();
+  describe("setRalphConfig", () => {
+    test("caches ralph config for later use", () => {
+      const branchModeManager = createBranchModeManager();
 
-			branchModeManager.setRalphConfig({
-				agent: "cursor",
-				logFilePath: "/tmp/test.log",
-			});
+      branchModeManager.setRalphConfig({
+        agent: "cursor",
+        logFilePath: "/tmp/test.log",
+      });
 
-			branchModeManager.setEnabled(true);
-			branchModeManager.setConfig({ enabled: true });
+      branchModeManager.setEnabled(true);
+      branchModeManager.setConfig({ enabled: true });
 
-			const result = branchModeManager.initialize();
+      const result = branchModeManager.initialize();
 
-			expect(result.isValid).toBe(true);
-		});
-	});
+      expect(result.isValid).toBe(true);
+    });
+  });
 });

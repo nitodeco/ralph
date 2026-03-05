@@ -1,150 +1,150 @@
 import { Box, Text } from "ink";
 import {
-	PROGRESS_COLOR_THRESHOLD_COMPLETE,
-	PROGRESS_COLOR_THRESHOLD_HIGH,
-	PROGRESS_COLOR_THRESHOLD_MEDIUM,
+  PROGRESS_COLOR_THRESHOLD_COMPLETE,
+  PROGRESS_COLOR_THRESHOLD_HIGH,
+  PROGRESS_COLOR_THRESHOLD_MEDIUM,
 } from "@/lib/constants/ui.ts";
 
 type ProgressBarStyle = "default" | "minimal" | "detailed" | "compact";
 type ProgressBarColor = "cyan" | "green" | "yellow" | "red" | "magenta" | "blue" | "auto";
 
 interface ProgressBarProps {
-	current: number;
-	total: number;
-	width?: number;
-	showPercentage?: boolean;
-	showCount?: boolean;
-	showBytes?: boolean;
-	label?: string;
-	style?: ProgressBarStyle;
-	color?: ProgressBarColor;
-	suffix?: string;
+  current: number;
+  total: number;
+  width?: number;
+  showPercentage?: boolean;
+  showCount?: boolean;
+  showBytes?: boolean;
+  label?: string;
+  style?: ProgressBarStyle;
+  color?: ProgressBarColor;
+  suffix?: string;
 }
 
 function getAutoColor(percentage: number): string {
-	if (percentage >= PROGRESS_COLOR_THRESHOLD_COMPLETE) {
-		return "green";
-	}
+  if (percentage >= PROGRESS_COLOR_THRESHOLD_COMPLETE) {
+    return "green";
+  }
 
-	if (percentage >= PROGRESS_COLOR_THRESHOLD_HIGH) {
-		return "cyan";
-	}
+  if (percentage >= PROGRESS_COLOR_THRESHOLD_HIGH) {
+    return "cyan";
+  }
 
-	if (percentage >= PROGRESS_COLOR_THRESHOLD_MEDIUM) {
-		return "yellow";
-	}
+  if (percentage >= PROGRESS_COLOR_THRESHOLD_MEDIUM) {
+    return "yellow";
+  }
 
-	return "gray";
+  return "gray";
 }
 
 function createProgressBar(current: number, total: number, width: number): string {
-	if (total === 0) {
-		return "░".repeat(width);
-	}
+  if (total === 0) {
+    return "░".repeat(width);
+  }
 
-	const ratio = Math.min(current / total, 1);
-	const filled = Math.round(ratio * width);
-	const empty = width - filled;
+  const ratio = Math.min(current / total, 1);
+  const filled = Math.round(ratio * width);
+  const empty = width - filled;
 
-	return `${"█".repeat(filled)}${"░".repeat(empty)}`;
+  return `${"█".repeat(filled)}${"░".repeat(empty)}`;
 }
 
 function createCompactProgressBar(current: number, total: number, width: number): string {
-	if (total === 0) {
-		return "─".repeat(width);
-	}
+  if (total === 0) {
+    return "─".repeat(width);
+  }
 
-	const ratio = Math.min(current / total, 1);
-	const filled = Math.round(ratio * width);
-	const empty = width - filled;
+  const ratio = Math.min(current / total, 1);
+  const filled = Math.round(ratio * width);
+  const empty = width - filled;
 
-	return `${"━".repeat(filled)}${"─".repeat(empty)}`;
+  return `${"━".repeat(filled)}${"─".repeat(empty)}`;
 }
 
 function createDetailedProgressBar(current: number, total: number, width: number): string {
-	if (total === 0) {
-		return `[${" ".repeat(width)}]`;
-	}
+  if (total === 0) {
+    return `[${" ".repeat(width)}]`;
+  }
 
-	const ratio = Math.min(current / total, 1);
-	const filled = Math.round(ratio * width);
-	const empty = width - filled;
+  const ratio = Math.min(current / total, 1);
+  const filled = Math.round(ratio * width);
+  const empty = width - filled;
 
-	return `[${"\u2588".repeat(filled)}${"\u2591".repeat(empty)}]`;
+  return `[${"\u2588".repeat(filled)}${"\u2591".repeat(empty)}]`;
 }
 
 function formatBytes(bytes: number): string {
-	if (bytes < 1024) {
-		return `${bytes} B`;
-	}
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
 
-	if (bytes < 1_024 * 1_024) {
-		return `${(bytes / 1024).toFixed(1)} KB`;
-	}
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
 
-	return `${(bytes / (1_024 * 1_024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function ProgressBar({
-	current,
-	total,
-	width = 20,
-	showPercentage = true,
-	showCount = false,
-	showBytes = false,
-	label,
-	style = "default",
-	color = "cyan",
-	suffix,
+  current,
+  total,
+  width = 20,
+  showPercentage = true,
+  showCount = false,
+  showBytes = false,
+  label,
+  style = "default",
+  color = "cyan",
+  suffix,
 }: ProgressBarProps): React.ReactElement {
-	const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-	const displayColor = color === "auto" ? getAutoColor(percentage) : color;
+  const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+  const displayColor = color === "auto" ? getAutoColor(percentage) : color;
 
-	const progressBarText =
-		style === "compact"
-			? createCompactProgressBar(current, total, width)
-			: style === "detailed"
-				? createDetailedProgressBar(current, total, width)
-				: createProgressBar(current, total, width);
+  const progressBarText =
+    style === "compact"
+      ? createCompactProgressBar(current, total, width)
+      : style === "detailed"
+        ? createDetailedProgressBar(current, total, width)
+        : createProgressBar(current, total, width);
 
-	if (style === "minimal") {
-		return (
-			<Box gap={1}>
-				<Text color={displayColor}>{progressBarText}</Text>
-				{showPercentage && <Text dimColor>{percentage}%</Text>}
-			</Box>
-		);
-	}
+  if (style === "minimal") {
+    return (
+      <Box gap={1}>
+        <Text color={displayColor}>{progressBarText}</Text>
+        {showPercentage && <Text dimColor>{percentage}%</Text>}
+      </Box>
+    );
+  }
 
-	if (style === "compact") {
-		return (
-			<Text>
-				{label && <Text dimColor>{label} </Text>}
-				<Text color={displayColor}>{progressBarText}</Text>
-				{showPercentage && <Text dimColor> {percentage}%</Text>}
-				{suffix && <Text dimColor> {suffix}</Text>}
-			</Text>
-		);
-	}
+  if (style === "compact") {
+    return (
+      <Text>
+        {label && <Text dimColor>{label} </Text>}
+        <Text color={displayColor}>{progressBarText}</Text>
+        {showPercentage && <Text dimColor> {percentage}%</Text>}
+        {suffix && <Text dimColor> {suffix}</Text>}
+      </Text>
+    );
+  }
 
-	return (
-		<Box flexDirection="column" gap={1}>
-			{label && <Text dimColor>{label}</Text>}
-			<Box gap={1}>
-				<Text color={displayColor}>{progressBarText}</Text>
-				{showPercentage && <Text dimColor>{percentage}%</Text>}
-				{showCount && (
-					<Text dimColor>
-						({current}/{total})
-					</Text>
-				)}
-				{showBytes && (
-					<Text dimColor>
-						({formatBytes(current)} / {formatBytes(total)})
-					</Text>
-				)}
-				{suffix && <Text dimColor>{suffix}</Text>}
-			</Box>
-		</Box>
-	);
+  return (
+    <Box flexDirection="column" gap={1}>
+      {label && <Text dimColor>{label}</Text>}
+      <Box gap={1}>
+        <Text color={displayColor}>{progressBarText}</Text>
+        {showPercentage && <Text dimColor>{percentage}%</Text>}
+        {showCount && (
+          <Text dimColor>
+            ({current}/{total})
+          </Text>
+        )}
+        {showBytes && (
+          <Text dimColor>
+            ({formatBytes(current)} / {formatBytes(total)})
+          </Text>
+        )}
+        {suffix && <Text dimColor>{suffix}</Text>}
+      </Box>
+    </Box>
+  );
 }

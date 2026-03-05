@@ -7,106 +7,106 @@ import { getProgressFilePath } from "./progress.ts";
 import { getPrdService } from "./services/index.ts";
 
 interface ArchivedTasks {
-	archivedAt: string;
-	project: string;
-	tasks: PrdTask[];
+  archivedAt: string;
+  project: string;
+  tasks: PrdTask[];
 }
 
 export function ensureArchiveDirExists(): void {
-	const archiveDir = getArchiveDir();
+  const archiveDir = getArchiveDir();
 
-	if (!existsSync(archiveDir)) {
-		mkdirSync(archiveDir, { recursive: true });
-	}
+  if (!existsSync(archiveDir)) {
+    mkdirSync(archiveDir, { recursive: true });
+  }
 }
 
 function generateArchiveTimestamp(): string {
-	return new Date().toISOString().replace(/[:.]/g, "-");
+  return new Date().toISOString().replace(/[:.]/g, "-");
 }
 
 export function archiveCompletedTasks(prd: Prd): Prd {
-	const completedTasks = prd.tasks.filter((task) => task.done);
+  const completedTasks = prd.tasks.filter((task) => task.done);
 
-	if (completedTasks.length === 0) {
-		return prd;
-	}
+  if (completedTasks.length === 0) {
+    return prd;
+  }
 
-	ensureArchiveDirExists();
+  ensureArchiveDirExists();
 
-	const archiveData: ArchivedTasks = {
-		archivedAt: formatTimestamp(),
-		project: prd.project,
-		tasks: completedTasks,
-	};
+  const archiveData: ArchivedTasks = {
+    archivedAt: formatTimestamp(),
+    project: prd.project,
+    tasks: completedTasks,
+  };
 
-	const archiveFileName = `tasks-${generateArchiveTimestamp()}.json`;
-	const archivePath = join(getArchiveDir(), archiveFileName);
+  const archiveFileName = `tasks-${generateArchiveTimestamp()}.json`;
+  const archivePath = join(getArchiveDir(), archiveFileName);
 
-	writeFileSync(archivePath, JSON.stringify(archiveData, null, 2));
+  writeFileSync(archivePath, JSON.stringify(archiveData, null, 2));
 
-	const pendingTasks = prd.tasks.filter((task) => !task.done);
-	const updatedPrd: Prd = {
-		...prd,
-		tasks: pendingTasks,
-	};
+  const pendingTasks = prd.tasks.filter((task) => !task.done);
+  const updatedPrd: Prd = {
+    ...prd,
+    tasks: pendingTasks,
+  };
 
-	return updatedPrd;
+  return updatedPrd;
 }
 
 export function archiveProgressFile(): void {
-	const progressFilePath = getProgressFilePath();
+  const progressFilePath = getProgressFilePath();
 
-	if (!existsSync(progressFilePath)) {
-		return;
-	}
+  if (!existsSync(progressFilePath)) {
+    return;
+  }
 
-	ensureArchiveDirExists();
+  ensureArchiveDirExists();
 
-	const archiveFileName = `progress-${generateArchiveTimestamp()}.txt`;
-	const archivePath = join(getArchiveDir(), archiveFileName);
+  const archiveFileName = `progress-${generateArchiveTimestamp()}.txt`;
+  const archivePath = join(getArchiveDir(), archiveFileName);
 
-	renameSync(progressFilePath, archivePath);
+  renameSync(progressFilePath, archivePath);
 }
 
 export interface ArchiveResult {
-	tasksArchived: number;
-	progressArchived: boolean;
+  tasksArchived: number;
+  progressArchived: boolean;
 }
 
 export function performSessionArchive(): ArchiveResult {
-	const archiveResult: ArchiveResult = {
-		tasksArchived: 0,
-		progressArchived: false,
-	};
+  const archiveResult: ArchiveResult = {
+    progressArchived: false,
+    tasksArchived: 0,
+  };
 
-	const prdService = getPrdService();
-	const prdFile = prdService.findFile();
+  const prdService = getPrdService();
+  const prdFile = prdService.findFile();
 
-	if (!prdFile) {
-		return archiveResult;
-	}
+  if (!prdFile) {
+    return archiveResult;
+  }
 
-	const prd = prdService.get();
+  const prd = prdService.get();
 
-	if (!prd) {
-		return archiveResult;
-	}
+  if (!prd) {
+    return archiveResult;
+  }
 
-	const completedTaskCount = prd.tasks.filter((task: PrdTask) => task.done).length;
+  const completedTaskCount = prd.tasks.filter((task: PrdTask) => task.done).length;
 
-	if (completedTaskCount > 0) {
-		const updatedPrd = archiveCompletedTasks(prd);
+  if (completedTaskCount > 0) {
+    const updatedPrd = archiveCompletedTasks(prd);
 
-		prdService.save(updatedPrd);
-		archiveResult.tasksArchived = completedTaskCount;
-	}
+    prdService.save(updatedPrd);
+    archiveResult.tasksArchived = completedTaskCount;
+  }
 
-	const progressFilePath = getProgressFilePath();
+  const progressFilePath = getProgressFilePath();
 
-	if (existsSync(progressFilePath)) {
-		archiveProgressFile();
-		archiveResult.progressArchived = true;
-	}
+  if (existsSync(progressFilePath)) {
+    archiveProgressFile();
+    archiveResult.progressArchived = true;
+  }
 
-	return archiveResult;
+  return archiveResult;
 }

@@ -8,7 +8,7 @@ interface Props {
 const { href, class: className = "", external } = Astro.props;
 
 const isExternal = external ?? (href.startsWith("http://") || href.startsWith("https://"));
-const externalProps = isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {};
+const externalProps = isExternal ? { rel: "noopener noreferrer", target: "_blank" } : {};
 ---
 
 <a

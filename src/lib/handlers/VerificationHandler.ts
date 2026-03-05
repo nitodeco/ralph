@@ -4,42 +4,42 @@ import type { VerificationConfig, VerificationResult } from "@/types.ts";
 import type { Handler, VerificationStateCallback } from "./types.ts";
 
 export interface VerificationHandlerOptions {
-	onStateChange: VerificationStateCallback;
+  onStateChange: VerificationStateCallback;
 }
 
 export class VerificationHandler implements Handler {
-	private lastResult: VerificationResult | null = null;
-	private isRunning = false;
-	private onStateChange: VerificationStateCallback;
+  private lastResult: VerificationResult | null = null;
+  private isRunning = false;
+  private onStateChange: VerificationStateCallback;
 
-	constructor(options: VerificationHandlerOptions) {
-		this.onStateChange = options.onStateChange;
-	}
+  constructor(options: VerificationHandlerOptions) {
+    this.onStateChange = options.onStateChange;
+  }
 
-	reset(): void {
-		this.lastResult = null;
-		this.isRunning = false;
-	}
+  reset(): void {
+    this.lastResult = null;
+    this.isRunning = false;
+  }
 
-	getLastResult(): VerificationResult | null {
-		return this.lastResult;
-	}
+  getLastResult(): VerificationResult | null {
+    return this.lastResult;
+  }
 
-	getIsRunning(): boolean {
-		return this.isRunning;
-	}
+  getIsRunning(): boolean {
+    return this.isRunning;
+  }
 
-	async run(config: VerificationConfig): Promise<VerificationResult> {
-		this.isRunning = true;
-		this.onStateChange(true, null);
+  async run(config: VerificationConfig): Promise<VerificationResult> {
+    this.isRunning = true;
+    this.onStateChange(true, null);
 
-		const verificationResult = await runVerification(config);
+    const verificationResult = await runVerification(config);
 
-		this.lastResult = verificationResult;
-		this.isRunning = false;
-		this.onStateChange(false, verificationResult);
-		appendProgress(formatVerificationResult(verificationResult));
+    this.lastResult = verificationResult;
+    this.isRunning = false;
+    this.onStateChange(false, verificationResult);
+    appendProgress(formatVerificationResult(verificationResult));
 
-		return verificationResult;
-	}
+    return verificationResult;
+  }
 }

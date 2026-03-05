@@ -329,7 +329,7 @@ const base = import.meta.env.BASE_URL;
 
     const focusableSelectors =
       'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    return Array.from(container.querySelectorAll(focusableSelectors));
+    return [...container.querySelectorAll(focusableSelectors)];
   }
 
   function initSearch() {
@@ -385,7 +385,7 @@ const base = import.meta.env.BASE_URL;
       }
 
       if (event.key === "/" && !isModalOpen) {
-        const activeElement = document.activeElement;
+        const {activeElement} = document;
         const isInputFocused =
           activeElement instanceof HTMLInputElement ||
           activeElement instanceof HTMLTextAreaElement ||
@@ -439,7 +439,7 @@ const base = import.meta.env.BASE_URL;
     };
 
     inputHandler = (event) => {
-      const target = event.target;
+      const {target} = event;
       if (target instanceof HTMLInputElement) {
         handleSearch(target.value);
       }

@@ -24,10 +24,10 @@ Effective Configuration (merged, project overrides global)
 
 ### Configuration Files
 
-| Location | Purpose | Scope |
-|----------|---------|-------|
-| `~/.ralph/config.json` | Global defaults for all projects | All projects |
-| `~/.ralph/projects/<project>/config.json` | Project-specific overrides | Single project |
+| Location                                  | Purpose                          | Scope          |
+| ----------------------------------------- | -------------------------------- | -------------- |
+| `~/.ralph/config.json`                    | Global defaults for all projects | All projects   |
+| `~/.ralph/projects/<project>/config.json` | Project-specific overrides       | Single project |
 
 ## Viewing Configuration
 
@@ -88,11 +88,11 @@ Choose which AI agent Ralph uses:
 }
 ```
 
-| Value | Description | Command |
-|-------|-------------|---------|
+| Value      | Description              | Command  |
+| ---------- | ------------------------ | -------- |
 | `"cursor"` | Cursor CLI (most common) | `cursor` |
-| `"claude"` | Claude Code | `claude` |
-| `"codex"` | OpenAI Codex CLI | `codex` |
+| `"claude"` | Claude Code              | `claude` |
+| `"codex"`  | OpenAI Codex CLI         | `codex`  |
 
 **When to change:**
 
@@ -121,10 +121,10 @@ Control how Ralph handles failed iterations:
 }
 ```
 
-| Option | Default | Description | Range |
-|--------|---------|-------------|-------|
-| `maxRetries` | 3 | Max retry attempts per task | 0-10 |
-| `retryDelayMs` | 5000 | Delay between retries (ms) | 0-60000 |
+| Option         | Default | Description                 | Range   |
+| -------------- | ------- | --------------------------- | ------- |
+| `maxRetries`   | 3       | Max retry attempts per task | 0-10    |
+| `retryDelayMs` | 5000    | Delay between retries (ms)  | 0-60000 |
 
 **When to adjust:**
 
@@ -161,11 +161,11 @@ Control iteration and session time limits:
 }
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `agentTimeoutMs` | 1800000 (30 min) | Max time per iteration |
-| `stuckThresholdMs` | 300000 (5 min) | No-output threshold |
-| `maxRuntimeMs` | 0 (unlimited) | Total session time limit |
+| Option             | Default          | Description              |
+| ------------------ | ---------------- | ------------------------ |
+| `agentTimeoutMs`   | 1800000 (30 min) | Max time per iteration   |
+| `stuckThresholdMs` | 300000 (5 min)   | No-output threshold      |
+| `maxRuntimeMs`     | 0 (unlimited)    | Total session time limit |
 
 **When to adjust:**
 
@@ -216,11 +216,11 @@ Get notified when sessions complete:
 }
 ```
 
-| Option | Type | Description |
-|--------|------|-------------|
+| Option               | Type    | Description                        |
+| -------------------- | ------- | ---------------------------------- |
 | `systemNotification` | boolean | Show OS notification on completion |
-| `webhookUrl` | string | POST to webhook on completion |
-| `markerFilePath` | string | Create file when session completes |
+| `webhookUrl`         | string  | POST to webhook on completion      |
+| `markerFilePath`     | string  | Create file when session completes |
 
 **Use cases:**
 
@@ -287,12 +287,12 @@ Control memory usage and garbage collection:
 }
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `maxOutputBufferBytes` | 5242880 (5 MB) | Max agent output buffer size |
-| `memoryWarningThresholdMb` | 500 | Warn when memory exceeds this |
-| `memoryThresholdMb` | 1024 | Stop session at this threshold |
-| `enableGarbageCollectionHints` | true | Enable GC hints |
+| Option                         | Default        | Description                    |
+| ------------------------------ | -------------- | ------------------------------ |
+| `maxOutputBufferBytes`         | 5242880 (5 MB) | Max agent output buffer size   |
+| `memoryWarningThresholdMb`     | 500            | Warn when memory exceeds this  |
+| `memoryThresholdMb`            | 1024           | Stop session at this threshold |
+| `enableGarbageCollectionHints` | true           | Enable GC hints                |
 
 **When to adjust:**
 
@@ -410,25 +410,29 @@ Create `~/.ralph/projects/<project>/instructions.md`:
 # Project Instructions
 
 ## Technology Stack
+
 - TypeScript with strict mode
 - Bun as runtime and package manager
 - Prisma for database operations
 - Express for API server
 
 ## Code Standards
+
 - Use functional programming patterns
 - Prefer immutability
 - Write descriptive variable names
 - Add JSDoc comments for public APIs
 
 ## Project Structure
+
 - API routes in src/routes/
 - Business logic in src/services/
 - Database models in src/models/
 - Utilities in src/lib/
 
 ## Testing
-- Write tests in __tests__/ directories
+
+- Write tests in **tests**/ directories
 - Use Bun's test runner
 - Aim for 80%+ coverage
 ```

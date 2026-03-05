@@ -5,291 +5,291 @@ import { dirname, join } from "node:path";
 export type ContentHash = string;
 
 export interface OperationEntry {
-	operationId: string;
-	timestamp: number;
-	contentHash: ContentHash | null;
+  operationId: string;
+  timestamp: number;
+  contentHash: ContentHash | null;
 }
 
 export interface IdempotentWriteResult {
-	written: boolean;
-	reason: "changed" | "unchanged" | "new_file";
-	contentHash: ContentHash;
+  written: boolean;
+  reason: "changed" | "unchanged" | "new_file";
+  contentHash: ContentHash;
 }
 
 export interface OperationTracker {
-	track: (operationId: string, contentHash?: ContentHash | null) => boolean;
-	isTracked: (operationId: string) => boolean;
-	getEntry: (operationId: string) => OperationEntry | null;
-	clear: () => void;
-	clearStale: (maxAgeMs: number) => number;
-	size: () => number;
+  track: (operationId: string, contentHash?: ContentHash | null) => boolean;
+  isTracked: (operationId: string) => boolean;
+  getEntry: (operationId: string) => OperationEntry | null;
+  clear: () => void;
+  clearStale: (maxAgeMs: number) => number;
+  size: () => number;
 }
 
-const DEFAULT_OPERATION_TTL_MS = 5 * 60 * 1_000;
+const DEFAULT_OPERATION_TTL_MS = 5 * 60 * 1000;
 
 export function computeContentHash(content: string): ContentHash {
-	return createHash("sha256").update(content).digest("hex").slice(0, 16);
+  return createHash("sha256").update(content).digest("hex").slice(0, 16);
 }
 
 export function computeFileHash(filePath: string): ContentHash | null {
-	if (!existsSync(filePath)) {
-		return null;
-	}
+  if (!existsSync(filePath)) {
+    return null;
+  }
 
-	try {
-		const content = readFileSync(filePath, "utf-8");
+  try {
+    const content = readFileSync(filePath, "utf8");
 
-		return computeContentHash(content);
-	} catch {
-		return null;
-	}
+    return computeContentHash(content);
+  } catch {
+    return null;
+  }
 }
 
 export function writeFileAtomic(filePath: string, content: string): void {
-	const directory = dirname(filePath);
-	const tempPath = join(directory, `.${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`);
+  const directory = dirname(filePath);
+  const tempPath = join(directory, `.${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`);
 
-	try {
-		writeFileSync(tempPath, content, "utf-8");
-		renameSync(tempPath, filePath);
-	} catch (error) {
-		try {
-			if (existsSync(tempPath)) {
-				unlinkSync(tempPath);
-			}
-		} catch {
-			// Ignore cleanup errors
-		}
+  try {
+    writeFileSync(tempPath, content, "utf8");
+    renameSync(tempPath, filePath);
+  } catch (error) {
+    try {
+      if (existsSync(tempPath)) {
+        unlinkSync(tempPath);
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
 
-		throw error;
-	}
+    throw error;
+  }
 }
 
 export function writeFileIdempotent(filePath: string, content: string): IdempotentWriteResult {
-	const newContentHash = computeContentHash(content);
+  const newContentHash = computeContentHash(content);
 
-	if (!existsSync(filePath)) {
-		writeFileAtomic(filePath, content);
+  if (!existsSync(filePath)) {
+    writeFileAtomic(filePath, content);
 
-		return { written: true, reason: "new_file", contentHash: newContentHash };
-	}
+    return { contentHash: newContentHash, reason: "new_file", written: true };
+  }
 
-	const existingHash = computeFileHash(filePath);
+  const existingHash = computeFileHash(filePath);
 
-	if (existingHash === newContentHash) {
-		return { written: false, reason: "unchanged", contentHash: newContentHash };
-	}
+  if (existingHash === newContentHash) {
+    return { contentHash: newContentHash, reason: "unchanged", written: false };
+  }
 
-	writeFileAtomic(filePath, content);
+  writeFileAtomic(filePath, content);
 
-	return { written: true, reason: "changed", contentHash: newContentHash };
+  return { contentHash: newContentHash, reason: "changed", written: true };
 }
 
 export function createOperationTracker(): OperationTracker {
-	const operations = new Map<string, OperationEntry>();
+  const operations = new Map<string, OperationEntry>();
 
-	return {
-		track(operationId: string, contentHash: ContentHash | null = null): boolean {
-			if (operations.has(operationId)) {
-				return false;
-			}
+  return {
+    clear(): void {
+      operations.clear();
+    },
 
-			operations.set(operationId, {
-				operationId,
-				timestamp: Date.now(),
-				contentHash,
-			});
+    clearStale(maxAgeMs: number = DEFAULT_OPERATION_TTL_MS): number {
+      const now = Date.now();
+      let clearedCount = 0;
 
-			return true;
-		},
+      for (const [operationId, entry] of operations) {
+        if (now - entry.timestamp > maxAgeMs) {
+          operations.delete(operationId);
+          clearedCount++;
+        }
+      }
 
-		isTracked(operationId: string): boolean {
-			return operations.has(operationId);
-		},
+      return clearedCount;
+    },
 
-		getEntry(operationId: string): OperationEntry | null {
-			return operations.get(operationId) ?? null;
-		},
+    getEntry(operationId: string): OperationEntry | null {
+      return operations.get(operationId) ?? null;
+    },
 
-		clear(): void {
-			operations.clear();
-		},
+    isTracked(operationId: string): boolean {
+      return operations.has(operationId);
+    },
 
-		clearStale(maxAgeMs: number = DEFAULT_OPERATION_TTL_MS): number {
-			const now = Date.now();
-			let clearedCount = 0;
+    size(): number {
+      return operations.size;
+    },
 
-			for (const [operationId, entry] of operations) {
-				if (now - entry.timestamp > maxAgeMs) {
-					operations.delete(operationId);
-					clearedCount++;
-				}
-			}
+    track(operationId: string, contentHash: ContentHash | null = null): boolean {
+      if (operations.has(operationId)) {
+        return false;
+      }
 
-			return clearedCount;
-		},
+      operations.set(operationId, {
+        contentHash,
+        operationId,
+        timestamp: Date.now(),
+      });
 
-		size(): number {
-			return operations.size;
-		},
-	};
+      return true;
+    },
+  };
 }
 
 export function createOperationId(...parts: (string | number | null | undefined)[]): string {
-	const filteredParts = parts.filter(
-		(part): part is string | number => part !== null && part !== undefined,
-	);
+  const filteredParts = parts.filter(
+    (part): part is string | number => part !== null && part !== undefined,
+  );
 
-	return filteredParts.join(":");
+  return filteredParts.join(":");
 }
 
 export interface DebouncedWriterOptions {
-	debounceMs?: number;
-	writeFunction?: (filePath: string, content: string) => void;
+  debounceMs?: number;
+  writeFunction?: (filePath: string, content: string) => void;
 }
 
 export interface DebouncedWriter {
-	scheduleWrite: (filePath: string, content: string) => void;
-	flush: () => void;
-	cancel: (filePath: string) => void;
-	cancelAll: () => void;
-	hasPending: (filePath: string) => boolean;
-	getPendingCount: () => number;
+  scheduleWrite: (filePath: string, content: string) => void;
+  flush: () => void;
+  cancel: (filePath: string) => void;
+  cancelAll: () => void;
+  hasPending: (filePath: string) => boolean;
+  getPendingCount: () => number;
 }
 
 const DEFAULT_DEBOUNCE_MS = 100;
 
 export function createDebouncedWriter(options: DebouncedWriterOptions = {}): DebouncedWriter {
-	const { debounceMs = DEFAULT_DEBOUNCE_MS, writeFunction = writeFileIdempotent } = options;
+  const { debounceMs = DEFAULT_DEBOUNCE_MS, writeFunction = writeFileIdempotent } = options;
 
-	interface PendingWrite {
-		content: string;
-		timeoutId: ReturnType<typeof setTimeout>;
-	}
+  interface PendingWrite {
+    content: string;
+    timeoutId: ReturnType<typeof setTimeout>;
+  }
 
-	const pendingWrites = new Map<string, PendingWrite>();
+  const pendingWrites = new Map<string, PendingWrite>();
 
-	function executeWrite(filePath: string, content: string): void {
-		pendingWrites.delete(filePath);
-		writeFunction(filePath, content);
-	}
+  function executeWrite(filePath: string, content: string): void {
+    pendingWrites.delete(filePath);
+    writeFunction(filePath, content);
+  }
 
-	return {
-		scheduleWrite(filePath: string, content: string): void {
-			const existing = pendingWrites.get(filePath);
+  return {
+    cancel(filePath: string): void {
+      const pending = pendingWrites.get(filePath);
 
-			if (existing) {
-				clearTimeout(existing.timeoutId);
-			}
+      if (pending) {
+        clearTimeout(pending.timeoutId);
+        pendingWrites.delete(filePath);
+      }
+    },
 
-			const timeoutId = setTimeout(() => executeWrite(filePath, content), debounceMs);
+    cancelAll(): void {
+      for (const [, pending] of pendingWrites) {
+        clearTimeout(pending.timeoutId);
+      }
 
-			pendingWrites.set(filePath, { content, timeoutId });
-		},
+      pendingWrites.clear();
+    },
 
-		flush(): void {
-			for (const [filePath, pending] of pendingWrites) {
-				clearTimeout(pending.timeoutId);
-				executeWrite(filePath, pending.content);
-			}
-		},
+    flush(): void {
+      for (const [filePath, pending] of pendingWrites) {
+        clearTimeout(pending.timeoutId);
+        executeWrite(filePath, pending.content);
+      }
+    },
 
-		cancel(filePath: string): void {
-			const pending = pendingWrites.get(filePath);
+    getPendingCount(): number {
+      return pendingWrites.size;
+    },
 
-			if (pending) {
-				clearTimeout(pending.timeoutId);
-				pendingWrites.delete(filePath);
-			}
-		},
+    hasPending(filePath: string): boolean {
+      return pendingWrites.has(filePath);
+    },
 
-		cancelAll(): void {
-			for (const [, pending] of pendingWrites) {
-				clearTimeout(pending.timeoutId);
-			}
+    scheduleWrite(filePath: string, content: string): void {
+      const existing = pendingWrites.get(filePath);
 
-			pendingWrites.clear();
-		},
+      if (existing) {
+        clearTimeout(existing.timeoutId);
+      }
 
-		hasPending(filePath: string): boolean {
-			return pendingWrites.has(filePath);
-		},
+      const timeoutId = setTimeout(() => executeWrite(filePath, content), debounceMs);
 
-		getPendingCount(): number {
-			return pendingWrites.size;
-		},
-	};
+      pendingWrites.set(filePath, { content, timeoutId });
+    },
+  };
 }
 
 export interface BatchedUpdater<T> {
-	update: (updater: (current: T) => T) => void;
-	flush: () => void;
-	cancel: () => void;
-	hasPending: () => boolean;
+  update: (updater: (current: T) => T) => void;
+  flush: () => void;
+  cancel: () => void;
+  hasPending: () => boolean;
 }
 
 export interface BatchedUpdaterOptions<T> {
-	debounceMs?: number;
-	load: () => T;
-	save: (value: T) => void;
+  debounceMs?: number;
+  load: () => T;
+  save: (value: T) => void;
 }
 
 export function createBatchedUpdater<T>(options: BatchedUpdaterOptions<T>): BatchedUpdater<T> {
-	const { debounceMs = DEFAULT_DEBOUNCE_MS, load, save } = options;
+  const { debounceMs = DEFAULT_DEBOUNCE_MS, load, save } = options;
 
-	let pendingUpdaters: Array<(current: T) => T> = [];
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let pendingUpdaters: ((current: T) => T)[] = [];
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-	function executeUpdate(): void {
-		if (pendingUpdaters.length === 0) {
-			return;
-		}
+  function executeUpdate(): void {
+    if (pendingUpdaters.length === 0) {
+      return;
+    }
 
-		const updaters = pendingUpdaters;
+    const updaters = pendingUpdaters;
 
-		pendingUpdaters = [];
-		timeoutId = null;
+    pendingUpdaters = [];
+    timeoutId = null;
 
-		let currentState = load();
+    let currentState = load();
 
-		for (const updater of updaters) {
-			currentState = updater(currentState);
-		}
+    for (const updater of updaters) {
+      currentState = updater(currentState);
+    }
 
-		save(currentState);
-	}
+    save(currentState);
+  }
 
-	return {
-		update(updater: (current: T) => T): void {
-			pendingUpdaters.push(updater);
+  return {
+    cancel(): void {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
 
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-			}
+      pendingUpdaters = [];
+    },
 
-			timeoutId = setTimeout(executeUpdate, debounceMs);
-		},
+    flush(): void {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
 
-		flush(): void {
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-				timeoutId = null;
-			}
+      executeUpdate();
+    },
 
-			executeUpdate();
-		},
+    hasPending(): boolean {
+      return pendingUpdaters.length > 0;
+    },
 
-		cancel(): void {
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-				timeoutId = null;
-			}
+    update(updater: (current: T) => T): void {
+      pendingUpdaters.push(updater);
 
-			pendingUpdaters = [];
-		},
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
 
-		hasPending(): boolean {
-			return pendingUpdaters.length > 0;
-		},
-	};
+      timeoutId = setTimeout(executeUpdate, debounceMs);
+    },
+  };
 }

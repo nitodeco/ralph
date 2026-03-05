@@ -66,6 +66,7 @@ Ralph tracks session state in `~/.ralph/projects/<project>/session.json`:
 ```
 
 This state allows Ralph to:
+
 - Resume interrupted sessions
 - Track progress across runs
 - Provide context for retries
@@ -109,16 +110,16 @@ Session Status:
   Iteration: 5 / 10
   Started: 15 minutes ago
   Elapsed: 15m 32s
-  
+
 Current Task:
   [4] Implement user login endpoint
-  
+
 Recent Progress:
   ✓ Set up Express server (3 minutes)
   ✓ Configure PostgreSQL (4 minutes)
   ✓ Create user schema (5 minutes)
   → Working on: Implement user login endpoint (3 minutes)
-  
+
 Agent:
   Status: Running
   Last output: 12 seconds ago
@@ -203,8 +204,9 @@ An iteration is a single execution of your AI agent working on one task. Each it
 ### What Happens in an Iteration
 
 1. **Context Preparation**
-   
+
    Ralph gathers everything the agent needs:
+
    ```bash
    # Ralph runs these commands internally
    ralph task current    # Get next task
@@ -213,26 +215,27 @@ An iteration is a single execution of your AI agent working on one task. Each it
    ```
 
 2. **Agent Invocation**
-   
+
    Ralph spawns the agent with a structured prompt:
+
    ```
    You are working on task: [3] Create user authentication schema
-   
+
    Context:
    - Previous tasks completed: Set up Express, Configure PostgreSQL
    - Progress notes: Database connection configured, migrations ready
-   
+
    Guardrails:
    - Use Prisma for database operations
    - Follow existing code patterns
-   
+
    Instructions:
    - When complete, run: ralph task done 3
    - Add progress notes: ralph progress add "description"
    ```
 
 3. **Monitoring**
-   
+
    Ralph watches the agent's execution:
    - Streams output in real-time
    - Detects `ralph task done` calls
@@ -240,13 +243,14 @@ An iteration is a single execution of your AI agent working on one task. Each it
    - Enforces timeout limits
 
 4. **Completion**
-   
+
    When the agent finishes:
+
    ```bash
    # Agent calls this when done
    ralph task done 3
    ralph progress add "Created user schema with email, password, and timestamps"
-   
+
    # Ralph automatically commits
    git add .
    git commit -m "feat: create user authentication schema"
@@ -259,6 +263,7 @@ Each iteration ends in one of these states:
 #### Success
 
 The agent completed the task successfully:
+
 - Called `ralph task done`
 - Made code changes
 - Ralph committed the changes
@@ -267,6 +272,7 @@ The agent completed the task successfully:
 #### Timeout
 
 The agent exceeded the configured timeout:
+
 - Default: 30 minutes (`agentTimeoutMs: 1800000`)
 - Ralph stops the agent
 - Retries with timeout context
@@ -274,6 +280,7 @@ The agent exceeded the configured timeout:
 #### Stuck
 
 The agent produced no output for too long:
+
 - Default: 5 minutes (`stuckThresholdMs: 300000`)
 - Indicates the agent is waiting or frozen
 - Ralph stops and retries
@@ -281,6 +288,7 @@ The agent produced no output for too long:
 #### Error
 
 The agent exited with an error:
+
 - Process crashed
 - Unhandled exception
 - Ralph captures error details
@@ -289,6 +297,7 @@ The agent exited with an error:
 #### Decomposed
 
 The task was too complex:
+
 - Agent outputs `DECOMPOSE_TASK` marker
 - Provides subtask list
 - Ralph replaces original task with subtasks
@@ -332,12 +341,12 @@ Control iteration behavior in `~/.ralph/config.json`:
 }
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `agentTimeoutMs` | 1800000 (30 min) | Max time per iteration |
-| `stuckThresholdMs` | 300000 (5 min) | No-output threshold |
-| `maxRetries` | 3 | Retry attempts per task |
-| `retryDelayMs` | 5000 (5 sec) | Delay between retries |
+| Setting            | Default          | Description             |
+| ------------------ | ---------------- | ----------------------- |
+| `agentTimeoutMs`   | 1800000 (30 min) | Max time per iteration  |
+| `stuckThresholdMs` | 300000 (5 min)   | No-output threshold     |
+| `maxRetries`       | 3                | Retry attempts per task |
+| `retryDelayMs`     | 5000 (5 sec)     | Delay between retries   |
 
 ### Iteration Examples
 
@@ -449,6 +458,7 @@ ralph projects       # List all active projects
 ```
 
 Each project maintains its own:
+
 - PRD and tasks
 - Session state
 - Configuration

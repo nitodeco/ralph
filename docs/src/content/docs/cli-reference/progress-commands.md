@@ -32,8 +32,8 @@ Progress:
 
 **Options:**
 
-| Option | Description |
-|--------|-------------|
+| Option   | Description           |
+| -------- | --------------------- |
 | `--json` | Output in JSON format |
 
 ## ralph progress add
@@ -46,8 +46,8 @@ ralph progress add "Completed user authentication, all tests passing"
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
+| Argument | Description            |
+| -------- | ---------------------- |
 | `<text>` | The progress note text |
 
 **Behavior:**

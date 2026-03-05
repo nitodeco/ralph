@@ -44,8 +44,8 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
 <script>
   const initializeToc = () => {
-    const headings = Array.from(document.querySelectorAll("h2[id], h3[id]"));
-    const tocLinks = Array.from(document.querySelectorAll(".toc-link"));
+    const headings = [...document.querySelectorAll('h2[id], h3[id]')];
+    const tocLinks = [...document.querySelectorAll('.toc-link')];
     const tocProgress = document.getElementById("toc-progress");
     const tocViewport = document.getElementById("toc-viewport");
     const tocList = document.querySelector(".toc-list");
@@ -64,7 +64,7 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
       while (currentElement) {
         const computedStyle = window.getComputedStyle(currentElement);
-        const overflowY = computedStyle.overflowY;
+        const {overflowY} = computedStyle;
 
         if (overflowY === "auto" || overflowY === "scroll") {
           return currentElement;
@@ -137,7 +137,7 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
       }
 
       const scrollContainerRect = scrollContainer.getBoundingClientRect();
-      const scrollTop = scrollContainer.scrollTop;
+      const {scrollTop} = scrollContainer;
       const linkCenter = linkRect.top - scrollContainerRect.top + scrollTop + linkRect.height / 2;
       const targetCenter = scrollTop + scrollContainer.clientHeight * 0.5;
       const offsetDelta = linkCenter - targetCenter;
@@ -150,8 +150,8 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
       const nextScrollTop = Math.min(maxScrollTop, Math.max(0, scrollTop + offsetDelta));
 
       scrollContainer.scrollTo({
-        top: nextScrollTop,
         behavior: "smooth",
+        top: nextScrollTop,
       });
     };
 
@@ -203,7 +203,7 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
       (entries) => {
         const visibleEntries = entries
           .filter((entry) => entry.isIntersecting)
-          .sort((firstEntry, secondEntry) => firstEntry.boundingClientRect.top - secondEntry.boundingClientRect.top);
+          .toSorted((firstEntry, secondEntry) => firstEntry.boundingClientRect.top - secondEntry.boundingClientRect.top);
 
         if (visibleEntries.length === 0) {
           fallbackActiveHeading();
@@ -216,7 +216,7 @@ const filteredHeadings = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
         }
 
         const nextIndex = headings.findIndex((heading) => heading === targetHeading);
-        if (nextIndex >= 0) {
+        if (nextIndex !== -1) {
           setActiveHeadingIndex(nextIndex);
         }
       },

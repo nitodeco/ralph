@@ -1,29 +1,29 @@
 {
-	"name": "ralph-docs",
-	"type": "module",
-	"version": "0.0.1",
-	"private": true,
-	"scripts": {
-		"dev": "astro dev",
-		"start": "astro dev",
-		"build": "astro build && pagefind --site dist",
-		"preview": "astro preview",
-		"check": "astro check",
-		"generate-assets": "bun run scripts/generate-assets.ts"
-	},
-	"dependencies": {
-		"@astrojs/check": "0.9.6",
-		"@astrojs/sitemap": "3.7.0",
-		"@tailwindcss/vite": "4.1.18",
-		"astro": "5.16.15",
-		"astro-compress": "2.3.9",
-		"marked": "17.0.1",
-		"pagefind": "1.4.0",
-		"tailwindcss": "4.1.18",
-		"typescript": "5.9.3",
-		"unist-util-visit": "5.0.0"
-	},
-	"devDependencies": {
-		"sharp": "0.34.5"
-	}
+  "name": "ralph-docs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "astro preview",
+    "check": "astro check",
+    "generate-assets": "bun run scripts/generate-assets.ts"
+  },
+  "dependencies": {
+    "@astrojs/check": "0.9.6",
+    "@astrojs/sitemap": "3.7.0",
+    "@tailwindcss/vite": "4.1.18",
+    "astro": "5.16.15",
+    "astro-compress": "2.3.9",
+    "marked": "17.0.1",
+    "pagefind": "1.4.0",
+    "tailwindcss": "4.1.18",
+    "typescript": "5.9.3",
+    "unist-util-visit": "5.0.0"
+  },
+  "devDependencies": {
+    "sharp": "0.34.5"
+  }
 }

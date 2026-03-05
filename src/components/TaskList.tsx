@@ -3,85 +3,85 @@ import { useAgentStore, useAppStore } from "@/stores/index.ts";
 import type { Prd } from "@/types.ts";
 
 function getCurrentTaskIndex(prd: Prd): number {
-	return prd.tasks.findIndex((task) => !task.done);
+  return prd.tasks.findIndex((task) => !task.done);
 }
 
 export function TaskList(): React.ReactElement {
-	const prd = useAppStore((state) => state.prd);
-	const agentIsStreaming = useAgentStore((state) => state.isStreaming);
-	const manualNextTask = useAppStore((state) => state.manualNextTask);
+  const prd = useAppStore((state) => state.prd);
+  const agentIsStreaming = useAgentStore((state) => state.isStreaming);
+  const manualNextTask = useAppStore((state) => state.manualNextTask);
 
-	if (!prd) {
-		return (
-			<Box paddingX={1}>
-				<Text dimColor>No PRD loaded</Text>
-			</Box>
-		);
-	}
+  if (!prd) {
+    return (
+      <Box paddingX={1}>
+        <Text dimColor>No PRD loaded</Text>
+      </Box>
+    );
+  }
 
-	const tasks = prd.tasks;
-	const currentTaskIndex = getCurrentTaskIndex(prd);
-	const collapsed = agentIsStreaming;
+  const { tasks } = prd;
+  const currentTaskIndex = getCurrentTaskIndex(prd);
+  const collapsed = agentIsStreaming;
 
-	const completedCount = tasks.filter((task) => task.done).length;
-	const totalCount = tasks.length;
+  const completedCount = tasks.filter((task) => task.done).length;
+  const totalCount = tasks.length;
 
-	if (collapsed) {
-		return (
-			<Box paddingX={1}>
-				<Text dimColor>
-					Tasks: {completedCount}/{totalCount} completed
-				</Text>
-			</Box>
-		);
-	}
+  if (collapsed) {
+    return (
+      <Box paddingX={1}>
+        <Text dimColor>
+          Tasks: {completedCount}/{totalCount} completed
+        </Text>
+      </Box>
+    );
+  }
 
-	if (tasks.length === 0) {
-		return (
-			<Box paddingX={1}>
-				<Text dimColor>No tasks defined</Text>
-			</Box>
-		);
-	}
+  if (tasks.length === 0) {
+    return (
+      <Box paddingX={1}>
+        <Text dimColor>No tasks defined</Text>
+      </Box>
+    );
+  }
 
-	const manualTask = manualNextTask
-		? tasks.find((task) => task.title.toLowerCase() === manualNextTask.toLowerCase())
-		: null;
+  const manualTask = manualNextTask
+    ? tasks.find((task) => task.title.toLowerCase() === manualNextTask.toLowerCase())
+    : null;
 
-	const currentTask =
-		manualTask ??
-		(currentTaskIndex !== undefined && currentTaskIndex >= 0 ? tasks[currentTaskIndex] : null);
+  const currentTask =
+    manualTask ??
+    (currentTaskIndex !== undefined && currentTaskIndex >= 0 ? tasks[currentTaskIndex] : null);
 
-	const displayTaskIndex = manualTask
-		? tasks.findIndex((task) => task.title.toLowerCase() === manualNextTask?.toLowerCase())
-		: currentTaskIndex;
+  const displayTaskIndex = manualTask
+    ? tasks.findIndex((task) => task.title.toLowerCase() === manualNextTask?.toLowerCase())
+    : currentTaskIndex;
 
-	const allTasksComplete = completedCount === totalCount;
+  const allTasksComplete = completedCount === totalCount;
 
-	return (
-		<Box flexDirection="column" paddingX={1}>
-			<Box marginBottom={1}>
-				<Text bold>
-					Tasks ({completedCount}/{totalCount})
-				</Text>
-			</Box>
-			{currentTask && displayTaskIndex !== undefined && displayTaskIndex >= 0 ? (
-				<Box>
-					<Text color="yellow">▶ </Text>
-					<Text dimColor>{displayTaskIndex + 1}. </Text>
-					<Text color="white">{currentTask.title}</Text>
-					{manualTask && <Text color="cyan"> (manual)</Text>}
-				</Box>
-			) : allTasksComplete ? (
-				<Box>
-					<Text color="green">✔ </Text>
-					<Text color="gray">All tasks completed</Text>
-				</Box>
-			) : (
-				<Box>
-					<Text dimColor>No current task</Text>
-				</Box>
-			)}
-		</Box>
-	);
+  return (
+    <Box flexDirection="column" paddingX={1}>
+      <Box marginBottom={1}>
+        <Text bold>
+          Tasks ({completedCount}/{totalCount})
+        </Text>
+      </Box>
+      {currentTask && displayTaskIndex !== undefined && displayTaskIndex >= 0 ? (
+        <Box>
+          <Text color="yellow">▶ </Text>
+          <Text dimColor>{displayTaskIndex + 1}. </Text>
+          <Text color="white">{currentTask.title}</Text>
+          {manualTask && <Text color="cyan"> (manual)</Text>}
+        </Box>
+      ) : allTasksComplete ? (
+        <Box>
+          <Text color="green">✔ </Text>
+          <Text color="gray">All tasks completed</Text>
+        </Box>
+      ) : (
+        <Box>
+          <Text dimColor>No current task</Text>
+        </Box>
+      )}
+    </Box>
+  );
 }

@@ -8,9 +8,9 @@ interface Props {
 const { currentPath = "" } = Astro.props;
 
 const NAV_ITEMS = [
-  { label: "Docs", href: `${import.meta.env.BASE_URL}docs` },
-  { label: "Changelog", href: `${import.meta.env.BASE_URL}changelog/` },
-  { label: "GitHub", href: "https://github.com/nitodeco/ralph", isExternal: true },
+  { href: `${import.meta.env.BASE_URL}docs`, label: "Docs" },
+  { href: `${import.meta.env.BASE_URL}changelog/`, label: "Changelog" },
+  { href: "https://github.com/nitodeco/ralph", isExternal: true, label: "GitHub" },
 ];
 ---
 
@@ -106,16 +106,16 @@ const NAV_ITEMS = [
     }
 
     if (isInitialized) {
-      if (openButtonHandler) document.removeEventListener("click", openButtonHandler);
-      if (closeButtonHandler && closeButton) closeButton.removeEventListener("click", closeButtonHandler);
-      if (backdropHandler) mobileNavBackdrop.removeEventListener("click", backdropHandler);
-      if (escapeHandler) document.removeEventListener("keydown", escapeHandler);
+      if (openButtonHandler) {document.removeEventListener("click", openButtonHandler);}
+      if (closeButtonHandler && closeButton) {closeButton.removeEventListener("click", closeButtonHandler);}
+      if (backdropHandler) {mobileNavBackdrop.removeEventListener("click", backdropHandler);}
+      if (escapeHandler) {document.removeEventListener("keydown", escapeHandler);}
     }
 
     const getFocusableElements = () => {
       const focusableSelectors = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-      return Array.from(mobileNavPanel?.querySelectorAll(focusableSelectors) ?? []);
+      return [...mobileNavPanel?.querySelectorAll(focusableSelectors) ?? []];
     };
 
     trapFocusHandler = (event) => {
@@ -182,7 +182,7 @@ const NAV_ITEMS = [
     };
 
     openButtonHandler = (event) => {
-      const target = event.target;
+      const {target} = event;
       if (!(target instanceof Element)) {
         return;
       }

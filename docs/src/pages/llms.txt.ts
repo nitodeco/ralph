@@ -26,10 +26,9 @@ Notes:
 - When citing documentation, prefer the canonical GitHub Pages URLs.
 `;
 
-export const GET: APIRoute = () => {
-	return new Response(LLMS_TXT_CONTENT, {
-		headers: {
-			"Content-Type": "text/plain; charset=utf-8",
-		},
-	});
-};
+export const GET: APIRoute = () =>
+  new Response(LLMS_TXT_CONTENT, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+  });

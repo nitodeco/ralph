@@ -7,164 +7,164 @@ import { InitWizard } from "./InitWizard.tsx";
 import { SetupWizard } from "./SetupWizard.tsx";
 import { UpdatePrompt } from "./UpdatePrompt.tsx";
 import {
-	AgentSelectView,
-	AnalyzeView,
-	ArchiveView,
-	type ClearResult,
-	ConfigView,
-	ConfirmClearView,
-	DryRunView,
-	GitHubSetupView,
-	GuardrailsView,
-	MemoryView,
-	NotInitializedView,
-	PlanView,
-	ProjectsView,
-	ResumePromptView,
-	StatusView,
-	TasksView,
-	UsageView,
+  AgentSelectView,
+  AnalyzeView,
+  ArchiveView,
+  type ClearResult,
+  ConfigView,
+  ConfirmClearView,
+  DryRunView,
+  GitHubSetupView,
+  GuardrailsView,
+  MemoryView,
+  NotInitializedView,
+  PlanView,
+  ProjectsView,
+  ResumePromptView,
+  StatusView,
+  TasksView,
+  UsageView,
 } from "./views/index.ts";
 
 interface ViewRouterProps {
-	activeView: ActiveView;
-	version: string;
-	appState: AppState;
-	config: RalphConfig | null;
-	projectName?: string;
-	pendingSession: Session | null;
-	validationWarning: ValidationWarning | null;
-	dryRun: boolean;
-	dryRunState: DryRunState;
-	onViewComplete: () => void;
-	onHelpClose: () => void;
-	onCommand: (command: SlashCommand, args?: CommandArgs) => void;
-	onClearConfirm?: (result: ClearResult) => void;
-	onClearCancel?: () => void;
-	children: React.ReactNode;
+  activeView: ActiveView;
+  version: string;
+  appState: AppState;
+  config: RalphConfig | null;
+  projectName?: string;
+  pendingSession: Session | null;
+  validationWarning: ValidationWarning | null;
+  dryRun: boolean;
+  dryRunState: DryRunState;
+  onViewComplete: () => void;
+  onHelpClose: () => void;
+  onCommand: (command: SlashCommand, args?: CommandArgs) => void;
+  onClearConfirm?: (result: ClearResult) => void;
+  onClearCancel?: () => void;
+  children: React.ReactNode;
 }
 
 export function ViewRouter({
-	activeView,
-	version,
-	appState,
-	config,
-	projectName,
-	pendingSession,
-	validationWarning,
-	dryRun,
-	dryRunState,
-	onViewComplete,
-	onHelpClose,
-	onCommand,
-	onClearConfirm,
-	onClearCancel,
-	children,
+  activeView,
+  version,
+  appState,
+  config,
+  projectName,
+  pendingSession,
+  validationWarning,
+  dryRun,
+  dryRunState,
+  onViewComplete,
+  onHelpClose,
+  onCommand,
+  onClearConfirm,
+  onClearCancel,
+  children,
 }: ViewRouterProps): React.ReactElement {
-	if (activeView === "init") {
-		return <InitWizard version={version} onComplete={onViewComplete} />;
-	}
+  if (activeView === "init") {
+    return <InitWizard version={version} onComplete={onViewComplete} />;
+  }
 
-	if (activeView === "setup") {
-		return <SetupWizard version={version} onComplete={onViewComplete} />;
-	}
+  if (activeView === "setup") {
+    return <SetupWizard version={version} onComplete={onViewComplete} />;
+  }
 
-	if (activeView === "update") {
-		return <UpdatePrompt version={version} forceCheck onComplete={onViewComplete} />;
-	}
+  if (activeView === "update") {
+    return <UpdatePrompt version={version} forceCheck onComplete={onViewComplete} />;
+  }
 
-	if (activeView === "help") {
-		return <HelpView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "help") {
+    return <HelpView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "add") {
-		return <AddTaskWizard version={version} onComplete={onViewComplete} />;
-	}
+  if (activeView === "add") {
+    return <AddTaskWizard version={version} onComplete={onViewComplete} />;
+  }
 
-	if (activeView === "status") {
-		return <StatusView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "status") {
+    return <StatusView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "archive") {
-		return <ArchiveView version={version} onClose={onViewComplete} />;
-	}
+  if (activeView === "archive") {
+    return <ArchiveView version={version} onClose={onViewComplete} />;
+  }
 
-	if (activeView === "guardrails") {
-		return <GuardrailsView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "guardrails") {
+    return <GuardrailsView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "analyze") {
-		return <AnalyzeView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "analyze") {
+    return <AnalyzeView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "memory") {
-		return <MemoryView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "memory") {
+    return <MemoryView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "agent") {
-		return <AgentSelectView version={version} onClose={onViewComplete} />;
-	}
+  if (activeView === "agent") {
+    return <AgentSelectView version={version} onClose={onViewComplete} />;
+  }
 
-	if (activeView === "tasks") {
-		return <TasksView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "tasks") {
+    return <TasksView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "projects") {
-		return <ProjectsView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "projects") {
+    return <ProjectsView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "plan") {
-		return <PlanView version={version} onClose={onViewComplete} />;
-	}
+  if (activeView === "plan") {
+    return <PlanView version={version} onClose={onViewComplete} />;
+  }
 
-	if (activeView === "usage") {
-		return <UsageView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "usage") {
+    return <UsageView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "config") {
-		return <ConfigView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "config") {
+    return <ConfigView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "github" || activeView === "auth") {
-		return <GitHubSetupView version={version} onClose={onHelpClose} />;
-	}
+  if (activeView === "github" || activeView === "auth") {
+    return <GitHubSetupView version={version} onClose={onHelpClose} />;
+  }
 
-	if (activeView === "confirm-clear" && onClearConfirm && onClearCancel) {
-		return <ConfirmClearView onConfirm={onClearConfirm} onCancel={onClearCancel} />;
-	}
+  if (activeView === "confirm-clear" && onClearConfirm && onClearCancel) {
+    return <ConfirmClearView onConfirm={onClearConfirm} onCancel={onClearCancel} />;
+  }
 
-	if (dryRun) {
-		return (
-			<DryRunView
-				version={version}
-				config={config}
-				projectName={projectName}
-				dryRunState={dryRunState}
-			/>
-		);
-	}
+  if (dryRun) {
+    return (
+      <DryRunView
+        version={version}
+        config={config}
+        projectName={projectName}
+        dryRunState={dryRunState}
+      />
+    );
+  }
 
-	if (appState === "not_initialized" && validationWarning) {
-		return (
-			<NotInitializedView
-				version={version}
-				validationWarning={validationWarning}
-				onCommand={onCommand}
-			/>
-		);
-	}
+  if (appState === "not_initialized" && validationWarning) {
+    return (
+      <NotInitializedView
+        version={version}
+        validationWarning={validationWarning}
+        onCommand={onCommand}
+      />
+    );
+  }
 
-	if (appState === "resume_prompt" && pendingSession) {
-		return (
-			<ResumePromptView
-				version={version}
-				config={config}
-				projectName={projectName}
-				pendingSession={pendingSession}
-				onCommand={onCommand}
-			/>
-		);
-	}
+  if (appState === "resume_prompt" && pendingSession) {
+    return (
+      <ResumePromptView
+        version={version}
+        config={config}
+        projectName={projectName}
+        pendingSession={pendingSession}
+        onCommand={onCommand}
+      />
+    );
+  }
 
-	return <>{children}</>;
+  return <>{children}</>;
 }

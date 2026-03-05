@@ -7,84 +7,84 @@ import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
 import type { Handler, PrdUpdateCallback, RestartIterationCallback } from "./types.ts";
 
 export interface DecompositionHandlerOptions {
-	config: RalphConfig;
-	onPrdUpdate: PrdUpdateCallback;
-	onRestartIteration: RestartIterationCallback;
+  config: RalphConfig;
+  onPrdUpdate: PrdUpdateCallback;
+  onRestartIteration: RestartIterationCallback;
 }
 
 export class DecompositionHandler implements Handler {
-	private config: RalphConfig;
-	private decompositionCountByTask = new Map<string, number>();
-	private isRunning = false;
-	private onPrdUpdate: PrdUpdateCallback;
-	private onRestartIteration: RestartIterationCallback;
+  private config: RalphConfig;
+  private decompositionCountByTask = new Map<string, number>();
+  private isRunning = false;
+  private onPrdUpdate: PrdUpdateCallback;
+  private onRestartIteration: RestartIterationCallback;
 
-	constructor(options: DecompositionHandlerOptions) {
-		this.config = options.config;
-		this.onPrdUpdate = options.onPrdUpdate;
-		this.onRestartIteration = options.onRestartIteration;
-	}
+  constructor(options: DecompositionHandlerOptions) {
+    this.config = options.config;
+    this.onPrdUpdate = options.onPrdUpdate;
+    this.onRestartIteration = options.onRestartIteration;
+  }
 
-	reset(): void {
-		this.decompositionCountByTask = new Map();
-		this.isRunning = false;
-	}
+  reset(): void {
+    this.decompositionCountByTask = new Map();
+    this.isRunning = false;
+  }
 
-	getIsRunning(): boolean {
-		return this.isRunning;
-	}
+  getIsRunning(): boolean {
+    return this.isRunning;
+  }
 
-	handle(request: DecompositionRequest, currentPrd: Prd | null): boolean {
-		this.isRunning = true;
+  handle(request: DecompositionRequest, currentPrd: Prd | null): boolean {
+    this.isRunning = true;
 
-		try {
-			const logger = getLogger({ logFilePath: this.config.logFilePath });
-			const maxDecompositions =
-				this.config.maxDecompositionsPerTask ?? DEFAULTS.maxDecompositionsPerTask;
-			const taskKey = request.originalTaskTitle.toLowerCase();
-			const currentCount = this.decompositionCountByTask.get(taskKey) ?? 0;
+    try {
+      const logger = getLogger({ logFilePath: this.config.logFilePath });
+      const maxDecompositions =
+        this.config.maxDecompositionsPerTask ?? DEFAULTS.maxDecompositionsPerTask;
+      const taskKey = request.originalTaskTitle.toLowerCase();
+      const currentCount = this.decompositionCountByTask.get(taskKey) ?? 0;
 
-			if (currentCount >= maxDecompositions) {
-				logger.warn("Max decompositions reached for task, proceeding without decomposition", {
-					task: request.originalTaskTitle,
-					maxDecompositions,
-					currentCount,
-				});
+      if (currentCount >= maxDecompositions) {
+        logger.warn("Max decompositions reached for task, proceeding without decomposition", {
+          currentCount,
+          maxDecompositions,
+          task: request.originalTaskTitle,
+        });
 
-				return false;
-			}
+        return false;
+      }
 
-			if (!currentPrd) {
-				logger.error("Cannot apply decomposition: PRD not found");
+      if (!currentPrd) {
+        logger.error("Cannot apply decomposition: PRD not found");
 
-				return false;
-			}
+        return false;
+      }
 
-			const decompositionResult = applyDecomposition(currentPrd, request);
+      const decompositionResult = applyDecomposition(currentPrd, request);
 
-			if (!decompositionResult.success || !decompositionResult.updatedPrd) {
-				logger.error("Failed to apply decomposition", { error: decompositionResult.error });
+      if (!decompositionResult.success || !decompositionResult.updatedPrd) {
+        logger.error("Failed to apply decomposition", { error: decompositionResult.error });
 
-				return false;
-			}
+        return false;
+      }
 
-			getPrdService().save(decompositionResult.updatedPrd);
-			this.decompositionCountByTask.set(taskKey, currentCount + 1);
+      getPrdService().save(decompositionResult.updatedPrd);
+      this.decompositionCountByTask.set(taskKey, currentCount + 1);
 
-			logger.info("Task decomposed successfully", {
-				originalTask: request.originalTaskTitle,
-				subtasksCreated: decompositionResult.subtasksCreated,
-				reason: request.reason,
-			});
+      logger.info("Task decomposed successfully", {
+        originalTask: request.originalTaskTitle,
+        reason: request.reason,
+        subtasksCreated: decompositionResult.subtasksCreated,
+      });
 
-			appendProgress(formatDecompositionForProgress(request));
+      appendProgress(formatDecompositionForProgress(request));
 
-			this.onPrdUpdate(decompositionResult.updatedPrd);
-			this.onRestartIteration();
+      this.onPrdUpdate(decompositionResult.updatedPrd);
+      this.onRestartIteration();
 
-			return true;
-		} finally {
-			this.isRunning = false;
-		}
-	}
+      return true;
+    } finally {
+      this.isRunning = false;
+    }
+  }
 }

@@ -17,117 +17,117 @@ import type { SessionMemoryService } from "./session-memory/types.ts";
 import type { UsageStatisticsService } from "./usage-statistics/types.ts";
 
 export interface ServiceContainer {
-	projectRegistry: ProjectRegistryService;
-	config: ConfigService;
-	guardrails: GuardrailsService;
-	prd: PrdService;
-	sessionMemory: SessionMemoryService;
-	session: SessionService;
-	sessionManager: SessionManager;
-	iterationCoordinator: IterationCoordinator;
-	parallelExecutionManager: ParallelExecutionManager;
-	branchModeManager: BranchModeManager;
-	handlerCoordinator: HandlerCoordinator;
-	orchestrator: Orchestrator;
-	sleepPrevention: SleepPreventionService;
-	memoryMonitor: MemoryMonitorService;
-	usageStatistics: UsageStatisticsService;
-	gitBranch: GitBranchService;
-	gitProvider: GitProviderService;
+  projectRegistry: ProjectRegistryService;
+  config: ConfigService;
+  guardrails: GuardrailsService;
+  prd: PrdService;
+  sessionMemory: SessionMemoryService;
+  session: SessionService;
+  sessionManager: SessionManager;
+  iterationCoordinator: IterationCoordinator;
+  parallelExecutionManager: ParallelExecutionManager;
+  branchModeManager: BranchModeManager;
+  handlerCoordinator: HandlerCoordinator;
+  orchestrator: Orchestrator;
+  sleepPrevention: SleepPreventionService;
+  memoryMonitor: MemoryMonitorService;
+  usageStatistics: UsageStatisticsService;
+  gitBranch: GitBranchService;
+  gitProvider: GitProviderService;
 }
 
 let container: ServiceContainer | null = null;
 
 export function initializeServices(services: ServiceContainer): void {
-	if (container !== null) {
-		throw new Error(
-			"Services have already been initialized. Call resetServices() first to reinitialize.",
-		);
-	}
+  if (container !== null) {
+    throw new Error(
+      "Services have already been initialized. Call resetServices() first to reinitialize.",
+    );
+  }
 
-	container = services;
+  container = services;
 }
 
 export function getServices(): ServiceContainer {
-	if (container === null) {
-		throw new Error("Services have not been initialized. Call bootstrapServices() first.");
-	}
+  if (container === null) {
+    throw new Error("Services have not been initialized. Call bootstrapServices() first.");
+  }
 
-	return container;
+  return container;
 }
 
 export function resetServices(): void {
-	container = null;
+  container = null;
 }
 
 export function isInitialized(): boolean {
-	return container !== null;
+  return container !== null;
 }
 
 export function getConfigService(): ConfigService {
-	return getServices().config;
+  return getServices().config;
 }
 
 export function getPrdService(): PrdService {
-	return getServices().prd;
+  return getServices().prd;
 }
 
 export function getSessionMemoryService(): SessionMemoryService {
-	return getServices().sessionMemory;
+  return getServices().sessionMemory;
 }
 
 export function getSessionService(): SessionService {
-	return getServices().session;
+  return getServices().session;
 }
 
 export function getGuardrailsService(): GuardrailsService {
-	return getServices().guardrails;
+  return getServices().guardrails;
 }
 
 export function getProjectRegistryService(): ProjectRegistryService {
-	return getServices().projectRegistry;
+  return getServices().projectRegistry;
 }
 
 export function getSleepPreventionService(): SleepPreventionService {
-	return getServices().sleepPrevention;
+  return getServices().sleepPrevention;
 }
 
 export function getMemoryMonitorService(): MemoryMonitorService {
-	return getServices().memoryMonitor;
+  return getServices().memoryMonitor;
 }
 
 export function getUsageStatisticsService(): UsageStatisticsService {
-	return getServices().usageStatistics;
+  return getServices().usageStatistics;
 }
 
 export function getGitBranchService(): GitBranchService {
-	return getServices().gitBranch;
+  return getServices().gitBranch;
 }
 
 export function getGitProviderService(): GitProviderService {
-	return getServices().gitProvider;
+  return getServices().gitProvider;
 }
 
 export function getSessionManager(): SessionManager {
-	return getServices().sessionManager;
+  return getServices().sessionManager;
 }
 
 export function getIterationCoordinator(): IterationCoordinator {
-	return getServices().iterationCoordinator;
+  return getServices().iterationCoordinator;
 }
 
 export function getParallelExecutionManager(): ParallelExecutionManager {
-	return getServices().parallelExecutionManager;
+  return getServices().parallelExecutionManager;
 }
 
 export function getBranchModeManager(): BranchModeManager {
-	return getServices().branchModeManager;
+  return getServices().branchModeManager;
 }
 
 export function getHandlerCoordinator(): HandlerCoordinator {
-	return getServices().handlerCoordinator;
+  return getServices().handlerCoordinator;
 }
 
 export function getOrchestrator(): Orchestrator {
-	return getServices().orchestrator;
+  return getServices().orchestrator;
 }
