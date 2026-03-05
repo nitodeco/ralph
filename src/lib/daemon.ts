@@ -25,7 +25,25 @@ interface ShutdownHandler {
 }
 
 let shutdownHandlerRef: ShutdownHandler | null = null;
-let shutdownInProgress = false;
+const SHUTDOWN_STATE_IDLE = 0;
+const SHUTDOWN_STATE_IN_PROGRESS = 1;
+const shutdownState = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT));
+let signalHandlersRegistered = false;
+
+function beginShutdown(): boolean {
+  const previousShutdownState = Atomics.compareExchange(
+    shutdownState,
+    0,
+    SHUTDOWN_STATE_IDLE,
+    SHUTDOWN_STATE_IN_PROGRESS,
+  );
+
+  return previousShutdownState === SHUTDOWN_STATE_IDLE;
+}
+
+function isShutdownInProgress(): boolean {
+  return Atomics.load(shutdownState, 0) === SHUTDOWN_STATE_IN_PROGRESS;
+}
 
 function getGlobalFallbackPidPath(): string {
   return join(homedir(), ".ralph", "ralph.pid");
@@ -300,24 +318,29 @@ export function clearShutdownHandler(): void {
 }
 
 export function handleShutdown(reason: ShutdownReason): void {
-  if (shutdownInProgress) {
+  if (!beginShutdown()) {
     return;
   }
-
-  shutdownInProgress = true;
 
   const logger = getLogger({});
 
   logger.info("Shutdown initiated", { reason });
 
-  const sessionService = getSessionService();
-  const session = sessionService.load();
+  try {
+    const sessionService = getSessionService();
+    const session = sessionService.load();
 
-  if (session && (session.status === "running" || session.status === "paused")) {
-    const updatedSession = sessionService.updateStatus(session, "stopped");
+    if (session && (session.status === "running" || session.status === "paused")) {
+      const updatedSession = sessionService.updateStatus(session, "stopped");
 
-    sessionService.save(updatedSession);
-    logger.info("Session state saved as stopped", { reason });
+      sessionService.save(updatedSession);
+      logger.info("Session state saved as stopped", { reason });
+    }
+  } catch (error) {
+    logger.error("Failed to persist session during shutdown", {
+      error: getErrorMessage(error),
+      reason,
+    });
   }
 
   if (shutdownHandlerRef) {
@@ -360,6 +383,11 @@ export function handleMemoryThresholdExceeded(): void {
 }
 
 export function setupSignalHandlers(): void {
+  if (signalHandlersRegistered) {
+    return;
+  }
+
+  signalHandlersRegistered = true;
   const signals: ShutdownSignal[] = ["SIGTERM", "SIGINT", "SIGHUP"];
 
   for (const signal of signals) {
@@ -367,7 +395,7 @@ export function setupSignalHandlers(): void {
   }
 
   process.on("exit", () => {
-    if (!shutdownInProgress) {
+    if (!isShutdownInProgress()) {
       const logger = getLogger({});
 
       logger.info("Process exiting");

@@ -74,6 +74,7 @@ import {
   startMemoryMonitor,
   writePidFile,
 } from "@/lib/daemon.ts";
+import { getErrorMessage } from "@/lib/errors.ts";
 import { checkRalphDirectoryIntegrity, formatIntegrityIssues } from "@/lib/integrity.ts";
 import { getLogger } from "@/lib/logger.ts";
 import {
@@ -189,7 +190,12 @@ function handleBackgroundMode(_command: Command, _iterations: number): void {
 }
 
 function main(): void {
-  bootstrapServices();
+  try {
+    bootstrapServices();
+  } catch (error) {
+    console.error(`Failed to initialize services: ${getErrorMessage(error)}`);
+    process.exit(1);
+  }
 
   setAgentStoreDependencies({
     resetStatus: () => {
@@ -354,12 +360,23 @@ function main(): void {
 
   setShutdownHandler({
     onShutdown: () => {
-      unmountInk();
+      let unmountError: string | null = null;
+
+      try {
+        unmountInk();
+      } catch (error) {
+        unmountError = getErrorMessage(error);
+      }
+
       getSleepPreventionService().stop();
       getOrchestrator().cleanup();
       const agentStore = useAgentStore.getState();
 
       agentStore.stop();
+
+      if (unmountError) {
+        getLogger({}).error("Failed to unmount Ink during shutdown", { error: unmountError });
+      }
     },
   });
 
