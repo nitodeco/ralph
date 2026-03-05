@@ -1,1 +1,1 @@
-bun check && bun run build && bun test
+bunx nano-staged && bun run build && bun test

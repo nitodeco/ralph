@@ -1,0 +1,4 @@
+{
+  "**/*.{ts,tsx}": ["oxfmt", "oxlint --fix", "eslint --fix"],
+  "**/*.{js,mjs,cjs}": ["oxfmt", "oxlint --fix"]
+}
