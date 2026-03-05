@@ -55,6 +55,43 @@ const VALID_USAGE_SUBCOMMANDS: UsageSubcommand[] = ["show", "summary", "sessions
 const VALID_GITHUB_SUBCOMMANDS: GitHubSubcommand[] = ["show", "set-token", "clear-token"];
 const VALID_AUTH_SUBCOMMANDS: AuthSubcommand[] = ["login", "logout", "status"];
 
+function isOptionFlag(argument: string | undefined): boolean {
+  return typeof argument === "string" && argument.startsWith("-");
+}
+
+function parsePositiveInteger(argument: string | undefined): number | undefined {
+  if (typeof argument !== "string") {
+    return undefined;
+  }
+
+  const trimmedArgument = argument.trim();
+
+  if (!/^\d+$/.test(trimmedArgument)) {
+    return undefined;
+  }
+
+  const parsedValue = Number.parseInt(trimmedArgument, 10);
+
+  if (parsedValue <= 0) {
+    return undefined;
+  }
+
+  return parsedValue;
+}
+
+function parseTaskMutationOptionValue(
+  args: string[],
+  optionIndex: number,
+): { consumed: boolean; value?: string } {
+  const optionValue = args.at(optionIndex + 1);
+
+  if (optionValue === undefined || isOptionFlag(optionValue)) {
+    return { consumed: false };
+  }
+
+  return { consumed: true, value: optionValue };
+}
+
 function parseTaskAddOptions(args: string[]): TaskAddOptions {
   const options: TaskAddOptions = {};
 
@@ -63,21 +100,33 @@ function parseTaskAddOptions(args: string[]): TaskAddOptions {
 
     if (arg === "--stdin") {
       options.stdin = true;
-    } else if (arg === "--title" && argIndex + 1 < args.length) {
-      options.title = args.at(argIndex + 1);
-      argIndex++;
-    } else if (arg === "--description" && argIndex + 1 < args.length) {
-      options.description = args.at(argIndex + 1);
-      argIndex++;
-    } else if (arg === "--steps" && argIndex + 1 < args.length) {
+    } else if (arg === "--title") {
+      const { consumed, value } = parseTaskMutationOptionValue(args, argIndex);
+
+      if (consumed) {
+        options.title = value;
+        argIndex++;
+      }
+    } else if (arg === "--description") {
+      const { consumed, value } = parseTaskMutationOptionValue(args, argIndex);
+
+      if (consumed) {
+        options.description = value;
+        argIndex++;
+      }
+    } else if (arg === "--steps") {
+      const { consumed, value } = parseTaskMutationOptionValue(args, argIndex);
+
+      if (!consumed) {
+        continue;
+      }
+
       if (!options.steps) {
         options.steps = [];
       }
 
-      const step = args.at(argIndex + 1);
-
-      if (step) {
-        options.steps.push(step);
+      if (value) {
+        options.steps.push(value);
       }
 
       argIndex++;
@@ -95,21 +144,33 @@ function parseTaskEditOptions(args: string[]): TaskEditOptions {
 
     if (arg === "--stdin") {
       options.stdin = true;
-    } else if (arg === "--title" && argIndex + 1 < args.length) {
-      options.title = args.at(argIndex + 1);
-      argIndex++;
-    } else if (arg === "--description" && argIndex + 1 < args.length) {
-      options.description = args.at(argIndex + 1);
-      argIndex++;
-    } else if (arg === "--steps" && argIndex + 1 < args.length) {
+    } else if (arg === "--title") {
+      const { consumed, value } = parseTaskMutationOptionValue(args, argIndex);
+
+      if (consumed) {
+        options.title = value;
+        argIndex++;
+      }
+    } else if (arg === "--description") {
+      const { consumed, value } = parseTaskMutationOptionValue(args, argIndex);
+
+      if (consumed) {
+        options.description = value;
+        argIndex++;
+      }
+    } else if (arg === "--steps") {
+      const { consumed, value } = parseTaskMutationOptionValue(args, argIndex);
+
+      if (!consumed) {
+        continue;
+      }
+
       if (!options.steps) {
         options.steps = [];
       }
 
-      const step = args.at(argIndex + 1);
-
-      if (step) {
-        options.steps.push(step);
+      if (value) {
+        options.steps.push(value);
       }
 
       argIndex++;
@@ -130,23 +191,31 @@ export function parseArgs(args: string[]): ParsedArgs {
 
   let task: string | undefined;
   const taskIndex = relevantArgs.findIndex((arg) => arg === "--task" || arg === "-t");
+  const rawTaskValue = taskIndex !== -1 ? relevantArgs.at(taskIndex + 1) : undefined;
+  const hasValidTaskValue =
+    taskIndex !== -1 &&
+    rawTaskValue !== undefined &&
+    !isOptionFlag(rawTaskValue) &&
+    rawTaskValue.trim() !== "";
 
-  if (taskIndex !== -1 && taskIndex + 1 < relevantArgs.length) {
-    task = relevantArgs[taskIndex + 1];
+  if (hasValidTaskValue) {
+    task = rawTaskValue;
   }
 
   let maxRuntimeMs: number | undefined;
   const maxRuntimeIndex = relevantArgs.findIndex(
     (arg) => arg === "--max-runtime" || arg === "--max-runtime-ms",
   );
-  const maxRuntimeValue = relevantArgs[maxRuntimeIndex + 1];
+  const rawMaxRuntimeValue =
+    maxRuntimeIndex !== -1 ? relevantArgs.at(maxRuntimeIndex + 1) : undefined;
+  const parsedMaxRuntimeSeconds =
+    maxRuntimeIndex !== -1 && !isOptionFlag(rawMaxRuntimeValue)
+      ? parsePositiveInteger(rawMaxRuntimeValue)
+      : undefined;
+  const hasValidMaxRuntimeValue = parsedMaxRuntimeSeconds !== undefined;
 
-  if (maxRuntimeIndex !== -1 && maxRuntimeValue !== undefined) {
-    const parsed = Number.parseInt(maxRuntimeValue, 10);
-
-    if (!Number.isNaN(parsed) && parsed > 0) {
-      maxRuntimeMs = parsed * 1000;
-    }
+  if (hasValidMaxRuntimeValue) {
+    maxRuntimeMs = parsedMaxRuntimeSeconds * 1000;
   }
 
   const filteredArgs = relevantArgs.filter(
@@ -164,8 +233,8 @@ export function parseArgs(args: string[]): ParsedArgs {
       arg !== "--skip-verification" &&
       arg !== "--force" &&
       arg !== "-f" &&
-      (taskIndex === -1 || argIndex !== taskIndex + 1) &&
-      (maxRuntimeIndex === -1 || argIndex !== maxRuntimeIndex + 1),
+      (!hasValidTaskValue || argIndex !== taskIndex + 1) &&
+      (!hasValidMaxRuntimeValue || argIndex !== maxRuntimeIndex + 1),
   );
   const command = (filteredArgs.at(0) ?? "run") as Command;
 
@@ -175,10 +244,10 @@ export function parseArgs(args: string[]): ParsedArgs {
     const iterArg = filteredArgs.find((arg) => !arg.startsWith("-") && arg !== command);
 
     if (iterArg) {
-      const parsed = Number.parseInt(iterArg, 10);
+      const parsedIterations = parsePositiveInteger(iterArg);
 
-      if (!Number.isNaN(parsed) && parsed > 0) {
-        iterations = parsed;
+      if (parsedIterations !== undefined) {
+        iterations = parsedIterations;
       }
     }
   }
@@ -341,10 +410,10 @@ export function parseArgs(args: string[]): ParsedArgs {
       const limitArg = filteredArgs.at(2);
 
       if (limitArg) {
-        const parsed = Number.parseInt(limitArg, 10);
+        const parsedUsageLimit = parsePositiveInteger(limitArg);
 
-        if (!Number.isNaN(parsed) && parsed > 0) {
-          usageLimit = parsed;
+        if (parsedUsageLimit !== undefined) {
+          usageLimit = parsedUsageLimit;
         }
       }
     } else {

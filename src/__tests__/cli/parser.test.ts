@@ -28,6 +28,12 @@ describe("parseArgs", () => {
     expect(result.iterations).toBe(3);
   });
 
+  test("rejects partial numeric iteration values", () => {
+    const result = parseArgs(["node", "ralph", "run", "5invalid"]);
+
+    expect(result.iterations).toBe(DEFAULTS.iterations);
+  });
+
   test("parses --background flag", () => {
     const result = parseArgs(["node", "ralph", "--background"]);
 
@@ -84,6 +90,12 @@ describe("parseArgs", () => {
 
   test("ignores invalid max-runtime values", () => {
     const result = parseArgs(["node", "ralph", "--max-runtime", "invalid"]);
+
+    expect(result.maxRuntimeMs).toBeUndefined();
+  });
+
+  test("ignores partial numeric max-runtime values", () => {
+    const result = parseArgs(["node", "ralph", "--max-runtime", "120invalid"]);
 
     expect(result.maxRuntimeMs).toBeUndefined();
   });
@@ -179,6 +191,22 @@ describe("parseArgs", () => {
     expect(result.task).toBe("My Task");
   });
 
+  test("does not consume following flag as task value", () => {
+    const result = parseArgs(["node", "ralph", "--task", "--verbose", "status"]);
+
+    expect(result.task).toBeUndefined();
+    expect(result.verbose).toBe(true);
+    expect(result.command).toBe("status");
+  });
+
+  test("does not consume following flag as max-runtime value", () => {
+    const result = parseArgs(["node", "ralph", "--max-runtime", "--verbose", "status"]);
+
+    expect(result.maxRuntimeMs).toBeUndefined();
+    expect(result.verbose).toBe(true);
+    expect(result.command).toBe("status");
+  });
+
   test("filters out daemon-child flag", () => {
     const result = parseArgs(["node", "ralph", "--daemon-child", "run"]);
 
@@ -201,5 +229,47 @@ describe("parseArgs", () => {
     const result = parseArgs(["node", "ralph", "run", "-5"]);
 
     expect(result.iterations).toBe(DEFAULTS.iterations);
+  });
+
+  test("does not parse task add flags as values when missing", () => {
+    const result = parseArgs([
+      "node",
+      "ralph",
+      "task",
+      "add",
+      "--title",
+      "--description",
+      "Task description",
+      "--steps",
+      "Step one",
+    ]);
+
+    expect(result.taskSubcommand).toBe("add");
+    expect(result.taskAddOptions).toEqual({
+      description: "Task description",
+      steps: ["Step one"],
+    });
+  });
+
+  test("does not parse task edit flags as values when missing", () => {
+    const result = parseArgs([
+      "node",
+      "ralph",
+      "task",
+      "edit",
+      "1",
+      "--title",
+      "--description",
+      "Updated description",
+      "--steps",
+      "Updated step",
+    ]);
+
+    expect(result.taskSubcommand).toBe("edit");
+    expect(result.taskIdentifier).toBe("1");
+    expect(result.taskEditOptions).toEqual({
+      description: "Updated description",
+      steps: ["Updated step"],
+    });
   });
 });
