@@ -8,11 +8,48 @@ function createMockProcess(
   pid: number;
   exitCode: number | null;
   kill: (signal?: string) => void;
+  exited: Promise<number | null>;
 } {
   return {
     exitCode,
+    exited: Promise.resolve(exitCode),
     kill: () => {},
     pid,
+  };
+}
+
+function createControllableMockProcess(
+  pid: number,
+  exitCode: number | null = null,
+): {
+  process: {
+    pid: number;
+    exitCode: number | null;
+    kill: (signal?: string) => void;
+    exited: Promise<number | null>;
+  };
+  killSignals: string[];
+  resolveExit: (exitCode: number | null) => void;
+} {
+  const killSignals: string[] = [];
+
+  let resolveExit = (_exitCode: number | null) => {};
+
+  const exited = new Promise<number | null>((resolveProcessExit) => {
+    resolveExit = resolveProcessExit;
+  });
+
+  return {
+    killSignals,
+    process: {
+      exitCode,
+      exited,
+      kill: (signal = "SIGTERM") => {
+        killSignals.push(signal);
+      },
+      pid,
+    },
+    resolveExit,
   };
 }
 
@@ -247,6 +284,42 @@ describe("AgentProcessManager", () => {
 
       expect(AgentProcessManager.getProcessById("task-1")).toBeNull();
       expect(AgentProcessManager.getProcessById("task-2")?.pid).toBe(5678);
+    });
+
+    test("kill preserves aborted state after process removal", () => {
+      const mockProcess = createMockProcess(1234, null);
+
+      AgentProcessManager.registerProcess("task-1", mockProcess as never);
+      AgentProcessManager.kill("task-1");
+
+      expect(AgentProcessManager.getProcessById("task-1")).toBeNull();
+      expect(AgentProcessManager.isAborted("task-1")).toBe(true);
+    });
+
+    test("kill escalates to SIGKILL when process does not exit", async () => {
+      const controllableProcess = createControllableMockProcess(1234, null);
+
+      AgentProcessManager.registerProcess("task-timeout", controllableProcess.process as never);
+      AgentProcessManager.kill("task-timeout");
+      await Bun.sleep(650);
+
+      expect(controllableProcess.killSignals).toContain("SIGTERM");
+      expect(controllableProcess.killSignals).toContain("SIGKILL");
+    });
+
+    test("kill cancels SIGKILL when process exits in time", async () => {
+      const controllableProcess = createControllableMockProcess(1234, null);
+
+      AgentProcessManager.registerProcess("task-exit", controllableProcess.process as never);
+      AgentProcessManager.kill("task-exit");
+      controllableProcess.resolveExit(0);
+      await Bun.sleep(650);
+
+      const sigkillCount = controllableProcess.killSignals.filter(
+        (signalName) => signalName === "SIGKILL",
+      ).length;
+
+      expect(sigkillCount).toBe(0);
     });
 
     test("killAll removes all processes", () => {

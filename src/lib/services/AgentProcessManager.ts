@@ -24,6 +24,7 @@ export interface ProcessInfo {
 class AgentProcessManagerClass {
   private processes = new Map<string, ProcessEntry>();
   private pendingKillTimeouts = new Set<ReturnType<typeof setTimeout>>();
+  private abortedProcessIds = new Set<string>();
   private globalAborted = false;
 
   getProcess(id: string = DEFAULT_PROCESS_ID): Subprocess | null {
@@ -35,6 +36,10 @@ class AgentProcessManagerClass {
 
     if (process === null) {
       if (existingEntry) {
+        if (this.isProcessAliveById(id)) {
+          this.safeKillProcess(existingEntry.process);
+        }
+
         this.cleanupEntry(id, existingEntry);
         this.processes.delete(id);
       }
@@ -55,6 +60,7 @@ class AgentProcessManagerClass {
       processId: process.pid,
       retryCount: existingEntry?.retryCount ?? 0,
     });
+    this.abortedProcessIds.delete(id);
   }
 
   registerProcess(id: string, process: Subprocess): void {
@@ -150,11 +156,18 @@ class AgentProcessManagerClass {
     }, FORCE_KILL_TIMEOUT_MS);
 
     this.pendingKillTimeouts.add(killTimeout);
+
+    void proc.exited.finally(() => {
+      clearTimeout(killTimeout);
+      this.pendingKillTimeouts.delete(killTimeout);
+    });
   }
 
   private cleanupEntry(_id: string, entry: ProcessEntry): void {
     if (entry.forceKillTimeout) {
       clearTimeout(entry.forceKillTimeout);
+      this.pendingKillTimeouts.delete(entry.forceKillTimeout);
+      entry.forceKillTimeout = null;
     }
   }
 
@@ -171,6 +184,10 @@ class AgentProcessManagerClass {
       return true;
     }
 
+    if (this.abortedProcessIds.has(id)) {
+      return true;
+    }
+
     const entry = this.processes.get(id);
 
     return entry?.aborted ?? false;
@@ -184,6 +201,8 @@ class AgentProcessManagerClass {
         for (const entry of this.processes.values()) {
           entry.aborted = true;
         }
+      } else {
+        this.abortedProcessIds.clear();
       }
 
       return;
@@ -193,6 +212,12 @@ class AgentProcessManagerClass {
 
     if (entry) {
       entry.aborted = value;
+    }
+
+    if (value) {
+      this.abortedProcessIds.add(id);
+    } else {
+      this.abortedProcessIds.delete(id);
     }
   }
 
@@ -242,18 +267,21 @@ class AgentProcessManagerClass {
     const entry = this.processes.get(id);
 
     if (!entry) {
+      this.abortedProcessIds.add(id);
+
       return;
     }
 
     entry.aborted = true;
+    this.abortedProcessIds.add(id);
 
     if (entry.forceKillTimeout) {
       clearTimeout(entry.forceKillTimeout);
+      this.pendingKillTimeouts.delete(entry.forceKillTimeout);
       entry.forceKillTimeout = null;
     }
 
     const processToKill = entry.process;
-    const pidToKill = entry.processId;
 
     try {
       processToKill.kill("SIGTERM");
@@ -261,19 +289,23 @@ class AgentProcessManagerClass {
       // Process may have already exited, ignore
     }
 
-    entry.forceKillTimeout = setTimeout(() => {
-      const currentEntry = this.processes.get(id);
-
-      if (currentEntry && currentEntry.processId === pidToKill) {
-        try {
-          processToKill.kill("SIGKILL");
-        } catch {
-          // Process may have already exited, ignore
-        }
-
-        currentEntry.forceKillTimeout = null;
+    const forceKillTimeout = setTimeout(() => {
+      try {
+        processToKill.kill("SIGKILL");
+      } catch {
+        // Process may have already exited, ignore
       }
+
+      this.pendingKillTimeouts.delete(forceKillTimeout);
     }, FORCE_KILL_TIMEOUT_MS);
+
+    entry.forceKillTimeout = forceKillTimeout;
+    this.pendingKillTimeouts.add(forceKillTimeout);
+
+    void processToKill.exited.finally(() => {
+      clearTimeout(forceKillTimeout);
+      this.pendingKillTimeouts.delete(forceKillTimeout);
+    });
 
     this.processes.delete(id);
   }
@@ -291,6 +323,7 @@ class AgentProcessManagerClass {
 
     if (entry?.forceKillTimeout) {
       clearTimeout(entry.forceKillTimeout);
+      this.pendingKillTimeouts.delete(entry.forceKillTimeout);
       entry.forceKillTimeout = null;
     }
   }
@@ -299,6 +332,7 @@ class AgentProcessManagerClass {
     for (const entry of this.processes.values()) {
       if (entry.forceKillTimeout) {
         clearTimeout(entry.forceKillTimeout);
+        this.pendingKillTimeouts.delete(entry.forceKillTimeout);
         entry.forceKillTimeout = null;
       }
     }
@@ -315,6 +349,7 @@ class AgentProcessManagerClass {
       }
 
       this.processes.clear();
+      this.abortedProcessIds.clear();
       this.globalAborted = false;
       this.clearPendingKillTimeouts();
 
@@ -333,6 +368,7 @@ class AgentProcessManagerClass {
 
     this.cleanupEntry(id, entry);
     this.processes.delete(id);
+    this.abortedProcessIds.delete(id);
   }
 
   resetAll(): void {
