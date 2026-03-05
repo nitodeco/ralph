@@ -6,13 +6,21 @@ export function useResolvedModel(config: RalphConfig | null): string | undefined
   const [fetchedModel, setFetchedModel] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (!config || config.model !== undefined || config.agent !== "cursor") {
+    if (!config) {
+      setFetchedModel(undefined);
+
+      return;
+    }
+
+    if (config.model !== undefined) {
+      setFetchedModel(undefined);
+
       return;
     }
 
     let isCancelled = false;
 
-    void getCurrentModelFromAgent("cursor").then((model) => {
+    void getCurrentModelFromAgent(config.agent).then((model) => {
       if (!isCancelled && model) {
         setFetchedModel(model);
       }

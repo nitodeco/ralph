@@ -66,10 +66,6 @@ export function clearCurrentModelCache(): void {
 }
 
 export async function getCurrentModelFromAgent(agentType: AgentType): Promise<string | undefined> {
-  if (agentType !== "cursor") {
-    return undefined;
-  }
-
   const now = Date.now();
   const cachedEntry = currentModelCache.get(agentType);
 
@@ -77,26 +73,44 @@ export async function getCurrentModelFromAgent(agentType: AgentType): Promise<st
     return cachedEntry.model;
   }
 
-  try {
-    const commandResult = await executeCommand(["agent", "about"]);
+  if (agentType === "cursor") {
+    try {
+      const commandResult = await executeCommand(["agent", "about"]);
 
-    if (commandResult.exitCode !== 0) {
+      if (commandResult.exitCode !== 0) {
+        return undefined;
+      }
+
+      const match = commandResult.stdout.match(CURRENT_MODEL_PATTERN);
+      const model = match?.[1]?.trim();
+
+      if (!model) {
+        return undefined;
+      }
+
+      currentModelCache.set(agentType, { model, fetchedAt: now });
+
+      return model;
+    } catch {
       return undefined;
     }
+  }
 
-    const match = commandResult.stdout.match(CURRENT_MODEL_PATTERN);
-    const model = match?.[1]?.trim();
+  const modelCatalogResult = await getModelsForAgent(agentType);
 
-    if (!model) {
-      return undefined;
-    }
-
-    currentModelCache.set(agentType, { model, fetchedAt: now });
-
-    return model;
-  } catch {
+  if (!modelCatalogResult.success || !modelCatalogResult.catalog) {
     return undefined;
   }
+
+  const defaultModel = modelCatalogResult.catalog.models.at(0);
+
+  if (!defaultModel) {
+    return undefined;
+  }
+
+  currentModelCache.set(agentType, { fetchedAt: now, model: defaultModel });
+
+  return defaultModel;
 }
 
 const MODEL_DISCOVERY_COMMANDS: Record<AgentType, string[][]> = {

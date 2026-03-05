@@ -48,7 +48,9 @@ export {
   getGlobalConfigPath,
 } from "./config/implementation.ts";
 export {
+  clearCurrentModelCache,
   clearModelCatalogCache,
+  getCurrentModelFromAgent,
   getCachedModelsForAgent,
   getModelsForAgent,
   getModelsForCurrentAgent,

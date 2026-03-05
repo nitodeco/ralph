@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { clearModelCatalogCache, getModelsForAgent } from "@/lib/services/index.ts";
+import {
+  clearCurrentModelCache,
+  clearModelCatalogCache,
+  getCurrentModelFromAgent,
+  getModelsForAgent,
+} from "@/lib/services/index.ts";
 
 describe("getModelsForAgent", () => {
   afterEach(() => {
+    clearCurrentModelCache();
     clearModelCatalogCache();
   });
 
@@ -146,5 +152,17 @@ describe("getModelsForAgent", () => {
       "gpt-5.2-high",
       "sonnet-4.5",
     ]);
+  });
+
+  test("resolves a current model for claude from catalog fallback", async () => {
+    const currentModel = await getCurrentModelFromAgent("claude");
+
+    expect(currentModel).toBe("sonnet");
+  });
+
+  test("resolves a current model for codex from catalog fallback", async () => {
+    const currentModel = await getCurrentModelFromAgent("codex");
+
+    expect(currentModel).toBe("gpt-5-codex");
   });
 });

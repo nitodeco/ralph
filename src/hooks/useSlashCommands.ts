@@ -399,21 +399,6 @@ export function useSlashCommands({
             const modelCatalogResult = await getModelsForAgent(currentConfig.agent);
 
             if (!modelCatalogResult.success || !modelCatalogResult.catalog) {
-              if (currentConfig.agent === "codex") {
-                configService.saveGlobal({
-                  ...configService.loadGlobal(),
-                  model: requestedModelIdentifier,
-                });
-                configService.invalidateAll();
-                setModelMessage({
-                  text: `Model changed to ${requestedModelIdentifier}`,
-                  type: "success",
-                });
-                setTimeout(() => setModelMessage(null), UI_MESSAGE_TIMEOUT_MS);
-
-                return;
-              }
-
               setModelMessage({
                 text:
                   modelCatalogResult.error ??
@@ -425,7 +410,11 @@ export function useSlashCommands({
               return;
             }
 
-            if (currentConfig.agent === "codex") {
+            const isCatalogStrict =
+              modelCatalogResult.catalog.source === "live" ||
+              modelCatalogResult.catalog.source === "cache";
+
+            if (!isCatalogStrict) {
               configService.saveGlobal({
                 ...configService.loadGlobal(),
                 model: requestedModelIdentifier,
