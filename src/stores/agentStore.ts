@@ -122,6 +122,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
     const agentRunner = new AgentRunner({
       agentType: config.agent,
+      model: config.model,
       emitEvents: true,
       logFilePath: config.logFilePath,
       maxRetries: config.maxRetries ?? DEFAULTS.maxRetries,

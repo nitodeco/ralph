@@ -207,6 +207,11 @@ export function HelpView({ version, onClose }: HelpViewProps): React.ReactElemen
                   <Text>Switch coding agent</Text>
                 </Text>
                 <Text>
+                  <Text dimColor>/model [model-id]</Text>
+                  {"      "}
+                  <Text>Switch model for current agent</Text>
+                </Text>
+                <Text>
                   <Text dimColor>/projects</Text>
                   {"              "}
                   <Text>View all projects</Text>

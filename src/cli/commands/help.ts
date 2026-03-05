@@ -107,6 +107,7 @@ Slash Commands (in-app):
   /tasks                   Open the tasks view
   /init                    Initialize a new PRD project
   /add                     Add a new task to the PRD (AI-generated)
+  /model [model-id]        Switch model for current agent
   /guardrail <text>        Add a new guardrail instruction
   /guardrails              View and manage guardrails
   /analyze                 View failure pattern analysis

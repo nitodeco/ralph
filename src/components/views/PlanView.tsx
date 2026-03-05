@@ -85,6 +85,7 @@ export function PlanView({ version, onClose }: PlanViewProps): React.ReactElemen
       const prompt = buildPlanPrompt(specification, state.existingPrd);
       const { promise, abort } = runAgentWithPrompt({
         agentType: config.agent,
+        model: config.model,
         onOutput: (chunk) => {
           setState((prev) => ({
             ...prev,

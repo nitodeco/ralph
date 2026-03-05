@@ -82,6 +82,7 @@ function renderAgentSettings(config: RalphConfig): React.ReactElement {
   return (
     <ConfigSection title="Agent Settings">
       <ConfigItem label="Agent" value={agentNameByAgentType[config.agent] ?? config.agent} />
+      <ConfigItem label="Model" value={config.model ?? "default"} dimValue={!config.model} />
     </ConfigSection>
   );
 }

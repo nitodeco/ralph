@@ -26,6 +26,7 @@ import { calculateRetryDelay, createThrottledFunction, sleep, withTimeout } from
 export interface RunAgentWithPromptOptions {
   prompt: string;
   agentType: AgentType;
+  model?: string;
   onOutput?: (chunk: string) => void;
 }
 
@@ -37,9 +38,10 @@ export interface RunAgentWithPromptResult {
 export function runAgentWithPrompt({
   prompt,
   agentType,
+  model,
   onOutput,
 }: RunAgentWithPromptOptions): RunAgentWithPromptResult {
-  const baseCommand = getAgentCommand(agentType);
+  const baseCommand = getAgentCommand(agentType, model);
   let isAborted = false;
 
   const agentProcess = Bun.spawn([...baseCommand, prompt], {
@@ -126,6 +128,7 @@ export function runAgentWithPrompt({
 
 export interface AgentRunnerConfig {
   agentType: AgentType;
+  model?: string;
   timeoutMs?: number;
   stuckThresholdMs?: number;
   maxRetries?: number;
@@ -346,7 +349,7 @@ export class AgentRunner {
   }): Promise<Omit<AgentRunResult, "retryCount" | "retryContexts">> {
     const { prompt, additionalContext, outputThrottleMs } = options;
     const logger = getLogger({ logFilePath: this.config.logFilePath });
-    const baseCommand = getAgentCommand(this.config.agentType);
+    const baseCommand = getAgentCommand(this.config.agentType, this.config.model);
     const agentTimeoutMs = this.config.timeoutMs ?? DEFAULTS.agentTimeoutMs;
     const stuckThresholdMs = this.config.stuckThresholdMs ?? DEFAULTS.stuckThresholdMs;
     const effectivePrompt = additionalContext ? `${prompt}\n\n${additionalContext}` : prompt;

@@ -4,7 +4,9 @@ import type { CommandArgs, SlashCommand } from "@/components/CommandInput.tsx";
 import { UI_MESSAGE_TIMEOUT_MS } from "@/lib/constants/ui.ts";
 import { handleShutdownSignal } from "@/lib/daemon.ts";
 import {
+  getConfigService,
   getGuardrailsService,
+  getModelsForAgent,
   getPrdService,
   getSessionMemoryService,
 } from "@/lib/services/index.ts";
@@ -52,6 +54,7 @@ interface UseSlashCommandsResult {
   refreshMessage: SlashCommandMessage | null;
   clearMessage: SlashCommandMessage | null;
   taskMessage: SlashCommandMessage | null;
+  modelMessage: SlashCommandMessage | null;
   helpVisible: boolean;
 }
 
@@ -82,6 +85,7 @@ export function useSlashCommands({
   const [refreshMessage, setRefreshMessage] = useState<SlashCommandMessage | null>(null);
   const [clearMessage, setClearMessage] = useState<SlashCommandMessage | null>(null);
   const [taskMessage, setTaskMessage] = useState<SlashCommandMessage | null>(null);
+  const [modelMessage, setModelMessage] = useState<SlashCommandMessage | null>(null);
   const [helpVisible, setHelpVisible] = useState(false);
 
   const handleSlashCommand = useCallback(
@@ -378,6 +382,91 @@ export function useSlashCommands({
             setTimeout(() => setTaskMessage(null), UI_MESSAGE_TIMEOUT_MS);
           }
         })
+        .with("model", () => {
+          const requestedModelIdentifier = args?.modelIdentifier?.trim();
+
+          if (!requestedModelIdentifier) {
+            agentStop();
+            iterationPause();
+            setActiveView("model");
+
+            return;
+          }
+
+          void (async () => {
+            const configService = getConfigService();
+            const currentConfig = configService.get();
+            const modelCatalogResult = await getModelsForAgent(currentConfig.agent);
+
+            if (!modelCatalogResult.success || !modelCatalogResult.catalog) {
+              if (currentConfig.agent === "codex") {
+                configService.saveGlobal({
+                  ...configService.loadGlobal(),
+                  model: requestedModelIdentifier,
+                });
+                configService.invalidateAll();
+                setModelMessage({
+                  text: `Model changed to ${requestedModelIdentifier}`,
+                  type: "success",
+                });
+                setTimeout(() => setModelMessage(null), UI_MESSAGE_TIMEOUT_MS);
+
+                return;
+              }
+
+              setModelMessage({
+                text:
+                  modelCatalogResult.error ??
+                  `Unable to load models for ${currentConfig.agent}. Try /model again.`,
+                type: "error",
+              });
+              setTimeout(() => setModelMessage(null), UI_MESSAGE_TIMEOUT_MS);
+
+              return;
+            }
+
+            if (currentConfig.agent === "codex") {
+              configService.saveGlobal({
+                ...configService.loadGlobal(),
+                model: requestedModelIdentifier,
+              });
+              configService.invalidateAll();
+              setModelMessage({
+                text: `Model changed to ${requestedModelIdentifier}`,
+                type: "success",
+              });
+              setTimeout(() => setModelMessage(null), UI_MESSAGE_TIMEOUT_MS);
+
+              return;
+            }
+
+            const availableModel = modelCatalogResult.catalog.models.find(
+              (modelIdentifier) =>
+                modelIdentifier.toLowerCase() === requestedModelIdentifier.toLowerCase(),
+            );
+
+            if (!availableModel) {
+              setModelMessage({
+                text: `Model "${requestedModelIdentifier}" is not available for ${currentConfig.agent}.`,
+                type: "error",
+              });
+              setTimeout(() => setModelMessage(null), UI_MESSAGE_TIMEOUT_MS);
+
+              return;
+            }
+
+            configService.saveGlobal({
+              ...configService.loadGlobal(),
+              model: availableModel,
+            });
+            configService.invalidateAll();
+            setModelMessage({
+              text: `Model changed to ${availableModel}`,
+              type: "success",
+            });
+            setTimeout(() => setModelMessage(null), UI_MESSAGE_TIMEOUT_MS);
+          })();
+        })
         .with("help", () => {
           setHelpVisible((prev) => !prev);
         })
@@ -483,6 +572,7 @@ export function useSlashCommands({
     handleSlashCommand,
     helpVisible,
     memoryMessage,
+    modelMessage,
     nextTaskMessage,
     refreshMessage,
     taskMessage,

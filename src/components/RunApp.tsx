@@ -85,6 +85,7 @@ export function RunApp({
     nextTaskMessage,
     guardrailMessage,
     memoryMessage,
+    modelMessage,
     refreshMessage,
     clearMessage,
     taskMessage,
@@ -190,6 +191,7 @@ export function RunApp({
         nextTaskMessage={displayedMessage}
         guardrailMessage={guardrailMessage}
         memoryMessage={memoryMessage}
+        modelMessage={modelMessage}
         refreshMessage={refreshMessage}
         clearMessage={clearMessage}
         taskMessage={taskMessage}

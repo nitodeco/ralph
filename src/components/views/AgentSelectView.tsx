@@ -59,10 +59,12 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
   const handleAgentSelect = (item: { value: AgentType }) => {
     const globalConfig = configService.loadGlobal();
     const projectConfigRaw = configService.loadProjectRaw();
+    const isAgentChanging = effectiveConfig.agent !== item.value;
 
     const updatedGlobalConfig = {
       ...globalConfig,
       agent: item.value,
+      model: isAgentChanging ? undefined : globalConfig.model,
     };
 
     configService.saveGlobal(updatedGlobalConfig);
@@ -71,6 +73,7 @@ export function AgentSelectView({ version, onClose }: AgentSelectViewProps): Rea
       const updatedProjectConfig = {
         ...effectiveConfig,
         agent: item.value,
+        model: isAgentChanging ? undefined : effectiveConfig.model,
       };
 
       configService.saveProject(updatedProjectConfig);

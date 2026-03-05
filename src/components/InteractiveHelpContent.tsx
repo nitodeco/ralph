@@ -106,6 +106,12 @@ const HELP_COMMANDS: HelpCommand[] = [
     section: "Project Setup",
   },
   {
+    command: "/model [model-id]",
+    description: "Switch model for current agent",
+    executeValue: "/model ",
+    section: "Project Setup",
+  },
+  {
     command: "/projects",
     description: "View all projects",
     executeValue: "/projects",

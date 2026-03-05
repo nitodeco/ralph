@@ -34,12 +34,16 @@ export function isPartialRalphConfig(value: unknown): value is Partial<RalphConf
     return false;
   }
 
-  const { agent } = value;
+  const { agent, model } = value;
 
   if (
     agent !== undefined &&
     (!isString(agent) || !VALID_AGENTS.includes(agent as RalphConfig["agent"]))
   ) {
+    return false;
+  }
+
+  if (model !== undefined && !isString(model)) {
     return false;
   }
 
@@ -249,6 +253,8 @@ export function validateConfig(config: unknown): ConfigValidationResult {
   } else {
     validateString(ralphConfig.agent, "agent", errors, VALID_AGENTS);
   }
+
+  validateString(ralphConfig.model, "model", errors);
 
   validatePositiveInteger(ralphConfig.maxRetries, "maxRetries", errors, true);
   validatePositiveInteger(ralphConfig.retryDelayMs, "retryDelayMs", errors);

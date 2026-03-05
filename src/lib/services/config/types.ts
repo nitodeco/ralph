@@ -79,6 +79,7 @@ export interface GitProviderConfig {
 
 export interface RalphConfig {
   agent: AgentType;
+  model?: string;
   lastUpdateCheck?: number;
   skipVersion?: string;
   maxRetries?: number;

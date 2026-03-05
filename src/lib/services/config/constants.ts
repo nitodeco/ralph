@@ -41,9 +41,14 @@ export const DEFAULT_GIT_PROVIDER: GitProviderConfig = {
 };
 
 export const CONFIG_DEFAULTS: Required<
-  Omit<RalphConfig, "lastUpdateCheck" | "skipVersion" | "hasAcknowledgedWarning" | "logFilePath">
-> = {
+  Omit<
+    RalphConfig,
+    "lastUpdateCheck" | "skipVersion" | "hasAcknowledgedWarning" | "logFilePath" | "model"
+  >
+> &
+  Pick<RalphConfig, "model"> = {
   agent: DEFAULTS.agent,
+  model: undefined,
   agentTimeoutMs: DEFAULTS.agentTimeoutMs,
   branchMode: DEFAULT_BRANCH_MODE,
   gitProvider: DEFAULT_GIT_PROVIDER,

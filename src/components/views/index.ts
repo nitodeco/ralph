@@ -7,6 +7,7 @@ export { type DryRunState, DryRunView } from "./DryRunView.tsx";
 export { GitHubSetupView } from "./GitHubSetupView.tsx";
 export { GuardrailsView } from "./GuardrailsView.tsx";
 export { MemoryView } from "./MemoryView.tsx";
+export { ModelSelectView } from "./ModelSelectView.tsx";
 export { NotInitializedView } from "./NotInitializedView.tsx";
 export { PlanView } from "./PlanView.tsx";
 export { ProjectsView } from "./ProjectsView.tsx";

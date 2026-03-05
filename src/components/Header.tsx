@@ -6,6 +6,7 @@ type HeaderVariant = "full" | "compact" | "minimal";
 interface HeaderProps {
   version: string;
   agent?: AgentType;
+  model?: string;
   projectName?: string;
   variant?: HeaderVariant;
 }
@@ -27,6 +28,7 @@ const FULL_LOGO = `
 function FullHeader({
   version,
   agent,
+  model,
   projectName,
 }: Omit<HeaderProps, "variant">): React.ReactElement {
   return (
@@ -41,7 +43,11 @@ function FullHeader({
         <Box gap={2} marginTop={1}>
           {agent && (
             <Text>
-              <Text dimColor>agent:</Text> <Text color="yellow">{AGENT_DISPLAY_NAMES[agent]}</Text>
+              <Text dimColor>agent:</Text>{" "}
+              <Text color="yellow">
+                {AGENT_DISPLAY_NAMES[agent]}
+                {model ? ` (${model})` : ""}
+              </Text>
             </Text>
           )}
           {projectName && (
@@ -58,6 +64,7 @@ function FullHeader({
 function CompactHeader({
   version,
   agent,
+  model,
   projectName,
 }: Omit<HeaderProps, "variant">): React.ReactElement {
   return (
@@ -69,7 +76,11 @@ function CompactHeader({
         <Text dimColor>v{version}</Text>
         {agent && (
           <Text>
-            <Text dimColor>agent:</Text> <Text color="yellow">{AGENT_DISPLAY_NAMES[agent]}</Text>
+            <Text dimColor>agent:</Text>{" "}
+            <Text color="yellow">
+              {AGENT_DISPLAY_NAMES[agent]}
+              {model ? ` (${model})` : ""}
+            </Text>
           </Text>
         )}
         {projectName && (
@@ -85,6 +96,7 @@ function CompactHeader({
 function MinimalHeader({
   version,
   agent,
+  model,
   projectName,
 }: Omit<HeaderProps, "variant">): React.ReactElement {
   return (
@@ -95,7 +107,10 @@ function MinimalHeader({
       <Text dimColor>v{version}</Text>
       {agent && (
         <Text>
-          <Text color="yellow">{AGENT_DISPLAY_NAMES[agent]}</Text>
+          <Text color="yellow">
+            {AGENT_DISPLAY_NAMES[agent]}
+            {model ? ` (${model})` : ""}
+          </Text>
         </Text>
       )}
       {projectName && <Text dimColor>{projectName}</Text>}
@@ -106,16 +121,21 @@ function MinimalHeader({
 export function Header({
   version,
   agent,
+  model,
   projectName,
   variant = "full",
 }: HeaderProps): React.ReactElement {
   if (variant === "minimal") {
-    return <MinimalHeader version={version} agent={agent} projectName={projectName} />;
+    return (
+      <MinimalHeader version={version} agent={agent} model={model} projectName={projectName} />
+    );
   }
 
   if (variant === "compact") {
-    return <CompactHeader version={version} agent={agent} projectName={projectName} />;
+    return (
+      <CompactHeader version={version} agent={agent} model={model} projectName={projectName} />
+    );
   }
 
-  return <FullHeader version={version} agent={agent} projectName={projectName} />;
+  return <FullHeader version={version} agent={agent} model={model} projectName={projectName} />;
 }

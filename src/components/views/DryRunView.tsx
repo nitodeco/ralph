@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { useResolvedModel } from "@/hooks/index.ts";
 import type { RalphConfig } from "@/types.ts";
 import { Spinner } from "../common/Spinner.tsx";
 import { Header } from "../Header.tsx";
@@ -31,11 +32,13 @@ function DryRunHeader({
 }): React.ReactElement {
   const { isNarrow, isMedium } = useResponsive();
   const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+  const resolvedModel = useResolvedModel(config);
 
   return (
     <Header
       version={version}
       agent={config?.agent}
+      model={resolvedModel}
       projectName={projectName}
       variant={headerVariant}
     />

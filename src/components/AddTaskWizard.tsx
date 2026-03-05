@@ -130,6 +130,7 @@ export function AddTaskWizard({ version, onComplete }: AddTaskWizardProps): Reac
       const prompt = buildAddTaskPrompt(description, state.prd);
       const { promise, abort } = runAgentWithPrompt({
         agentType: config.agent,
+        model: config.model,
         onOutput: (chunk) => {
           setState((prev) => ({
             ...prev,

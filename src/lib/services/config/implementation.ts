@@ -15,6 +15,7 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
 
   return {
     agent: config.agent ?? defaults.agent,
+    model: config.model,
     agentTimeoutMs: config.agentTimeoutMs ?? defaults.agentTimeoutMs,
     branchMode: config.branchMode,
     gitProvider: config.gitProvider,
@@ -42,8 +43,22 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
   };
 }
 
-export function getAgentCommand(agentType: AgentType): string[] {
-  return AGENT_COMMANDS[agentType];
+function appendModelArgumentToCommand(agentType: AgentType, model: string | undefined): string[] {
+  const baseCommand = [...AGENT_COMMANDS[agentType]];
+
+  if (!model) {
+    return baseCommand;
+  }
+
+  if (agentType === "cursor" || agentType === "claude" || agentType === "codex") {
+    return [...baseCommand, "--model", model];
+  }
+
+  return baseCommand;
+}
+
+export function getAgentCommand(agentType: AgentType, model?: string): string[] {
+  return appendModelArgumentToCommand(agentType, model);
 }
 
 export function getGlobalConfigPath(): string {

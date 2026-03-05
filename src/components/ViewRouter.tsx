@@ -17,6 +17,7 @@ import {
   GitHubSetupView,
   GuardrailsView,
   MemoryView,
+  ModelSelectView,
   NotInitializedView,
   PlanView,
   ProjectsView,
@@ -103,6 +104,10 @@ export function ViewRouter({
 
   if (activeView === "agent") {
     return <AgentSelectView version={version} onClose={onViewComplete} />;
+  }
+
+  if (activeView === "model") {
+    return <ModelSelectView version={version} onClose={onViewComplete} />;
   }
 
   if (activeView === "tasks") {

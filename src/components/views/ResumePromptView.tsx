@@ -1,6 +1,7 @@
 import { Box, Text } from "ink";
 import { ResponsiveLayout, useResponsive } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { useResolvedModel } from "@/hooks/index.ts";
 import type { RalphConfig, Session } from "@/types.ts";
 import { type CommandArgs, CommandInput, type SlashCommand } from "../CommandInput.tsx";
 import { Message } from "../common/Message.tsx";
@@ -41,11 +42,13 @@ function ResumePromptHeader({
 }): React.ReactElement {
   const { isNarrow, isMedium } = useResponsive();
   const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+  const resolvedModel = useResolvedModel(config);
 
   return (
     <Header
       version={version}
       agent={config?.agent}
+      model={resolvedModel}
       projectName={projectName}
       variant={headerVariant}
     />

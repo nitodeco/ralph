@@ -1,6 +1,11 @@
 import { Box, Text } from "ink";
 import { useEffect, useState } from "react";
 import { addCommandToHistory, getCommandHistoryList } from "@/lib/command-history.ts";
+import {
+  getCachedModelsForAgent,
+  getConfigService,
+  getModelsForAgent,
+} from "@/lib/services/index.ts";
 import { type PastedTextSegment, TextInput, expandPastedSegments } from "./common/TextInput.tsx";
 
 export type TaskSubcommand = "done" | "undone" | "current" | "list";
@@ -42,7 +47,8 @@ export type SlashCommand =
   | "usage"
   | "config"
   | "auth"
-  | "github";
+  | "github"
+  | "model";
 
 export interface CommandArgs {
   iterations?: number;
@@ -51,6 +57,7 @@ export interface CommandArgs {
   guardrailInstruction?: string;
   lesson?: string;
   note?: string;
+  modelIdentifier?: string;
   taskSubcommand?: TaskSubcommand;
   sessionSubcommand?: SessionSubcommand;
 }
@@ -76,6 +83,7 @@ const COMMAND_HINTS: Record<SlashCommand, CommandHint> = {
   init: { description: "Initialize a new PRD project" },
   learn: { args: "<lesson>", description: "Add a lesson to session memory" },
   memory: { description: "View and manage session memory" },
+  model: { args: "[model-id]", description: "Switch agent model" },
   migrate: { description: "Migrate project data" },
   next: { args: "[n|title]", description: "Set the next task to work on" },
   note: { args: "<note>", description: "Add a note about the current task" },
@@ -109,8 +117,9 @@ const VALID_SESSION_SUBCOMMANDS: SessionSubcommand[] = [
 const RUNNING_COMMANDS: SlashCommand[] = ["session", "quit", "exit", "q", "e", "help", "status"];
 
 interface AutocompleteResult {
-  type: "suggestions" | "argument-hint" | "default";
+  type: "suggestions" | "argument-hint" | "default" | "model-suggestions";
   suggestions?: { command: SlashCommand; hint: CommandHint }[];
+  modelSuggestions?: string[];
   argumentHint?: string;
   commonPrefix?: string;
 }
@@ -145,7 +154,11 @@ export function getCommonPrefix(commands: readonly string[]): string {
   return prefix;
 }
 
-export function getAutocompleteHint(input: string, isRunning: boolean): AutocompleteResult {
+export function getAutocompleteHint(
+  input: string,
+  isRunning: boolean,
+  availableModels: string[] = [],
+): AutocompleteResult {
   const trimmed = input.trim();
 
   if (!trimmed.startsWith("/")) {
@@ -166,6 +179,24 @@ export function getAutocompleteHint(input: string, isRunning: boolean): Autocomp
   if (exactMatch) {
     const hint = COMMAND_HINTS[exactMatch];
     const hasEnteredArgs = restParts.length > 0 || trimmed.endsWith(" ");
+
+    if (exactMatch === "model" && !isRunning) {
+      const modelQuery = restParts.join(" ").toLowerCase();
+      const matchingModels = availableModels.filter((modelIdentifier) =>
+        modelIdentifier.toLowerCase().startsWith(modelQuery),
+      );
+      const hasStartedModelQuery = restParts.length > 0 || trimmed.endsWith(" ");
+
+      if (matchingModels.length > 0 && hasStartedModelQuery) {
+        return {
+          commonPrefix: getCommonPrefix(
+            matchingModels.map((modelIdentifier) => modelIdentifier.toLowerCase()),
+          ),
+          modelSuggestions: matchingModels,
+          type: "model-suggestions",
+        };
+      }
+    }
 
     if (hint.args && !hasEnteredArgs) {
       return {
@@ -274,6 +305,12 @@ function parseSlashCommand(input: string): ParsedCommand | null {
     return { args: { note }, command: commandName };
   }
 
+  if (commandName === "model" && parts.length > 1) {
+    const modelIdentifier = parts.slice(1).join(" ");
+
+    return { args: { modelIdentifier }, command: commandName };
+  }
+
   if (commandName === "task") {
     const subcommand = secondPart?.toLowerCase() as TaskSubcommand | undefined;
 
@@ -307,6 +344,8 @@ export function CommandInput({
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [savedInputValue, setSavedInputValue] = useState("");
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isModelLoading, setIsModelLoading] = useState(false);
 
   useEffect(() => {
     setCommandHistory(getCommandHistoryList());
@@ -320,10 +359,53 @@ export function CommandInput({
     }
   }, [pendingCommand, onPendingCommandConsumed]);
 
+  useEffect(() => {
+    const trimmedInput = inputValue.trim().toLowerCase();
+    const currentAgent = getConfigService().get().agent;
+
+    if (isRunning || !trimmedInput.startsWith("/model")) {
+      return;
+    }
+
+    const cachedModels = getCachedModelsForAgent(currentAgent);
+
+    if (cachedModels.length > 0) {
+      setAvailableModels(cachedModels);
+    }
+
+    let isCancelled = false;
+
+    const loadModels = async () => {
+      setIsModelLoading(true);
+      const modelCatalogResult = await getModelsForAgent(currentAgent);
+
+      if (isCancelled) {
+        return;
+      }
+
+      if (modelCatalogResult.success && modelCatalogResult.catalog) {
+        setAvailableModels(modelCatalogResult.catalog.models);
+      }
+
+      setIsModelLoading(false);
+    };
+
+    void loadModels();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [inputValue, isRunning]);
+
   const isNavigatingHistory = historyIndex !== null;
-  const autocomplete = getAutocompleteHint(inputValue, isRunning);
-  const suggestions = autocomplete.type === "suggestions" ? (autocomplete.suggestions ?? []) : [];
-  const hasSuggestions = suggestions.length > 0;
+  const autocomplete = getAutocompleteHint(inputValue, isRunning, availableModels);
+  const commandSuggestions =
+    autocomplete.type === "suggestions" ? (autocomplete.suggestions ?? []) : [];
+  const modelSuggestions =
+    autocomplete.type === "model-suggestions" ? (autocomplete.modelSuggestions ?? []) : [];
+  const hasCommandSuggestions = commandSuggestions.length > 0;
+  const hasModelSuggestions = modelSuggestions.length > 0;
+  const hasSuggestions = hasCommandSuggestions || hasModelSuggestions;
 
   const handleInputChange = (value: string) => {
     setInputValue(value);
@@ -358,8 +440,69 @@ export function CommandInput({
     return parts.at(0)?.toLowerCase() ?? "";
   };
 
+  const getCurrentModelPartial = (): string => {
+    const trimmed = inputValue.trim();
+
+    if (!trimmed.startsWith("/model")) {
+      return "";
+    }
+
+    const parts = trimmed.slice(1).split(/\s+/);
+
+    if (parts.length <= 1) {
+      return "";
+    }
+
+    return parts.slice(1).join(" ").toLowerCase();
+  };
+
   const handleTabComplete = (direction: "forward" | "backward") => {
-    if (!hasSuggestions) {
+    if (hasModelSuggestions) {
+      const currentModelPartial = getCurrentModelPartial();
+      const commonPrefix = autocomplete.commonPrefix ?? "";
+      const isCommonPrefixComplete = currentModelPartial === commonPrefix.toLowerCase();
+
+      if (modelSuggestions.length === 1) {
+        const [selectedModel] = modelSuggestions;
+
+        if (selectedModel) {
+          setInputValue(`/model ${selectedModel}`);
+          setSelectedHintIndex(0);
+        }
+
+        return;
+      }
+
+      if (!isCommonPrefixComplete && commonPrefix.length > currentModelPartial.length) {
+        setInputValue(`/model ${commonPrefix}`);
+
+        return;
+      }
+
+      if (direction === "forward") {
+        const nextIndex =
+          selectedHintIndex >= modelSuggestions.length - 1 ? 0 : selectedHintIndex + 1;
+        const selectedModel = modelSuggestions[nextIndex];
+
+        if (selectedModel) {
+          setInputValue(`/model ${selectedModel}`);
+          setSelectedHintIndex(nextIndex);
+        }
+      } else {
+        const previousIndex =
+          selectedHintIndex <= 0 ? modelSuggestions.length - 1 : selectedHintIndex - 1;
+        const selectedModel = modelSuggestions[previousIndex];
+
+        if (selectedModel) {
+          setInputValue(`/model ${selectedModel}`);
+          setSelectedHintIndex(previousIndex);
+        }
+      }
+
+      return;
+    }
+
+    if (!hasCommandSuggestions) {
       return;
     }
 
@@ -367,8 +510,8 @@ export function CommandInput({
     const commonPrefix = autocomplete.commonPrefix ?? "";
     const isCommonPrefixComplete = currentPartial === commonPrefix.toLowerCase();
 
-    if (suggestions.length === 1) {
-      const [selectedSuggestion] = suggestions;
+    if (commandSuggestions.length === 1) {
+      const [selectedSuggestion] = commandSuggestions;
 
       if (selectedSuggestion) {
         setInputValue(getCompletedValue(selectedSuggestion.command));
@@ -385,20 +528,22 @@ export function CommandInput({
     }
 
     if (direction === "forward") {
-      const nextIndex = selectedHintIndex >= suggestions.length - 1 ? 0 : selectedHintIndex + 1;
-      const selectedSuggestion = suggestions[nextIndex];
+      const nextIndex =
+        selectedHintIndex >= commandSuggestions.length - 1 ? 0 : selectedHintIndex + 1;
+      const selectedSuggestion = commandSuggestions[nextIndex];
 
       if (selectedSuggestion) {
         setInputValue(getCompletedValue(selectedSuggestion.command));
         setSelectedHintIndex(nextIndex);
       }
     } else {
-      const prevIndex = selectedHintIndex <= 0 ? suggestions.length - 1 : selectedHintIndex - 1;
-      const selectedSuggestion = suggestions[prevIndex];
+      const previousIndex =
+        selectedHintIndex <= 0 ? commandSuggestions.length - 1 : selectedHintIndex - 1;
+      const selectedSuggestion = commandSuggestions[previousIndex];
 
       if (selectedSuggestion) {
         setInputValue(getCompletedValue(selectedSuggestion.command));
-        setSelectedHintIndex(prevIndex);
+        setSelectedHintIndex(previousIndex);
       }
     }
   };
@@ -412,9 +557,22 @@ export function CommandInput({
   };
 
   const handleArrowUp = () => {
-    if (hasSuggestions) {
-      const newIndex = selectedHintIndex <= 0 ? suggestions.length - 1 : selectedHintIndex - 1;
-      const selectedSuggestion = suggestions[newIndex];
+    if (hasModelSuggestions) {
+      const newIndex = selectedHintIndex <= 0 ? modelSuggestions.length - 1 : selectedHintIndex - 1;
+      const selectedModel = modelSuggestions[newIndex];
+
+      if (selectedModel) {
+        setInputValue(`/model ${selectedModel}`);
+        setSelectedHintIndex(newIndex);
+      }
+
+      return;
+    }
+
+    if (hasCommandSuggestions) {
+      const newIndex =
+        selectedHintIndex <= 0 ? commandSuggestions.length - 1 : selectedHintIndex - 1;
+      const selectedSuggestion = commandSuggestions[newIndex];
 
       if (selectedSuggestion) {
         setInputValue(getCompletedValue(selectedSuggestion.command));
@@ -441,9 +599,22 @@ export function CommandInput({
   };
 
   const handleArrowDown = () => {
-    if (hasSuggestions) {
-      const newIndex = selectedHintIndex >= suggestions.length - 1 ? 0 : selectedHintIndex + 1;
-      const selectedSuggestion = suggestions[newIndex];
+    if (hasModelSuggestions) {
+      const newIndex = selectedHintIndex >= modelSuggestions.length - 1 ? 0 : selectedHintIndex + 1;
+      const selectedModel = modelSuggestions[newIndex];
+
+      if (selectedModel) {
+        setInputValue(`/model ${selectedModel}`);
+        setSelectedHintIndex(newIndex);
+      }
+
+      return;
+    }
+
+    if (hasCommandSuggestions) {
+      const newIndex =
+        selectedHintIndex >= commandSuggestions.length - 1 ? 0 : selectedHintIndex + 1;
+      const selectedSuggestion = commandSuggestions[newIndex];
 
       if (selectedSuggestion) {
         setInputValue(getCompletedValue(selectedSuggestion.command));
@@ -526,18 +697,18 @@ export function CommandInput({
       return <Text dimColor>{autocomplete.argumentHint}</Text>;
     }
 
-    if (hasSuggestions) {
+    if (hasCommandSuggestions) {
       const windowStart = Math.max(
         0,
         Math.min(
           selectedHintIndex - Math.floor(maxSuggestions / 2),
-          suggestions.length - maxSuggestions,
+          commandSuggestions.length - maxSuggestions,
         ),
       );
-      const windowEnd = Math.min(windowStart + maxSuggestions, suggestions.length);
-      const displayedSuggestions = suggestions.slice(windowStart, windowEnd);
+      const windowEnd = Math.min(windowStart + maxSuggestions, commandSuggestions.length);
+      const displayedSuggestions = commandSuggestions.slice(windowStart, windowEnd);
       const itemsAbove = windowStart;
-      const itemsBelow = suggestions.length - windowEnd;
+      const itemsBelow = commandSuggestions.length - windowEnd;
       const currentPartial = getCurrentPartialCommand();
       const commonPrefix = autocomplete.commonPrefix ?? "";
       const canExpandPrefix =
@@ -545,7 +716,7 @@ export function CommandInput({
         currentPartial !== commonPrefix.toLowerCase();
       const tabHint = canExpandPrefix
         ? `Tab to complete "${commonPrefix}"`
-        : suggestions.length > 1
+        : commandSuggestions.length > 1
           ? "Tab/↑↓ to cycle"
           : "Tab to complete";
 
@@ -575,6 +746,59 @@ export function CommandInput({
           </Box>
         </Box>
       );
+    }
+
+    if (hasModelSuggestions) {
+      const windowStart = Math.max(
+        0,
+        Math.min(
+          selectedHintIndex - Math.floor(maxSuggestions / 2),
+          modelSuggestions.length - maxSuggestions,
+        ),
+      );
+      const windowEnd = Math.min(windowStart + maxSuggestions, modelSuggestions.length);
+      const displayedSuggestions = modelSuggestions.slice(windowStart, windowEnd);
+      const itemsAbove = windowStart;
+      const itemsBelow = modelSuggestions.length - windowEnd;
+      const currentPartial = getCurrentModelPartial();
+      const commonPrefix = autocomplete.commonPrefix ?? "";
+      const canExpandPrefix =
+        commonPrefix.length > currentPartial.length &&
+        currentPartial !== commonPrefix.toLowerCase();
+      const tabHint = canExpandPrefix
+        ? `Tab to complete "${commonPrefix}"`
+        : modelSuggestions.length > 1
+          ? "Tab/↑↓ to cycle"
+          : "Tab to complete";
+
+      return (
+        <Box flexDirection="column">
+          {itemsAbove > 0 && <Text dimColor> (+{itemsAbove} above)</Text>}
+          {displayedSuggestions.map((modelIdentifier, index) => {
+            const actualIndex = windowStart + index;
+            const isSelected = actualIndex === selectedHintIndex;
+
+            return (
+              <Box key={modelIdentifier} gap={1}>
+                <Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+                  {isSelected ? "▸" : " "}
+                </Text>
+                <Text color={isSelected ? "cyan" : undefined} bold={isSelected}>
+                  {modelIdentifier}
+                </Text>
+              </Box>
+            );
+          })}
+          <Box gap={1}>
+            {itemsBelow > 0 && <Text dimColor>(+{itemsBelow} below)</Text>}
+            <Text dimColor>[{tabHint}]</Text>
+          </Box>
+        </Box>
+      );
+    }
+
+    if (inputValue.trim().toLowerCase().startsWith("/model") && isModelLoading) {
+      return <Text dimColor>Loading models for current agent...</Text>;
     }
 
     return <Text dimColor>{defaultHintText}</Text>;

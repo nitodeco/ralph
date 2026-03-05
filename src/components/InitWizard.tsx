@@ -187,6 +187,7 @@ export function InitWizard({ version, onComplete }: InitWizardProps): React.Reac
       const prompt = buildPrdGenerationPrompt(description);
       const { promise, abort } = runAgentWithPrompt({
         agentType: state.agentType,
+        model: state.agentType === globalConfig.agent ? globalConfig.model : undefined,
         onOutput: (chunk) => {
           setState((prev) => ({
             ...prev,

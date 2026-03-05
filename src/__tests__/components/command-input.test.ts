@@ -90,6 +90,24 @@ describe("getAutocompleteHint", () => {
       expect(result.argumentHint).toContain("<start|stop|resume|pause|clear|refresh|archive>");
     });
 
+    test("returns argument hint for /model with no argument", () => {
+      const result = getAutocompleteHint("/model", false);
+
+      expect(result.type).toBe("argument-hint");
+      expect(result.argumentHint).toContain("[model-id]");
+    });
+
+    test("returns model suggestions for /model argument", () => {
+      const result = getAutocompleteHint("/model cla", false, [
+        "claude-sonnet-4-5",
+        "claude-opus-4",
+        "gpt-5",
+      ]);
+
+      expect(result.type).toBe("model-suggestions");
+      expect(result.modelSuggestions).toEqual(["claude-sonnet-4-5", "claude-opus-4"]);
+    });
+
     test("returns default for exact command without args", () => {
       const result = getAutocompleteHint("/help", false);
 
@@ -142,6 +160,12 @@ describe("getAutocompleteHint", () => {
 
     test("returns default for non-running command", () => {
       const result = getAutocompleteHint("/add", true);
+
+      expect(result.type).toBe("default");
+    });
+
+    test("returns default for /model while running", () => {
+      const result = getAutocompleteHint("/model", true, ["gpt-5"]);
 
       expect(result.type).toBe("default");
     });

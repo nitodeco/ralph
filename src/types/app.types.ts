@@ -23,6 +23,7 @@ export type ActiveView =
   | "analyze"
   | "memory"
   | "agent"
+  | "model"
   | "tasks"
   | "projects"
   | "plan"

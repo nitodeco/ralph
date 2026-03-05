@@ -2,6 +2,7 @@ import { Box, Text } from "ink";
 import { useState } from "react";
 import type { TechnicalDebtReport } from "@/lib/handlers/index.ts";
 import type { Prd, RalphConfig } from "@/types.ts";
+import { useResolvedModel } from "@/hooks/index.ts";
 import { AgentStatus } from "./AgentStatus.tsx";
 import type { CommandArgs, SlashCommand } from "./CommandInput.tsx";
 import { CommandInput } from "./CommandInput.tsx";
@@ -32,6 +33,7 @@ interface MainRunViewProps {
   nextTaskMessage: SlashCommandMessage | null;
   guardrailMessage: SlashCommandMessage | null;
   memoryMessage: SlashCommandMessage | null;
+  modelMessage: SlashCommandMessage | null;
   refreshMessage: SlashCommandMessage | null;
   clearMessage: SlashCommandMessage | null;
   taskMessage: SlashCommandMessage | null;
@@ -77,12 +79,14 @@ function HeaderSection({
 }: HeaderSectionProps): React.ReactElement {
   const { isNarrow, isMedium } = useResponsive();
   const headerVariant = isNarrow ? "minimal" : isMedium ? "compact" : "full";
+  const resolvedModel = useResolvedModel(config);
 
   return (
     <Box flexDirection="column">
       <Header
         version={version}
         agent={config?.agent}
+        model={resolvedModel}
         projectName={prd?.project}
         variant={headerVariant}
       />
@@ -97,6 +101,7 @@ interface ContentSectionProps {
   nextTaskMessage: SlashCommandMessage | null;
   guardrailMessage: SlashCommandMessage | null;
   memoryMessage: SlashCommandMessage | null;
+  modelMessage: SlashCommandMessage | null;
   refreshMessage: SlashCommandMessage | null;
   clearMessage: SlashCommandMessage | null;
   taskMessage: SlashCommandMessage | null;
@@ -116,6 +121,7 @@ function ContentSection({
   nextTaskMessage,
   guardrailMessage,
   memoryMessage,
+  modelMessage,
   refreshMessage,
   clearMessage,
   taskMessage,
@@ -151,6 +157,7 @@ function ContentSection({
       <MessageDisplay message={nextTaskMessage} />
       <MessageDisplay message={guardrailMessage} />
       <MessageDisplay message={memoryMessage} />
+      <MessageDisplay message={modelMessage} />
       <MessageDisplay message={refreshMessage} />
       <MessageDisplay message={clearMessage} />
       <MessageDisplay message={taskMessage} />
@@ -232,6 +239,7 @@ export function MainRunView({
   nextTaskMessage,
   guardrailMessage,
   memoryMessage,
+  modelMessage,
   refreshMessage,
   clearMessage,
   taskMessage,
@@ -271,6 +279,7 @@ export function MainRunView({
           nextTaskMessage={nextTaskMessage}
           guardrailMessage={guardrailMessage}
           memoryMessage={memoryMessage}
+          modelMessage={modelMessage}
           refreshMessage={refreshMessage}
           clearMessage={clearMessage}
           taskMessage={taskMessage}

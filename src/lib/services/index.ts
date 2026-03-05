@@ -47,6 +47,14 @@ export {
   getAgentCommand,
   getGlobalConfigPath,
 } from "./config/implementation.ts";
+export {
+  clearModelCatalogCache,
+  getCachedModelsForAgent,
+  getModelsForAgent,
+  getModelsForCurrentAgent,
+  type AgentModelCatalog,
+  type AgentModelCatalogResult,
+} from "./model-catalog.ts";
 export type {
   AgentType,
   BranchModeConfig,

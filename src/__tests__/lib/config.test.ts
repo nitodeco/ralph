@@ -60,6 +60,17 @@ describe("validateConfig", () => {
     expect(result.errors).toHaveLength(0);
   });
 
+  test("validates optional model as string", () => {
+    const validConfig = validateConfig({ agent: "cursor", model: "gpt-5" });
+
+    expect(validConfig.valid).toBe(true);
+
+    const invalidConfig = validateConfig({ agent: "cursor", model: 123 });
+
+    expect(invalidConfig.valid).toBe(false);
+    expect(invalidConfig.errors.some((error) => error.field === "model")).toBe(true);
+  });
+
   test("validates maxRetries as non-negative integer", () => {
     const validZero = validateConfig({ agent: "cursor", maxRetries: 0 });
 
@@ -215,10 +226,12 @@ describe("applyDefaults", () => {
   test("preserves provided values", () => {
     const result = applyDefaults({
       agent: "claude",
+      model: "claude-sonnet-4-5",
       maxRetries: 10,
     });
 
     expect(result.agent).toBe("claude");
+    expect(result.model).toBe("claude-sonnet-4-5");
     expect(result.maxRetries).toBe(10);
   });
 
@@ -314,11 +327,22 @@ describe("getConfigSummary", () => {
 
     expect(summary).toContain("Agent Settings:");
     expect(summary).toContain("cursor");
+    expect(summary).toContain("Model:              default");
     expect(summary).toContain("Retry Settings:");
     expect(summary).toContain("Timeout Settings:");
     expect(summary).toContain("Logging:");
     expect(summary).toContain("Notifications:");
     expect(summary).toContain("Memory Management:");
+  });
+
+  test("includes selected model in summary", () => {
+    const config: RalphConfig = {
+      agent: "claude",
+      model: "claude-sonnet-4-5",
+    };
+    const summary = getConfigSummary(config);
+
+    expect(summary).toContain("Model:              claude-sonnet-4-5");
   });
 
   test("shows disabled timeouts correctly", () => {

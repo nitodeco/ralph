@@ -3,7 +3,8 @@ import { CONFIG_DEFAULTS } from "./constants.ts";
 import type { ConfigValidationResult, RalphConfig } from "./types.ts";
 
 const FIELD_SUGGESTIONS: Record<string, string> = {
-  agent: "Valid options: 'cursor' or 'claude'. Example: \"agent\": \"claude\"",
+  agent: "Valid options: 'cursor', 'claude', or 'codex'. Example: \"agent\": \"claude\"",
+  model: 'Optional model identifier for the selected agent. Example: "model": "claude-sonnet-4-5"',
   agentTimeoutMs:
     'Must be a non-negative integer in milliseconds. Set to 0 to disable. Recommended: 600000 (10 min). Example: "agentTimeoutMs": 600000',
   logFilePath: "Optional. Custom log file path. Defaults to project directory in ~/.ralph/",
@@ -109,6 +110,7 @@ export function getConfigSummary(config: RalphConfig): string {
 
   lines.push("Agent Settings:");
   lines.push(`  Agent:              ${config.agent}`);
+  lines.push(`  Model:              ${config.model ?? "default"}`);
   lines.push("");
 
   lines.push("Retry Settings:");
