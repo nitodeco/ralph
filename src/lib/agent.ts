@@ -400,7 +400,7 @@ export class AgentRunner {
     const stderrReader = agentProcess.stderr.getReader();
     const decoder = new TextDecoder();
     const completionDetector = createCompletionDetector(COMPLETION_MARKER);
-    let parsedOutput = "";
+    const parsedOutputChunks: string[] = [];
     let stderrOutput = "";
     let lineBuffer = "";
     let lastParsedText = "";
@@ -481,6 +481,16 @@ export class AgentRunner {
 
     const streamState = { error: null as Error | null };
 
+    const appendParsedText = (parsedText: string | null): void => {
+      if (!parsedText || parsedText === lastParsedText) {
+        return;
+      }
+
+      lastParsedText = parsedText;
+      parsedOutputChunks.push(parsedText);
+      safeCallOutputHandler(parsedText);
+    };
+
     const readStdout = async () => {
       try {
         while (!AgentProcessManager.isAborted()) {
@@ -503,11 +513,7 @@ export class AgentRunner {
           for (const line of lines) {
             const parsedText = parseStreamJsonLine(line);
 
-            if (parsedText && parsedText !== lastParsedText) {
-              lastParsedText = parsedText;
-              parsedOutput = parsedText;
-              safeCallOutputHandler(parsedOutput);
-            }
+            appendParsedText(parsedText);
           }
         }
       } catch (error) {
@@ -547,6 +553,12 @@ export class AgentRunner {
 
     try {
       await Promise.all([readStdout(), readStderr()]);
+
+      if (lineBuffer && !AgentProcessManager.isAborted()) {
+        const parsedText = parseStreamJsonLine(lineBuffer);
+
+        appendParsedText(parsedText);
+      }
     } finally {
       if (timeoutTimer) {
         clearTimeout(timeoutTimer);
@@ -585,7 +597,7 @@ export class AgentRunner {
         error: formatErrorCompact(streamErrorMessage),
         exitCode: null,
         isComplete: false,
-        output: parsedOutput,
+        output: parsedOutputChunks.join(""),
         success: false,
       };
     }
@@ -616,7 +628,7 @@ export class AgentRunner {
         error: formatErrorCompact(hangError),
         exitCode: null,
         isComplete: false,
-        output: parsedOutput,
+        output: parsedOutputChunks.join(""),
         success: false,
       };
     }
@@ -632,7 +644,7 @@ export class AgentRunner {
         error: errorMessage,
         exitCode,
         isComplete: false,
-        output: parsedOutput,
+        output: parsedOutputChunks.join(""),
         success: false,
       };
     }
@@ -646,7 +658,7 @@ export class AgentRunner {
         error: errorMessage,
         exitCode,
         isComplete: false,
-        output: parsedOutput,
+        output: parsedOutputChunks.join(""),
         success: false,
       };
     }
@@ -656,12 +668,18 @@ export class AgentRunner {
 
       logger.logAgentError(errorMessage, exitCode);
 
-      return { error: errorMessage, exitCode, isComplete, output: parsedOutput, success: false };
+      return {
+        error: errorMessage,
+        exitCode,
+        isComplete,
+        output: parsedOutputChunks.join(""),
+        success: false,
+      };
     }
 
     logger.logAgentComplete(exitCode, isComplete);
 
-    return { exitCode, isComplete, output: parsedOutput, success: true };
+    return { exitCode, isComplete, output: parsedOutputChunks.join(""), success: true };
   }
 
   abort(): void {
