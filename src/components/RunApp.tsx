@@ -1,5 +1,6 @@
 import { useInput } from "ink";
 import { useCallback, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useDryRun, useSessionLifecycle, useSlashCommands } from "@/hooks/index.ts";
 import { useAgentStore, useAppStore, useIterationStore } from "@/stores/index.ts";
 import { MainRunView } from "./MainRunView.tsx";
@@ -26,39 +27,74 @@ export function RunApp({
   maxRuntimeMs,
   skipVerification = false,
 }: RunAppProps): React.ReactElement {
-  const appState = useAppStore((state) => state.appState);
-  const activeView = useAppStore((state) => state.activeView);
-  const validationWarning = useAppStore((state) => state.validationWarning);
-  const config = useAppStore((state) => state.config);
-  const prd = useAppStore((state) => state.prd);
-  const pendingSession = useAppStore((state) => state.pendingSession);
-  const lastTechnicalDebtReport = useAppStore((state) => state.lastTechnicalDebtReport);
+  const {
+    appState,
+    activeView,
+    validationWarning,
+    config,
+    prd,
+    pendingSession,
+    lastTechnicalDebtReport,
+    setActiveView,
+    loadInitialState,
+    startIterations,
+    resumeSession,
+    stopAgent,
+    revalidateAndGoIdle,
+    handleFatalError,
+    setIterations,
+    setManualNextTask,
+    updateAvailable,
+    latestVersion,
+    updateBannerDismissed,
+    dismissUpdateBanner,
+    refreshState,
+    clearSession,
+  } = useAppStore(
+    useShallow((state) => ({
+      appState: state.appState,
+      activeView: state.activeView,
+      validationWarning: state.validationWarning,
+      config: state.config,
+      prd: state.prd,
+      pendingSession: state.pendingSession,
+      lastTechnicalDebtReport: state.lastTechnicalDebtReport,
+      setActiveView: state.setActiveView,
+      loadInitialState: state.loadInitialState,
+      startIterations: state.startIterations,
+      resumeSession: state.resumeSession,
+      stopAgent: state.stopAgent,
+      revalidateAndGoIdle: state.revalidateAndGoIdle,
+      handleFatalError: state.handleFatalError,
+      setIterations: state.setIterations,
+      setManualNextTask: state.setManualNextTask,
+      updateAvailable: state.updateAvailable,
+      latestVersion: state.latestVersion,
+      updateBannerDismissed: state.updateBannerDismissed,
+      dismissUpdateBanner: state.dismissUpdateBanner,
+      refreshState: state.refreshState,
+      clearSession: state.clearSession,
+    })),
+  );
 
-  const setActiveView = useAppStore((state) => state.setActiveView);
-  const loadInitialState = useAppStore((state) => state.loadInitialState);
-  const startIterations = useAppStore((state) => state.startIterations);
-  const resumeSession = useAppStore((state) => state.resumeSession);
-  const stopAgent = useAppStore((state) => state.stopAgent);
-  const revalidateAndGoIdle = useAppStore((state) => state.revalidateAndGoIdle);
-  const handleFatalError = useAppStore((state) => state.handleFatalError);
-  const setIterations = useAppStore((state) => state.setIterations);
-  const setManualNextTask = useAppStore((state) => state.setManualNextTask);
-  const updateAvailable = useAppStore((state) => state.updateAvailable);
-  const latestVersion = useAppStore((state) => state.latestVersion);
-  const updateBannerDismissed = useAppStore((state) => state.updateBannerDismissed);
-  const dismissUpdateBanner = useAppStore((state) => state.dismissUpdateBanner);
-  const refreshState = useAppStore((state) => state.refreshState);
-  const clearSession = useAppStore((state) => state.clearSession);
+  const { agentIsStreaming, agentError, agentStop } = useAgentStore(
+    useShallow((state) => ({
+      agentIsStreaming: state.isStreaming,
+      agentError: state.error,
+      agentStop: state.stop,
+    })),
+  );
 
-  const agentIsStreaming = useAgentStore((state) => state.isStreaming);
-  const agentError = useAgentStore((state) => state.error);
-  const agentStop = useAgentStore((state) => state.stop);
-
-  const iterationCurrent = useIterationStore((state) => state.current);
-  const iterationTotal = useIterationStore((state) => state.total);
-  const iterationIsPaused = useIterationStore((state) => state.isPaused);
-  const iterationPause = useIterationStore((state) => state.pause);
-  const iterationResume = useIterationStore((state) => state.resume);
+  const { iterationCurrent, iterationTotal, iterationIsPaused, iterationPause, iterationResume } =
+    useIterationStore(
+      useShallow((state) => ({
+        iterationCurrent: state.current,
+        iterationTotal: state.total,
+        iterationIsPaused: state.isPaused,
+        iterationPause: state.pause,
+        iterationResume: state.resume,
+      })),
+    );
 
   const [initialTaskMessage, setInitialTaskMessage] = useState<{
     type: "success" | "error";
