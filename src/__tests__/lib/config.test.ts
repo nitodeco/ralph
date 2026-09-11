@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import {
   CONFIG_DEFAULTS,
   applyDefaults,
@@ -233,6 +235,25 @@ describe("applyDefaults", () => {
     expect(result.agent).toBe("claude");
     expect(result.model).toBe("claude-sonnet-4-5");
     expect(result.maxRetries).toBe(10);
+  });
+
+  test("resolves the legacy relative log path from the user home directory", () => {
+    const result = applyDefaults({ logFilePath: ".ralph/ralph.log" });
+
+    expect(result.logFilePath).toBe(join(homedir(), ".ralph", "ralph.log"));
+  });
+
+  test("resolves other relative log paths from the user home directory", () => {
+    const result = applyDefaults({ logFilePath: "logs/custom.log" });
+
+    expect(result.logFilePath).toBe(join(homedir(), "logs", "custom.log"));
+  });
+
+  test("preserves absolute log paths", () => {
+    const absoluteLogFilePath = "/tmp/ralph-custom.log";
+    const result = applyDefaults({ logFilePath: absoluteLogFilePath });
+
+    expect(result.logFilePath).toBe(absoluteLogFilePath);
   });
 
   test("merges notifications config with defaults", () => {
