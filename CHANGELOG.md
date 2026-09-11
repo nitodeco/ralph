@@ -1,5 +1,13 @@
 # ralph
 
+## 0.16.2
+
+### Patch Changes
+
+- cb692f4: Resolve relative log file paths from the user home directory to prevent Ralph from creating `.ralph` directories in projects.
+- 45cf3b0: Prevent dropped terminal input, restore terminal modes during shutdown, and add double-Escape emergency quit.
+- 45cf3b0: Discover Codex account models live and keep long model lists usable within the terminal viewport.
+
 ## 0.16.1
 
 ### Patch Changes
