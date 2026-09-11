@@ -3,6 +3,7 @@ import SelectInput from "ink-select-input";
 import { useEffect, useMemo, useState } from "react";
 import { ResponsiveLayout } from "@/components/common/ResponsiveLayout.tsx";
 import { ScrollableContent } from "@/components/common/ScrollableContent.tsx";
+import { useTerminalDimensions } from "@/hooks/index.ts";
 import { TRANSITION_DELAY_MS } from "@/lib/constants/ui.ts";
 import { getConfigService, getModelsForAgent } from "@/lib/services/index.ts";
 import type { AgentType } from "@/types.ts";
@@ -17,6 +18,21 @@ const AGENT_DISPLAY_NAMES: Record<AgentType, string> = {
   claude: "Claude Code",
   codex: "Codex",
 };
+
+const MODEL_SELECT_RESERVED_ROWS = 9;
+const UNAVAILABLE_MODEL_WARNING_ROWS = 1;
+
+export function getModelSelectLimit(
+  terminalHeight: number,
+  hasUnavailableSavedModel: boolean,
+): number {
+  return Math.max(
+    1,
+    terminalHeight -
+      MODEL_SELECT_RESERVED_ROWS -
+      (hasUnavailableSavedModel ? UNAVAILABLE_MODEL_WARNING_ROWS : 0),
+  );
+}
 
 function ModelSelectHeader({ version }: { version: string }): React.ReactElement {
   return (
@@ -37,6 +53,7 @@ function ModelSelectFooter(): React.ReactElement {
 }
 
 export function ModelSelectView({ version, onClose }: ModelSelectViewProps): React.ReactElement {
+  const { height: terminalHeight } = useTerminalDimensions();
   const configService = getConfigService();
   const effectiveConfig = configService.get();
   const [availableModels, setAvailableModels] = useState<string[]>([]);
@@ -109,6 +126,8 @@ export function ModelSelectView({ version, onClose }: ModelSelectViewProps): Rea
           modelItem.value.toLowerCase() === (selectedModelForCurrentAgent ?? "").toLowerCase(),
       )
     : 0;
+  const hasUnavailableSavedModel =
+    selectedModel !== undefined && selectedModelForCurrentAgent === undefined && !isLoadingModels;
 
   const handleModelSelect = (item: { value: string }) => {
     configService.saveGlobal({
@@ -153,6 +172,7 @@ export function ModelSelectView({ version, onClose }: ModelSelectViewProps): Rea
                 <SelectInput
                   items={selectItems}
                   initialIndex={initialIndex >= 0 ? initialIndex : 0}
+                  limit={getModelSelectLimit(terminalHeight, hasUnavailableSavedModel)}
                   onSelect={handleModelSelect}
                 />
               </Box>

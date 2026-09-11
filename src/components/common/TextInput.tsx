@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { Box, Text, useInput } from "ink";
+import { Box, Text, useInput, type Key } from "ink";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type VimMode, useVimMode } from "@/lib/vim/index.ts";
@@ -239,8 +239,6 @@ export function TextInput({
     cursorWidth: 0,
   });
 
-  const inputQueueRef = useRef<{ input: string; key: unknown }[]>([]);
-  const isProcessingRef = useRef(false);
   const pendingOnChangeRef = useRef<string | null>(null);
 
   const { cursorOffset, cursorWidth } = renderState;
@@ -387,48 +385,18 @@ export function TextInput({
       </Text>
     ) : null;
 
-  const processInputQueue = useCallback(() => {
-    if (isProcessingRef.current || inputQueueRef.current.length === 0) {
-      return;
-    }
-
-    isProcessingRef.current = true;
-
-    const eventsToProcess = [...inputQueueRef.current];
-
-    inputQueueRef.current = [];
-
-    for (const event of eventsToProcess) {
-      const { input, key } = event as {
-        input: string;
-        key: {
-          upArrow: boolean;
-          downArrow: boolean;
-          leftArrow: boolean;
-          rightArrow: boolean;
-          ctrl: boolean;
-          shift: boolean;
-          meta: boolean;
-          home: boolean;
-          end: boolean;
-          tab: boolean;
-          backspace: boolean;
-          delete: boolean;
-          return: boolean;
-          escape: boolean;
-        };
-      };
-
+  const processInput = useCallback(
+    (input: string, key: Key) => {
       const isEscape = key.escape;
 
       if (isVimModeEnabled && isEscape) {
         handleVimInput("", true);
-        continue;
+        return;
       }
 
       if (!isVimModeEnabled && isEscape && onEscape) {
         onEscape();
-        continue;
+        return;
       }
 
       const currentState = stateRef.current;
@@ -453,12 +421,13 @@ export function TextInput({
               cursorOffset: newOffset,
               cursorWidth: 0,
             };
-            continue;
+            syncStateToRender();
+            return;
           }
         }
 
         onArrowUp?.();
-        continue;
+        return;
       }
 
       if (key.downArrow) {
@@ -479,12 +448,13 @@ export function TextInput({
               cursorOffset: newOffset,
               cursorWidth: 0,
             };
-            continue;
+            syncStateToRender();
+            return;
           }
         }
 
         onArrowDown?.();
-        continue;
+        return;
       }
 
       if (key.ctrl && key.home) {
@@ -493,7 +463,8 @@ export function TextInput({
           cursorOffset: 0,
           cursorWidth: 0,
         };
-        continue;
+        syncStateToRender();
+        return;
       }
 
       if (key.ctrl && key.end) {
@@ -502,7 +473,8 @@ export function TextInput({
           cursorOffset: currentValue.length,
           cursorWidth: 0,
         };
-        continue;
+        syncStateToRender();
+        return;
       }
 
       if (key.home) {
@@ -514,7 +486,8 @@ export function TextInput({
           cursorOffset: newOffset,
           cursorWidth: 0,
         };
-        continue;
+        syncStateToRender();
+        return;
       }
 
       if (key.end) {
@@ -527,7 +500,8 @@ export function TextInput({
           cursorOffset: newOffset,
           cursorWidth: 0,
         };
-        continue;
+        syncStateToRender();
+        return;
       }
 
       if (key.ctrl && key.leftArrow) {
@@ -538,7 +512,8 @@ export function TextInput({
           cursorOffset: newOffset,
           cursorWidth: 0,
         };
-        continue;
+        syncStateToRender();
+        return;
       }
 
       if (key.ctrl && key.rightArrow) {
@@ -549,33 +524,34 @@ export function TextInput({
           cursorOffset: newOffset,
           cursorWidth: 0,
         };
-        continue;
+        syncStateToRender();
+        return;
       }
 
       if (key.shift && key.tab) {
         onShiftTab?.();
-        continue;
+        return;
       }
 
       if (key.tab) {
         onTab?.();
-        continue;
+        return;
       }
 
       if (key.ctrl && input === "c") {
-        continue;
+        return;
       }
 
       if (key.return) {
         if (key.ctrl || key.meta) {
-          continue;
+          return;
         }
 
         if (onSubmit) {
           onSubmit(currentValue);
         }
 
-        continue;
+        return;
       }
 
       if (
@@ -588,13 +564,13 @@ export function TextInput({
       ) {
         if (input === "q" && onQuit) {
           onQuit();
-          continue;
+          return;
         }
 
         const wasHandled = handleVimInput(input, false);
 
         if (wasHandled) {
-          continue;
+          return;
         }
       }
 
@@ -611,7 +587,7 @@ export function TextInput({
 
         if (isAtEnd && onArrowRight) {
           onArrowRight();
-          continue;
+          return;
         }
 
         if (showCursor) {
@@ -674,33 +650,31 @@ export function TextInput({
       if (nextValue !== currentValue) {
         pendingOnChangeRef.current = nextValue;
       }
-    }
 
-    isProcessingRef.current = false;
-    syncStateToRender();
-  }, [
-    isVimModeEnabled,
-    handleVimInput,
-    onArrowUp,
-    onArrowDown,
-    onShiftTab,
-    onTab,
-    onSubmit,
-    onQuit,
-    onEscape,
-    onArrowRight,
-    showCursor,
-    collapsePastedText,
-    pastedSegments,
-    onPaste,
-    syncStateToRender,
-  ]);
+      syncStateToRender();
+    },
+    [
+      isVimModeEnabled,
+      handleVimInput,
+      onArrowUp,
+      onArrowDown,
+      onShiftTab,
+      onTab,
+      onSubmit,
+      onQuit,
+      onEscape,
+      onArrowRight,
+      showCursor,
+      collapsePastedText,
+      pastedSegments,
+      onPaste,
+      syncStateToRender,
+    ],
+  );
 
   useInput(
     (input, key) => {
-      inputQueueRef.current.push({ input, key });
-
-      queueMicrotask(processInputQueue);
+      processInput(input, key);
     },
     { isActive: focus },
   );

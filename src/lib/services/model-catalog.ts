@@ -1,4 +1,5 @@
 import { getConfigService } from "./container.ts";
+import { discoverCodexModels } from "./codex-model-discovery.ts";
 import type { AgentType } from "./config/types.ts";
 
 const MODEL_CATALOG_CACHE_TTL_MS = 60_000;
@@ -18,6 +19,7 @@ const EXCLUDED_MODEL_TOKENS = new Set([
   "claude",
   "codex",
 ]);
+const ALLOWED_PLAIN_MODEL_IDENTIFIERS = new Set(["auto"]);
 
 interface CommandExecutionResult {
   commandArguments: string[];
@@ -29,6 +31,7 @@ interface CommandExecutionResult {
 interface ModelDiscoveryOptions {
   forceRefresh?: boolean;
   commandExecutor?: (commandArguments: string[]) => Promise<CommandExecutionResult>;
+  codexModelDiscoverer?: () => Promise<string[]>;
 }
 
 export interface AgentModelCatalog {
@@ -126,7 +129,6 @@ const MODEL_DISCOVERY_COMMANDS: Record<AgentType, string[][]> = {
 
 const FALLBACK_MODELS_BY_AGENT: Partial<Record<AgentType, string[]>> = {
   claude: ["sonnet", "opus"],
-  codex: ["gpt-5-codex"],
 };
 
 function normalizeModelIdentifier(modelIdentifier: string): string {
@@ -156,7 +158,9 @@ function isLikelyModelIdentifier(candidate: string): boolean {
   const hasIdentifierSeparator = /[-_.:]/.test(normalizedCandidate);
   const hasDigit = /\d/.test(normalizedCandidate);
 
-  return hasIdentifierSeparator || hasDigit;
+  return (
+    hasIdentifierSeparator || hasDigit || ALLOWED_PLAIN_MODEL_IDENTIFIERS.has(loweredCandidate)
+  );
 }
 
 function uniqueModels(modelCandidates: string[]): string[] {
@@ -355,6 +359,36 @@ export async function getModelsForAgent(
   const commandExecutor = options?.commandExecutor ?? executeCommand;
   const attemptedCommands: string[] = [];
   const commandErrors: string[] = [];
+
+  if (agentType === "codex") {
+    attemptedCommands.push("codex app-server model/list");
+
+    try {
+      const discoveredModels = await (options?.codexModelDiscoverer ?? discoverCodexModels)();
+      const uniqueDiscoveredModels = uniqueModels(discoveredModels);
+
+      if (uniqueDiscoveredModels.length > 0) {
+        modelCatalogCache.set(agentType, {
+          fetchedAt: now,
+          models: uniqueDiscoveredModels,
+        });
+
+        return {
+          success: true,
+          catalog: {
+            agent: agentType,
+            models: uniqueDiscoveredModels,
+            source: "live",
+            fetchedAt: now,
+          },
+        };
+      }
+    } catch (error) {
+      commandErrors.push(
+        `codex app-server model/list: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 
   for (const commandArguments of commandCandidates) {
     attemptedCommands.push(commandArguments.join(" "));

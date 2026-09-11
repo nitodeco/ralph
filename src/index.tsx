@@ -65,8 +65,10 @@ import { InitWizard } from "@/components/InitWizard.tsx";
 import { RunApp } from "@/components/RunApp.tsx";
 import { SetupWizard } from "@/components/SetupWizard.tsx";
 import { UpdatePrompt } from "@/components/UpdatePrompt.tsx";
+import { useEmergencyQuit } from "@/hooks/index.ts";
 import {
   isBackgroundProcessRunning,
+  handleShutdownSignal,
   isDaemonProcess,
   setShutdownHandler,
   setupSignalHandlers,
@@ -112,6 +114,16 @@ export function unmountInk(): void {
 
 function clearTerminal(): void {
   process.stdout.write("\x1b[?25h\x1b[2J\x1b[H");
+}
+
+function InteractiveApp({ children }: { readonly children: React.ReactNode }): React.ReactElement {
+  useEmergencyQuit(() => handleShutdownSignal("SIGTERM"));
+
+  return <>{children}</>;
+}
+
+function renderInteractiveApp(element: React.ReactElement): void {
+  maybeInkInstance = render(<InteractiveApp>{element}</InteractiveApp>, { exitOnCtrlC: false });
 }
 
 interface RunWithSetupProps {
@@ -419,7 +431,7 @@ function main(): void {
     .with("run", () => {
       getSleepPreventionService().start();
       startMemoryMonitor(memoryThresholdMb);
-      maybeInkInstance = render(
+      renderInteractiveApp(
         <RunWithSetup
           version={VERSION}
           iterations={task ? 1 : iterations}
@@ -434,7 +446,7 @@ function main(): void {
     .with("resume", () => {
       getSleepPreventionService().start();
       startMemoryMonitor(memoryThresholdMb);
-      maybeInkInstance = render(
+      renderInteractiveApp(
         <RunWithSetup
           version={VERSION}
           iterations={iterations}
@@ -448,13 +460,13 @@ function main(): void {
       );
     })
     .with("init", () => {
-      maybeInkInstance = render(<InitWizard version={VERSION} />);
+      renderInteractiveApp(<InitWizard version={VERSION} />);
     })
     .with("setup", () => {
-      maybeInkInstance = render(<SetupWizard version={VERSION} />);
+      renderInteractiveApp(<SetupWizard version={VERSION} />);
     })
     .with("update", () => {
-      maybeInkInstance = render(<UpdatePrompt version={VERSION} forceCheck />);
+      renderInteractiveApp(<UpdatePrompt version={VERSION} forceCheck />);
     })
     .with("status", () => {
       printStatus(VERSION, verbose);
