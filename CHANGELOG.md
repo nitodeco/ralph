@@ -1,5 +1,11 @@
 # ralph
 
+## 0.16.1
+
+### Patch Changes
+
+- 3bfde87: Upgrade CLI and documentation dependencies, resolve dependency security advisories, and migrate development checks to Oxfmt, Oxlint, and Lefthook.
+
 ## 0.16.0
 
 ### Minor Changes
