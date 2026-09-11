@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { resolve } from "node:path";
 import { writeFileIdempotent } from "../../idempotency.ts";
 import {
   GLOBAL_CONFIG_PATH,
@@ -9,6 +11,14 @@ import {
 import { AGENT_COMMANDS, CONFIG_DEFAULTS, DEFAULT_CONFIG } from "./constants.ts";
 import type { AgentType, ConfigService, ConfigValidationResult, RalphConfig } from "./types.ts";
 import { isPartialRalphConfig } from "./validation.ts";
+
+function getResolvedLogFilePath(maybeLogFilePath: string | undefined): string | undefined {
+  if (maybeLogFilePath === undefined) {
+    return undefined;
+  }
+
+  return resolve(homedir(), maybeLogFilePath);
+}
 
 export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
   const defaults = CONFIG_DEFAULTS;
@@ -22,7 +32,7 @@ export function applyDefaults(config: Partial<RalphConfig>): RalphConfig {
     hasAcknowledgedWarning: config.hasAcknowledgedWarning,
     lastUpdateCheck: config.lastUpdateCheck,
     learningEnabled: config.learningEnabled ?? defaults.learningEnabled,
-    logFilePath: config.logFilePath,
+    logFilePath: getResolvedLogFilePath(config.logFilePath),
     maxDecompositionsPerTask: config.maxDecompositionsPerTask ?? defaults.maxDecompositionsPerTask,
     maxOutputHistoryBytes: config.maxOutputHistoryBytes ?? defaults.maxOutputHistoryBytes,
     maxRetries: config.maxRetries ?? defaults.maxRetries,
