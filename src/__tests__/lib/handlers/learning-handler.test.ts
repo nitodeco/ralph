@@ -10,6 +10,7 @@ import { createSessionMemoryService } from "@/lib/services/session-memory/implem
 import type { IterationLogRetryContext } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-learning-handler";
+const ORIGINAL_CWD = process.cwd();
 
 describe("LearningHandler", () => {
   beforeEach(() => {
@@ -26,6 +27,7 @@ describe("LearningHandler", () => {
 
   afterEach(() => {
     teardownTestServices();
+    process.chdir(ORIGINAL_CWD);
 
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });

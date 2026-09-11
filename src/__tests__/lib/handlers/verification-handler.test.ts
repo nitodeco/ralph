@@ -5,6 +5,7 @@ import type { VerificationConfig, VerificationResult } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-verification-handler";
 const RALPH_DIR = `${TEST_DIR}/.ralph`;
+const ORIGINAL_CWD = process.cwd();
 
 describe("VerificationHandler", () => {
   beforeEach(() => {
@@ -17,6 +18,8 @@ describe("VerificationHandler", () => {
   });
 
   afterEach(() => {
+    process.chdir(ORIGINAL_CWD);
+
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });
     }

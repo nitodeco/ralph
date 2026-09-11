@@ -16,6 +16,7 @@ import type { Session } from "@/lib/services/session/types.ts";
 import { useAppStore } from "@/stores/appStore.ts";
 
 const TEST_DIR = "/tmp/ralph-test-orchestrator";
+const ORIGINAL_CWD = process.cwd();
 
 function createMockSession(overrides: Partial<Session> = {}): Session {
   return {
@@ -283,6 +284,7 @@ describe("Orchestrator Composition Root", () => {
 
     orchestrator.cleanup();
     teardownTestServices();
+    process.chdir(ORIGINAL_CWD);
 
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });

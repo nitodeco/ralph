@@ -11,6 +11,7 @@ import {
 import type { IterationLog, SessionStatistics } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-technical-debt-handler";
+const ORIGINAL_CWD = process.cwd();
 
 function createMockStatistics(overrides: Partial<SessionStatistics> = {}): SessionStatistics {
   return {
@@ -60,6 +61,8 @@ describe("TechnicalDebtHandler", () => {
   });
 
   afterEach(() => {
+    process.chdir(ORIGINAL_CWD);
+
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });
     }

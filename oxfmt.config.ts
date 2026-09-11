@@ -1,0 +1,16 @@
+import { defineConfig } from "oxfmt";
+
+export default defineConfig({
+  useTabs: false,
+  tabWidth: 2,
+  printWidth: 100,
+  singleQuote: false,
+  jsxSingleQuote: false,
+  quoteProps: "as-needed",
+  trailingComma: "all",
+  semi: true,
+  arrowParens: "always",
+  bracketSameLine: false,
+  bracketSpacing: true,
+  ignorePatterns: ["**/*.md"],
+});

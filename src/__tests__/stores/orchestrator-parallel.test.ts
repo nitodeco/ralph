@@ -15,6 +15,7 @@ import { useAppStore } from "@/stores/appStore.ts";
 import type { Prd, RalphConfig } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-orchestrator-parallel";
+const ORIGINAL_CWD = process.cwd();
 
 function createMockCallbacks(): OrchestratorCallbacks {
   return {
@@ -253,6 +254,7 @@ describe("orchestrator parallel execution", () => {
   afterEach(() => {
     getOrchestrator().cleanup();
     teardownTestServices();
+    process.chdir(ORIGINAL_CWD);
 
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });

@@ -1,0 +1,36 @@
+glob_matcher: doublestar
+
+pre-commit:
+  commands:
+    format:
+      priority: 1
+      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,mdx,yml,yaml,css,scss,less,html,astro}"
+      run: bunx oxfmt --write {staged_files}
+      stage_fixed: true
+    lint:
+      priority: 2
+      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}"
+      run: bunx oxlint --fix {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}
+
+pre-push:
+  commands:
+    format:
+      priority: 1
+      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,mdx,yml,yaml,css,scss,less,html,astro}"
+      run: bunx oxfmt --check {push_files}
+    lint:
+      priority: 2
+      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}"
+      run: bunx oxlint {push_files}
+    build:
+      priority: 3
+      run: bun run build
+    test:
+      priority: 4
+      run: bun test
