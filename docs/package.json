@@ -12,18 +12,29 @@
     "generate-assets": "bun run scripts/generate-assets.ts"
   },
   "dependencies": {
-    "@astrojs/check": "0.9.6",
-    "@astrojs/sitemap": "3.7.0",
-    "@tailwindcss/vite": "4.1.18",
-    "astro": "5.16.15",
-    "astro-compress": "2.3.9",
-    "marked": "17.0.1",
-    "pagefind": "1.4.0",
-    "tailwindcss": "4.1.18",
-    "typescript": "5.9.3",
-    "unist-util-visit": "5.0.0"
+    "@astrojs/check": "0.9.10",
+    "@astrojs/sitemap": "3.7.4",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.3.2",
+    "astro-compress": "2.4.3",
+    "marked": "18.0.12",
+    "pagefind": "1.5.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "unist-util-visit": "5.1.0"
   },
   "devDependencies": {
-    "sharp": "0.34.5"
+    "sharp": "0.35.4"
+  },
+  "overrides": {
+    "@playform/pipe>deepmerge-ts": "8.0.2",
+    "ajv": "8.20.0",
+    "ajv>fast-uri": "3.1.7",
+    "anymatch>picomatch": "2.3.2",
+    "astro-compress>deepmerge-ts": "8.0.2",
+    "astro-compress>sharp": "0.35.4",
+    "micromatch>picomatch": "2.3.2",
+    "smol-toml": "1.8.0",
+    "svgo": "4.1.0"
   }
 }

@@ -145,10 +145,11 @@ Solid uses underscores for multi-word component names:
 ```
 
 **Component mapping:**
-| Concept | React | Solid |
-|---------|-------|-------|
-| Tab Select | `<tab-select>` | `<tab_select>` |
-| ASCII Font | `<ascii-font>` | `<ascii_font>` |
+
+| Concept     | React           | Solid           |
+| ----------- | --------------- | --------------- |
+| Tab Select  | `<tab-select>`  | `<tab_select>`  |
+| ASCII Font  | `<ascii-font>`  | `<ascii_font>`  |
 | Line Number | `<line-number>` | `<line_number>` |
 
 ## Focus Issues

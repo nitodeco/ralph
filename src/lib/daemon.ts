@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { closeSync, existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -391,10 +392,10 @@ export function setupSignalHandlers(): void {
   const signals: ShutdownSignal[] = ["SIGTERM", "SIGINT", "SIGHUP"];
 
   for (const signal of signals) {
-    process.on(signal, () => handleShutdownSignal(signal));
+    EventEmitter.prototype.on.call(process, signal, () => handleShutdownSignal(signal));
   }
 
-  process.on("exit", () => {
+  EventEmitter.prototype.on.call(process, "exit", () => {
     if (!isShutdownInProgress()) {
       const logger = getLogger({});
 

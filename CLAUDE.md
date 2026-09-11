@@ -14,7 +14,7 @@ bun run dev                    # Run the CLI directly
 bun run src/index.tsx          # Alternative: run entry point
 
 # Quality checks (run after changes)
-bun run check                  # Format + lint + fix (oxfmt + oxlint + eslint)
+bun run check                  # Format + lint + fix (oxfmt + oxlint)
 bun run typecheck              # TypeScript type checking
 
 # Testing

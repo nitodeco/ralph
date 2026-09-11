@@ -11,6 +11,7 @@ import {
 import type { DecompositionRequest, Prd, RalphConfig } from "@/types.ts";
 
 const TEST_DIR = "/tmp/ralph-test-decomposition-handler";
+const ORIGINAL_CWD = process.cwd();
 
 function writePrdFile(prd: Prd): void {
   ensureProjectDirExists();
@@ -31,6 +32,7 @@ describe("DecompositionHandler", () => {
 
   afterEach(() => {
     teardownTestServices();
+    process.chdir(ORIGINAL_CWD);
 
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true });
