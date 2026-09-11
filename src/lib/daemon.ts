@@ -11,6 +11,7 @@ import {
 import { getErrorMessage } from "./errors.ts";
 import { getLogger } from "./logger.ts";
 import { ensureProjectDirExists } from "./paths.ts";
+import { restoreTerminalInput } from "./terminal.ts";
 import { getProjectRegistryService, isInitialized } from "./services/container.ts";
 import {
   getMemoryMonitorService,
@@ -360,11 +361,14 @@ export function handleShutdown(reason: ShutdownReason): void {
   deletePidFile();
   logger.info("Shutdown complete", { reason });
 
-  if (process.stdout.isTTY) {
-    process.stdout.write("\x1b[?25h\x1b[2J\x1b[3J\x1b[H");
+  try {
+    if (process.stdout.isTTY) {
+      process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
+    }
+  } finally {
+    restoreTerminalInput();
+    process.exit(reason === "memory_threshold" ? 137 : 0);
   }
-
-  process.exit(reason === "memory_threshold" ? 137 : 0);
 }
 
 export function handleShutdownSignal(signal: ShutdownSignal): void {
@@ -396,6 +400,8 @@ export function setupSignalHandlers(): void {
   }
 
   EventEmitter.prototype.on.call(process, "exit", () => {
+    restoreTerminalInput();
+
     if (!isShutdownInProgress()) {
       const logger = getLogger({});
 

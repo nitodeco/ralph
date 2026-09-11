@@ -17,14 +17,14 @@ describe("getModelsForAgent", () => {
       commandExecutor: async (commandArguments) => ({
         commandArguments,
         exitCode: 0,
-        stdout: JSON.stringify({ models: ["gpt-5-codex", "gpt-5.1"] }),
+        stdout: JSON.stringify({ models: ["auto", "gpt-5-codex", "gpt-5.1"] }),
         stderr: "",
       }),
       forceRefresh: true,
     });
 
     expect(result.success).toBe(true);
-    expect(result.catalog?.models).toEqual(["gpt-5-codex", "gpt-5.1"]);
+    expect(result.catalog?.models).toEqual(["auto", "gpt-5-codex", "gpt-5.1"]);
     expect(result.catalog?.source).toBe("live");
   });
 
@@ -88,7 +88,7 @@ describe("getModelsForAgent", () => {
     expect(result.success).toBe(false);
   });
 
-  test("returns codex fallback model list without probing unsupported subcommands", async () => {
+  test("returns the live model list from Codex app-server", async () => {
     const commandCalls: string[] = [];
     const result = await getModelsForAgent("codex", {
       commandExecutor: async (commandArguments) => {
@@ -101,13 +101,26 @@ describe("getModelsForAgent", () => {
           stderr: "should not be called",
         };
       },
+      codexModelDiscoverer: async () => ["gpt-6-astra", "gpt-5.6-sol"],
       forceRefresh: true,
     });
 
     expect(result.success).toBe(true);
-    expect(result.catalog?.source).toBe("fallback");
-    expect(result.catalog?.models).toEqual(["gpt-5-codex"]);
+    expect(result.catalog?.source).toBe("live");
+    expect(result.catalog?.models).toEqual(["gpt-6-astra", "gpt-5.6-sol"]);
     expect(commandCalls).toEqual([]);
+  });
+
+  test("does not substitute a static Codex catalog when live discovery fails", async () => {
+    const result = await getModelsForAgent("codex", {
+      codexModelDiscoverer: async () => {
+        throw new Error("app-server unavailable");
+      },
+      forceRefresh: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("app-server unavailable");
   });
 
   test("returns claude fallback aliases without probing unsupported subcommands", async () => {
@@ -160,9 +173,14 @@ describe("getModelsForAgent", () => {
     expect(currentModel).toBe("sonnet");
   });
 
-  test("resolves a current model for codex from catalog fallback", async () => {
+  test("resolves a current model for codex from its live catalog", async () => {
+    const result = await getModelsForAgent("codex", {
+      codexModelDiscoverer: async () => ["gpt-6-astra", "gpt-5.6-sol"],
+      forceRefresh: true,
+    });
     const currentModel = await getCurrentModelFromAgent("codex");
 
-    expect(currentModel).toBe("gpt-5-codex");
+    expect(result.success).toBe(true);
+    expect(currentModel).toBe("gpt-6-astra");
   });
 });
