@@ -36,5 +36,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": ["node_modules/**", "dist/**", "docs/**"]
+  "ignorePatterns": ["node_modules/**", "dist/**", "docs/**", "**/*.md"]
 }

@@ -4,7 +4,7 @@ pre-commit:
   commands:
     format:
       priority: 1
-      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,md,mdx,yml,yaml,css,scss,less,html,astro}"
+      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,mdx,yml,yaml,css,scss,less,html,astro}"
       run: bunx oxfmt --write {staged_files}
       stage_fixed: true
     lint:
@@ -22,7 +22,7 @@ pre-push:
   commands:
     format:
       priority: 1
-      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,md,mdx,yml,yaml,css,scss,less,html,astro}"
+      glob: "**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,mdx,yml,yaml,css,scss,less,html,astro}"
       run: bunx oxfmt --check {push_files}
     lint:
       priority: 2

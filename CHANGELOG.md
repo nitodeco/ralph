@@ -160,6 +160,7 @@
   Added a new `ralph guardrails generate` command that analyzes the current project's codebase and automatically generates relevant guardrails based on detected patterns.
 
   ## Features
+
   - Detects package manager (npm, yarn, pnpm, bun)
   - Detects TypeScript usage
   - Detects test frameworks (jest, vitest, mocha, bun test)

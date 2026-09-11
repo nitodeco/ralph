@@ -78,11 +78,21 @@ interface CommonProps {
   flexBasis?: number | string;
   flexWrap?: "nowrap" | "wrap" | "wrap-reverse";
   justifyContent?:
-    "flex-start" | "flex-end" | "center" | "space-between" | "space-around" | "space-evenly";
+    | "flex-start"
+    | "flex-end"
+    | "center"
+    | "space-between"
+    | "space-around"
+    | "space-evenly";
   alignItems?: "flex-start" | "flex-end" | "center" | "stretch" | "baseline";
   alignSelf?: "auto" | "flex-start" | "flex-end" | "center" | "stretch" | "baseline";
   alignContent?:
-    "flex-start" | "flex-end" | "center" | "stretch" | "space-between" | "space-around";
+    | "flex-start"
+    | "flex-end"
+    | "center"
+    | "stretch"
+    | "space-between"
+    | "space-around";
 
   // Spacing
   padding?: number;
